@@ -1,0 +1,35 @@
+{
+	"author": {
+		"name": "Patrik Simek",
+		"url": "http://patriksimek.cz"
+	},
+	"name": "mssql",
+	"description": "MSSQL database connector for NodeJS",
+	"keywords": [
+		"database",
+		"mssql",
+		"sql"
+	],
+	"version": "0.2.0",
+	"main": "index.js",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/patriksimek/node-mssql"
+	},
+	"licenses": [
+		{
+			"type": "MIT",
+			"url": "http://opensource.org/licenses/mit-license.php"
+		}
+	],
+	"dependencies": {
+		"tedious": "*",
+		"tedious-connection-pool": "*"
+	},
+	"devDependencies": {
+		"mocha": "*"
+	},
+	"engines": {
+		"node": "*"
+	}
+}
