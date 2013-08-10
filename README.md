@@ -1,4 +1,4 @@
-#xsp-mssql
+#node-mssql
 
 MSSQL database connector for NodeJS based on TDS module [Tedious](https://github.com/pekim/tedious).
 
@@ -56,7 +56,7 @@ request.input('input_parameter', sql.Int, value);
 request.output('output_parameter', sql.Int);
 ```
 
-If you omit `type` argument of input parameter, one of predefined SQL data type is used. You can define you own type map.
+If you omit `type` argument of input parameter, module automaticaly decide which SQL data type should be used based on JS data type. You can define you own type map.
 
 ```javascript
 sql.map.register(MyClass, sql.Text);
@@ -70,10 +70,10 @@ sql.map.register(String, sql.VarChar);
 
 #### Default map
 
-`String` -> `sql.VarChar`
-`Number` -> `sql.Int`
-`Boolean` -> `sql.Bit`
-`Date` -> `sql.DateTime`
+* `String` -> `sql.VarChar`
+* `Number` -> `sql.Int`
+* `Boolean` -> `sql.Bit`
+* `Date` -> `sql.DateTime`
 
 Default data type for unknown object is `sql.VarChar`.
 
