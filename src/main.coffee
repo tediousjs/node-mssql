@@ -4,6 +4,8 @@ Data types: http://pekim.github.io/tedious/api-datatypes.html
 
 tds = require 'tedious'
 events = require 'events'
+util = require 'util'
+
 pool = null
 
 map = []
@@ -40,6 +42,24 @@ getTypeByValue = (value) ->
 		else
 			return tds.TYPES.VarChar
 
+getNameOfType = (type) ->
+	switch type
+		when tds.TYPES.VarChar then return 'varchar'
+		when tds.TYPES.NVarChar then return 'nvarchar'
+		when tds.TYPES.Text then return 'text'
+		when tds.TYPES.Int then return 'int'
+		when tds.TYPES.SmallInt then return 'smallint'
+		when tds.TYPES.TinyInt then return 'tinyint'
+		when tds.TYPES.BigInt then return 'bigint'
+		when tds.TYPES.Bit then return 'bit'
+		when tds.TYPES.Float then return 'float'
+		when tds.TYPES.Real then return 'real'
+		when tds.TYPES.DateTime then return 'datetime'
+		when tds.TYPES.SmallDateTime then return 'smalldatetime'
+		when tds.TYPES.UniqueIdentifier then return 'uniqueidentifier'
+		else 
+			return 'unknown'
+
 class Request
 	parameters: null
 	verbose: false
@@ -67,7 +87,10 @@ class Request
 			throw new Error "Data type #{type.name} is not supported as procedure parameter. (parameter name: #{name})"
 		
 		# support for custom data types
-		if value then value = value.valueOf()
+		if value?.valueOf and not value instanceof Date then value = value.valueOf()
+		
+		# null to sql null
+		if value is null or value is undefined then value = tds.TYPES.Null
 		
 		@parameters[name] =
 			name: name
@@ -82,6 +105,8 @@ class Request
 		Usage:
 		request.append name, type
 		###
+		
+		unless type then type = tds.TYPES.VarChar
 		
 		@parameters[name] =
 			name: name
@@ -137,12 +162,14 @@ class Request
 		
 		pool.requestConnection (err, connection) =>
 			unless err
-				if @verbose then console.log "--- sql execute ---\nprocedure: #{procedure}"
+				if @verbose then console.log "---------- sql execute --------\n     proc: #{procedure}"
 				
 				req = new tds.Request procedure, (err) =>
 					if @verbose 
-						console.log "--- return value: #{returnValue} ---"
-						console.log "--- completed in #{Date.now() - started}ms ---"
+						elapsed = Date.now() - started
+						console.log "   return: #{returnValue}"
+						console.log " duration: #{elapsed}ms"
+						console.log "---------- completed ----------"
 						
 					connection.close()
 					callback? err, recordsets, returnValue
@@ -155,7 +182,10 @@ class Request
 					for col in columns
 						row[col.metadata.colName] = col.value
 					
-					if @verbose then console.dir row
+					if @verbose
+						console.log util.inspect(row)
+						console.log "---------- --------------------"
+						
 					recordset.push row
 				
 				req.on 'doneInProc', (rowCount, more, rows) =>
@@ -167,17 +197,27 @@ class Request
 					returnValue = returnStatus
 				
 				req.on 'returnValue', (parameterName, value, metadata) =>
+					if @verbose
+						if value is tds.TYPES.Null
+							console.log "   output: @#{parameterName}, null"
+						else
+							console.log "   output: @#{parameterName}, #{getNameOfType(@parameters[parameterName].type)}, #{value}"
+						
 					@parameters[parameterName].value = value
 				
 				for name, param of @parameters when param.io is 1
-					if @verbose then console.log "input: #{param.name}, #{param.value}"
+					if @verbose
+						if param.value is tds.TYPES.Null
+							console.log "    input: @#{param.name}, null"
+						else
+							console.log "    input: @#{param.name}, #{getNameOfType(param.type)}, #{param.value}"
+						
 					req.addParameter param.name, param.type, param.value
 					
 				for name, param of @parameters when param.io is 2
-					if @verbose then console.log "output: #{param.name}, #{param.value}"
 					req.addOutputParameter param.name, param.type
 				
-				if @verbose then console.log "--- response ---"
+				if @verbose then console.log "---------- response -----------"
 				connection.callProcedure req
 			
 			else

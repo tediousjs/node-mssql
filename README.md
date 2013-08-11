@@ -71,7 +71,7 @@ sql.map.register(String, sql.VarChar);
 #### Default map
 
 * `String` -> `sql.VarChar`
-* `Number` -> `sql.Int`
+* `Number` -> `sql.BigInt`
 * `Boolean` -> `sql.Bit`
 * `Date` -> `sql.DateTime`
 
@@ -107,7 +107,40 @@ sql.SmallDateTime
 sql.UniqueIdentifier
 ```
 
-Complete list of data type constants can be found here: [Tedious Datatypes](http://pekim.github.io/tedious/api-datatypes.html)
+Tedious data type constants can be accessed by `sql.TYPES.<type>`. Complete list of data type constants can be found here: [Tedious Datatypes](http://pekim.github.io/tedious/api-datatypes.html)
+
+## Verbose mode
+
+You can enable verbose mode by `request.verbose = true` command.
+
+```javascript
+var request = new sql.Request();
+request.input('username', 'patriksimek');
+request.input('password', 'dontuseplaintextpassword');
+request.input('attempts', 2);
+request.execute();
+```
+
+Output for example above could look similar to this.
+
+```
+---------- sql execute --------
+     proc: my_stored_procedure
+    input: @username, varchar, patriksimek
+    input: @password, varchar, dontuseplaintextpassword
+    input: @attempts, bigint, 2
+---------- response -----------
+{ id: 1,
+  username: 'patriksimek',
+  password: 'dontuseplaintextpassword',
+  email: null,
+  language: 'en',
+  attempts: 2 }
+---------- --------------------
+   return: 0
+ duration: 5ms
+---------- completed ----------
+```
 
 ## License
 
