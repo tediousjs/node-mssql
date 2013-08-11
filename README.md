@@ -115,10 +115,11 @@ You can enable verbose mode by `request.verbose = true` command.
 
 ```javascript
 var request = new sql.Request();
+request.verbose = true;
 request.input('username', 'patriksimek');
 request.input('password', 'dontuseplaintextpassword');
 request.input('attempts', 2);
-request.execute();
+request.execute('my_stored_procedure');
 ```
 
 Output for example above could look similar to this.
