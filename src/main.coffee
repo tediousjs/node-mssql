@@ -175,7 +175,7 @@ class Request
 		###
 		
 		columns = {}
-		recordset = null
+		recordset = []
 		recordsets = []
 		returnValue = 0
 		started = Date.now()
@@ -203,9 +203,6 @@ class Request
 						columns[col.colName] = col
 				
 				req.on 'row', (columns) =>
-					unless recordset
-						recordset = []
-		
 					row = {}
 					for col in columns
 						row[col.metadata.colName] = col.value
@@ -218,14 +215,12 @@ class Request
 				
 				req.on 'doneInProc', (rowCount, more, rows) =>
 					# all rows of current recordset loaded
-					if recordset
-						Object.defineProperty recordset, 'columns', 
-							enumerable: false
-							value: columns
+					Object.defineProperty recordset, 'columns', 
+						enumerable: false
+						value: columns
 					
-						recordsets.push recordset
-						recordset = null
-					
+					recordsets.push recordset
+					recordset = []
 					columns = {}
 				
 				req.on 'doneProc', (rowCount, more, returnStatus, rows) =>
