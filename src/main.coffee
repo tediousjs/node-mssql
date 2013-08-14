@@ -135,13 +135,14 @@ class Request
 						elapsed = Date.now() - started
 						console.log " duration: #{elapsed}ms"
 						console.log "---------- completed ----------"
-					
-					Object.defineProperty recordset, 'columns', 
-						enumerable: false
-						value: columns
+						
+					if recordset
+						Object.defineProperty recordset, 'columns', 
+							enumerable: false
+							value: columns
 				
 					connection.close()
-					callback? err, recordset ? []
+					callback? err, recordset
 				
 				req.on 'columnMetadata', (metadata) =>
 					for col in metadata
@@ -217,12 +218,14 @@ class Request
 				
 				req.on 'doneInProc', (rowCount, more, rows) =>
 					# all rows of current recordset loaded
-					Object.defineProperty recordset, 'columns', 
-						enumerable: false
-						value: columns
+					if recordset
+						Object.defineProperty recordset, 'columns', 
+							enumerable: false
+							value: columns
 					
-					recordsets.push recordset ? []
-					recordset = null
+						recordsets.push recordset
+						recordset = null
+					
 					columns = {}
 				
 				req.on 'doneProc', (rowCount, more, returnStatus, rows) =>
