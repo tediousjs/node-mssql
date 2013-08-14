@@ -85,9 +85,9 @@ class Request
 		
 		unless type.writeParameterData
 			throw new Error "Data type #{type.name} is not supported as procedure parameter. (parameter name: #{name})"
-		
+
 		# support for custom data types
-		if value?.valueOf and not value instanceof Date then value = value.valueOf()
+		if value?.valueOf and value not instanceof Date then value = value.valueOf()
 		
 		# null to sql null
 		if value is null or value is undefined then value = tds.TYPES.Null
@@ -118,7 +118,9 @@ class Request
 		Execute specified sql command.
 		###
 		
+		columns = {}
 		recordset = null
+		started = Date.now()
 		
 		unless pool
 			callback new Error('MSSQL connection pool was not initialized!')
@@ -126,9 +128,24 @@ class Request
 		
 		pool.requestConnection (err, connection) =>
 			unless err
+				if @verbose then console.log "---------- sql query ----------\n    query: #{command}"
+				
 				req = new tds.Request command, (err) =>
+					if @verbose 
+						elapsed = Date.now() - started
+						console.log " duration: #{elapsed}ms"
+						console.log "---------- completed ----------"
+					
+					Object.defineProperty recordset, 'columns', 
+						enumerable: false
+						value: columns
+				
 					connection.close()
 					callback? err, recordset ? []
+				
+				req.on 'columnMetadata', (metadata) =>
+					for col in metadata
+						columns[col.colName] = col
 				
 				req.on 'row', (columns) =>
 					unless recordset
@@ -138,8 +155,13 @@ class Request
 					for col in columns
 						row[col.metadata.colName] = col.value
 					
+					if @verbose
+						console.log util.inspect(row)
+						console.log "---------- --------------------"
+					
 					recordset.push row
 				
+				if @verbose then console.log "---------- response -----------"
 				connection.execSql req
 			
 			else
@@ -151,6 +173,7 @@ class Request
 		Execute stored procedure with specified parameters.
 		###
 		
+		columns = {}
 		recordset = null
 		recordsets = []
 		returnValue = 0
@@ -174,6 +197,10 @@ class Request
 					connection.close()
 					callback? err, recordsets, returnValue
 				
+				req.on 'columnMetadata', (metadata) =>
+					for col in metadata
+						columns[col.colName] = col
+				
 				req.on 'row', (columns) =>
 					unless recordset
 						recordset = []
@@ -190,8 +217,13 @@ class Request
 				
 				req.on 'doneInProc', (rowCount, more, rows) =>
 					# all rows of current recordset loaded
+					Object.defineProperty recordset, 'columns', 
+						enumerable: false
+						value: columns
+					
 					recordsets.push recordset ? []
 					recordset = null
+					columns = {}
 				
 				req.on 'doneProc', (rowCount, more, returnStatus, rows) =>
 					returnValue = returnStatus

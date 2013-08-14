@@ -21,7 +21,10 @@ sql.connection = {
 	userName: '...',
 	password: '...',
 	server: 'localhost',
-	database: '...'
+	
+	options: {
+		database: '...'
+	}
 }
 
 sql.init();
