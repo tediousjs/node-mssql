@@ -26,7 +26,7 @@ map.register Date, tds.TYPES.DateTime
 # you can register your own mapped parameter by: sql.map.register <JS Type>, <SQL Type>
 
 getTypeByValue = (value) ->
-	unless value then return tds.TYPES.Bit
+	if value is null or value is undefined then return tds.TYPES.VarChar
 	
 	switch typeof value
 		when 'string' then return tds.TYPES.VarChar
@@ -131,7 +131,10 @@ class Request
 				if @verbose then console.log "---------- sql query ----------\n    query: #{command}"
 				
 				req = new tds.Request command, (err) =>
+					if err and err not instanceof Error then err = new Error err
+					
 					if @verbose 
+						if err then console.log "    error: #{err}"
 						elapsed = Date.now() - started
 						console.log " duration: #{elapsed}ms"
 						console.log "---------- completed ----------"
@@ -189,7 +192,11 @@ class Request
 				if @verbose then console.log "---------- sql execute --------\n     proc: #{procedure}"
 				
 				req = new tds.Request procedure, (err) =>
+					if err and err not instanceof Error then err = new Error err
+					
 					if @verbose 
+						if err then console.log "    error: #{err}"
+						
 						elapsed = Date.now() - started
 						console.log "   return: #{returnValue}"
 						console.log " duration: #{elapsed}ms"
