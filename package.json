@@ -27,7 +27,7 @@
 		"tedious-connection-pool": ">=0.1.1"
 	},
 	"devDependencies": {
-		"coffee-script": "coffee-script": ">=1.6.2",
+		"coffee-script": ">=1.6.2",
 		"mocha": ">=1.12.0"
 	},
 	"engines": {
