@@ -10,7 +10,7 @@
 		"mssql",
 		"sql"
 	],
-	"version": "0.2.3",
+	"version": "0.2.4",
 	"main": "index.js",
 	"repository": {
 		"type": "git",
@@ -27,10 +27,13 @@
 		"tedious-connection-pool": ">=0.1.1"
 	},
 	"devDependencies": {
-		"coffee-script": "*",
-		"mocha": "*"
+		"coffee-script": "coffee-script": ">=1.6.2",
+		"mocha": ">=1.12.0"
 	},
 	"engines": {
 		"node": ">=0.6"
+	},
+	"scripts": {
+		"test": "mocha --compilers coffee:coffee-script --reporter spec"
 	}
 }
