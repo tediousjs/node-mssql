@@ -19,9 +19,10 @@ describe 'mssql test suite', ->
 			
 	it 'stored procedure', (done) ->
 		request = new sql.Request
-		request.append 'in', sql.TYPES.Int, sql.INPUT, 1
-		request.append 'out', sql.TYPES.Int, sql.OUTPUT
-		request.append 'out2', sql.TYPES.Int, sql.OUTPUT
+		request.input 'in', sql.Int, 1
+		request.input 'in2', sql.BigInt, 0
+		request.output 'out', sql.Int
+		request.output 'out2', sql.Int
 		
 		request.execute '__test', (err, recordsets, returnValue) ->
 			unless err
@@ -37,11 +38,12 @@ describe 'mssql test suite', ->
 				assert.equal recordsets[1].length, 1
 				assert.equal recordsets[1][0].c, 5
 				assert.equal recordsets[1][0].d, 6
+				assert.equal recordsets[1][0].e, 0
 				
 				assert.equal recordsets[2].length, 0
 				
-				assert.equal request.output.out, 99
-				assert.equal request.output.out2, 1
+				assert.equal request.parameters.out.value, 99
+				assert.equal request.parameters.out2.value, 1
 			
 			done err
 	
