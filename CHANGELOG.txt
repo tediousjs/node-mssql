@@ -1,0 +1,32 @@
+v0.2.5 (2013-09-05)
+-------------------
+
+[fix] Multiple columns with identical name in same recordset are now handled correctly.
+
+v0.2.4 (2013-08-15)
+-------------------
+
+[fix] Errors are now instance of Error.
+[fix] Empty recordsets fixed.
+
+v0.2.3 (2013-08-14)
+-------------------
+
+[new] Verbose mode for query.
+
+v0.2.2 (2013-08-11)
+-------------------
+
+[new] Verbose mode for stored procedure.
+[fix] Null values fixed.
+
+v0.2.0 (2013-08-10)
+-------------------
+
+[change] Project was renamed from xsp-mssql to node-mssql.
+[fix] Some minor bug fixes.
+
+v0.1.0 (2013-07-10)
+-------------------
+
+Initial release.
