@@ -1,4 +1,4 @@
-#node-mssql [![Build Status](https://secure.travis-ci.org/patriksimek/node-mssql.png)](https://travis-ci.org/patriksimek/node-mssql) [![Dependency Status](https://david-dm.org/patriksimek/node-mssql.png)](https://david-dm.org/patriksimek/node-mssql)
+#node-mssql [![Dependency Status](https://david-dm.org/patriksimek/node-mssql.png)](https://david-dm.org/patriksimek/node-mssql)
 
 An easy-to-use MSSQL database connector for NodeJS.
 
