@@ -1,6 +1,8 @@
-#node-mssql
+#node-mssql [![Build Status](https://secure.travis-ci.org/patriksimek/node-mssql.png)](https://travis-ci.org/patriksimek/node-mssql) [![Dependency Status](https://david-dm.org/patriksimek/node-mssql.png)](https://david-dm.org/patriksimek/node-mssql)
 
-MSSQL database connector for NodeJS based on TDS module [Tedious](https://github.com/pekim/tedious).
+An easy-to-use MSSQL database connector for NodeJS.
+
+It's based on awsome TDS module [Tedious](https://github.com/pekim/tedious) by Mike D Pilsbury.
 
 ## Installation
 
@@ -68,7 +70,7 @@ sql.map.register(MyClass, sql.Text);
 You can also overwrite default type map.
 
 ```javascript
-sql.map.register(String, sql.VarChar);
+sql.map.register(Number, sql.Int);
 ```
 
 #### Default map

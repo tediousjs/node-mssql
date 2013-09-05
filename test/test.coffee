@@ -38,7 +38,11 @@ describe 'mssql test suite', ->
 				assert.equal recordsets[1].length, 1
 				assert.equal recordsets[1][0].c, 5
 				assert.equal recordsets[1][0].d, 6
-				assert.equal recordsets[1][0].e, 0
+				
+				assert.equal recordsets[1][0].e.length, 3
+				assert.equal recordsets[1][0].e[0], 0
+				assert.equal recordsets[1][0].e[1], 111
+				assert.equal recordsets[1][0].e[2], 'asdf'
 				
 				assert.equal recordsets[2].length, 0
 				
@@ -49,9 +53,13 @@ describe 'mssql test suite', ->
 	
 	it 'query', (done) ->
 		r = new sql.Request
-		r.query 'select 41 as test', (err, recordset) ->
+		r.query 'select 41 as test, 5 as num, 6 as num', (err, recordset) ->
 			unless err
 				assert.equal recordset.length, 1
 				assert.equal recordset[0].test, 41
+				
+				assert.equal recordset[0].num.length, 2
+				assert.equal recordset[0].num[0], 5
+				assert.equal recordset[0].num[1], 6
 
 			done err

@@ -157,7 +157,16 @@ class Request
 						
 					row = {}
 					for col in columns
-						row[col.metadata.colName] = col.value
+						exi = row[col.metadata.colName]
+						if exi?
+							if exi instanceof Array
+								exi.push col.value
+								
+							else
+								row[col.metadata.colName] = [exi, col.value]
+						
+						else
+							row[col.metadata.colName] = col.value
 					
 					if @verbose
 						console.log util.inspect(row)
@@ -212,7 +221,16 @@ class Request
 				req.on 'row', (columns) =>
 					row = {}
 					for col in columns
-						row[col.metadata.colName] = col.value
+						exi = row[col.metadata.colName]
+						if exi?
+							if exi instanceof Array
+								exi.push col.value
+								
+							else
+								row[col.metadata.colName] = [exi, col.value]
+						
+						else
+							row[col.metadata.colName] = col.value
 					
 					if @verbose
 						console.log util.inspect(row)
