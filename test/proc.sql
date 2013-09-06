@@ -14,7 +14,7 @@ begin
 
 	select * from @table
 
-	select 5 as 'c', 6 as 'd', @in2 as 'e'
+	select 5 as 'c', 6 as 'd', @in2 as 'e', 111 as 'e', 'asdf' as 'e'
 
 	select * from @table where a = 11
 
