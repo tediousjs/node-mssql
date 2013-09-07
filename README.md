@@ -1,44 +1,138 @@
-#node-mssql [![Dependency Status](https://david-dm.org/patriksimek/node-mssql.png)](https://david-dm.org/patriksimek/node-mssql)
+# node-mssql [![Dependency Status](https://david-dm.org/patriksimek/node-mssql.png)](https://david-dm.org/patriksimek/node-mssql)
 
 An easy-to-use MSSQL database connector for NodeJS.
 
-It's based on awsome TDS module [Tedious](https://github.com/pekim/tedious) by Mike D Pilsbury.
+There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without loosing any important functionality.
+
+At the moment it support two TDS modules:
+* [Tedious](https://github.com/pekim/tedious) by Mike D Pilsbury (pure javascript - windows/osx/linux)
+* [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 
 ## Installation
 
     npm install mssql
 
-## Getting started
+## Quick Example
 
 ```javascript
 var sql = require('mssql'); 
 
-sql.pool = {
-	max: 1,
-	min: 0,
-	idleTimeoutMillis: 30000
-}
-
-sql.connection = {
-	userName: '...',
+config = {
+	user: '...',
 	password: '...',
 	server: 'localhost',
-	
-	options: {
-		database: '...'
-	}
+	database: '...'
 }
 
-sql.init();
+sql.connect(config, function(err) {
+	
+	// Query
+	
+	var request = new sql.Request();
+	request.query('select 1 as number', function(err, recordset) {
+		console.dir(recordset);
+	});
+	
+	// Stored Procedure
+	
+	var request = new sql.Request();
+	request.input('input_parameter', sql.Int, value);
+	request.output('output_parameter', sql.Int);
+	request.execute('procedure_name', function(err, recordsets, returnValue) {
+		console.dir(recordsets);
+	});
+	
+});
 ```
 
-## Stored procedure call
+## Documentation
+
+### Configuration
+
+* [Basic](#cfg-basic)
+* [Tedious](#cfg-tedious)
+* [Microsoft Driver for Node.js for SQL Server](#cfg-msnodesql)
+
+### Request
+
+* [execute](#execute)
+* [input](#input)
+* [output](#output)
+* [query](#query)
+
+### Other
+
+* [Metadata](#meta)
+* [Data Types](#data-types)
+* [Verbose Mode](#verbose)
+
+## Configuration
+
+```javascript
+config = { ... }
+```
+
+<a name="cfg-basic" />
+### Basic configuration is same for all drivers.
+
+* **driver** - Driver to use (default: `tedious`). Possible values: `tedious` or `msnodesql`.
+* **user** - User name to use for authentication.
+* **password** - Password to use for authentication.
+* **server** - Hostname to connect to.
+* **port** - Port to connect to (default: `1433`).
+* **database** - Database to connect to (default: dependent on server configuration).
+
+<a name="cfg-tedious" />
+### Tedious
+
+* **options** - Tedious specific options. More information: http://pekim.github.io/tedious/api-connection.html
+* **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
+* **pool.min** - The minimun of connections there can be in the pool (default: `0`).
+* **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
+
+__Example__
+
+```javascript
+config = {
+	options: {
+		// tedious options
+	},
+	
+	pool: {
+		max: 1,
+	    min: 0,
+	    idleTimeoutMillis: 30000
+	}
+}
+```
+
+<a name="cfg-msnodesql" />
+### Microsoft Driver for Node.js for SQL Server
+
+* **connectionString** - Connection string (default: `Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};`).
+
+## Request
+
+```javascript
+var request = new sql.Request();
+```
+
+<a name="execute" />
+### execute(procedure, callback)
+
+Call a stored procedure.
+
+__Arguments__
+
+* **procedure** - Name of the stored procedure to be executed.
+* **callback(err, recordsets, returnValue)** - A callback which is called after execution has completed, or an error has occurred.
+
+__Example__
 
 ```javascript
 var request = new sql.Request();
 request.input('input_parameter', sql.Int, value);
 request.output('output_parameter', sql.Int);
-
 request.execute('procedure_name', function(err, recordsets, returnValue) {
 	console.log(recordsets.length); // count of recordsets returned by procedure
 	console.log(recordset[0].length); // count of rows contained in first recordset
@@ -50,18 +144,36 @@ request.execute('procedure_name', function(err, recordsets, returnValue) {
 });
 ```
 
-### Parameters
+---------------------------------------
+
+<a name="input" />
+### input(name, [type], value)
+
+Add an input parameter to the request.
+
+__Arguments__
+
+* **name** - Name of the input parameter without @ char.
+* **type** - SQL data type of input parameter. If you omit type, module automaticaly decide which SQL data type should be used based on JS data type.
+* **value** - Input parameter value.
+
+__Example__
 
 ```javascript
-// input
 request.input('input_parameter', value);
 request.input('input_parameter', sql.Int, value);
-
-// output
-request.output('output_parameter', sql.Int);
 ```
 
-If you omit `type` argument of input parameter, module automaticaly decide which SQL data type should be used based on JS data type. You can define you own type map.
+__JS Data Type To SQL Data Type Map__
+
+* `String` -> `sql.VarChar`
+* `Number` -> `sql.Int`
+* `Boolean` -> `sql.Bit`
+* `Date` -> `sql.DateTime`
+
+Default data type for unknown object is `sql.VarChar`.
+
+You can define you own type map.
 
 ```javascript
 sql.map.register(MyClass, sql.Text);
@@ -70,23 +182,43 @@ sql.map.register(MyClass, sql.Text);
 You can also overwrite default type map.
 
 ```javascript
-sql.map.register(Number, sql.Int);
+sql.map.register(Number, sql.BigInt);
 ```
 
-#### Default map
+---------------------------------------
 
-* `String` -> `sql.VarChar`
-* `Number` -> `sql.BigInt`
-* `Boolean` -> `sql.Bit`
-* `Date` -> `sql.DateTime`
+<a name="output" />
+### output(name, type)
 
-Default data type for unknown object is `sql.VarChar`.
+Add an output parameter to the request.
 
-## Simple query
+__Arguments__
+
+* **name** - Name of the output parameter without @ char.
+* **type** - SQL data type of output parameter.
+
+__Example__
+
+```javascript
+request.output('output_parameter', sql.Int);
+```
+
+---------------------------------------
+
+<a name="query" />
+### query(command, callback)
+
+Execute the SQL command.
+
+__Arguments__
+
+* **command** - T-SQL command to be executed.
+* **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred.
+
+__Example__
 
 ```javascript
 var request = new sql.Request();
-
 request.query('select 1 as number', function(err, recordset) {
 	console.log(recordset[0].number); // return 1
 	
@@ -94,27 +226,84 @@ request.query('select 1 as number', function(err, recordset) {
 });
 ```
 
-## Data types
+You can enable multiple recordsets in querries by `request.multiple = true` command.
+
+```javascript
+var request = new sql.Request();
+request.multiple = true;
+
+request.query('select 1 as number; select 2 as number', function(err, recordsets) {
+	console.log(recordsets[0][0].number); // return 1
+	console.log(recordsets[1][0].number); // return 2
+	
+	// ...
+});
+```
+
+<a name="data-types" />
+## Metadata
+
+Recordset metadata are accessible trough `recordset.columns` property.
+
+```javascript
+var request = new sql.Request();
+request.query('select 1 as first, \'asdf\' as second', function(err, recordset) {
+	console.dir(recordset.columns);
+	
+	console.log(recordset.columns.first.type === sql.Int); // true
+	console.log(recordset.columns.second.type === sql.VarChar); // true
+});
+```
+
+Columns structure for example above:
 
 ```
+{ first: { name: 'first', size: 10, type: { name: 'int' } },
+  second: { name: 'second', size: 4, type: { name: 'varchar' } } }
+```
+
+<a name="data-types" />
+## Data Types
+
+```
+sql.BigInt
+sql.Decimal
+sql.Float
+sql.Int
+sql.Money
+sql.Numeric
+sql.SmallInt
+sql.SmallMoney
+sql.Real
+sql.TinyInt
+
+sql.Char
+sql.NChar
+sql.Text
+sql.NText
 sql.VarChar
 sql.NVarChar
-sql.Text
-sql.Int
-sql.BigInt
-sql.TinyInt
-sql.SmallInt
-sql.Bit
-sql.Float
-sql.Real
+sql.Xml
+
+sql.Date
 sql.DateTime
+sql.DateTimeOffset
 sql.SmallDateTime
+
+sql.Bit
 sql.UniqueIdentifier
 ```
 
-Tedious data type constants can be accessed by `sql.TYPES.<type>`. Complete list of data type constants can be found here: [Tedious Datatypes](http://pekim.github.io/tedious/api-datatypes.html)
+Binary types are only available with Microsoft's native driver.
 
-## Verbose mode
+```
+sql.VarBinary
+sql.NVarBinary
+sql.Image
+```
+
+<a name="verbose" />
+## Verbose Mode
 
 You can enable verbose mode by `request.verbose = true` command.
 
@@ -148,6 +337,12 @@ Output for example above could look similar to this.
 ---------- completed ----------
 ```
 
+## TODO
+
+* UniqueIdentifier testing.
+* Binary, VarBinary, Image testing.
+
+<a name="license" />
 ## License
 
 Copyright (c) 2013 Patrik Simek

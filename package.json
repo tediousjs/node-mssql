@@ -4,13 +4,15 @@
 		"url": "http://patriksimek.cz"
 	},
 	"name": "mssql",
-	"description": "MSSQL database connector for NodeJS",
+	"description": "An easy-to-use MSSQL database connector for NodeJS.",
 	"keywords": [
 		"database",
 		"mssql",
-		"sql"
+		"sql",
+		"msnodesql",
+		"sqlserver"
 	],
-	"version": "0.2.5",
+	"version": "0.3.0",
 	"main": "index.js",
 	"repository": {
 		"type": "git",

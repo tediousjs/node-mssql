@@ -1,12 +1,11 @@
-###
-Data types: http://pekim.github.io/tedious/api-datatypes.html
-###
-
-tds = require 'tedious'
 events = require 'events'
 util = require 'util'
 
-pool = null
+TYPES = require('./datatypes').TYPES
+Driver = null
+
+connecting = false
+connected = false
 
 map = []
 map.register = (jstype, sqltype) ->
@@ -18,51 +17,46 @@ map.register = (jstype, sqltype) ->
 		js: jstype
 		sql: sqltype
 
-map.register String, tds.TYPES.VarChar
-map.register Number, tds.TYPES.Int
-map.register Boolean, tds.TYPES.Bit
-map.register Date, tds.TYPES.DateTime
-
-# you can register your own mapped parameter by: sql.map.register <JS Type>, <SQL Type>
+map.register String, TYPES.VarChar
+map.register Number, TYPES.Int
+map.register Boolean, TYPES.Bit
+map.register Date, TYPES.DateTime
 
 getTypeByValue = (value) ->
-	if value is null or value is undefined then return tds.TYPES.VarChar
-	
-	switch typeof value
-		when 'string' then return tds.TYPES.VarChar
-		when 'number' then return tds.TYPES.BigInt
-		when 'boolean' then return tds.TYPES.Bit
-		when 'object'
-			for item in map
-				if value instanceof item.js
-					return item.sql
+	if value is null or value is undefined then return TYPES.VarChar
 
-			return tds.TYPES.VarChar
+	switch typeof value
+		when 'string'
+			for item in map when item.js is String
+				return item.sql
+
+			return TYPES.VarChar
+			
+		when 'number'
+			for item in map when item.js is Number
+				return item.sql
+
+			return TYPES.Int
+			
+		when 'boolean'
+			for item in map when item.js is Boolean
+				return item.sql
+
+			return TYPES.Bit
+			
+		when 'object'
+			for item in map when value instanceof item.js
+				return item.sql
+
+			return TYPES.VarChar
 			
 		else
-			return tds.TYPES.VarChar
-
-getNameOfType = (type) ->
-	switch type
-		when tds.TYPES.VarChar then return 'varchar'
-		when tds.TYPES.NVarChar then return 'nvarchar'
-		when tds.TYPES.Text then return 'text'
-		when tds.TYPES.Int then return 'int'
-		when tds.TYPES.SmallInt then return 'smallint'
-		when tds.TYPES.TinyInt then return 'tinyint'
-		when tds.TYPES.BigInt then return 'bigint'
-		when tds.TYPES.Bit then return 'bit'
-		when tds.TYPES.Float then return 'float'
-		when tds.TYPES.Real then return 'real'
-		when tds.TYPES.DateTime then return 'datetime'
-		when tds.TYPES.SmallDateTime then return 'smalldatetime'
-		when tds.TYPES.UniqueIdentifier then return 'uniqueidentifier'
-		else 
-			return 'unknown'
+			return TYPES.VarChar
 
 class Request
-	parameters: null
-	verbose: false
+	parameters: null # array of sp parameters
+	verbose: false # if true, execution is logged to console
+	multiple: false # if true, query can obtain multiple recordsets
 	
 	constructor: ->
 		@parameters = {}
@@ -83,14 +77,15 @@ class Request
 			value = type
 			type = getTypeByValue(value)
 		
-		unless type.writeParameterData
-			throw new Error "Data type #{type.name} is not supported as procedure parameter. (parameter name: #{name})"
+		# this should be enabled for tedious only
+		#unless type.writeParameterData
+		#	throw new Error "Data type #{type.name} is not supported as procedure parameter. (parameter name: #{name})"
 
 		# support for custom data types
 		if value?.valueOf and value not instanceof Date then value = value.valueOf()
 		
-		# null to sql null
-		if value is null or value is undefined then value = tds.TYPES.Null
+		# undefined to null
+		if value is undefined then value = null
 		
 		@parameters[name] =
 			name: name
@@ -118,166 +113,86 @@ class Request
 		Execute specified sql command.
 		###
 		
-		columns = {}
-		recordset = null
-		started = Date.now()
-		
-		unless pool
-			callback new Error('MSSQL connection pool was not initialized!')
-			return
-		
-		pool.requestConnection (err, connection) =>
-			unless err
-				if @verbose then console.log "---------- sql query ----------\n    query: #{command}"
-				
-				req = new tds.Request command, (err) =>
-					if err and err not instanceof Error then err = new Error err
-					
-					if @verbose 
-						if err then console.log "    error: #{err}"
-						elapsed = Date.now() - started
-						console.log " duration: #{elapsed}ms"
-						console.log "---------- completed ----------"
-						
-					if recordset
-						Object.defineProperty recordset, 'columns', 
-							enumerable: false
-							value: columns
-				
-					connection.close()
-					callback? err, recordset
-				
-				req.on 'columnMetadata', (metadata) =>
-					for col in metadata
-						columns[col.colName] = col
-				
-				req.on 'row', (columns) =>
-					unless recordset
-						recordset = []
-						
-					row = {}
-					for col in columns
-						exi = row[col.metadata.colName]
-						if exi?
-							if exi instanceof Array
-								exi.push col.value
-								
-							else
-								row[col.metadata.colName] = [exi, col.value]
-						
-						else
-							row[col.metadata.colName] = col.value
-					
-					if @verbose
-						console.log util.inspect(row)
-						console.log "---------- --------------------"
-					
-					recordset.push row
-				
-				if @verbose then console.log "---------- response -----------"
-				connection.execSql req
-			
-			else
-				if connection then connection.close()
-				callback? err
+		Driver::query.call @, command, callback
 	
 	execute: (procedure, callback) ->
 		###
 		Execute stored procedure with specified parameters.
 		###
 		
-		columns = {}
-		recordset = []
-		recordsets = []
-		returnValue = 0
-		started = Date.now()
+		Driver::execute.call @, procedure, callback
+
+# public things
+
+module.exports.connect = (config, callback) ->
+	if connected
+		err = new Error "Database is already connected! Call close before connecting to different database."
 		
-		unless pool
-			callback new Error('MSSQL connection pool was not initialized!')
-			return
+		if callback
+			callback err
+		else
+			throw err
+	
+	if connecting
+		err = new Error "Already connecting to database! Call close before connecting to different database."
 		
-		pool.requestConnection (err, connection) =>
-			unless err
-				if @verbose then console.log "---------- sql execute --------\n     proc: #{procedure}"
-				
-				req = new tds.Request procedure, (err) =>
-					if err and err not instanceof Error then err = new Error err
-					
-					if @verbose 
-						if err then console.log "    error: #{err}"
-						
-						elapsed = Date.now() - started
-						console.log "   return: #{returnValue}"
-						console.log " duration: #{elapsed}ms"
-						console.log "---------- completed ----------"
-						
-					connection.close()
-					callback? err, recordsets, returnValue
-				
-				req.on 'columnMetadata', (metadata) =>
-					for col in metadata
-						columns[col.colName] = col
-				
-				req.on 'row', (columns) =>
-					row = {}
-					for col in columns
-						exi = row[col.metadata.colName]
-						if exi?
-							if exi instanceof Array
-								exi.push col.value
-								
-							else
-								row[col.metadata.colName] = [exi, col.value]
-						
-						else
-							row[col.metadata.colName] = col.value
-					
-					if @verbose
-						console.log util.inspect(row)
-						console.log "---------- --------------------"
-						
-					recordset.push row
-				
-				req.on 'doneInProc', (rowCount, more, rows) =>
-					# all rows of current recordset loaded
-					Object.defineProperty recordset, 'columns', 
-						enumerable: false
-						value: columns
-					
-					recordsets.push recordset
-					recordset = []
-					columns = {}
-				
-				req.on 'doneProc', (rowCount, more, returnStatus, rows) =>
-					returnValue = returnStatus
-				
-				req.on 'returnValue', (parameterName, value, metadata) =>
-					if @verbose
-						if value is tds.TYPES.Null
-							console.log "   output: @#{parameterName}, null"
-						else
-							console.log "   output: @#{parameterName}, #{getNameOfType(@parameters[parameterName].type)}, #{value}"
-						
-					@parameters[parameterName].value = value
-				
-				for name, param of @parameters when param.io is 1
-					if @verbose
-						if param.value is tds.TYPES.Null
-							console.log "    input: @#{param.name}, null"
-						else
-							console.log "    input: @#{param.name}, #{getNameOfType(param.type)}, #{param.value}"
-						
-					req.addParameter param.name, param.type, param.value
-					
-				for name, param of @parameters when param.io is 2
-					req.addOutputParameter param.name, param.type
-				
-				if @verbose then console.log "---------- response -----------"
-				connection.callProcedure req
-			
-			else
-				if connection then connection.close()
-				callback? err
+		if callback
+			callback err
+		else
+			throw err
+	
+	connecting = true
+	
+	# set defaults
+	config.driver ?= 'tedious'
+	config.port ?= 1433
+
+	if config.driver is 'tedious'
+		Driver = require('./tedious')(Request)
+		
+	else if config.driver is 'msnodesql'
+		Driver = require('./msnodesql')(Request)
+		
+	else
+		err = new Error "Unknown driver #{config.driver}!"
+		
+		if callback
+			callback err
+		else
+			throw err
+
+	Driver.connect config, (err) ->
+		unless connecting then return
+		
+		connecting = false
+		unless err then connected = true
+		callback? err
+
+module.exports.close = ->
+	if connecting
+		connecting = false
+		
+		Driver.close()
+		Driver = null
+		
+	else if connected
+		connected = false
+
+		Driver.close()
+		Driver = null
+
+module.exports.Request = Request
+
+module.exports.TYPES = TYPES
+module.exports.map = map
+
+# append datatypes to this modules export
+
+for key, value of TYPES
+	module.exports[key] = value
+	module.exports[key.toUpperCase()] = value
+	
+# --- DEPRECATED IN 0.3.0 ------------------------------------------
 
 module.exports.pool =
 	max: 10
@@ -290,26 +205,11 @@ module.exports.connection =
 	server: ''
 
 module.exports.init = ->
-	ConnectionPool = require 'tedious-connection-pool'
-	pool = new ConnectionPool module.exports.pool, module.exports.connection
-
-module.exports.Request = Request
-
-module.exports.TYPES = tds.TYPES
-module.exports.map = map
-
-# Express datatypes
-
-module.exports.VARCHAR = module.exports.VarChar = tds.TYPES.VarChar
-module.exports.NVARCHAR = module.exports.NVarChar = tds.TYPES.NVarChar
-module.exports.TEXT = module.exports.Text = tds.TYPES.Text
-module.exports.INTEGER = module.exports.Integer = module.exports.INT = module.exports.Int = tds.TYPES.Int
-module.exports.BIGINT = module.exports.BigInt = tds.TYPES.BigInt
-module.exports.TINYINT = module.exports.TinyInt = tds.TYPES.TinyInt
-module.exports.SMALLINT = module.exports.SmallInt = tds.TYPES.SmallInt
-module.exports.BIT = module.exports.Bit = tds.TYPES.Bit
-module.exports.FLOAT = module.exports.Float = tds.TYPES.Float
-module.exports.REAL = module.exports.Real = tds.TYPES.Real
-module.exports.DATETIME = module.exports.DateTime = tds.TYPES.DateTime
-module.exports.SMALLDATETIME = module.exports.SmallDateTime = tds.TYPES.SmallDateTime
-module.exports.UNIQUEIDENTIFIED = module.exports.UniqueIdentifier = tds.TYPES.UniqueIdentifier
+	module.exports.connect
+		user: module.exports.connection.userName
+		password: module.exports.connection.password
+		server: module.exports.connection.server
+		options: module.exports.connection.options
+		
+		driver: 'tedious'
+		pool: module.exports.pool
