@@ -99,7 +99,7 @@ config = {
 	},
 	
 	pool: {
-		max: 1,
+		max: 10,
 	    min: 0,
 	    idleTimeoutMillis: 30000
 	}
@@ -118,7 +118,7 @@ var request = new sql.Request();
 ```
 
 <a name="execute" />
-### execute(procedure, callback)
+### execute(procedure, [callback])
 
 Call a stored procedure.
 
@@ -206,7 +206,7 @@ request.output('output_parameter', sql.Int);
 ---------------------------------------
 
 <a name="query" />
-### query(command, callback)
+### query(command, [callback])
 
 Execute the SQL command.
 
@@ -294,7 +294,7 @@ sql.Bit
 sql.UniqueIdentifier
 ```
 
-Binary types are only available with Microsoft's native driver.
+Binary types as input parameters are only available with Microsoft's native driver.
 
 ```
 sql.VarBinary

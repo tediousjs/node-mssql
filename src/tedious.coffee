@@ -82,7 +82,7 @@ module.exports = (Request) ->
 			cfg.options.port ?= config.port
 			
 			cfg_pool = config.pool ? {}
-			cfg_pool.max ?= 1
+			cfg_pool.max ?= 10
 			cfg_pool.min ?= 0
 			cfg_pool.idleTimeoutMillis ?= 30000
 			
