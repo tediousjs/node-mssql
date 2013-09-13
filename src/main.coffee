@@ -87,6 +87,9 @@ class Request
 		# undefined to null
 		if value is undefined then value = null
 		
+		# NaN to null
+		if value isnt value then value = null
+		
 		@parameters[name] =
 			name: name
 			type: type

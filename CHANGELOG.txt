@@ -1,3 +1,7 @@
+v0.3.1 (2013-09-13)
+-------------------
+[fix] NaN values of input parameters are automatically converted to null.
+
 v0.3.0 (2013-09-08)
 -------------------
 [new] Documentation extended
