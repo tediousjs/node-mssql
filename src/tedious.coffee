@@ -66,11 +66,11 @@ createColumns = (meta) ->
 	
 	out
 
-pool = null
-
-module.exports = (Request) ->
-	class TediousRequest extends Request
-		@connect: (config, callback) ->
+module.exports = (Connection, Request) ->
+	class TediousConnection extends Connection
+		pool: null
+		
+		connect: (config, callback) ->
 			cfg =
 				userName: config.user
 				password: config.password
@@ -86,16 +86,19 @@ module.exports = (Request) ->
 			cfg_pool.min ?= 0
 			cfg_pool.idleTimeoutMillis ?= 30000
 			
-			pool = new ConnectionPool cfg_pool, cfg
+			@pool = new ConnectionPool cfg_pool, cfg
 				
 			process.nextTick -> callback? null
 		
-		@close: (callback) ->
-			if pool
-				pool.drain ->
-				    pool = null
+		close: (callback) ->
+			if @pool
+				@pool.drain ->
+				    @pool = null
 				    callback? null
-			
+		
+	class TediousRequest extends Request
+		connection: null # ref to connection
+
 		query: (command, callback) ->
 			###
 			Execute specified sql command.
@@ -106,11 +109,11 @@ module.exports = (Request) ->
 			recordsets = []
 			started = Date.now()
 			
-			unless pool
+			unless @connection.pool
 				callback new Error('MSSQL connection pool was not initialized!')
 				return
 			
-			pool.requestConnection (err, connection) =>
+			@connection.pool.requestConnection (err, connection) =>
 				unless err
 					if @verbose then console.log "---------- sql query ----------\n    query: #{command}"
 					
@@ -186,11 +189,11 @@ module.exports = (Request) ->
 			returnValue = 0
 			started = Date.now()
 			
-			unless pool
+			unless @connection.pool
 				callback new Error('MSSQL connection pool was not initialized!')
 				return
 			
-			pool.requestConnection (err, connection) =>
+			@connection.pool.requestConnection (err, connection) =>
 				unless err
 					if @verbose then console.log "---------- sql execute --------\n     proc: #{procedure}"
 					
@@ -276,4 +279,4 @@ module.exports = (Request) ->
 					if connection then connection.close()
 					callback? err
 		
-	return TediousRequest
+	return {connection: TediousConnection, request: TediousRequest}

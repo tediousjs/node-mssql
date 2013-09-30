@@ -1,4 +1,4 @@
-# node-mssql [![Dependency Status](https://david-dm.org/patriksimek/node-mssql.png)](https://david-dm.org/patriksimek/node-mssql)
+# node-mssql [![Dependency Status](https://david-dm.org/patriksimek/node-mssql.png)](https://david-dm.org/patriksimek/node-mssql) [![NPM version](https://badge.fury.io/js/mssql.png)](http://badge.fury.io/js/mssql)
 
 An easy-to-use MSSQL database connector for NodeJS.
 
@@ -13,6 +13,39 @@ At the moment it support two TDS modules:
     npm install mssql
 
 ## Quick Example
+
+```javascript
+var sql = require('mssql'); 
+
+config = {
+	user: '...',
+	password: '...',
+	server: 'localhost',
+	database: '...'
+}
+
+var connection = new sql.Connection(config, function(err) {
+	
+	// Query
+	
+	var request = new sql.Request(connection1); // or: var request = connection.request();
+	request.query('select 1 as number', function(err, recordset) {
+		console.dir(recordset);
+	});
+	
+	// Stored Procedure
+	
+	var request = new sql.Request(connection1);
+	request.input('input_parameter', sql.Int, value);
+	request.output('output_parameter', sql.Int);
+	request.execute('procedure_name', function(err, recordsets, returnValue) {
+		console.dir(recordsets);
+	});
+	
+});
+```
+
+## Quick Example with one global connection
 
 ```javascript
 var sql = require('mssql'); 
@@ -52,6 +85,11 @@ sql.connect(config, function(err) {
 * [Basic](#cfg-basic)
 * [Tedious](#cfg-tedious)
 * [Microsoft Driver for Node.js for SQL Server](#cfg-msnodesql)
+
+### Connection
+
+* [connect](#connect)
+* [close](#close)
 
 ### Request
 
@@ -109,13 +147,60 @@ config = {
 <a name="cfg-msnodesql" />
 ### Microsoft Driver for Node.js for SQL Server
 
+This driver is not part of the default package and you must install it separately.
+
 * **connectionString** - Connection string (default: `Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};`).
+
+## Connection
+
+```javascript
+var connection = new sql.Connection({ /* config */ });
+```
+
+<a name="connect" />
+### connect(callback)
+
+Create connection to the server.
+
+__Arguments__
+
+* **callback(err)** - A callback which is called after connection has established, or an error has occurred.
+
+__Example__
+
+```javascript
+var connection = new sql.Connection({
+	user: '...',
+	password: '...',
+	server: 'localhost',
+	database: '...'
+});
+
+connection.connect(function(err) {
+	// ...
+});
+```
+
+---------------------------------------
+
+<a name="close" />
+### close()
+
+Close connection to the server.
+
+__Example__
+
+```javascript
+connection.close();
+```
 
 ## Request
 
 ```javascript
-var request = new sql.Request();
+var request = new sql.Request(/* [connection] */);
 ```
+
+If you ommit connection argument, global connection is used instead.
 
 <a name="execute" />
 ### execute(procedure, [callback])

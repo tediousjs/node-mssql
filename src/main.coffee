@@ -2,10 +2,8 @@ events = require 'events'
 util = require 'util'
 
 TYPES = require('./datatypes').TYPES
-Driver = null
 
-connecting = false
-connected = false
+global_connection = null
 
 map = []
 map.register = (jstype, sqltype) ->
@@ -53,12 +51,82 @@ getTypeByValue = (value) ->
 		else
 			return TYPES.VarChar
 
+class Connection
+	connected: false
+	connecting: false
+	driver: null
+	
+	constructor: (@config, callback) ->
+		# set defaults
+		@config.driver ?= 'tedious'
+		@config.port ?= 1433
+	
+		if @config.driver is 'tedious'
+			@driver = require('./tedious')(Connection, Request)
+			
+		else if @config.driver is 'msnodesql'
+			@driver = require('./msnodesql')(Connection, Request)
+		
+		else
+			err = new Error "Unknown driver #{@config.driver}!"
+			
+			if callback
+				callback err
+			else
+				throw err
+
+		if callback then @connect callback
+		
+	connect: (callback) ->
+		if @connected
+			err = new Error "Database is already connected! Call close before connecting to different database."
+			
+			if callback
+				callback err
+			else
+				throw err
+		
+		if @connecting
+			err = new Error "Already connecting to database! Call close before connecting to different database."
+			
+			if callback
+				callback err
+			else
+				throw err
+		
+		@connecting = true
+		@driver.connection::connect.call @, @config, (err) =>
+			unless @connecting then return
+			
+			@connecting = false
+			unless err then @connected = true
+			callback? err
+
+	close: ->
+		if @connecting
+			@connecting = false
+			
+			@driver.connection::close.call @
+			@driver = null
+			
+		else if @connected
+			@connected = false
+	
+			@driver.connection::close.call @
+			@driver = null
+	
+	request: ->
+		new Request @
+
 class Request
+	connection: null # reference to driver
 	parameters: null # array of sp parameters
 	verbose: false # if true, execution is logged to console
 	multiple: false # if true, query can obtain multiple recordsets
 	
-	constructor: ->
+	constructor: (connection) ->
+		@connection = connection ? global_connection
+		
 		@parameters = {}
 
 	input: (name, type, value) ->
@@ -116,74 +184,33 @@ class Request
 		Execute specified sql command.
 		###
 		
-		Driver::query.call @, command, callback
+		unless @connection
+			return process.nextTick ->
+				callback? new Error "No connection is specified for that request."
+		
+		@connection.driver.request::query.call @, command, callback
 	
 	execute: (procedure, callback) ->
 		###
 		Execute stored procedure with specified parameters.
 		###
 		
-		Driver::execute.call @, procedure, callback
+		unless @connection
+			return process.nextTick ->
+				callback? new Error "No connection is specified for that request."
+		
+		@connection.driver.request::execute.call @, procedure, callback
 
 # public things
 
 module.exports.connect = (config, callback) ->
-	if connected
-		err = new Error "Database is already connected! Call close before connecting to different database."
-		
-		if callback
-			callback err
-		else
-			throw err
-	
-	if connecting
-		err = new Error "Already connecting to database! Call close before connecting to different database."
-		
-		if callback
-			callback err
-		else
-			throw err
-	
-	connecting = true
-	
-	# set defaults
-	config.driver ?= 'tedious'
-	config.port ?= 1433
-
-	if config.driver is 'tedious'
-		Driver = require('./tedious')(Request)
-		
-	else if config.driver is 'msnodesql'
-		Driver = require('./msnodesql')(Request)
-		
-	else
-		err = new Error "Unknown driver #{config.driver}!"
-		
-		if callback
-			callback err
-		else
-			throw err
-
-	Driver.connect config, (err) ->
-		unless connecting then return
-		
-		connecting = false
-		unless err then connected = true
-		callback? err
+	global_connection = new Connection config
+	global_connection.connect callback
 
 module.exports.close = ->
-	if connecting
-		connecting = false
-		
-		Driver.close()
-		Driver = null
-		
-	else if connected
-		connected = false
+	global_connection?.close()
 
-		Driver.close()
-		Driver = null
-
+module.exports.Connection = Connection
 module.exports.Request = Request
 
 module.exports.TYPES = TYPES

@@ -44,26 +44,29 @@ createColumns = (meta) ->
 			
 	out
 
-connection = null
-
-module.exports = (Request) ->
-	class MsnodesqlRequest extends Request
-		@connect: (config, callback) ->
+module.exports = (Connection, Request) ->
+	class MsnodesqlConnection extends Connection
+		native: null # ref to native msnodesql connection
+		
+		connect: (config, callback) ->
 			config.connectionString ?= 'Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};'
 			
 			connectionString = config.connectionString.replace new RegExp('#{([^}]*)}', 'g'), (p) ->
 				config[p.substr(2, p.length - 3)] ? ''
 
-			msnodesql.open connectionString, (err, conn) ->
+			msnodesql.open connectionString, (err, conn) =>
 				if err then return callback err
-				connection = conn
+				@native = conn
 				callback? null
 			
-		@close: (callback) ->
-			connection?.close()
-			connection = null
+		close: (callback) ->
+			@native?.close()
+			@native = null
 			process.nextTick -> callback? null
 	
+	class MsnodesqlRequest extends Request
+		connection: null # ref to connection
+
 		query: (command, callback) ->
 			if @verbose and not @nested then console.log "---------- sql query ----------\n    query: #{command}"
 			
@@ -83,7 +86,7 @@ module.exports = (Request) ->
 			recordsets = []
 			started = Date.now()
 			
-			req = connection.queryRaw command, (castParameter(param.value, param.type) for name, param of @parameters when param.io is 1)
+			req = @connection.native.queryRaw command, (castParameter(param.value, param.type) for name, param of @parameters when param.io is 1)
 			if @verbose and not @nested then console.log "---------- response -----------"
 			
 			req.on 'meta', (metadata) =>
@@ -198,4 +201,4 @@ module.exports = (Request) ->
 					
 					callback? null, recordsets, returnValue
 	
-	return MsnodesqlRequest
+	return {connection: MsnodesqlConnection, request: MsnodesqlRequest}
