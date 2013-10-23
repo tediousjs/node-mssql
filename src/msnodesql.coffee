@@ -44,6 +44,13 @@ createColumns = (meta) ->
 			
 	out
 
+typeDeclaration = (type) ->
+	switch type
+		when TYPES.VarChar, TYPES.NVarChar, TYPES.Char, TYPES.NChar, TYPES.Xml, TYPES.Text, TYPES.NText
+			return "#{type.name} (MAX)"
+		else
+			return type.name
+
 module.exports = (Connection, Request) ->
 	class MsnodesqlConnection extends Connection
 		native: null # ref to native msnodesql connection
@@ -85,7 +92,19 @@ module.exports = (Connection, Request) ->
 			recordset = null
 			recordsets = []
 			started = Date.now()
+			handleOutput = false
 			
+			# nested = function is called by this.execute
+			
+			unless @nested
+				input = ("@#{param.name} #{typeDeclaration(param.type)}" for name, param of @parameters)
+				sets = ("set @#{param.name}=?" for name, param of @parameters when param.io is 1)
+				output = ("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2)
+				if input.length then command = "declare #{input.join ','};#{sets.join ';'};#{command};"
+				if output.length
+					command += "select #{output.join ','};"
+					handleOutput = true
+
 			req = @connection.native.queryRaw command, (castParameter(param.value, param.type) for name, param of @parameters when param.io is 1)
 			if @verbose and not @nested then console.log "---------- response -----------"
 			
@@ -133,14 +152,26 @@ module.exports = (Connection, Request) ->
 				callback? err
 			
 			req.once 'done', =>
-				if @verbose and not @nested
-					if row
-						console.log util.inspect(row)
-						console.log "---------- --------------------"
-						
-					elapsed = Date.now() - started
-					console.log " duration: #{elapsed}ms"
-					console.log "---------- completed ----------"
+				unless @nested
+					if @verbose
+						if row
+							console.log util.inspect(row)
+							console.log "---------- --------------------"
+
+					# do we have output parameters to handle?
+					if handleOutput
+						last = recordsets.pop()?[0]
+
+						for name, param of @parameters when param.io is 2
+							param.value = last[param.name]
+		
+							if @verbose
+								console.log "   output: @#{param.name}, #{param.type.name}, #{param.value}"
+					
+					if @verbose
+						elapsed = Date.now() - started
+						console.log " duration: #{elapsed}ms"
+						console.log "---------- completed ----------"
 	
 				callback? null, if @multiple or @nested then recordsets else recordsets[0]
 	
@@ -149,7 +180,7 @@ module.exports = (Connection, Request) ->
 	
 			started = Date.now()
 			
-			cmd = "declare #{['@__return int'].concat("@#{param.name} #{param.type.name}" for name, param of @parameters when param.io is 2).join ', '};"
+			cmd = "declare #{['@__return int'].concat("@#{param.name} #{typeDeclaration(param.type)}" for name, param of @parameters when param.io is 2).join ', '};"
 			cmd += "exec @__return = #{procedure} "
 			
 			spp = []

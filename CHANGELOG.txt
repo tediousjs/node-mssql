@@ -1,6 +1,10 @@
+v0.3.4 (2013-10-23)
+-------------------
+[new] Queries with input and output parameters.
+
 v0.3.3 (2013-10-23)
 -------------------
-[new] Test connection when tedious pool is created 
+[new] Test connection when tedious pool is created.
 
 v0.3.2 (2013-09-30)
 -------------------

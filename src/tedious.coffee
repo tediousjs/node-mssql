@@ -145,6 +145,9 @@ module.exports = (Connection, Request) ->
 							columns[col.colName] = col
 					
 					req.on 'doneInProc', (rowCount, more, rows) =>
+						# this function is called even when select only set variables so we should skip adding a new recordset
+						if Object.keys(columns).length is 0 then return
+						
 						# all rows of current recordset loaded
 						Object.defineProperty recordset, 'columns', 
 							enumerable: false
@@ -153,7 +156,16 @@ module.exports = (Connection, Request) ->
 						recordsets.push recordset
 						recordset = []
 						columns = {}
-						
+					
+					req.on 'returnValue', (parameterName, value, metadata) =>
+						if @verbose
+							if value is tds.TYPES.Null
+								console.log "   output: @#{parameterName}, null"
+							else
+								console.log "   output: @#{parameterName}, #{@parameters[parameterName].type.name.toLowerCase()}, #{value}"
+								
+						@parameters[parameterName].value = if value is tds.TYPES.Null then null else value
+					
 					req.on 'row', (columns) =>
 						unless recordset
 							recordset = []
@@ -176,6 +188,18 @@ module.exports = (Connection, Request) ->
 							console.log "---------- --------------------"
 						
 						recordset.push row
+					
+					for name, param of @parameters when param.io is 1
+						if @verbose
+							if param.value is tds.TYPES.Null
+								console.log "    input: @#{param.name}, null"
+							else
+								console.log "    input: @#{param.name}, #{param.type.name.toLowerCase()}, #{param.value}"
+						
+						req.addParameter param.name, getTediousType(param.type), if param.value? then param.value else tds.TYPES.Null
+					
+					for name, param of @parameters when param.io is 2
+						req.addOutputParameter param.name, getTediousType(param.type)
 					
 					if @verbose then console.log "---------- response -----------"
 					connection.execSql req

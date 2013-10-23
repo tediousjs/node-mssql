@@ -107,3 +107,23 @@ if process.platform.match(/^win/)
 					assert.equal recordsets[0].columns.test.type, sql.Int
 	
 				done err
+	
+		it 'query with input parameters', (done) ->
+			r = new sql.Request
+			r.input 'id', 12
+			r.query 'select @id as id', (err, recordset) ->
+				unless err
+					assert.equal recordset.length, 1
+					assert.equal recordset[0].id, 12
+		
+				done err
+		
+		it 'query with output parameters', (done) ->
+			r = new sql.Request
+			r.output 'out', sql.VarChar
+			r.query 'select @out = \'test\'', (err, recordset) ->
+				unless err
+					assert.equal recordset, null
+					assert.equal r.parameters.out.value, 'test'
+		
+				done err
