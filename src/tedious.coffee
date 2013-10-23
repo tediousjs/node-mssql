@@ -87,8 +87,14 @@ module.exports = (Connection, Request) ->
 			cfg_pool.idleTimeoutMillis ?= 30000
 			
 			@pool = new ConnectionPool cfg_pool, cfg
+			
+			#create one testing connection to check if everything is ok
+			@pool.requestConnection (err, connection) =>
+				if err and err not instanceof Error then err = new Error err
 				
-			process.nextTick -> callback? null
+				# and close it immediately
+				connection?.close()
+				callback? err
 		
 		close: (callback) ->
 			if @pool
