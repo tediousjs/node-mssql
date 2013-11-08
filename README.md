@@ -28,14 +28,14 @@ var connection = new sql.Connection(config, function(err) {
 	
 	// Query
 	
-	var request = new sql.Request(connection1); // or: var request = connection.request();
+	var request = new sql.Request(connection); // or: var request = connection.request();
 	request.query('select 1 as number', function(err, recordset) {
 		console.dir(recordset);
 	});
 	
 	// Stored Procedure
 	
-	var request = new sql.Request(connection1);
+	var request = new sql.Request(connection);
 	request.input('input_parameter', sql.Int, value);
 	request.output('output_parameter', sql.Int);
 	request.execute('procedure_name', function(err, recordsets, returnValue) {
