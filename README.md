@@ -1,5 +1,7 @@
 # node-mssql [![Dependency Status](https://david-dm.org/patriksimek/node-mssql.png)](https://david-dm.org/patriksimek/node-mssql) [![NPM version](https://badge.fury.io/js/mssql.png)](http://badge.fury.io/js/mssql)
 
+[![NPM](https://nodei.co/npm/mssql.png)](https://nodei.co/npm/mssql/)
+
 An easy-to-use MSSQL database connector for NodeJS.
 
 There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without loosing any important functionality.
