@@ -388,6 +388,8 @@ transaction.begin(function(err) {
 });
 ```
 
+Transaction can also be created by `var transaction = connection.transaction();`.
+
 <a name="begin" />
 ### begin(callback)
 
