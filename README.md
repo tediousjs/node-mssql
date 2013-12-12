@@ -388,7 +388,7 @@ transaction.begin(function(err) {
 });
 ```
 
-Transaction can also be created by `var transaction = connection.transaction();`.
+Transaction can also be created by `var transaction = connection.transaction();`. Requests can also be created by `var request = transaction.request();`.
 
 <a name="begin" />
 ### begin(callback)
