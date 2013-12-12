@@ -1,11 +1,10 @@
-sql = require '../'
+sql = require '../../'
 assert = require "assert"
 
 # msnodesql tests are only available on windows
 if process.platform.match(/^win/)
 	describe 'msnodesql test suite', ->
 		before (done) ->
-			sql.close()
 			sql.connect
 				driver: 'msnodesql'
 				
@@ -127,3 +126,13 @@ if process.platform.match(/^win/)
 					assert.equal r.parameters.out.value, 'test'
 		
 				done err
+	
+		it 'query with error', (done) ->
+			r = new sql.Request
+			r.query 'select * from notexistingtable', (err, recordset) ->
+				assert.equal err.name, 'Error'
+				
+				done()
+	
+	after ->
+		sql.close()

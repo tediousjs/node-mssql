@@ -10,9 +10,13 @@
 		"mssql",
 		"sql",
 		"msnodesql",
-		"sqlserver"
+		"sqlserver",
+		"tds",
+		"node-tds",
+		"tedious",
+		"node-sqlserver"
 	],
-	"version": "0.3.4",
+	"version": "0.4.0",
 	"main": "index.js",
 	"repository": {
 		"type": "git",
@@ -26,7 +30,7 @@
 	],
 	"dependencies": {
 		"tedious": ">=0.1.5",
-		"tedious-connection-pool": ">=0.1.1"
+		"generic-pool": ">=2.0.4"
 	},
 	"devDependencies": {
 		"coffee-script": ">=1.6.2",

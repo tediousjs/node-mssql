@@ -1,8 +1,12 @@
-ConnectionPool = require('tedious-connection-pool')
+{Pool} = require 'generic-pool'
 tds = require 'tedious'
 util = require 'util'
 
 TYPES = require('./datatypes').TYPES
+
+###
+@ignore
+###
 
 getTediousType = (type) ->
 	switch type
@@ -28,6 +32,10 @@ getTediousType = (type) ->
 		when TYPES.NChar then return tds.TYPES.NVarChar
 		when TYPES.NText then return tds.TYPES.NVarChar
 		else return type
+
+###
+@ignore
+###
 
 getMssqlType = (type) ->
 	switch type
@@ -56,6 +64,10 @@ getMssqlType = (type) ->
 		when tds.TYPES.VarBinary then return TYPES.VarBinary
 		when tds.TYPES.Xml then return TYPES.Xml
 
+###
+@ignore
+###
+
 createColumns = (meta) ->
 	out = {}
 	for key, value of meta
@@ -66,7 +78,11 @@ createColumns = (meta) ->
 	
 	out
 
-module.exports = (Connection, Request) ->
+###
+@ignore
+###
+
+module.exports = (Connection, Transaction, Request) ->
 	class TediousConnection extends Connection
 		pool: null
 		
@@ -81,45 +97,90 @@ module.exports = (Connection, Request) ->
 			cfg.options.database ?= config.database
 			cfg.options.port ?= config.port
 			
-			cfg_pool = config.pool ? {}
-			cfg_pool.max ?= 10
-			cfg_pool.min ?= 0
-			cfg_pool.idleTimeoutMillis ?= 30000
+			cfg_pool =
+				name: 'mssql'
+				max: 10
+				min: 0
+				idleTimeoutMillis: 30000
+				create: (callback) =>
+					c = new tds.Connection cfg
+					c.once 'connect', (err) =>
+						if err then return callback err, null # there must be a second argument null
+						callback null, c
+				
+				destroy: (c) ->
+					c.close()
 			
-			@pool = new ConnectionPool cfg_pool, cfg
+			if config.pool
+				for key, value of config.pool
+					cfg_pool[key] = value
+
+			@pool = Pool cfg_pool, cfg
 			
 			#create one testing connection to check if everything is ok
-			@pool.requestConnection (err, connection) =>
+			@pool.acquire (err, connection) =>
 				if err and err not instanceof Error then err = new Error err
 				
-				# and close it immediately
-				connection?.close()
+				# and release it immediately
+				@pool.release connection
 				callback? err
 		
 		close: (callback) ->
-			if @pool
-				@pool.drain ->
-				    @pool = null
-				    callback? null
+			@pool?.drain =>
+				@pool.destroyAllNow()
+				@pool = null
+				callback? null
+	
+	class TediousTransaction extends Transaction
+		begin: (callback) ->
+			@connection.pool.acquire (err, connection) =>
+				if err and err not instanceof Error then err = new Error err
+				if err then return callback err
+				
+				@_pooledConnection = connection
+				connection.beginTransaction callback
+			
+		commit: (callback) ->
+			@_pooledConnection.commitTransaction (err) =>
+				if err and err not instanceof Error then err = new Error err
+				
+				@connection.pool.release @_pooledConnection
+				@_pooledConnection = null
+				callback err
+
+		rollback: (callback) ->
+			@_pooledConnection.rollbackTransaction (err) =>
+				if err and err not instanceof Error then err = new Error err
+				
+				@connection.pool.release @_pooledConnection
+				@_pooledConnection = null
+				callback err
 		
 	class TediousRequest extends Request
-		connection: null # ref to connection
+		_acquire: (callback) ->
+			if @transaction
+				@transaction.queue callback
+			else
+				@connection.pool.acquire callback
+		
+		_release: (connection) ->
+			if @transaction
+				@transaction.next()
+			else
+				@connection.pool.release connection
+		
+		###
+		Execute specified sql command.
+		###
 
 		query: (command, callback) ->
-			###
-			Execute specified sql command.
-			###
 			
 			columns = {}
 			recordset = []
 			recordsets = []
 			started = Date.now()
-			
-			unless @connection.pool
-				callback new Error('MSSQL connection pool was not initialized!')
-				return
-			
-			@connection.pool.requestConnection (err, connection) =>
+
+			@_acquire (err, connection) =>
 				unless err
 					if @verbose then console.log "---------- sql query ----------\n    query: #{command}"
 					
@@ -131,13 +192,13 @@ module.exports = (Connection, Request) ->
 							elapsed = Date.now() - started
 							console.log " duration: #{elapsed}ms"
 							console.log "---------- completed ----------"
-							
+
 						if recordset
 							Object.defineProperty recordset, 'columns', 
 								enumerable: false
 								value: columns
 					
-						connection.close()
+						@_release connection
 						callback? err, if @multiple then recordsets else recordsets[0]
 					
 					req.on 'columnMetadata', (metadata) =>
@@ -205,25 +266,21 @@ module.exports = (Connection, Request) ->
 					connection.execSql req
 				
 				else
-					if connection then connection.close()
+					if connection then @_release connection
 					callback? err
+					
+		###
+		Execute stored procedure with specified parameters.
+		###
 		
 		execute: (procedure, callback) ->
-			###
-			Execute stored procedure with specified parameters.
-			###
-			
 			columns = {}
 			recordset = []
 			recordsets = []
 			returnValue = 0
 			started = Date.now()
-			
-			unless @connection.pool
-				callback new Error('MSSQL connection pool was not initialized!')
-				return
-			
-			@connection.pool.requestConnection (err, connection) =>
+
+			@_acquire (err, connection) =>
 				unless err
 					if @verbose then console.log "---------- sql execute --------\n     proc: #{procedure}"
 					
@@ -238,7 +295,7 @@ module.exports = (Connection, Request) ->
 							console.log " duration: #{elapsed}ms"
 							console.log "---------- completed ----------"
 							
-						connection.close()
+						@_release connection
 						callback? err, recordsets, returnValue
 					
 					req.on 'columnMetadata', (metadata) =>
@@ -306,7 +363,14 @@ module.exports = (Connection, Request) ->
 					connection.callProcedure req
 				
 				else
-					if connection then connection.close()
+					if connection then @_release connection
 					callback? err
+				
+		###
+		Cancel currently executed request.
+		###
 		
-	return {connection: TediousConnection, request: TediousRequest}
+		cancel: ->
+			throw new Error "Request canceling is not implemented by Tedious driver."
+		
+	return {connection: TediousConnection, transaction: TediousTransaction, request: TediousRequest}

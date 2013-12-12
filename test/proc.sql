@@ -42,3 +42,9 @@ begin
 	return 11
 
 end
+
+go
+
+create table [dbo].[tran_test] (
+	data varchar(50) not null
+)

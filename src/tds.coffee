@@ -1,9 +1,8 @@
 {Pool} = require 'generic-pool'
-msnodesql = require 'msnodesql'
+tds = require 'tds'
 util = require 'util'
 
 TYPES = require('./datatypes').TYPES
-DECLARATIONS = require('./datatypes').DECLARATIONS
 
 ###
 @ignore
@@ -45,12 +44,12 @@ castParameter = (value, type) ->
 
 createColumns = (meta) ->
 	out = {}
-	for value in meta
-		out[value.name] =
+	for key, value of meta
+		out[key] =
 			name: value.name
-			size: value.size
-			type: DECLARATIONS[value.sqlType]
-			
+			size: value.length
+			type: TYPES[value.type.sqlType]
+	
 	out
 
 ###
@@ -69,28 +68,30 @@ typeDeclaration = (type) ->
 ###
 
 module.exports = (Connection, Transaction, Request) ->
-	class MsnodesqlConnection extends Connection
+	class TDSConnection extends Connection
 		pool: null
 		
 		connect: (config, callback) ->
 			cfg =
-				connectionString: config.connectionString ? 'Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};'
+				userName: config.user
+				password: config.password
+				host: config.server
+				port: config.port
+				database: config.database
 			
-			cfg.connectionString = cfg.connectionString.replace new RegExp('#{([^}]*)}', 'g'), (p) ->
-				config[p.substr(2, p.length - 3)] ? ''
-
 			cfg_pool =
 				name: 'mssql'
 				max: 10
 				min: 0
 				idleTimeoutMillis: 30000
 				create: (callback) =>
-					msnodesql.open cfg.connectionString, (err, c) =>
+					c = new tds.Connection cfg
+					c.connect (err) =>
 						if err then return callback err, null # there must be a second argument null
 						callback null, c
 				
 				destroy: (c) ->
-					c.close()
+					c.end()
 			
 			if config.pool
 				for key, value of config.pool
@@ -105,40 +106,36 @@ module.exports = (Connection, Transaction, Request) ->
 				# and release it immediately
 				@pool.release connection
 				callback? err
-			
+
 		close: (callback) ->
 			@pool?.drain =>
 				@pool.destroyAllNow()
 				@pool = null
 				callback? null
 	
-	class MsnodesqlTransaction extends Transaction
+	class TDSTransaction extends Transaction
 		begin: (callback) ->
 			@connection.pool.acquire (err, connection) =>
 				if err then return callback err
 				
 				@_pooledConnection = connection
-				
-				req = @request()
-				req.query 'begin tran', callback
+				connection.setAutoCommit false, callback
 			
 		commit: (callback) ->
-			req = @request()
-			req.query 'commit tran', (err) =>
+			@_pooledConnection.commit (err) =>
 				@connection.pool.release @_pooledConnection
 				@_pooledConnection = null
 				callback err
 
 		rollback: (callback) ->
-			req = @request()
-			req.query 'rollback tran', (err) =>
+			@_pooledConnection.rollback (err) =>
 				@connection.pool.release @_pooledConnection
 				@_pooledConnection = null
 				callback err
-
-	class MsnodesqlRequest extends Request
+			
+	class TDSRequest extends Request
 		connection: null # ref to connection
-
+		
 		_acquire: (callback) ->
 			if @transaction
 				@transaction.queue callback
@@ -150,7 +147,7 @@ module.exports = (Connection, Transaction, Request) ->
 				@transaction.next()
 			else
 				@connection.pool.release connection
-
+		
 		query: (command, callback) ->
 			if @verbose and not @nested then console.log "---------- sql query ----------\n    query: #{command}"
 			
@@ -164,79 +161,65 @@ module.exports = (Connection, Transaction, Request) ->
 		
 					callback? null, if @multiple or @nested then [] else null
 			
-			row = null
 			columns = null
 			recordset = null
 			recordsets = []
 			started = Date.now()
 			handleOutput = false
+			error = null
+
+			paramHeaders = {}
+			paramValues = {}
+			for name, param of @parameters when param.io is 1
+				paramHeaders[name] = type: param.type.name
+				paramValues[name] = castParameter(param.value, param.type)
 			
 			# nested = function is called by this.execute
 			
 			unless @nested
-				input = ("@#{param.name} #{typeDeclaration(param.type)}" for name, param of @parameters)
-				sets = ("set @#{param.name}=?" for name, param of @parameters when param.io is 1)
+				input = ("@#{param.name} #{typeDeclaration(param.type)}" for name, param of @parameters when param.io is 2)
 				output = ("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2)
-				if input.length then command = "declare #{input.join ','};#{sets.join ';'};#{command};"
+				if input.length then command = "declare #{input.join ','};#{command};"
 				if output.length
 					command += "select #{output.join ','};"
 					handleOutput = true
 			
 			@_acquire (err, connection) =>
 				unless err
-					req = connection.queryRaw command, (castParameter(param.value, param.type) for name, param of @parameters when param.io is 1)
-					if @verbose and not @nested then console.log "---------- response -----------"
+					req = connection.createStatement command, paramHeaders
 					
-					req.on 'meta', (metadata) =>
-						if row and @verbose
+					req.on 'row', (tdsrow) =>
+						row = {}
+						for col in tdsrow.metadata.columns
+							exi = row[col.name]
+							if exi?
+								if exi instanceof Array
+									exi.push col.value
+									
+								else
+									row[col.name] = [exi, tdsrow.getValue(col.name)]
+							
+							else
+								row[col.name] = tdsrow.getValue col.name
+		
+						if @verbose
 							console.log util.inspect(row)
 							console.log "---------- --------------------"
 						
+						recordset.push row
+					
+					req.on 'metadata', (metadata) =>
 						row = null
-						columns = metadata
+						columns = metadata.columnsByName
 						recordset = []
 						Object.defineProperty recordset, 'columns', 
 							enumerable: false
-							value: createColumns(metadata)
-							
+							value: createColumns(metadata.columnsByName)
+							@nested
 						recordsets.push recordset
-						
-					req.on 'row', (rownumber) =>
-						if row and @verbose
-							console.log util.inspect(row)
-							console.log "---------- --------------------"
-						
-						row = {}
-						recordset.push row
-						
-					req.on 'column', (idx, data, more) =>
-						exi = row[columns[idx].name]
-						if exi?
-							if exi instanceof Array
-								exi.push data
-								
-							else
-								row[columns[idx].name] = [exi, data]
-						
-						else
-							row[columns[idx].name] = data
-			
-					req.once 'error', (err) =>
-						if @verbose and not @nested
-							elapsed = Date.now() - started
-							console.log "    error: #{err}"
-							console.log " duration: #{elapsed}ms"
-							console.log "---------- completed ----------"
-							
-						callback? err
 					
-					req.once 'done', =>
+					req.on 'done', (res) =>
 						unless @nested
-							if @verbose
-								if row
-									console.log util.inspect(row)
-									console.log "---------- --------------------"
-		
 							# do we have output parameters to handle?
 							if handleOutput
 								last = recordsets.pop()?[0]
@@ -246,19 +229,25 @@ module.exports = (Connection, Transaction, Request) ->
 				
 									if @verbose
 										console.log "   output: @#{param.name}, #{param.type.name}, #{param.value}"
-							
+						
 							if @verbose
+								if error then console.log "    error: #{error}"
 								elapsed = Date.now() - started
 								console.log " duration: #{elapsed}ms"
 								console.log "---------- completed ----------"
-			
+		
 						@_release connection
-						callback? null, if @multiple or @nested then recordsets else recordsets[0]
+						callback? error, if @multiple or @nested then recordsets else recordsets[0]
+					
+					req.on 'error', (err) ->
+						error = err	
+		
+					req.execute paramValues
 				
 				else
 					if connection then @_release connection
 					callback? err
-	
+
 		execute: (procedure, callback) ->
 			if @verbose then console.log "---------- sql execute --------\n     proc: #{procedure}"
 	
@@ -277,7 +266,7 @@ module.exports = (Connection, Transaction, Request) ->
 						console.log "    input: @#{param.name}, #{param.type.name}, #{param.value}"
 							
 					# input parameter
-					spp.push "@#{param.name}=?"
+					spp.push "@#{param.name}=@#{param.name}"
 			
 			cmd += "#{spp.join ', '};"
 			cmd += "select #{['@__return as \'__return\''].concat("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2).join ', '};"
@@ -321,6 +310,6 @@ module.exports = (Connection, Transaction, Request) ->
 			Cancel currently executed request.
 			###
 			
-			throw new Error "Request canceling is not implemented by msnodesql driver."
-	
-	return {connection: MsnodesqlConnection, transaction: MsnodesqlTransaction, request: MsnodesqlRequest}
+			throw new Error "Request canceling is not implemented by TDS driver."
+		
+	return {connection: TDSConnection, transaction: TDSTransaction, request: TDSRequest}

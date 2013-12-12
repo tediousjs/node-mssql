@@ -1,1 +1,0 @@
-mocha --compilers coffee:coffee-script --reporter spec

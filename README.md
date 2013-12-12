@@ -1,14 +1,26 @@
 # node-mssql [![Dependency Status](https://david-dm.org/patriksimek/node-mssql.png)](https://david-dm.org/patriksimek/node-mssql) [![NPM version](https://badge.fury.io/js/mssql.png)](http://badge.fury.io/js/mssql)
 
-[![NPM](https://nodei.co/npm/mssql.png)](https://nodei.co/npm/mssql/)
-
 An easy-to-use MSSQL database connector for NodeJS.
 
 There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without loosing any important functionality.
 
-At the moment it support two TDS modules:
+**Extra features:**
+* Unified interface for multiple MSSQL modules
+* Connection pooling with Transactions support
+* Parametrized Stored Procedures in [node-tds](https://github.com/cretz/node-tds) and [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver)
+
+At the moment it support three TDS modules:
 * [Tedious](https://github.com/pekim/tedious) by Mike D Pilsbury (pure javascript - windows/osx/linux)
 * [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
+* [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
+
+## What's new in 0.4
+
+* Added support for transactions.
+* [node-tds](https://github.com/cretz/node-tds) is now available as an optional TDS driver.
+* Documentation updated to [CSDoc](https://github.com/patriksimek/csdoc) spec.
+* Tedious driver no longer use [tedious-connection-pool](https://github.com/pekim/tedious-connection-pool) for connection pooling
+* [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) is now pooled
 
 ## Installation
 
@@ -19,30 +31,35 @@ At the moment it support two TDS modules:
 ```javascript
 var sql = require('mssql'); 
 
-config = {
-	user: '...',
-	password: '...',
-	server: 'localhost',
-	database: '...'
+var config = {
+    user: '...',
+    password: '...',
+    server: 'localhost',
+    database: '...'
 }
 
 var connection = new sql.Connection(config, function(err) {
+    // ... error checks
+    
+    // Query
 	
-	// Query
+    var request = new sql.Request(connection1); // or: var request = connection.request();
+    request.query('select 1 as number', function(err, recordset) {
+        // ... error checks
+        
+        console.dir(recordset);
+    });
 	
-	var request = new sql.Request(connection); // or: var request = connection.request();
-	request.query('select 1 as number', function(err, recordset) {
-		console.dir(recordset);
-	});
+    // Stored Procedure
 	
-	// Stored Procedure
-	
-	var request = new sql.Request(connection);
-	request.input('input_parameter', sql.Int, value);
-	request.output('output_parameter', sql.Int);
-	request.execute('procedure_name', function(err, recordsets, returnValue) {
-		console.dir(recordsets);
-	});
+    var request = new sql.Request(connection1);
+    request.input('input_parameter', sql.Int, value);
+    request.output('output_parameter', sql.Int);
+    request.execute('procedure_name', function(err, recordsets, returnValue) {
+        // ... error checks
+        
+        console.dir(recordsets);
+    });
 	
 });
 ```
@@ -52,30 +69,35 @@ var connection = new sql.Connection(config, function(err) {
 ```javascript
 var sql = require('mssql'); 
 
-config = {
-	user: '...',
-	password: '...',
-	server: 'localhost',
-	database: '...'
+var config = {
+    user: '...',
+    password: '...',
+    server: 'localhost',
+    database: '...'
 }
 
 sql.connect(config, function(err) {
+    // ... error checks
 	
-	// Query
+    // Query
 	
-	var request = new sql.Request();
-	request.query('select 1 as number', function(err, recordset) {
-		console.dir(recordset);
-	});
+    var request = new sql.Request();
+    request.query('select 1 as number', function(err, recordset) {
+        // ... error checks
+    	
+        console.dir(recordset);
+    });
 	
-	// Stored Procedure
+    // Stored Procedure
 	
-	var request = new sql.Request();
-	request.input('input_parameter', sql.Int, value);
-	request.output('output_parameter', sql.Int);
-	request.execute('procedure_name', function(err, recordsets, returnValue) {
-		console.dir(recordsets);
-	});
+    var request = new sql.Request();
+    request.input('input_parameter', sql.Int, value);
+    request.output('output_parameter', sql.Int);
+    request.execute('procedure_name', function(err, recordsets, returnValue) {
+        // ... error checks
+    	
+        console.dir(recordsets);
+    });
 	
 });
 ```
@@ -87,6 +109,7 @@ sql.connect(config, function(err) {
 * [Basic](#cfg-basic)
 * [Tedious](#cfg-tedious)
 * [Microsoft Driver for Node.js for SQL Server](#cfg-msnodesql)
+* [node-tds](#cfg-node-tds)
 
 ### Connection
 
@@ -100,16 +123,33 @@ sql.connect(config, function(err) {
 * [output](#output)
 * [query](#query)
 
+### Transaction
+
+* [begin](#begin)
+* [commit](#commit)
+* [rollback](#rollback)
+
 ### Other
 
 * [Metadata](#meta)
 * [Data Types](#data-types)
 * [Verbose Mode](#verbose)
+* [Known issues](#issues)
 
 ## Configuration
 
 ```javascript
-config = { ... }
+var config = {
+    user: '...',
+    password: '...',
+    server: 'localhost',
+    database: '...',
+    pool: {
+        max: 10,
+        min: 0,
+        idleTimeoutMillis: 30000
+    }
+}
 ```
 
 <a name="cfg-basic" />
@@ -121,37 +161,26 @@ config = { ... }
 * **server** - Hostname to connect to.
 * **port** - Port to connect to (default: `1433`).
 * **database** - Database to connect to (default: dependent on server configuration).
-
-<a name="cfg-tedious" />
-### Tedious
-
-* **options** - Tedious specific options. More information: http://pekim.github.io/tedious/api-connection.html
 * **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
 * **pool.min** - The minimun of connections there can be in the pool (default: `0`).
 * **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
 
-__Example__
+<a name="cfg-tedious" />
+### Tedious
 
-```javascript
-config = {
-	options: {
-		// tedious options
-	},
-	
-	pool: {
-		max: 10,
-	    min: 0,
-	    idleTimeoutMillis: 30000
-	}
-}
-```
+* **options** - Object of Tedious specific options. More information: http://pekim.github.io/tedious/api-connection.html
 
 <a name="cfg-msnodesql" />
 ### Microsoft Driver for Node.js for SQL Server
 
-This driver is not part of the default package and you must install it separately.
+This driver is not part of the default package and must be installed separately by 'npm install msnodesql'. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
 
 * **connectionString** - Connection string (default: `Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};`).
+
+<a name="cfg-node-tds" />
+### node-tds
+
+This driver is not part of the default package and must be installed separately by 'npm install tds'.
 
 ## Connection
 
@@ -172,14 +201,14 @@ __Example__
 
 ```javascript
 var connection = new sql.Connection({
-	user: '...',
-	password: '...',
-	server: 'localhost',
-	database: '...'
+    user: '...',
+    password: '...',
+    server: 'localhost',
+    database: '...'
 });
 
 connection.connect(function(err) {
-	// ...
+    // ...
 });
 ```
 
@@ -221,13 +250,15 @@ var request = new sql.Request();
 request.input('input_parameter', sql.Int, value);
 request.output('output_parameter', sql.Int);
 request.execute('procedure_name', function(err, recordsets, returnValue) {
-	console.log(recordsets.length); // count of recordsets returned by procedure
-	console.log(recordset[0].length); // count of rows contained in first recordset
-	console.log(returnValue); // procedure return value
+    // ... error checks
+    
+    console.log(recordsets.length); // count of recordsets returned by procedure
+    console.log(recordset[0].length); // count of rows contained in first recordset
+    console.log(returnValue); // procedure return value
 	
-	console.log(request.parameters.output_parameter.value); // output value
+    console.log(request.parameters.output_parameter.value); // output value
 	
-	// ...
+    // ...
 });
 ```
 
@@ -307,9 +338,11 @@ __Example__
 ```javascript
 var request = new sql.Request();
 request.query('select 1 as number', function(err, recordset) {
-	console.log(recordset[0].number); // return 1
+    // ... error checks
+    
+    console.log(recordset[0].number); // return 1
 	
-	// ...
+    // ...
 });
 ```
 
@@ -320,10 +353,104 @@ var request = new sql.Request();
 request.multiple = true;
 
 request.query('select 1 as number; select 2 as number', function(err, recordsets) {
-	console.log(recordsets[0][0].number); // return 1
-	console.log(recordsets[1][0].number); // return 2
-	
-	// ...
+    // ... error checks
+    
+    console.log(recordsets[0][0].number); // return 1
+    console.log(recordsets[1][0].number); // return 2
+});
+```
+
+## Transaction
+
+```javascript
+var transaction = new sql.Transaction(/* [connection] */);
+```
+
+If you ommit connection argument, global connection is used instead.
+
+__Example__
+
+```javascript
+var transaction = new sql.Transaction(/* [connection] */);
+transaction.begin(function(err) {
+    // ... error checks
+
+    var request = new sql.Request(transaction);
+    request.query('insert into mytable (mycolumn) values (12345)', function(err, recordset) {
+        // ... error checks
+
+        transaction.commit(function(err, recordset) {
+            // ... error checks
+            
+            console.log("Transaction commited.");
+        });
+    });
+});
+```
+
+<a name="begin" />
+### begin(callback)
+
+Begin a transaction.
+
+__Arguments__
+
+* **callback(err)** - A callback which is called after transaction has began, or an error has occurred.
+
+__Example__
+
+```javascript
+var transaction = new sql.Transaction();
+transaction.begin(function(err) {
+    // ...
+});
+```
+
+---------------------------------------
+
+<a name="commit" />
+### commit(callback)
+
+Commit a transaction.
+
+__Arguments__
+
+* **callback(err)** - A callback which is called after transaction has commited, or an error has occurred.
+
+__Example__
+
+```javascript
+var transaction = new sql.Transaction();
+transaction.begin(function(err) {
+    // ...
+    
+    transaction.commit(function(err) {
+        //...
+    })
+});
+```
+
+---------------------------------------
+
+<a name="rollback" />
+### rollback(callback)
+
+Rollback a transaction.
+
+__Arguments__
+
+* **callback(err)** - A callback which is called after transaction has rolled back, or an error has occurred.
+
+__Example__
+
+```javascript
+var transaction = new sql.Transaction();
+transaction.begin(function(err) {
+    // ...
+    
+    transaction.rollback(function(err) {
+        //...
+    })
 });
 ```
 
@@ -335,10 +462,10 @@ Recordset metadata are accessible trough `recordset.columns` property.
 ```javascript
 var request = new sql.Request();
 request.query('select 1 as first, \'asdf\' as second', function(err, recordset) {
-	console.dir(recordset.columns);
+    console.dir(recordset.columns);
 	
-	console.log(recordset.columns.first.type === sql.Int); // true
-	console.log(recordset.columns.second.type === sql.VarChar); // true
+    console.log(recordset.columns.first.type === sql.Int); // true
+    console.log(recordset.columns.second.type === sql.VarChar); // true
 });
 ```
 
@@ -423,6 +550,20 @@ Output for example above could look similar to this.
  duration: 5ms
 ---------- completed ----------
 ```
+
+<a name="issues" />
+## Known issues
+
+### Tedious
+
+* Tedious 1.5 contains bug where 0 is casted as null when using BigInt. [fix here](https://github.com/pekim/tedious/pull/113)
+* Tedious 1.5 doesn't support encoding of input parameters. [fix here](https://github.com/pekim/tedious/pull/113)
+
+### node-tds
+
+* node-tds 0.1.0 contains bug and return same value for columns with same name.
+* node-tds 0.1.0 doesn't support encoding of input parameters.
+* node-tds 0.1.0 contains bug in selects that doesn't return any values *(select @param = 'value')*.
 
 ## TODO
 
