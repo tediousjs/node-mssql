@@ -111,20 +111,23 @@ sql.connect(config, function(err) {
 * [Microsoft Driver for Node.js for SQL Server](#cfg-msnodesql)
 * [node-tds](#cfg-node-tds)
 
-### Connection
+### Connections
 
+* [Connection](#connection)
 * [connect](#connect)
 * [close](#close)
 
-### Request
+### Requests
 
+* [Request](#request)
 * [execute](#execute)
 * [input](#input)
 * [output](#output)
 * [query](#query)
 
-### Transaction
+### Transactions
 
+* [Transaction](#transaction)
 * [begin](#begin)
 * [commit](#commit)
 * [rollback](#rollback)
@@ -182,7 +185,8 @@ This driver is not part of the default package and must be installed separately 
 
 This driver is not part of the default package and must be installed separately by 'npm install tds'.
 
-## Connection
+<a name="connection" />
+## Connections
 
 ```javascript
 var connection = new sql.Connection({ /* config */ });
@@ -225,7 +229,8 @@ __Example__
 connection.close();
 ```
 
-## Request
+<a name="request" />
+## Requests
 
 ```javascript
 var request = new sql.Request(/* [connection] */);
@@ -360,7 +365,8 @@ request.query('select 1 as number; select 2 as number', function(err, recordsets
 });
 ```
 
-## Transaction
+<a name="transaction" />
+## Transactions
 
 **Important:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is aquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. After you call `commit` or `rollback`, connection is then released back to the connection pool.
 
