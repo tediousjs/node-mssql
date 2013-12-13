@@ -362,6 +362,8 @@ request.query('select 1 as number; select 2 as number', function(err, recordsets
 
 ## Transaction
 
+**Important:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is aquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. After you call `commit` or `rollback`, connection is then released back to the connection pool.
+
 ```javascript
 var transaction = new sql.Transaction(/* [connection] */);
 ```
