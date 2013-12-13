@@ -1,3 +1,7 @@
+v0.4.1 (2013-12-13)
+-------------------
+[fix] Filter empty recordsets when NOCOUNT is OFF
+
 v0.4.0 (2013-12-12)
 -------------------
 [new] Added support for transactions.

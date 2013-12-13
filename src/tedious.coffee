@@ -326,6 +326,9 @@ module.exports = (Connection, Transaction, Request) ->
 						recordset.push row
 					
 					req.on 'doneInProc', (rowCount, more, rows) =>
+						# filter empty recordsets when NOCOUNT is OFF
+						if Object.keys(columns).length is 0 then return
+						
 						# all rows of current recordset loaded
 						Object.defineProperty recordset, 'columns', 
 							enumerable: false
