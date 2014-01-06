@@ -71,6 +71,19 @@ if process.platform.match(/^win/)
 				assert.equal err.message, '[Microsoft][SQL Server Native Client 11.0][SQL Server]Login failed for user \'xsp_test\'.'
 				done()
 
+		it 'timeout', (done) ->
+			conn = new sql.Connection
+				user: '...'
+				password: '...'
+				server: '10.0.0.1'
+				driver: 'msnodesql'
+				timeout: 1000
+				pool: {idleTimeoutMillis: 500}
+				
+			, (err) ->
+				assert.equal err.code, 10060
+				done()
+
 	describe 'msnodesql connection pooling', ->
 		before (done) ->
 			connection1 = new sql.Connection

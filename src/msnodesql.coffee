@@ -74,10 +74,14 @@ module.exports = (Connection, Transaction, Request) ->
 		
 		connect: (config, callback) ->
 			cfg =
-				connectionString: config.connectionString ? 'Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};'
+				connectionString: config.connectionString ? 'Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};Connection Timeout=#{timeout};'
 			
 			cfg.connectionString = cfg.connectionString.replace new RegExp('#{([^}]*)}', 'g'), (p) ->
-				config[p.substr(2, p.length - 3)] ? ''
+				key = p.substr(2, p.length - 3)
+				if key is 'timeout'
+					return Math.ceil((config.timeout ? 15000) / 1000)
+				else
+					return config[key] ? ''
 
 			cfg_pool =
 				name: 'mssql'
@@ -89,8 +93,11 @@ module.exports = (Connection, Transaction, Request) ->
 						if err then return callback err, null # there must be a second argument null
 						callback null, c
 				
+				validate: (c) ->
+					c?
+				
 				destroy: (c) ->
-					c.close()
+					c?.close()
 			
 			if config.pool
 				for key, value of config.pool

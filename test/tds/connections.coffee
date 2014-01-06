@@ -66,6 +66,19 @@ describe 'node-tds connection errors', ->
 			assert.equal err.message, 'Login failed for user \'xsp_test\'.'
 			done()
 
+	it 'timeout', (done) ->
+		conn = new sql.Connection
+			user: '...'
+			password: '...'
+			server: '10.0.0.1'
+			driver: 'tds'
+			timeout: 1000
+			pool: {idleTimeoutMillis: 500}
+			
+		, (err) ->
+			assert.equal err.message, 'Connection timeout.'
+			done()
+
 describe 'node-tds connection pooling', ->
 	before (done) ->
 		connection1 = new sql.Connection

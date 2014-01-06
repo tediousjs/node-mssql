@@ -68,6 +68,18 @@ describe 'tedious connection errors', ->
 			assert.equal err.message, 'Login failed; one or more errorMessage events should have been emitted'
 			done()
 
+	it 'timeout', (done) ->
+		conn = new sql.Connection
+			user: '...'
+			password: '...'
+			server: '10.0.0.1'
+			timeout: 1000
+			pool: {idleTimeoutMillis: 500}
+			
+		, (err) ->
+			assert.equal err.message, 'timeout : failed to connect to 10.0.0.1:1433 in 1000ms'
+			done()
+
 describe 'tedious connection pooling', ->
 	before (done) ->
 		connection1 = new sql.Connection

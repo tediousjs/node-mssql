@@ -96,7 +96,11 @@ module.exports = (Connection, Transaction, Request) ->
 			cfg.options ?= {}
 			cfg.options.database ?= config.database
 			cfg.options.port ?= config.port
+			cfg.options.connectTimeout ?= config.timeout ? 15000
 			
+			# tedious always connect via tcp when port is specified
+			if cfg.options.instanceName then delete cfg.options.port
+
 			cfg_pool =
 				name: 'mssql'
 				max: 10
@@ -104,12 +108,26 @@ module.exports = (Connection, Transaction, Request) ->
 				idleTimeoutMillis: 30000
 				create: (callback) =>
 					c = new tds.Connection cfg
-					c.once 'connect', (err) =>
+					
+					end = ->
+						c.removeListener 'connect', connect
+						
+						callback new Error "Network error.", null # there must be a second argument null
+					
+					connect = (err) ->
+						c.removeListener 'end', end
+						
 						if err then return callback err, null # there must be a second argument null
 						callback null, c
+						
+					c.once 'end', end
+					c.once 'connect', connect
+
+				validate: (c) ->
+					c?
 				
 				destroy: (c) ->
-					c.close()
+					c?.close()
 			
 			if config.pool
 				for key, value of config.pool

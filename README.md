@@ -164,6 +164,7 @@ var config = {
 * **server** - Hostname to connect to.
 * **port** - Port to connect to (default: `1433`).
 * **database** - Database to connect to (default: dependent on server configuration).
+* **timeout** - Connection timeout in ms (default: 15000).
 * **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
 * **pool.min** - The minimun of connections there can be in the pool (default: `0`).
 * **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
@@ -178,7 +179,7 @@ var config = {
 
 This driver is not part of the default package and must be installed separately by 'npm install msnodesql'. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
 
-* **connectionString** - Connection string (default: `Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};`).
+* **connectionString** - Connection string (default: `Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};Connection Timeout=#{timeout};`).
 
 <a name="cfg-node-tds" />
 ### node-tds

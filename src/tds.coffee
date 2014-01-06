@@ -86,12 +86,27 @@ module.exports = (Connection, Transaction, Request) ->
 				idleTimeoutMillis: 30000
 				create: (callback) =>
 					c = new tds.Connection cfg
+					
+					timeouted = false
+					tmr = setTimeout ->
+						timeouted = true
+						c._client._socket.destroy()
+						callback new Error "Connection timeout.", null # there must be a second argument null
+						
+					, config.timeout ? 15000
+
 					c.connect (err) =>
+						clearTimeout tmr
+						if timeouted then return
+						
 						if err then return callback err, null # there must be a second argument null
 						callback null, c
 				
+				validate: (c) ->
+					c?
+				
 				destroy: (c) ->
-					c.end()
+					c?.end()
 			
 			if config.pool
 				for key, value of config.pool
