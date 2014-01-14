@@ -108,23 +108,28 @@ module.exports = (Connection, Transaction, Request) ->
 				idleTimeoutMillis: 30000
 				create: (callback) =>
 					c = new tds.Connection cfg
-					
-					end = ->
-						c.removeListener 'connect', connect
+					connecting = true
+
+					# replace default behaviour of tedious's dispatchEvent
+					defDE = c.dispatchEvent
+					c.dispatchEvent = (event) ->
+						defDE.call c, arguments...
 						
-						callback new Error "Network error.", null # there must be a second argument null
-					
+						# listen for internal socketError so we can have it as a reason for connection failure
+						if event is 'socketError' and connecting
+							c.removeListener 'connect', connect
+							callback arguments[1], null # there must be a second argument null
+
 					connect = (err) ->
-						c.removeListener 'end', end
+						connecting = false
 						
 						if err then return callback err, null # there must be a second argument null
 						callback null, c
-						
-					c.once 'end', end
+
 					c.once 'connect', connect
 
 				validate: (c) ->
-					c?
+					c? and !c.closed
 				
 				destroy: (c) ->
 					c?.close()

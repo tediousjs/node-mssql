@@ -80,6 +80,16 @@ describe 'tedious connection errors', ->
 			assert.equal err.message, 'timeout : failed to connect to 10.0.0.1:1433 in 1000ms'
 			done()
 
+	it 'network error', (done) ->
+		conn = new sql.Connection
+			user: '...'
+			password: '...'
+			server: '...'
+			
+		, (err) ->
+			assert.equal err instanceof Error, true
+			done()
+
 describe 'tedious connection pooling', ->
 	before (done) ->
 		connection1 = new sql.Connection

@@ -179,7 +179,11 @@ var config = {
 
 This driver is not part of the default package and must be installed separately by 'npm install msnodesql'. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
 
-* **connectionString** - Connection string (default: `Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};Connection Timeout=#{timeout};`).
+* **connectionString** - Connection string (default: see below).
+
+```
+Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};Connection Timeout=#{timeout};
+```
 
 <a name="cfg-node-tds" />
 ### node-tds
@@ -567,8 +571,8 @@ Output for example above could look similar to this.
 
 ### Tedious
 
-* Tedious 1.5 contains bug where 0 is casted as null when using BigInt. [fix here](https://github.com/pekim/tedious/pull/113)
 * Tedious 1.5 doesn't support encoding of input parameters. [fix here](https://github.com/pekim/tedious/pull/113)
+* If you're facing problems with text codepage, try using NVarChar as default data type for string values - `sql.map.register(String, sql.NVarChar)`.
 
 ### node-tds
 

@@ -43,7 +43,7 @@ describe 'node-tds test suite', ->
 				
 				assert.equal recordsets[1][0].f, null
 				
-				# this test fails with tedious 1.5 because it doesn't support encoding of input parameters
+				# this test fails with tds 0.1.0 because it doesn't support encoding of input parameters
 				#assert.equal recordsets[1][0].g, 'ěščřžýáíé'
 				
 				assert.equal recordsets[2].length, 0
