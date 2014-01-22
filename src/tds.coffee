@@ -318,6 +318,7 @@ module.exports = (Connection, Transaction, Request) ->
 						console.log " duration: #{elapsed}ms"
 						console.log "---------- completed ----------"
 					
+					recordsets.returnValue = returnValue
 					callback? null, recordsets, returnValue
 		
 		cancel: ->

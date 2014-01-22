@@ -319,6 +319,8 @@ module.exports = (Connection, Transaction, Request) ->
 							console.log "---------- completed ----------"
 							
 						@_release connection
+						
+						recordsets.returnValue = returnValue
 						callback? err, recordsets, returnValue
 					
 					req.on 'columnMetadata', (metadata) =>

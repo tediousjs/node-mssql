@@ -43,7 +43,7 @@ var connection = new sql.Connection(config, function(err) {
     
     // Query
 	
-    var request = new sql.Request(connection1); // or: var request = connection.request();
+    var request = new sql.Request(connection); // or: var request = connection.request();
     request.query('select 1 as number', function(err, recordset) {
         // ... error checks
         
@@ -52,7 +52,7 @@ var connection = new sql.Connection(config, function(err) {
 	
     // Stored Procedure
 	
-    var request = new sql.Request(connection1);
+    var request = new sql.Request(connection);
     request.input('input_parameter', sql.Int, value);
     request.output('output_parameter', sql.Int);
     request.execute('procedure_name', function(err, recordsets, returnValue) {
@@ -251,7 +251,7 @@ Call a stored procedure.
 __Arguments__
 
 * **procedure** - Name of the stored procedure to be executed.
-* **callback(err, recordsets, returnValue)** - A callback which is called after execution has completed, or an error has occurred.
+* **callback(err, recordsets, returnValue)** - A callback which is called after execution has completed, or an error has occurred. `returnValue` is also accessible as property of recordsets.
 
 __Example__
 
@@ -262,9 +262,10 @@ request.output('output_parameter', sql.Int);
 request.execute('procedure_name', function(err, recordsets, returnValue) {
     // ... error checks
     
-    console.log(recordsets.length); // count of recordsets returned by procedure
-    console.log(recordset[0].length); // count of rows contained in first recordset
+    console.log(recordsets.length); // count of recordsets returned by the procedure
+    console.log(recordsets[0].length); // count of rows contained in first recordset
     console.log(returnValue); // procedure return value
+    console.log(recordsets.returnValue); // same as previous line
 	
     console.log(request.parameters.output_parameter.value); // output value
 	

@@ -56,9 +56,9 @@ describe 'node-tds test suite', ->
 	it 'stored procedure with one empty recordset', (done) ->
 		request = new sql.Request
 		
-		request.execute '__test2', (err, recordsets, returnValue) ->
+		request.execute '__test2', (err, recordsets) ->
 			unless err
-				assert.equal returnValue, 11
+				assert.equal recordsets.returnValue, 11
 				assert.equal recordsets.length, 2
 			
 			done err
