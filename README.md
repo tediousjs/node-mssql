@@ -1,6 +1,6 @@
 # node-mssql [![Dependency Status](https://david-dm.org/patriksimek/node-mssql.png)](https://david-dm.org/patriksimek/node-mssql) [![NPM version](https://badge.fury.io/js/mssql.png)](http://badge.fury.io/js/mssql)
 
-An easy-to-use MSSQL database connector for NodeJS.
+An easy-to-use MSSQL database connector for Node.js.
 
 There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without loosing any important functionality.
 
@@ -14,13 +14,9 @@ At the moment it support three TDS modules:
 * [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 * [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 0.4
+## What's new in 0.4.5
 
-* Added support for transactions.
-* [node-tds](https://github.com/cretz/node-tds) is now available as an optional TDS driver.
-* Documentation updated to [CSDoc](https://github.com/patriksimek/csdoc) spec.
-* Tedious driver no longer use [tedious-connection-pool](https://github.com/pekim/tedious-connection-pool) for connection pooling
-* [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) is now pooled
+* Added support for [co](https://github.com/visionmedia/co) flow controller via [co-mssql](https://github.com/patriksimek/co-mssql) module
 
 ## Installation
 

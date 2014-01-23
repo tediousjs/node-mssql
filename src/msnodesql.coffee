@@ -292,7 +292,9 @@ module.exports = (Connection, Transaction, Request) ->
 			if @verbose then console.log "---------- response -----------"
 			
 			@nested = true
-			@query cmd, (err, recordsets) =>
+			
+			# direct call to query, in case method on main request object is overriden (e.g. co-mssql)
+			MsnodesqlRequest::query.call @, cmd, (err, recordsets) =>
 				@nested = false
 				
 				if err
@@ -331,4 +333,4 @@ module.exports = (Connection, Transaction, Request) ->
 			
 			throw new Error "Request canceling is not implemented by msnodesql driver."
 	
-	return {connection: MsnodesqlConnection, transaction: MsnodesqlTransaction, request: MsnodesqlRequest}
+	return {Connection: MsnodesqlConnection, Transaction: MsnodesqlTransaction, Request: MsnodesqlRequest}

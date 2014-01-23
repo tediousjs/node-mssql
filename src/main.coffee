@@ -2,6 +2,7 @@ events = require 'events'
 util = require 'util'
 
 TYPES = require('./datatypes').TYPES
+DRIVERS = ['msnodesql', 'tedious', 'tds']
 
 global_connection = null
 
@@ -100,16 +101,10 @@ class Connection
 		# set defaults
 		@config.driver ?= 'tedious'
 		@config.port ?= 1433
-	
-		if @config.driver is 'tedious'
-			@driver = require('./tedious')(Connection, Transaction, Request)
-			
-		else if @config.driver is 'msnodesql'
-			@driver = require('./msnodesql')(Connection, Transaction, Request)
-			
-		else if @config.driver is 'tds'
-			@driver = require('./tds')(Connection, Transaction, Request)
 		
+		if @config.driver in DRIVERS
+			@driver = @initializeDriver require("./#{@config.driver}")
+
 		else
 			err = new Error "Unknown driver #{@config.driver}!"
 			
@@ -119,6 +114,18 @@ class Connection
 				throw err
 
 		if callback then @connect callback
+	
+	###
+	Initializes driver for this connection. Separated from constructor and used by co-mssql.
+	
+	@private
+	@param {Function} driver Loaded driver.
+	
+	@returns {Connection}
+	###
+	
+	initializeDriver: (driver) ->
+		driver Connection, Transaction, Request
 	
 	###
 	Create connection to the server.
@@ -147,7 +154,7 @@ class Connection
 				throw err
 		
 		@connecting = true
-		@driver.connection::connect.call @, @config, (err) =>
+		@driver.Connection::connect.call @, @config, (err) =>
 			unless @connecting then return
 			
 			@connecting = false
@@ -155,7 +162,7 @@ class Connection
 			callback? err
 		
 		@
-	
+
 	###
 	Close connection to the server.
 	
@@ -166,13 +173,13 @@ class Connection
 		if @connecting
 			@connecting = false
 			
-			@driver.connection::close.call @
+			@driver.Connection::close.call @
 			@driver = null
 			
 		else if @connected
 			@connected = false
 	
-			@driver.connection::close.call @
+			@driver.Connection::close.call @
 			@driver = null
 		
 		@
@@ -229,7 +236,7 @@ class Transaction
 			callback new Error "Transaction is already running."
 			return @
 			
-		@connection.driver.transaction::begin.call @, callback
+		@connection.driver.Transaction::begin.call @, callback
 		@
 		
 	###
@@ -245,7 +252,7 @@ class Transaction
 			callback new Error "Transaction has not started. Call begin() first."
 			return @
 			
-		@connection.driver.transaction::commit.call @, callback
+		@connection.driver.Transaction::commit.call @, callback
 		@
 	
 	###
@@ -306,7 +313,7 @@ class Transaction
 			callback new Error "Transaction has not started. Call begin() first."
 			return @
 			
-		@connection.driver.transaction::rollback.call @, callback
+		@connection.driver.Transaction::rollback.call @, callback
 		@
 
 ###
@@ -329,7 +336,7 @@ class Request
 	###
 	Create new Request.
 	
-	@param {Connection} connection If ommited, global connection is used instead.
+	@param {Connection|Transaction} connection If ommited, global connection is used instead.
 	###
 	
 	constructor: (connection) ->
@@ -350,14 +357,14 @@ class Request
 	###
 	
 	_acquire: (callback) ->
-		@connection.driver.request::_acquire.call @, callback
+		@connection.driver.Request::_acquire.call @, callback
 	
 	###
 	Release connection used by this request.
 	###
 	
 	_release: (connection) ->
-		@connection.driver.request::_release.call @, connection
+		@connection.driver.Request::_release.call @, connection
 	
 	###
 	Add an input parameter to the request.
@@ -466,7 +473,7 @@ class Request
 			return process.nextTick ->
 				callback? new Error "No connection is specified for that request."
 		
-		@connection.driver.request::query.call @, command, callback
+		@connection.driver.Request::query.call @, command, callback
 		@
 	
 	###
@@ -502,7 +509,7 @@ class Request
 			return process.nextTick ->
 				callback? new Error "No connection is specified for that request."
 		
-		@connection.driver.request::execute.call @, procedure, callback
+		@connection.driver.Request::execute.call @, procedure, callback
 		@
 		
 	###
@@ -512,7 +519,7 @@ class Request
 	###
 	
 	cancel: ->
-		@connection.driver.request::cancel.call @
+		@connection.driver.Request::cancel.call @
 		@
 
 ###
@@ -542,6 +549,7 @@ module.exports.Connection = Connection
 module.exports.Transaction = Transaction
 module.exports.Request = Request
 
+module.exports.DRIVERS = DRIVERS
 module.exports.TYPES = TYPES
 module.exports.map = map
 

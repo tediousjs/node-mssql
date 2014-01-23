@@ -1,3 +1,11 @@
+v0.4.5 (2014-01-23)
+-------------------
+[new] Added support for "co" flow controller via co-mssql module
+
+v0.4.4 (2014-01-22)
+-------------------
+[change] returnValue also accessible as property of recordsets
+
 v0.4.3 (2014-01-14)
 -------------------
 [fix] Even better network error handling in tedious

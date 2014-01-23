@@ -401,4 +401,4 @@ module.exports = (Connection, Transaction, Request) ->
 		cancel: ->
 			throw new Error "Request canceling is not implemented by Tedious driver."
 		
-	return {connection: TediousConnection, transaction: TediousTransaction, request: TediousRequest}
+	return {Connection: TediousConnection, Transaction: TediousTransaction, Request: TediousRequest}

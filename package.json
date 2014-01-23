@@ -1,10 +1,10 @@
 {
 	"author": {
 		"name": "Patrik Simek",
-		"url": "http://patriksimek.cz"
+		"url": "https://patriksimek.cz"
 	},
 	"name": "mssql",
-	"description": "An easy-to-use MSSQL database connector for NodeJS.",
+	"description": "An easy-to-use MSSQL database connector for Node.js.",
 	"keywords": [
 		"database",
 		"mssql",
@@ -16,7 +16,7 @@
 		"tedious",
 		"node-sqlserver"
 	],
-	"version": "0.4.4",
+	"version": "0.4.5",
 	"main": "index.js",
 	"repository": {
 		"type": "git",
@@ -40,6 +40,7 @@
 		"node": ">=0.6"
 	},
 	"scripts": {
-		"test": "mocha --compilers coffee:coffee-script --reporter spec"
+		"test": "mocha",
+		"prepublish": "coffee --compile --output ./lib ./src"
 	}
 }
