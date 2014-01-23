@@ -1,0 +1,697 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>node-mssql by patriksimek</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>node-mssql</h1>
+        <p>An easy-to-use MSSQL database connector for Node.js.</p>
+
+        <p class="view"><a href="https://github.com/patriksimek/node-mssql">View the Project on GitHub <small>patriksimek/node-mssql</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/patriksimek/node-mssql/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/patriksimek/node-mssql/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/patriksimek/node-mssql">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a name="node-mssql--" class="anchor" href="#node-mssql--"><span class="octicon octicon-link"></span></a>node-mssql <a href="https://david-dm.org/patriksimek/node-mssql"><img src="https://david-dm.org/patriksimek/node-mssql.png" alt="Dependency Status"></a> <a href="http://badge.fury.io/js/mssql"><img src="https://badge.fury.io/js/mssql.png" alt="NPM version"></a>
+</h1>
+
+<p>An easy-to-use MSSQL database connector for Node.js.</p>
+
+<p>There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without loosing any important functionality.</p>
+
+<p><strong>Extra features:</strong></p>
+
+<ul>
+<li>Unified interface for multiple MSSQL modules</li>
+<li>Connection pooling with Transactions support</li>
+<li>Parametrized Stored Procedures in <a href="https://github.com/cretz/node-tds">node-tds</a> and <a href="https://github.com/WindowsAzure/node-sqlserver">Microsoft Driver for Node.js for SQL Server</a>
+</li>
+</ul><p>At the moment it support three TDS modules:</p>
+
+<ul>
+<li>
+<a href="https://github.com/pekim/tedious">Tedious</a> by Mike D Pilsbury (pure javascript - windows/osx/linux)</li>
+<li>
+<a href="https://github.com/WindowsAzure/node-sqlserver">Microsoft Driver for Node.js for SQL Server</a> by Microsoft Corporation (native - windows only)</li>
+<li>
+<a href="https://github.com/cretz/node-tds">node-tds</a> by Chad Retz (pure javascript - windows/osx/linux)</li>
+</ul><h2>
+<a name="whats-new-in-045" class="anchor" href="#whats-new-in-045"><span class="octicon octicon-link"></span></a>What's new in 0.4.5</h2>
+
+<ul>
+<li>Added support for <a href="https://github.com/visionmedia/co">co</a> flow controller via <a href="https://github.com/patriksimek/co-mssql">co-mssql</a> module</li>
+</ul><h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<pre><code>npm install mssql
+</code></pre>
+
+<h2>
+<a name="quick-example" class="anchor" href="#quick-example"><span class="octicon octicon-link"></span></a>Quick Example</h2>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">sql</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'mssql'</span><span class="p">);</span> 
+
+<span class="kd">var</span> <span class="nx">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">user</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
+    <span class="nx">password</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
+    <span class="nx">server</span><span class="o">:</span> <span class="s1">'localhost'</span><span class="p">,</span>
+    <span class="nx">database</span><span class="o">:</span> <span class="s1">'...'</span>
+<span class="p">}</span>
+
+<span class="kd">var</span> <span class="nx">connection</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Connection</span><span class="p">(</span><span class="nx">config</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+
+    <span class="c1">// Query</span>
+
+    <span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">(</span><span class="nx">connection</span><span class="p">);</span> <span class="c1">// or: var request = connection.request();</span>
+    <span class="nx">request</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">'select 1 as number'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ... error checks</span>
+
+        <span class="nx">console</span><span class="p">.</span><span class="nx">dir</span><span class="p">(</span><span class="nx">recordset</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="c1">// Stored Procedure</span>
+
+    <span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">(</span><span class="nx">connection</span><span class="p">);</span>
+    <span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'input_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+    <span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+    <span class="nx">request</span><span class="p">.</span><span class="nx">execute</span><span class="p">(</span><span class="s1">'procedure_name'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordsets</span><span class="p">,</span> <span class="nx">returnValue</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ... error checks</span>
+
+        <span class="nx">console</span><span class="p">.</span><span class="nx">dir</span><span class="p">(</span><span class="nx">recordsets</span><span class="p">);</span>
+    <span class="p">});</span>
+
+<span class="p">});</span>
+</pre></div>
+
+<h2>
+<a name="quick-example-with-one-global-connection" class="anchor" href="#quick-example-with-one-global-connection"><span class="octicon octicon-link"></span></a>Quick Example with one global connection</h2>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">sql</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'mssql'</span><span class="p">);</span> 
+
+<span class="kd">var</span> <span class="nx">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">user</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
+    <span class="nx">password</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
+    <span class="nx">server</span><span class="o">:</span> <span class="s1">'localhost'</span><span class="p">,</span>
+    <span class="nx">database</span><span class="o">:</span> <span class="s1">'...'</span>
+<span class="p">}</span>
+
+<span class="nx">sql</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="nx">config</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+
+    <span class="c1">// Query</span>
+
+    <span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
+    <span class="nx">request</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">'select 1 as number'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ... error checks</span>
+
+        <span class="nx">console</span><span class="p">.</span><span class="nx">dir</span><span class="p">(</span><span class="nx">recordset</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="c1">// Stored Procedure</span>
+
+    <span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
+    <span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'input_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">,</span> <span class="nx">value</span><span class="p">);</span>
+    <span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+    <span class="nx">request</span><span class="p">.</span><span class="nx">execute</span><span class="p">(</span><span class="s1">'procedure_name'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordsets</span><span class="p">,</span> <span class="nx">returnValue</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ... error checks</span>
+
+        <span class="nx">console</span><span class="p">.</span><span class="nx">dir</span><span class="p">(</span><span class="nx">recordsets</span><span class="p">);</span>
+    <span class="p">});</span>
+
+<span class="p">});</span>
+</pre></div>
+
+<h2>
+<a name="documentation" class="anchor" href="#documentation"><span class="octicon octicon-link"></span></a>Documentation</h2>
+
+<h3>
+<a name="configuration" class="anchor" href="#configuration"><span class="octicon octicon-link"></span></a>Configuration</h3>
+
+<ul>
+<li><a href="#cfg-basic">Basic</a></li>
+<li><a href="#cfg-tedious">Tedious</a></li>
+<li><a href="#cfg-msnodesql">Microsoft Driver for Node.js for SQL Server</a></li>
+<li><a href="#cfg-node-tds">node-tds</a></li>
+</ul><h3>
+<a name="connections" class="anchor" href="#connections"><span class="octicon octicon-link"></span></a>Connections</h3>
+
+<ul>
+<li><a href="#connection">Connection</a></li>
+<li><a href="#connect">connect</a></li>
+<li><a href="#close">close</a></li>
+</ul><h3>
+<a name="requests" class="anchor" href="#requests"><span class="octicon octicon-link"></span></a>Requests</h3>
+
+<ul>
+<li><a href="#request">Request</a></li>
+<li><a href="#execute">execute</a></li>
+<li><a href="#input">input</a></li>
+<li><a href="#output">output</a></li>
+<li><a href="#query">query</a></li>
+</ul><h3>
+<a name="transactions" class="anchor" href="#transactions"><span class="octicon octicon-link"></span></a>Transactions</h3>
+
+<ul>
+<li><a href="#transaction">Transaction</a></li>
+<li><a href="#begin">begin</a></li>
+<li><a href="#commit">commit</a></li>
+<li><a href="#rollback">rollback</a></li>
+</ul><h3>
+<a name="other" class="anchor" href="#other"><span class="octicon octicon-link"></span></a>Other</h3>
+
+<ul>
+<li><a href="#meta">Metadata</a></li>
+<li><a href="#data-types">Data Types</a></li>
+<li><a href="#verbose">Verbose Mode</a></li>
+<li><a href="#issues">Known issues</a></li>
+</ul><h2>
+<a name="configuration-1" class="anchor" href="#configuration-1"><span class="octicon octicon-link"></span></a>Configuration</h2>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">user</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
+    <span class="nx">password</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
+    <span class="nx">server</span><span class="o">:</span> <span class="s1">'localhost'</span><span class="p">,</span>
+    <span class="nx">database</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
+    <span class="nx">pool</span><span class="o">:</span> <span class="p">{</span>
+        <span class="nx">max</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="nx">min</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="nx">idleTimeoutMillis</span><span class="o">:</span> <span class="mi">30000</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+<p><a name="cfg-basic"></a></p>
+
+<h3>
+<a name="basic-configuration-is-same-for-all-drivers" class="anchor" href="#basic-configuration-is-same-for-all-drivers"><span class="octicon octicon-link"></span></a>Basic configuration is same for all drivers.</h3>
+
+<ul>
+<li>
+<strong>driver</strong> - Driver to use (default: <code>tedious</code>). Possible values: <code>tedious</code> or <code>msnodesql</code>.</li>
+<li>
+<strong>user</strong> - User name to use for authentication.</li>
+<li>
+<strong>password</strong> - Password to use for authentication.</li>
+<li>
+<strong>server</strong> - Hostname to connect to.</li>
+<li>
+<strong>port</strong> - Port to connect to (default: <code>1433</code>).</li>
+<li>
+<strong>database</strong> - Database to connect to (default: dependent on server configuration).</li>
+<li>
+<strong>timeout</strong> - Connection timeout in ms (default: 15000).</li>
+<li>
+<strong>pool.max</strong> - The maximum number of connections there can be in the pool (default: <code>10</code>).</li>
+<li>
+<strong>pool.min</strong> - The minimun of connections there can be in the pool (default: <code>0</code>).</li>
+<li>
+<strong>pool.idleTimeoutMillis</strong> - The Number of milliseconds before closing an unused connection (default: <code>30000</code>).</li>
+</ul><p><a name="cfg-tedious"></a></p>
+
+<h3>
+<a name="tedious" class="anchor" href="#tedious"><span class="octicon octicon-link"></span></a>Tedious</h3>
+
+<ul>
+<li>
+<strong>options</strong> - Object of Tedious specific options. More information: <a href="http://pekim.github.io/tedious/api-connection.html">http://pekim.github.io/tedious/api-connection.html</a>
+</li>
+</ul><p><a name="cfg-msnodesql"></a></p>
+
+<h3>
+<a name="microsoft-driver-for-nodejs-for-sql-server" class="anchor" href="#microsoft-driver-for-nodejs-for-sql-server"><span class="octicon octicon-link"></span></a>Microsoft Driver for Node.js for SQL Server</h3>
+
+<p>This driver is not part of the default package and must be installed separately by 'npm install msnodesql'. If you are looking for compiled binaries, see <a href="https://github.com/jorgeazevedo/node-sqlserver-binary">node-sqlserver-binary</a>.</p>
+
+<ul>
+<li>
+<strong>connectionString</strong> - Connection string (default: see below).</li>
+</ul><pre><code>Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};Connection Timeout=#{timeout};
+</code></pre>
+
+<p><a name="cfg-node-tds"></a></p>
+
+<h3>
+<a name="node-tds" class="anchor" href="#node-tds"><span class="octicon octicon-link"></span></a>node-tds</h3>
+
+<p>This driver is not part of the default package and must be installed separately by 'npm install tds'.</p>
+
+<p><a name="connection"></a></p>
+
+<h2>
+<a name="connections-1" class="anchor" href="#connections-1"><span class="octicon octicon-link"></span></a>Connections</h2>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">connection</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Connection</span><span class="p">({</span> <span class="cm">/* config */</span> <span class="p">});</span>
+</pre></div>
+
+<p><a name="connect"></a></p>
+
+<h3>
+<a name="connectcallback" class="anchor" href="#connectcallback"><span class="octicon octicon-link"></span></a>connect(callback)</h3>
+
+<p>Create connection to the server.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>callback(err)</strong> - A callback which is called after connection has established, or an error has occurred.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">connection</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Connection</span><span class="p">({</span>
+    <span class="nx">user</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
+    <span class="nx">password</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
+    <span class="nx">server</span><span class="o">:</span> <span class="s1">'localhost'</span><span class="p">,</span>
+    <span class="nx">database</span><span class="o">:</span> <span class="s1">'...'</span>
+<span class="p">});</span>
+
+<span class="nx">connection</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+<span class="p">});</span>
+</pre></div>
+
+<hr><p><a name="close"></a></p>
+
+<h3>
+<a name="close" class="anchor" href="#close"><span class="octicon octicon-link"></span></a>close()</h3>
+
+<p>Close connection to the server.</p>
+
+<p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">connection</span><span class="p">.</span><span class="nx">close</span><span class="p">();</span>
+</pre></div>
+
+<p><a name="request"></a></p>
+
+<h2>
+<a name="requests-1" class="anchor" href="#requests-1"><span class="octicon octicon-link"></span></a>Requests</h2>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">(</span><span class="cm">/* [connection] */</span><span class="p">);</span>
+</pre></div>
+
+<p>If you ommit connection argument, global connection is used instead.</p>
+
+<p><a name="execute"></a></p>
+
+<h3>
+<a name="executeprocedure-callback" class="anchor" href="#executeprocedure-callback"><span class="octicon octicon-link"></span></a>execute(procedure, [callback])</h3>
+
+<p>Call a stored procedure.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>procedure</strong> - Name of the stored procedure to be executed.</li>
+<li>
+<strong>callback(err, recordsets, returnValue)</strong> - A callback which is called after execution has completed, or an error has occurred. <code>returnValue</code> is also accessible as property of recordsets.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'input_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">,</span> <span class="nx">value</span><span class="p">);</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">execute</span><span class="p">(</span><span class="s1">'procedure_name'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordsets</span><span class="p">,</span> <span class="nx">returnValue</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordsets</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span> <span class="c1">// count of recordsets returned by the procedure</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordsets</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">length</span><span class="p">);</span> <span class="c1">// count of rows contained in first recordset</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">returnValue</span><span class="p">);</span> <span class="c1">// procedure return value</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordsets</span><span class="p">.</span><span class="nx">returnValue</span><span class="p">);</span> <span class="c1">// same as previous line</span>
+
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">request</span><span class="p">.</span><span class="nx">parameters</span><span class="p">.</span><span class="nx">output_parameter</span><span class="p">.</span><span class="nx">value</span><span class="p">);</span> <span class="c1">// output value</span>
+
+    <span class="c1">// ...</span>
+<span class="p">});</span>
+</pre></div>
+
+<hr><p><a name="input"></a></p>
+
+<h3>
+<a name="inputname-type-value" class="anchor" href="#inputname-type-value"><span class="octicon octicon-link"></span></a>input(name, [type], value)</h3>
+
+<p>Add an input parameter to the request.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>name</strong> - Name of the input parameter without @ char.</li>
+<li>
+<strong>type</strong> - SQL data type of input parameter. If you omit type, module automaticaly decide which SQL data type should be used based on JS data type.</li>
+<li>
+<strong>value</strong> - Input parameter value. <code>undefined</code> ans <code>NaN</code> values are automatically converted to <code>null</code> values.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'input_parameter'</span><span class="p">,</span> <span class="nx">value</span><span class="p">);</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'input_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">,</span> <span class="nx">value</span><span class="p">);</span>
+</pre></div>
+
+<p><strong>JS Data Type To SQL Data Type Map</strong></p>
+
+<ul>
+<li>
+<code>String</code> -&gt; <code>sql.VarChar</code>
+</li>
+<li>
+<code>Number</code> -&gt; <code>sql.Int</code>
+</li>
+<li>
+<code>Boolean</code> -&gt; <code>sql.Bit</code>
+</li>
+<li>
+<code>Date</code> -&gt; <code>sql.DateTime</code>
+</li>
+</ul><p>Default data type for unknown object is <code>sql.VarChar</code>.</p>
+
+<p>You can define you own type map.</p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">sql</span><span class="p">.</span><span class="nx">map</span><span class="p">.</span><span class="nx">register</span><span class="p">(</span><span class="nx">MyClass</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Text</span><span class="p">);</span>
+</pre></div>
+
+<p>You can also overwrite default type map.</p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">sql</span><span class="p">.</span><span class="nx">map</span><span class="p">.</span><span class="nx">register</span><span class="p">(</span><span class="nb">Number</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">BigInt</span><span class="p">);</span>
+</pre></div>
+
+<hr><p><a name="output"></a></p>
+
+<h3>
+<a name="outputname-type" class="anchor" href="#outputname-type"><span class="octicon octicon-link"></span></a>output(name, type)</h3>
+
+<p>Add an output parameter to the request.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>name</strong> - Name of the output parameter without @ char.</li>
+<li>
+<strong>type</strong> - SQL data type of output parameter.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+</pre></div>
+
+<hr><p><a name="query"></a></p>
+
+<h3>
+<a name="querycommand-callback" class="anchor" href="#querycommand-callback"><span class="octicon octicon-link"></span></a>query(command, [callback])</h3>
+
+<p>Execute the SQL command.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>command</strong> - T-SQL command to be executed.</li>
+<li>
+<strong>callback(err, recordset)</strong> - A callback which is called after execution has completed, or an error has occurred.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">'select 1 as number'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordset</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">number</span><span class="p">);</span> <span class="c1">// return 1</span>
+
+    <span class="c1">// ...</span>
+<span class="p">});</span>
+</pre></div>
+
+<p>You can enable multiple recordsets in querries by <code>request.multiple = true</code> command.</p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">multiple</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+
+<span class="nx">request</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">'select 1 as number; select 2 as number'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordsets</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordsets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">].</span><span class="nx">number</span><span class="p">);</span> <span class="c1">// return 1</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordsets</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">].</span><span class="nx">number</span><span class="p">);</span> <span class="c1">// return 2</span>
+<span class="p">});</span>
+</pre></div>
+
+<p><a name="transaction"></a></p>
+
+<h2>
+<a name="transactions-1" class="anchor" href="#transactions-1"><span class="octicon octicon-link"></span></a>Transactions</h2>
+
+<p><strong>Important:</strong> always use <code>Transaction</code> class to create transactions - it ensures that all your requests are executed on one connection. Once you call <code>begin</code>, a single connection is aquired from the connection pool and all subsequent requests (initialized with the <code>Transaction</code> object) are executed exclusively on this connection. After you call <code>commit</code> or <code>rollback</code>, connection is then released back to the connection pool.</p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Transaction</span><span class="p">(</span><span class="cm">/* [connection] */</span><span class="p">);</span>
+</pre></div>
+
+<p>If you ommit connection argument, global connection is used instead.</p>
+
+<p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Transaction</span><span class="p">(</span><span class="cm">/* [connection] */</span><span class="p">);</span>
+<span class="nx">transaction</span><span class="p">.</span><span class="nx">begin</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+
+    <span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">(</span><span class="nx">transaction</span><span class="p">);</span>
+    <span class="nx">request</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">'insert into mytable (mycolumn) values (12345)'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ... error checks</span>
+
+        <span class="nx">transaction</span><span class="p">.</span><span class="nx">commit</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// ... error checks</span>
+
+            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Transaction commited."</span><span class="p">);</span>
+        <span class="p">});</span>
+    <span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
+
+<p>Transaction can also be created by <code>var transaction = connection.transaction();</code>. Requests can also be created by <code>var request = transaction.request();</code>.</p>
+
+<p><a name="begin"></a></p>
+
+<h3>
+<a name="begincallback" class="anchor" href="#begincallback"><span class="octicon octicon-link"></span></a>begin(callback)</h3>
+
+<p>Begin a transaction.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>callback(err)</strong> - A callback which is called after transaction has began, or an error has occurred.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Transaction</span><span class="p">();</span>
+<span class="nx">transaction</span><span class="p">.</span><span class="nx">begin</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+<span class="p">});</span>
+</pre></div>
+
+<hr><p><a name="commit"></a></p>
+
+<h3>
+<a name="commitcallback" class="anchor" href="#commitcallback"><span class="octicon octicon-link"></span></a>commit(callback)</h3>
+
+<p>Commit a transaction.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>callback(err)</strong> - A callback which is called after transaction has commited, or an error has occurred.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Transaction</span><span class="p">();</span>
+<span class="nx">transaction</span><span class="p">.</span><span class="nx">begin</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+
+    <span class="nx">transaction</span><span class="p">.</span><span class="nx">commit</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">//...</span>
+    <span class="p">})</span>
+<span class="p">});</span>
+</pre></div>
+
+<hr><p><a name="rollback"></a></p>
+
+<h3>
+<a name="rollbackcallback" class="anchor" href="#rollbackcallback"><span class="octicon octicon-link"></span></a>rollback(callback)</h3>
+
+<p>Rollback a transaction.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>callback(err)</strong> - A callback which is called after transaction has rolled back, or an error has occurred.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Transaction</span><span class="p">();</span>
+<span class="nx">transaction</span><span class="p">.</span><span class="nx">begin</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+
+    <span class="nx">transaction</span><span class="p">.</span><span class="nx">rollback</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">//...</span>
+    <span class="p">})</span>
+<span class="p">});</span>
+</pre></div>
+
+<p><a name="data-types"></a></p>
+
+<h2>
+<a name="metadata" class="anchor" href="#metadata"><span class="octicon octicon-link"></span></a>Metadata</h2>
+
+<p>Recordset metadata are accessible trough <code>recordset.columns</code> property.</p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">'select 1 as first, \'asdf\' as second'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">dir</span><span class="p">(</span><span class="nx">recordset</span><span class="p">.</span><span class="nx">columns</span><span class="p">);</span>
+
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordset</span><span class="p">.</span><span class="nx">columns</span><span class="p">.</span><span class="nx">first</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span> <span class="c1">// true</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordset</span><span class="p">.</span><span class="nx">columns</span><span class="p">.</span><span class="nx">second</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">);</span> <span class="c1">// true</span>
+<span class="p">});</span>
+</pre></div>
+
+<p>Columns structure for example above:</p>
+
+<pre><code>{ first: { name: 'first', size: 10, type: { name: 'int' } },
+  second: { name: 'second', size: 4, type: { name: 'varchar' } } }
+</code></pre>
+
+<p><a name="data-types"></a></p>
+
+<h2>
+<a name="data-types" class="anchor" href="#data-types"><span class="octicon octicon-link"></span></a>Data Types</h2>
+
+<pre><code>sql.BigInt
+sql.Decimal
+sql.Float
+sql.Int
+sql.Money
+sql.Numeric
+sql.SmallInt
+sql.SmallMoney
+sql.Real
+sql.TinyInt
+
+sql.Char
+sql.NChar
+sql.Text
+sql.NText
+sql.VarChar
+sql.NVarChar
+sql.Xml
+
+sql.Date
+sql.DateTime
+sql.DateTimeOffset
+sql.SmallDateTime
+
+sql.Bit
+sql.UniqueIdentifier
+</code></pre>
+
+<p>Binary types as input parameters are only available with Microsoft's native driver.</p>
+
+<pre><code>sql.VarBinary
+sql.NVarBinary
+sql.Image
+</code></pre>
+
+<p><a name="verbose"></a></p>
+
+<h2>
+<a name="verbose-mode" class="anchor" href="#verbose-mode"><span class="octicon octicon-link"></span></a>Verbose Mode</h2>
+
+<p>You can enable verbose mode by <code>request.verbose = true</code> command.</p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">verbose</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'username'</span><span class="p">,</span> <span class="s1">'patriksimek'</span><span class="p">);</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'password'</span><span class="p">,</span> <span class="s1">'dontuseplaintextpassword'</span><span class="p">);</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'attempts'</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">execute</span><span class="p">(</span><span class="s1">'my_stored_procedure'</span><span class="p">);</span>
+</pre></div>
+
+<p>Output for example above could look similar to this.</p>
+
+<pre><code>---------- sql execute --------
+     proc: my_stored_procedure
+    input: @username, varchar, patriksimek
+    input: @password, varchar, dontuseplaintextpassword
+    input: @attempts, bigint, 2
+---------- response -----------
+{ id: 1,
+  username: 'patriksimek',
+  password: 'dontuseplaintextpassword',
+  email: null,
+  language: 'en',
+  attempts: 2 }
+---------- --------------------
+   return: 0
+ duration: 5ms
+---------- completed ----------
+</code></pre>
+
+<p><a name="issues"></a></p>
+
+<h2>
+<a name="known-issues" class="anchor" href="#known-issues"><span class="octicon octicon-link"></span></a>Known issues</h2>
+
+<h3>
+<a name="tedious-1" class="anchor" href="#tedious-1"><span class="octicon octicon-link"></span></a>Tedious</h3>
+
+<ul>
+<li>Tedious 1.5 contains bug where 0 is casted as null when using BigInt.</li>
+<li>If you're facing problems with text codepage, try using NVarChar as default data type for string values - <code>sql.map.register(String, sql.NVarChar)</code>.</li>
+</ul><h3>
+<a name="node-tds-1" class="anchor" href="#node-tds-1"><span class="octicon octicon-link"></span></a>node-tds</h3>
+
+<ul>
+<li>node-tds 0.1.0 contains bug and return same value for columns with same name.</li>
+<li>node-tds 0.1.0 doesn't support encoding of input parameters.</li>
+<li>node-tds 0.1.0 contains bug in selects that doesn't return any values <em>(select <a href="https://github.com/param" class="user-mention">@param</a> = 'value')</em>.</li>
+</ul><h2>
+<a name="todo" class="anchor" href="#todo"><span class="octicon octicon-link"></span></a>TODO</h2>
+
+<ul>
+<li>UniqueIdentifier testing.</li>
+<li>Binary, VarBinary, Image testing.</li>
+</ul><p><a name="license"></a></p>
+
+<h2>
+<a name="license" class="anchor" href="#license"><span class="octicon octicon-link"></span></a>License</h2>
+
+<p>Copyright (c) 2013-2014 Patrik Simek</p>
+
+<p>The MIT License</p>
+
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:</p>
+
+<p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
+
+<p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/patriksimek">patriksimek</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
