@@ -3,13 +3,22 @@ msnodesql = require 'msnodesql'
 util = require 'util'
 
 TYPES = require('./datatypes').TYPES
+ISOLATION_LEVEL = require('./isolationlevel')
 DECLARATIONS = require('./datatypes').DECLARATIONS
+EMPTY_BUFFER = new Buffer(0)
 
 ###
 @ignore
 ###
 
 castParameter = (value, type) ->
+	unless value?
+		if type is TYPES.Binary or type is TYPES.VarBinary or type is TYPES.Image
+			# msnodesql has some problems with NULL values in those types, so we need to replace it with empty buffer
+			return EMPTY_BUFFER
+		
+		return null
+	
 	switch type
 		when TYPES.VarChar, TYPES.NVarChar, TYPES.Char, TYPES.NChar, TYPES.Xml, TYPES.Text, TYPES.NText
 			if typeof value isnt 'string' and value not instanceof String
@@ -36,7 +45,7 @@ castParameter = (value, type) ->
 		when TYPES.Binary, TYPES.VarBinary, TYPES.Image
 			if value not instanceof Buffer
 				value = new Buffer(value.toString())
-			
+
 	value
 
 ###
@@ -57,10 +66,12 @@ createColumns = (meta) ->
 @ignore
 ###
 
-typeDeclaration = (type) ->
+typeDeclaration = (type, length) ->
 	switch type
-		when TYPES.VarChar, TYPES.NVarChar, TYPES.Char, TYPES.NChar, TYPES.Xml, TYPES.Text, TYPES.NText
+		when TYPES.VarChar, TYPES.NVarChar, TYPES.VarBinary
 			return "#{type.name} (MAX)"
+		when TYPES.Char, TYPES.NChar, TYPES.Binary
+			return "#{type.name} (#{length ? 1})"
 		else
 			return type.name
 
@@ -68,7 +79,20 @@ typeDeclaration = (type) ->
 @ignore
 ###
 
-module.exports = (Connection, Transaction, Request) ->
+isolationLevelDeclaration = (type) ->
+	switch type
+		when ISOLATION_LEVEL.READ_UNCOMMITTED then return "READ UNCOMMITTED"
+		when ISOLATION_LEVEL.READ_COMMITTED then return "READ COMMITTED"
+		when ISOLATION_LEVEL.REPEATABLE_READ then return "REPEATABLE READ"
+		when ISOLATION_LEVEL.SERIALIZABLE then return "SERIALIZABLE"
+		when ISOLATION_LEVEL.SNAPSHOT then return "SNAPSHOT"
+		else throw new TransactionError "Invalid isolation level."
+
+###
+@ignore
+###
+
+module.exports = (Connection, Transaction, Request, ConnectionError, TransactionError, RequestError) ->
 	class MsnodesqlConnection extends Connection
 		pool: null
 		
@@ -90,6 +114,7 @@ module.exports = (Connection, Transaction, Request) ->
 				idleTimeoutMillis: 30000
 				create: (callback) =>
 					msnodesql.open cfg.connectionString, (err, c) =>
+						if err then err = ConnectionError err
 						if err then return callback err, null # there must be a second argument null
 						callback null, c
 				
@@ -111,13 +136,15 @@ module.exports = (Connection, Transaction, Request) ->
 				
 				# and release it immediately
 				@pool.release connection
-				callback? err
+				callback err
 			
 		close: (callback) ->
-			@pool?.drain =>
+			unless @pool then return callback null
+			
+			@pool.drain =>
 				@pool.destroyAllNow()
 				@pool = null
-				callback? null
+				callback null
 	
 	class MsnodesqlTransaction extends Transaction
 		begin: (callback) ->
@@ -126,19 +153,16 @@ module.exports = (Connection, Transaction, Request) ->
 				
 				@_pooledConnection = connection
 				
-				req = @request()
-				req.query 'begin tran', callback
+				@request().query "begin tran; set transaction isolation level #{isolationLevelDeclaration(@isolationLevel)};", callback
 			
 		commit: (callback) ->
-			req = @request()
-			req.query 'commit tran', (err) =>
+			@request().query 'commit tran', (err) =>
 				@connection.pool.release @_pooledConnection
 				@_pooledConnection = null
 				callback err
 
 		rollback: (callback) ->
-			req = @request()
-			req.query 'rollback tran', (err) =>
+			@request().query 'rollback tran', (err) =>
 				@connection.pool.release @_pooledConnection
 				@_pooledConnection = null
 				callback err
@@ -181,7 +205,7 @@ module.exports = (Connection, Transaction, Request) ->
 			# nested = function is called by this.execute
 			
 			unless @nested
-				input = ("@#{param.name} #{typeDeclaration(param.type)}" for name, param of @parameters)
+				input = ("@#{param.name} #{typeDeclaration(param.type, param.length)}" for name, param of @parameters)
 				sets = ("set @#{param.name}=?" for name, param of @parameters when param.io is 1)
 				output = ("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2)
 				if input.length then command = "declare #{input.join ','};#{sets.join ';'};#{command};"
@@ -195,9 +219,17 @@ module.exports = (Connection, Transaction, Request) ->
 					if @verbose and not @nested then console.log "---------- response -----------"
 					
 					req.on 'meta', (metadata) =>
-						if row and @verbose
-							console.log util.inspect(row)
-							console.log "---------- --------------------"
+						if row
+							if @verbose
+								console.log util.inspect(row)
+								console.log "---------- --------------------"
+
+							unless row["___return___"]?
+								# row with ___return___ col is the last row
+								@emit 'row', row
+						
+						if recordset
+							@emit 'recordset', recordset
 						
 						row = null
 						columns = metadata
@@ -209,9 +241,14 @@ module.exports = (Connection, Transaction, Request) ->
 						recordsets.push recordset
 						
 					req.on 'row', (rownumber) =>
-						if row and @verbose
-							console.log util.inspect(row)
-							console.log "---------- --------------------"
+						if row
+							if @verbose
+								console.log util.inspect(row)
+								console.log "---------- --------------------"
+
+							unless row["___return___"]?
+								# row with ___return___ col is the last row
+								@emit 'row', row
 						
 						row = {}
 						recordset.push row
@@ -235,10 +272,14 @@ module.exports = (Connection, Transaction, Request) ->
 							console.log " duration: #{elapsed}ms"
 							console.log "---------- completed ----------"
 							
-						callback? err
+						callback? RequestError err
 					
 					req.once 'done', =>
 						unless @nested
+							# if nested queries, last recordset is full of return values
+							if recordset
+								@emit 'recordset', recordset
+								
 							if @verbose
 								if row
 									console.log util.inspect(row)
@@ -258,7 +299,7 @@ module.exports = (Connection, Transaction, Request) ->
 								elapsed = Date.now() - started
 								console.log " duration: #{elapsed}ms"
 								console.log "---------- completed ----------"
-			
+
 						@_release connection
 						callback? null, if @multiple or @nested then recordsets else recordsets[0]
 				
@@ -271,8 +312,8 @@ module.exports = (Connection, Transaction, Request) ->
 	
 			started = Date.now()
 			
-			cmd = "declare #{['@__return int'].concat("@#{param.name} #{typeDeclaration(param.type)}" for name, param of @parameters when param.io is 2).join ', '};"
-			cmd += "exec @__return = #{procedure} "
+			cmd = "declare #{['@___return___ int'].concat("@#{param.name} #{typeDeclaration(param.type, param.length)}" for name, param of @parameters when param.io is 2).join ', '};"
+			cmd += "exec @___return___ = #{procedure} "
 			
 			spp = []
 			for name, param of @parameters
@@ -287,7 +328,7 @@ module.exports = (Connection, Transaction, Request) ->
 					spp.push "@#{param.name}=?"
 			
 			cmd += "#{spp.join ', '};"
-			cmd += "select #{['@__return as \'__return\''].concat("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2).join ', '};"
+			cmd += "select #{['@___return___ as \'___return___\''].concat("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2).join ', '};"
 			
 			if @verbose then console.log "---------- response -----------"
 			
@@ -308,8 +349,8 @@ module.exports = (Connection, Transaction, Request) ->
 				
 				else
 					last = recordsets.pop()?[0]
-					if last and last.__return?
-						returnValue = last.__return
+					if last and last.___return___?
+						returnValue = last.___return___
 						
 						for name, param of @parameters when param.io is 2
 							param.value = last[param.name]
@@ -333,4 +374,9 @@ module.exports = (Connection, Transaction, Request) ->
 			
 			throw new Error "Request canceling is not implemented by msnodesql driver."
 	
-	return {Connection: MsnodesqlConnection, Transaction: MsnodesqlTransaction, Request: MsnodesqlRequest}
+	return {
+		Connection: MsnodesqlConnection
+		Transaction: MsnodesqlTransaction
+		Request: MsnodesqlRequest
+		fix: -> # there is nothing to fix in this driver
+	}

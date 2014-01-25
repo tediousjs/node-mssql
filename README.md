@@ -2,21 +2,41 @@
 
 An easy-to-use MSSQL database connector for Node.js.
 
-There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without loosing any important functionality.
+There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without loosing any important functionality. node-mssql uses other TDS modules as drivers and offer easy to use unified interface. It also add some extra features and bug fixes.
+
+There is also [co](https://github.com/visionmedia/co) warpper available - [co-mssql](https://github.com/patriksimek/co-mssql).
 
 **Extra features:**
-* Unified interface for multiple MSSQL modules
-* Connection pooling with Transactions support
-* Parametrized Stored Procedures in [node-tds](https://github.com/cretz/node-tds) and [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver)
+- Unified interface for multiple MSSQL modules
+- Connection pooling with Transactions support
+- Parametrized Stored Procedures in [node-tds](https://github.com/cretz/node-tds) and [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver)
+- Injects original TDS modules with enhancements and bug fixes
 
 At the moment it support three TDS modules:
-* [Tedious](https://github.com/pekim/tedious) by Mike D Pilsbury (pure javascript - windows/osx/linux)
-* [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
-* [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
+- [Tedious](https://github.com/pekim/tedious) by Mike D Pilsbury (pure javascript - windows/osx/linux)
+- [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
+- [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 0.4.5
+## What's new in 0.5.0
 
-* Added support for [co](https://github.com/visionmedia/co) flow controller via [co-mssql](https://github.com/patriksimek/co-mssql) module
+- You can now attach event listeners to Connection (connect, close), Transaction (begin, commit, rollback) and Request (row, recordset, done)
+- You can now set length of Char, NChar and Binary output parameters
+- You can now change default transaction isolation level
+- Errors are now splitted to three categories for better error handling - ConnectionError, TransactionError, ReqestError
+- New features and bug fixes for Tedious
+    - Binary and VarBinary types are now available as input and output parameters
+    - Image type is now available as input parameter
+    - Binary, VarBinary and Image types are now returned as buffer (was array)
+    - Transaction isolationLevel default is now READ_COMMITED (was READ_UNCOMMITED)
+    - Fixed issue when zero value was casted as null when using BigInt as input parameter
+    - Fixed issue when dates before 1900/01/01 in input parameters resulted in "Out of bounds" error
+- New features and bug fixes for node-tds
+    - UniqueIdentifier type in now available as input and output parameter
+    - UniqueIdentifier type is now parsed correctly as string value (was buffer)
+    - Text, NText, Char, NChar, VarChar and NVarChar input parameters has correct lengths
+    - Fixed Error messages
+- New features and bug fixes for Microsoft Driver for Node.js for SQL Server
+    - Char, NChar, Xml, Text, NText and VarBinary types are now correctly functional as output parameters
 
 ## Installation
 
@@ -130,6 +150,7 @@ sql.connect(config, function(err) {
 
 ### Other
 
+* [Errors](#errors)
 * [Metadata](#meta)
 * [Data Types](#data-types)
 * [Verbose Mode](#verbose)
@@ -154,28 +175,30 @@ var config = {
 <a name="cfg-basic" />
 ### Basic configuration is same for all drivers.
 
-* **driver** - Driver to use (default: `tedious`). Possible values: `tedious` or `msnodesql`.
-* **user** - User name to use for authentication.
-* **password** - Password to use for authentication.
-* **server** - Hostname to connect to.
-* **port** - Port to connect to (default: `1433`).
-* **database** - Database to connect to (default: dependent on server configuration).
-* **timeout** - Connection timeout in ms (default: 15000).
-* **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
-* **pool.min** - The minimun of connections there can be in the pool (default: `0`).
-* **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
+- **driver** - Driver to use (default: `tedious`). Possible values: `tedious` or `msnodesql`.
+- **user** - User name to use for authentication.
+- **password** - Password to use for authentication.
+- **server** - Hostname to connect to.
+- **port** - Port to connect to (default: `1433`).
+- **database** - Database to connect to (default: dependent on server configuration).
+- **timeout** - Connection timeout in ms (default: 15000).
+- **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
+- **pool.min** - The minimun of connections there can be in the pool (default: `0`).
+- **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
 
 <a name="cfg-tedious" />
 ### Tedious
 
-* **options** - Object of Tedious specific options. More information: http://pekim.github.io/tedious/api-connection.html
+- **options** - Object of Tedious specific options. More information: http://pekim.github.io/tedious/api-connection.html
+
+__This module update Tedious driver with some extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`.__
 
 <a name="cfg-msnodesql" />
 ### Microsoft Driver for Node.js for SQL Server
 
 This driver is not part of the default package and must be installed separately by 'npm install msnodesql'. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
 
-* **connectionString** - Connection string (default: see below).
+- **connectionString** - Connection string (default: see below).
 
 ```
 Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};Connection Timeout=#{timeout};
@@ -186,6 +209,8 @@ Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{datab
 
 This driver is not part of the default package and must be installed separately by 'npm install tds'.
 
+__This module update node-tds driver with some extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`.__
+
 <a name="connection" />
 ## Connections
 
@@ -193,14 +218,21 @@ This driver is not part of the default package and must be installed separately 
 var connection = new sql.Connection({ /* config */ });
 ```
 
+### Events
+
+- **connect** - Dispatched after connection has established.
+- **close** - Dispatched after connection has closed a pool (by calling close).
+
+---------------------------------------
+
 <a name="connect" />
-### connect(callback)
+### connect([callback])
 
 Create connection to the server.
 
 __Arguments__
 
-* **callback(err)** - A callback which is called after connection has established, or an error has occurred.
+- **callback(err)** - A callback which is called after connection has established, or an error has occurred. Optional.
 
 __Example__
 
@@ -239,6 +271,14 @@ var request = new sql.Request(/* [connection] */);
 
 If you ommit connection argument, global connection is used instead.
 
+### Events
+
+- **begin** - Dispatched when transaction begin.
+- **commit** - Dispatched on successful commit.
+- **rollback** - Dispatched on successful rollback.
+
+---------------------------------------
+
 <a name="execute" />
 ### execute(procedure, [callback])
 
@@ -246,8 +286,8 @@ Call a stored procedure.
 
 __Arguments__
 
-* **procedure** - Name of the stored procedure to be executed.
-* **callback(err, recordsets, returnValue)** - A callback which is called after execution has completed, or an error has occurred. `returnValue` is also accessible as property of recordsets.
+- **procedure** - Name of the stored procedure to be executed.
+- **callback(err, recordsets, returnValue)** - A callback which is called after execution has completed, or an error has occurred. `returnValue` is also accessible as property of recordsets.
 
 __Example__
 
@@ -278,9 +318,9 @@ Add an input parameter to the request.
 
 __Arguments__
 
-* **name** - Name of the input parameter without @ char.
-* **type** - SQL data type of input parameter. If you omit type, module automaticaly decide which SQL data type should be used based on JS data type.
-* **value** - Input parameter value. `undefined` ans `NaN` values are automatically converted to `null` values.
+- **name** - Name of the input parameter without @ char.
+- **type** - SQL data type of input parameter. If you omit type, module automaticaly decide which SQL data type should be used based on JS data type.
+- **value** - Input parameter value. `undefined` ans `NaN` values are automatically converted to `null` values.
 
 __Example__
 
@@ -291,10 +331,10 @@ request.input('input_parameter', sql.Int, value);
 
 __JS Data Type To SQL Data Type Map__
 
-* `String` -> `sql.VarChar`
-* `Number` -> `sql.Int`
-* `Boolean` -> `sql.Bit`
-* `Date` -> `sql.DateTime`
+- `String` -> `sql.VarChar`
+- `Number` -> `sql.Int`
+- `Boolean` -> `sql.Bit`
+- `Date` -> `sql.DateTime`
 
 Default data type for unknown object is `sql.VarChar`.
 
@@ -313,19 +353,21 @@ sql.map.register(Number, sql.BigInt);
 ---------------------------------------
 
 <a name="output" />
-### output(name, type)
+### output(name, type, [length])
 
 Add an output parameter to the request.
 
 __Arguments__
 
-* **name** - Name of the output parameter without @ char.
-* **type** - SQL data type of output parameter.
+- **name** - Name of the output parameter without @ char.
+- **type** - SQL data type of output parameter.
+- **length** - Expected length (for Char, Binary). Optional.
 
 __Example__
 
 ```javascript
 request.output('output_parameter', sql.Int);
+request.output('output_parameter', sql.Char, 50);
 ```
 
 ---------------------------------------
@@ -337,8 +379,8 @@ Execute the SQL command.
 
 __Arguments__
 
-* **command** - T-SQL command to be executed.
-* **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred.
+- **command** - T-SQL command to be executed.
+- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred.
 
 __Example__
 
@@ -400,14 +442,23 @@ transaction.begin(function(err) {
 
 Transaction can also be created by `var transaction = connection.transaction();`. Requests can also be created by `var request = transaction.request();`.
 
+### Events
+
+- **recordset(recordset)** - Dispatched when new recordset is parsed (with all rows).
+- **row(row)** - Dispatched when new row is parsed.
+- **done(err, recordsets)** - Dispatched when request is complete.
+
+---------------------------------------
+
 <a name="begin" />
-### begin(callback)
+### begin([isolationLevel], [callback])
 
 Begin a transaction.
 
 __Arguments__
 
-* **callback(err)** - A callback which is called after transaction has began, or an error has occurred.
+- **isolationLevel** - Controls the locking and row versioning behavior of TSQL statements issued by a connection. Optional, READ_COMMITTED by default. For possible values see `sql.ISOLATION_LEVEL`.
+- **callback(err)** - A callback which is called after transaction has began, or an error has occurred. Optional.
 
 __Example__
 
@@ -421,13 +472,13 @@ transaction.begin(function(err) {
 ---------------------------------------
 
 <a name="commit" />
-### commit(callback)
+### commit([callback])
 
 Commit a transaction.
 
 __Arguments__
 
-* **callback(err)** - A callback which is called after transaction has commited, or an error has occurred.
+- **callback(err)** - A callback which is called after transaction has commited, or an error has occurred. Optional.
 
 __Example__
 
@@ -445,13 +496,13 @@ transaction.begin(function(err) {
 ---------------------------------------
 
 <a name="rollback" />
-### rollback(callback)
+### rollback([callback])
 
 Rollback a transaction.
 
 __Arguments__
 
-* **callback(err)** - A callback which is called after transaction has rolled back, or an error has occurred.
+- **callback(err)** - A callback which is called after transaction has rolled back, or an error has occurred. Optional.
 
 __Example__
 
@@ -465,6 +516,17 @@ transaction.begin(function(err) {
     })
 });
 ```
+
+<a name="data-types" />
+## Errors
+
+There are three type of errors you can handle:
+
+- **ConnectionError** - Errors related to connections and connection pool.
+- **TransactionError** - Errors related to creating, commiting and rolling back transactions.
+- **RequestError** - Errors related to queries and stored procedures execution.
+
+Those errors are initialized in node-mssql module and it's stack can be cropped. You can always access original error with `err.originalError`.
 
 <a name="data-types" />
 ## Metadata
@@ -492,6 +554,7 @@ Columns structure for example above:
 ## Data Types
 
 ```
+sql.Bit
 sql.BigInt
 sql.Decimal
 sql.Float
@@ -516,15 +579,10 @@ sql.DateTime
 sql.DateTimeOffset
 sql.SmallDateTime
 
-sql.Bit
 sql.UniqueIdentifier
-```
 
-Binary types as input parameters are only available with Microsoft's native driver.
-
-```
+sql.Binary
 sql.VarBinary
-sql.NVarBinary
 sql.Image
 ```
 
@@ -568,19 +626,15 @@ Output for example above could look similar to this.
 
 ### Tedious
 
-* Tedious 1.5 contains bug where 0 is casted as null when using BigInt.
-* If you're facing problems with text codepage, try using NVarChar as default data type for string values - `sql.map.register(String, sql.NVarChar)`.
+- If you're facing problems with text codepage, try using NVarChar as default data type for string values - `sql.map.register(String, sql.NVarChar)`.
 
 ### node-tds
 
-* node-tds 0.1.0 contains bug and return same value for columns with same name.
-* node-tds 0.1.0 doesn't support encoding of input parameters.
-* node-tds 0.1.0 contains bug in selects that doesn't return any values *(select @param = 'value')*.
-
-## TODO
-
-* UniqueIdentifier testing.
-* Binary, VarBinary, Image testing.
+- If you're facing problems with date, try changing your tsql language `set language 'English';`.
+- node-tds 0.1.0 contains bug and return same value for columns with same name.
+- node-tds 0.1.0 doesn't support codepage of input parameters.
+- node-tds 0.1.0 contains bug in selects that doesn't return any values *(select @param = 'value')*.
+- node-tds 0.1.0 doesn't support Binary, VarBinary and Image as parameters.
 
 <a name="license" />
 ## License

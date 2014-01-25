@@ -2,13 +2,17 @@
 tds = require 'tds'
 util = require 'util'
 
+FIXED = false
 TYPES = require('./datatypes').TYPES
+ISOLATION_LEVEL = require('./isolationlevel')
 
 ###
 @ignore
 ###
 
 castParameter = (value, type) ->
+	unless value? then return null
+	
 	switch type
 		when TYPES.VarChar, TYPES.NVarChar, TYPES.Char, TYPES.NChar, TYPES.Xml, TYPES.Text, TYPES.NText
 			if typeof value isnt 'string' and value not instanceof String
@@ -42,6 +46,23 @@ castParameter = (value, type) ->
 @ignore
 ###
 
+createParameterHeader = (param) ->
+	header = 
+		type: param.type.name
+		
+	switch param.type
+		when TYPES.VarChar, TYPES.NVarChar, TYPES.VarBinary
+			header.size = "MAX"
+			
+		when TYPES.Char, TYPES.NChar, TYPES.Binary
+			header.size = param.length ? param.value?.length ? 1
+	
+	header
+	
+###
+@ignore
+###
+
 createColumns = (meta) ->
 	out = {}
 	for key, value of meta
@@ -56,10 +77,12 @@ createColumns = (meta) ->
 @ignore
 ###
 
-typeDeclaration = (type) ->
+typeDeclaration = (type, length) ->
 	switch type
-		when TYPES.VarChar, TYPES.NVarChar, TYPES.Char, TYPES.NChar, TYPES.Xml, TYPES.Text, TYPES.NText
+		when TYPES.VarChar, TYPES.NVarChar, TYPES.VarBinary
 			return "#{type.name} (MAX)"
+		when TYPES.Char, TYPES.NChar, TYPES.Binary
+			return "#{type.name} (#{length ? 1})"
 		else
 			return type.name
 
@@ -67,7 +90,63 @@ typeDeclaration = (type) ->
 @ignore
 ###
 
-module.exports = (Connection, Transaction, Request) ->
+isolationLevelDeclaration = (type) ->
+	switch type
+		when ISOLATION_LEVEL.READ_UNCOMMITTED then return "READ UNCOMMITTED"
+		when ISOLATION_LEVEL.READ_COMMITTED then return "READ COMMITTED"
+		when ISOLATION_LEVEL.REPEATABLE_READ then return "REPEATABLE READ"
+		when ISOLATION_LEVEL.SERIALIZABLE then return "SERIALIZABLE"
+		when ISOLATION_LEVEL.SNAPSHOT then return "SNAPSHOT"
+		else throw new TransactionError "Invalid isolation level."
+
+###
+Taken from Tedious.
+
+@private
+###
+
+formatHex = (number) ->
+	hex = number.toString(16)
+	if hex.length == 1
+		hex = '0' + hex
+		
+	hex
+
+###
+Taken from Tedious.
+
+@private
+###
+
+parseGuid = (buffer) ->
+	guid = formatHex(buffer[3]) +
+		formatHex(buffer[2]) +
+		formatHex(buffer[1]) +
+		formatHex(buffer[0]) +
+		'-' +
+		formatHex(buffer[5]) +
+		formatHex(buffer[4]) +
+		'-' +
+		formatHex(buffer[7]) +
+		formatHex(buffer[6]) +
+		'-' +
+		formatHex(buffer[8]) +
+		formatHex(buffer[9]) +
+		'-' +
+		formatHex(buffer[10]) +
+		formatHex(buffer[11]) +
+		formatHex(buffer[12]) +
+		formatHex(buffer[13]) +
+		formatHex(buffer[14]) +
+		formatHex(buffer[15])
+	
+	guid.toUpperCase()
+
+###
+@ignore
+###
+
+module.exports = (Connection, Transaction, Request, ConnectionError, TransactionError, RequestError) ->
 	class TDSConnection extends Connection
 		pool: null
 		
@@ -91,7 +170,7 @@ module.exports = (Connection, Transaction, Request) ->
 					tmr = setTimeout ->
 						timeouted = true
 						c._client._socket.destroy()
-						callback new Error "Connection timeout.", null # there must be a second argument null
+						callback new ConnectionError "Connection timeout.", null # there must be a second argument null
 						
 					, config.timeout ? 15000
 
@@ -99,6 +178,7 @@ module.exports = (Connection, Transaction, Request) ->
 						clearTimeout tmr
 						if timeouted then return
 						
+						if err then err = ConnectionError err
 						if err then return callback err, null # there must be a second argument null
 						callback null, c
 				
@@ -120,13 +200,15 @@ module.exports = (Connection, Transaction, Request) ->
 				
 				# and release it immediately
 				@pool.release connection
-				callback? err
+				callback err
 
 		close: (callback) ->
-			@pool?.drain =>
+			unless @pool then return callback null
+			
+			@pool.drain =>
 				@pool.destroyAllNow()
 				@pool = null
-				callback? null
+				callback null
 	
 	class TDSTransaction extends Transaction
 		begin: (callback) ->
@@ -134,16 +216,23 @@ module.exports = (Connection, Transaction, Request) ->
 				if err then return callback err
 				
 				@_pooledConnection = connection
-				connection.setAutoCommit false, callback
+				connection.setAutoCommit false, (err) =>
+					if err then return TransactionError err
+					
+					@request().query "set transaction isolation level #{isolationLevelDeclaration(@isolationLevel)}", callback
 			
 		commit: (callback) ->
 			@_pooledConnection.commit (err) =>
+				if err then err = TransactionError err
+				
 				@connection.pool.release @_pooledConnection
 				@_pooledConnection = null
 				callback err
 
 		rollback: (callback) ->
 			@_pooledConnection.rollback (err) =>
+				if err then err = TransactionError err
+				
 				@connection.pool.release @_pooledConnection
 				@_pooledConnection = null
 				callback err
@@ -186,13 +275,13 @@ module.exports = (Connection, Transaction, Request) ->
 			paramHeaders = {}
 			paramValues = {}
 			for name, param of @parameters when param.io is 1
-				paramHeaders[name] = type: param.type.name
+				paramHeaders[name] = createParameterHeader param
 				paramValues[name] = castParameter(param.value, param.type)
 			
 			# nested = function is called by this.execute
 			
 			unless @nested
-				input = ("@#{param.name} #{typeDeclaration(param.type)}" for name, param of @parameters when param.io is 2)
+				input = ("@#{param.name} #{typeDeclaration(param.type, param.length)}" for name, param of @parameters when param.io is 2)
 				output = ("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2)
 				if input.length then command = "declare #{input.join ','};#{command};"
 				if output.length
@@ -206,35 +295,54 @@ module.exports = (Connection, Transaction, Request) ->
 					req.on 'row', (tdsrow) =>
 						row = {}
 						for col in tdsrow.metadata.columns
+							value = tdsrow.getValue col.name
+							
+							if value?
+								# convert uniqueidentifier to string
+								if col.type.name is 'GUIDTYPE'
+									value = parseGuid value
+							
 							exi = row[col.name]
 							if exi?
 								if exi instanceof Array
 									exi.push col.value
 									
 								else
-									row[col.name] = [exi, tdsrow.getValue(col.name)]
+									row[col.name] = [exi, value]
 							
 							else
-								row[col.name] = tdsrow.getValue col.name
-		
+								row[col.name] = value
+
 						if @verbose
 							console.log util.inspect(row)
 							console.log "---------- --------------------"
 						
+						unless row["___return___"]?
+							# row with ___return___ col is the last row
+							@emit 'row', row
+						
 						recordset.push row
 					
 					req.on 'metadata', (metadata) =>
-						row = null
+						if recordset
+							@emit 'recordset', recordset
+							
 						columns = metadata.columnsByName
 						recordset = []
+						
 						Object.defineProperty recordset, 'columns', 
 							enumerable: false
 							value: createColumns(metadata.columnsByName)
 							@nested
+
 						recordsets.push recordset
 					
 					req.on 'done', (res) =>
 						unless @nested
+							# if nested queries, last recordset is full of return values
+							if recordset
+								@emit 'recordset', recordset
+							
 							# do we have output parameters to handle?
 							if handleOutput
 								last = recordsets.pop()?[0]
@@ -255,7 +363,7 @@ module.exports = (Connection, Transaction, Request) ->
 						callback? error, if @multiple or @nested then recordsets else recordsets[0]
 					
 					req.on 'error', (err) ->
-						error = err	
+						error = RequestError err
 		
 					req.execute paramValues
 				
@@ -268,8 +376,8 @@ module.exports = (Connection, Transaction, Request) ->
 	
 			started = Date.now()
 			
-			cmd = "declare #{['@__return int'].concat("@#{param.name} #{typeDeclaration(param.type)}" for name, param of @parameters when param.io is 2).join ', '};"
-			cmd += "exec @__return = #{procedure} "
+			cmd = "declare #{['@___return___ int'].concat("@#{param.name} #{typeDeclaration(param.type, param.length)}" for name, param of @parameters when param.io is 2).join ', '};"
+			cmd += "exec @___return___ = #{procedure} "
 			
 			spp = []
 			for name, param of @parameters
@@ -284,7 +392,7 @@ module.exports = (Connection, Transaction, Request) ->
 					spp.push "@#{param.name}=@#{param.name}"
 			
 			cmd += "#{spp.join ', '};"
-			cmd += "select #{['@__return as \'__return\''].concat("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2).join ', '};"
+			cmd += "select #{['@___return___ as \'___return___\''].concat("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2).join ', '};"
 			
 			if @verbose then console.log "---------- response -----------"
 			
@@ -305,8 +413,8 @@ module.exports = (Connection, Transaction, Request) ->
 				
 				else
 					last = recordsets.pop()?[0]
-					if last and last.__return?
-						returnValue = last.__return
+					if last and last.___return___?
+						returnValue = last.___return___
 						
 						for name, param of @parameters when param.io is 2
 							param.value = last[param.name]
@@ -328,6 +436,14 @@ module.exports = (Connection, Transaction, Request) ->
 			Cancel currently executed request.
 			###
 			
-			throw new Error "Request canceling is not implemented by TDS driver."
+			throw new RequestError "Request canceling is not implemented by TDS driver."
 		
-	return {Connection: TDSConnection, Transaction: TDSTransaction, Request: TDSRequest}
+	return {
+		Connection: TDSConnection
+		Transaction: TDSTransaction
+		Request: TDSRequest
+		fix: ->
+			unless FIXED
+				require './tds-fix'
+				FIXED = true
+	}

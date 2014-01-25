@@ -2,6 +2,7 @@
 tds = require 'tedious'
 util = require 'util'
 
+FIXED = false
 TYPES = require('./datatypes').TYPES
 
 ###
@@ -31,6 +32,9 @@ getTediousType = (type) ->
 		when TYPES.Char then return tds.TYPES.VarChar
 		when TYPES.NChar then return tds.TYPES.NVarChar
 		when TYPES.NText then return tds.TYPES.NVarChar
+		when TYPES.Image then return tds.TYPES.Image
+		when TYPES.Binary then return tds.TYPES.Binary
+		when TYPES.VarBinary then return tds.TYPES.VarBinary
 		else return type
 
 ###
@@ -82,7 +86,7 @@ createColumns = (meta) ->
 @ignore
 ###
 
-module.exports = (Connection, Transaction, Request) ->
+module.exports = (Connection, Transaction, Request, ConnectionError, TransactionError, RequestError) ->
 	class TediousConnection extends Connection
 		pool: null
 		
@@ -142,41 +146,48 @@ module.exports = (Connection, Transaction, Request) ->
 			
 			#create one testing connection to check if everything is ok
 			@pool.acquire (err, connection) =>
-				if err and err not instanceof Error then err = new Error err
+				if err then err = ConnectionError err
 				
 				# and release it immediately
 				@pool.release connection
-				callback? err
+				callback err
 		
 		close: (callback) ->
-			@pool?.drain =>
+			unless @pool then return callback null
+			
+			@pool.drain =>
 				@pool.destroyAllNow()
 				@pool = null
-				callback? null
+				callback null
 	
 	class TediousTransaction extends Transaction
 		begin: (callback) ->
 			@connection.pool.acquire (err, connection) =>
-				if err and err not instanceof Error then err = new Error err
 				if err then return callback err
 				
 				@_pooledConnection = connection
-				connection.beginTransaction callback
+				connection.beginTransaction (err) =>
+					if err then err = TransactionError err
+					callback err
+				
+				, @name, @isolationLevel
 			
 		commit: (callback) ->
 			@_pooledConnection.commitTransaction (err) =>
-				if err and err not instanceof Error then err = new Error err
+				if err then err = TransactionError err
 				
 				@connection.pool.release @_pooledConnection
 				@_pooledConnection = null
+				
 				callback err
 
 		rollback: (callback) ->
 			@_pooledConnection.rollbackTransaction (err) =>
-				if err and err not instanceof Error then err = new Error err
+				if err then err = TransactionError err
 				
 				@connection.pool.release @_pooledConnection
 				@_pooledConnection = null
+				
 				callback err
 		
 	class TediousRequest extends Request
@@ -208,7 +219,7 @@ module.exports = (Connection, Transaction, Request) ->
 					if @verbose then console.log "---------- sql query ----------\n    query: #{command}"
 					
 					req = new tds.Request command, (err) =>
-						if err and err not instanceof Error then err = new Error err
+						if err then err = RequestError err
 						
 						if @verbose 
 							if err then console.log "    error: #{err}"
@@ -237,6 +248,8 @@ module.exports = (Connection, Transaction, Request) ->
 							enumerable: false
 							value: createColumns(columns)
 						
+						@emit 'recordset', recordset
+						
 						recordsets.push recordset
 						recordset = []
 						columns = {}
@@ -256,6 +269,11 @@ module.exports = (Connection, Transaction, Request) ->
 							
 						row = {}
 						for col in columns
+							if col.value?
+								# convert binary data type from array to buffer
+								if col.metadata.type is tds.TYPES.Binary or col.metadata.type is tds.TYPES.VarBinary or col.metadata.type is tds.TYPES.Image
+									col.value = new Buffer col.value
+									
 							exi = row[col.metadata.colName]
 							if exi?
 								if exi instanceof Array
@@ -271,6 +289,8 @@ module.exports = (Connection, Transaction, Request) ->
 							console.log util.inspect(row)
 							console.log "---------- --------------------"
 						
+						@emit 'row', row
+						
 						recordset.push row
 					
 					for name, param of @parameters when param.io is 1
@@ -280,10 +300,10 @@ module.exports = (Connection, Transaction, Request) ->
 							else
 								console.log "    input: @#{param.name}, #{param.type.name.toLowerCase()}, #{param.value}"
 						
-						req.addParameter param.name, getTediousType(param.type), if param.value? then param.value else tds.TYPES.Null
+						req.addParameter param.name, getTediousType(param.type), param.value, null
 					
 					for name, param of @parameters when param.io is 2
-						req.addOutputParameter param.name, getTediousType(param.type)
+						req.addOutputParameter param.name, getTediousType(param.type), {length: param.length}
 					
 					if @verbose then console.log "---------- response -----------"
 					connection.execSql req
@@ -308,7 +328,7 @@ module.exports = (Connection, Transaction, Request) ->
 					if @verbose then console.log "---------- sql execute --------\n     proc: #{procedure}"
 					
 					req = new tds.Request procedure, (err) =>
-						if err and err not instanceof Error then err = new Error err
+						if err then err = RequestError err
 						
 						if @verbose 
 							if err then console.log "    error: #{err}"
@@ -333,6 +353,11 @@ module.exports = (Connection, Transaction, Request) ->
 							
 						row = {}
 						for col in columns
+							if col.value?
+								# convert binary data type from array to buffer
+								if col.metadata.type is tds.TYPES.Binary or col.metadata.type is tds.TYPES.VarBinary or col.metadata.type is tds.TYPES.Image
+									col.value = new Buffer col.value
+							
 							exi = row[col.metadata.colName]
 							if exi?
 								if exi instanceof Array
@@ -347,7 +372,9 @@ module.exports = (Connection, Transaction, Request) ->
 						if @verbose
 							console.log util.inspect(row)
 							console.log "---------- --------------------"
-							
+						
+						@emit 'row', row
+						
 						recordset.push row
 					
 					req.on 'doneInProc', (rowCount, more, rows) =>
@@ -359,6 +386,8 @@ module.exports = (Connection, Transaction, Request) ->
 							enumerable: false
 							value: createColumns(columns)
 						
+						@emit 'recordset', recordset
+						
 						recordsets.push recordset
 						recordset = []
 						columns = {}
@@ -367,6 +396,10 @@ module.exports = (Connection, Transaction, Request) ->
 						returnValue = returnStatus
 					
 					req.on 'returnValue', (parameterName, value, metadata) =>
+						# convert binary data type from array to buffer
+						if metadata.type is tds.TYPES.Binary or metadata.type is tds.TYPES.VarBinary or metadata.type is tds.TYPES.Image
+							value = new Buffer value
+							
 						if @verbose
 							if value is tds.TYPES.Null
 								console.log "   output: @#{parameterName}, null"
@@ -382,10 +415,10 @@ module.exports = (Connection, Transaction, Request) ->
 							else
 								console.log "    input: @#{param.name}, #{param.type.name.toLowerCase()}, #{param.value}"
 						
-						req.addParameter param.name, getTediousType(param.type), if param.value? then param.value else tds.TYPES.Null
+						req.addParameter param.name, getTediousType(param.type), param.value, null
 						
 					for name, param of @parameters when param.io is 2
-						req.addOutputParameter param.name, getTediousType(param.type)
+						req.addOutputParameter param.name, getTediousType(param.type), {length: param.length}
 					
 					if @verbose then console.log "---------- response -----------"
 					connection.callProcedure req
@@ -399,6 +432,14 @@ module.exports = (Connection, Transaction, Request) ->
 		###
 		
 		cancel: ->
-			throw new Error "Request canceling is not implemented by Tedious driver."
+			throw new RequestError "Request canceling is not implemented by Tedious driver."
 		
-	return {Connection: TediousConnection, Transaction: TediousTransaction, Request: TediousRequest}
+	return {
+		Connection: TediousConnection
+		Transaction: TediousTransaction
+		Request: TediousRequest
+		fix: ->
+			unless FIXED
+				require './tedious-fix'
+				FIXED = true
+	}

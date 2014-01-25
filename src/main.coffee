@@ -1,7 +1,8 @@
-events = require 'events'
+{EventEmitter} = require 'events'
 util = require 'util'
 
 TYPES = require('./datatypes').TYPES
+ISOLATION_LEVEL = require('./isolationlevel')
 DRIVERS = ['msnodesql', 'tedious', 'tds']
 
 global_connection = null
@@ -82,9 +83,12 @@ Class Connection.
 @property {Boolean} connected If true, connection is established.
 @property {Boolean} connecting If true, connection is being established.
 @property {*} driver Reference to configured Driver.
+
+@event connect Dispatched after connection has established.
+@event close Dispatched after connection has closed a pool (by calling close).
 ###
 
-class Connection
+class Connection extends EventEmitter
 	connected: false
 	connecting: false
 	driver: null
@@ -93,7 +97,7 @@ class Connection
 	Create new Connection.
 	
 	@param {Object} config Connection configuration.
-	@callback callback A callback which is called after connection has established, or an error has occurred.
+	@callback [callback] A callback which is called after connection has established, or an error has occurred.
 		@param {Error} err Error on error, otherwise null.
 	###
 	
@@ -104,9 +108,12 @@ class Connection
 		
 		if @config.driver in DRIVERS
 			@driver = @initializeDriver require("./#{@config.driver}")
+			
+			# fix the driver by default
+			if module.exports.fix then @driver.fix()
 
 		else
-			err = new Error "Unknown driver #{@config.driver}!"
+			err = new ConnectionError "Unknown driver #{@config.driver}!"
 			
 			if callback
 				callback err
@@ -125,12 +132,12 @@ class Connection
 	###
 	
 	initializeDriver: (driver) ->
-		driver Connection, Transaction, Request
+		driver Connection, Transaction, Request, ConnectionError, TransactionError, RequestError
 	
 	###
 	Create connection to the server.
 	
-	@callback callback A callback which is called after connection has established, or an error has occurred.
+	@callback [callback] A callback which is called after connection has established, or an error has occurred.
 		@param {Error} err Error on error, otherwise null.
 	
 	@returns {Connection}
@@ -138,7 +145,7 @@ class Connection
 	
 	connect: (callback) ->
 		if @connected
-			err = new Error "Database is already connected! Call close before connecting to different database."
+			err = new ConnectionError "Database is already connected! Call close before connecting to different database."
 			
 			if callback
 				callback err
@@ -146,7 +153,7 @@ class Connection
 				throw err
 		
 		if @connecting
-			err = new Error "Already connecting to database! Call close before connecting to different database."
+			err = new ConnectionError "Already connecting to database! Call close before connecting to different database."
 			
 			if callback
 				callback err
@@ -158,7 +165,10 @@ class Connection
 			unless @connecting then return
 			
 			@connecting = false
-			unless err then @connected = true
+			unless err
+				@connected = true
+				@emit 'connect'
+				
 			callback? err
 		
 		@
@@ -166,20 +176,31 @@ class Connection
 	###
 	Close connection to the server.
 	
+	@callback [callback] A callback which is called after connection has closed, or an error has occurred.
+		@param {Error} err Error on error, otherwise null.
+	
 	@returns {Connection}
 	###
 	
-	close: ->
+	close: (callback) ->
 		if @connecting
 			@connecting = false
 			
-			@driver.Connection::close.call @
+			@driver.Connection::close.call @, (err) =>
+				callback? err
+			
 			@driver = null
 			
 		else if @connected
 			@connected = false
 	
-			@driver.Connection::close.call @
+			@driver.Connection::close.call @, (err) =>
+				unless err
+					@connected = false
+					@emit 'close'
+				
+				callback? err
+
 			@driver = null
 		
 		@
@@ -206,12 +227,21 @@ class Connection
 Class Transaction.
 
 @property {Connection} connection Reference to used connection.
+@property {Number} isolationLevel Controls the locking and row versioning behavior of TSQL statements issued by a connection. READ_COMMITTED by default.
+@property {String} name Transaction name. Empty string by default.
+
+@event begin Dispatched when transaction begin.
+@event commit Dispatched on successful commit.
+@event rollback Dispatched on successful rollback.
 ###
 
-class Transaction
+class Transaction extends EventEmitter
 	_pooledConnection: null
 	_queue: null
 	_working: false # if true, there is a request running at the moment
+
+	name: ""
+	isolationLevel: ISOLATION_LEVEL.READ_COMMITTED
 	
 	###
 	Create new Transaction.
@@ -226,33 +256,46 @@ class Transaction
 	###
 	Begin a transaction.
 	
-	@callback callback A callback which is called after transaction has began, or an error has occurred.
+	@param {Number} [isolationLevel] Controls the locking and row versioning behavior of TSQL statements issued by a connection.
+	@callback [callback] A callback which is called after transaction has began, or an error has occurred.
 		@param {Error} err Error on error, otherwise null.
 	@returns {Transaction}
 	###
 	
-	begin: (callback) ->
+	begin: (isolationLevel, callback) ->
+		if isolationLevel instanceof Function
+			callback = isolationLevel
+			isolationLevel = undefined
+		
+		@isolationLevel = isolationLevel if isolationLevel?
+		
 		if @_pooledConnection
-			callback new Error "Transaction is already running."
+			callback? new TransactionError "Transaction is already running."
 			return @
 			
-		@connection.driver.Transaction::begin.call @, callback
+		@connection.driver.Transaction::begin.call @, (err) =>
+			unless err then @emit 'begin'
+			callback? err
+		
 		@
 		
 	###
 	Commit a transaction.
 	
-	@callback callback A callback which is called after transaction has commited, or an error has occurred.
+	@callback [callback] A callback which is called after transaction has commited, or an error has occurred.
 		@param {Error} err Error on error, otherwise null.
 	@returns {Transaction}
 	###
 	
 	commit: (callback) ->
 		unless @_pooledConnection
-			callback new Error "Transaction has not started. Call begin() first."
+			callback? new TransactionError "Transaction has not started. Call begin() first."
 			return @
 			
-		@connection.driver.Transaction::commit.call @, callback
+		@connection.driver.Transaction::commit.call @, (err) =>
+			unless err then @emit 'commit'
+			callback? err
+			
 		@
 	
 	###
@@ -281,7 +324,7 @@ class Transaction
 	
 	queue: (callback) ->
 		unless @_pooledConnection
-			callback new Error "Transaction has not started. Call begin() first."
+			callback new TransactionError "Transaction has not started. Call begin() first."
 			return @
 			
 		if @_working
@@ -303,17 +346,20 @@ class Transaction
 	###
 	Rollback a transaction.
 	
-	@callback callback A callback which is called after transaction has rolled back, or an error has occurred.
+	@callback [callback] A callback which is called after transaction has rolled back, or an error has occurred.
 		@param {Error} err Error on error, otherwise null.
 	@returns {Transaction}
 	###
 		
 	rollback: (callback) ->
 		unless @_pooledConnection
-			callback new Error "Transaction has not started. Call begin() first."
+			callback? new TransactionError "Transaction has not started. Call begin() first."
 			return @
 			
-		@connection.driver.Transaction::rollback.call @, callback
+		@connection.driver.Transaction::rollback.call @, (err) =>
+			unless err then @emit 'rollback'
+			callback? err
+			
 		@
 
 ###
@@ -324,9 +370,13 @@ Class Request.
 @property {*} parameters Collection of input and output parameters.
 @property {Boolean} verbose If `true`, debug messages are printed to message log.
 @property {Boolean} multiple If `true`, `query` will handle multiple recordsets (`execute` always expect multiple recordsets).
+
+@event recordset Dispatched when new recordset is parsed (with all rows).
+@event row Dispatched when new row is parsed.
+@event done Dispatched when request is complete.
 ###
 
-class Request
+class Request extends EventEmitter
 	connection: null
 	transaction: null
 	parameters: null
@@ -383,7 +433,7 @@ class Request
 
 	input: (name, type, value) ->
 		if arguments.length is 1
-			throw new Error "Invalid number of arguments. At least 2 arguments expected."
+			throw new RequestError "Invalid number of arguments. At least 2 arguments expected."
 			
 		else if arguments.length is 2
 			value = type
@@ -420,16 +470,21 @@ class Request
 	
 	@param {String} name Name of the output parameter without @ char.
 	@param {*} type SQL data type of output parameter.
+	@param {Number} [length] Expected length.
 	@returns {Request}
 	###
 	
-	output: (name, type) ->
-		unless type then type = tds.TYPES.VarChar
+	output: (name, type, length) ->
+		unless type then type = TYPES.VarChar
+		
+		if type is TYPES.Text or type is TYPES.NText or type is TYPES.Image
+			throw new RequestError "Deprecated types (Text, NText, Image) are not supported as OUTPUT parameters."
 		
 		@parameters[name] =
 			name: name
 			type: type
 			io: 2
+			length: length
 		
 		@
 			
@@ -461,7 +516,7 @@ class Request
 	```
 	
 	@param {String} command T-SQL command to be executed.
-	@callback callback A callback which is called after execution has completed, or an error has occurred.
+	@callback [callback] A callback which is called after execution has completed, or an error has occurred.
 		@param {Error} err Error on error, otherwise null.
 		@param {*} recordset Recordset.
 	
@@ -471,9 +526,13 @@ class Request
 	query: (command, callback) ->
 		unless @connection
 			return process.nextTick ->
-				callback? new Error "No connection is specified for that request."
+				callback? new RequestError "No connection is specified for that request."
 		
-		@connection.driver.Request::query.call @, command, callback
+		@connection.driver.Request::query.call @, command, (err, recordset) =>
+			unless err then @emit 'done', err, recordset
+			
+			callback? err, recordset
+			
 		@
 	
 	###
@@ -488,6 +547,7 @@ class Request
 	    console.log(recordsets.length); // count of recordsets returned by procedure
 	    console.log(recordset[0].length); // count of rows contained in first recordset
 	    console.log(returnValue); // procedure return value
+	    console.log(recordsets.returnValue); // procedure return value
 	
 	    console.log(request.parameters.output_parameter.value); // output value
 	
@@ -496,9 +556,9 @@ class Request
 	```
 	
 	@param {String} procedure Name of the stored procedure to be executed.
-	@callback callback A callback which is called after execution has completed, or an error has occurred.
+	@callback [callback] A callback which is called after execution has completed, or an error has occurred.
 		@param {Error} err Error on error, otherwise null.
-		@param {*} recordset Recordset.
+		@param {Array} recordsets Recordsets.
 		@param {Number} returnValue Procedure return value.
 	
 	@returns {Request}
@@ -507,9 +567,12 @@ class Request
 	execute: (procedure, callback) ->
 		unless @connection
 			return process.nextTick ->
-				callback? new Error "No connection is specified for that request."
+				callback? new RequestError "No connection is specified for that request."
 		
-		@connection.driver.Request::execute.call @, procedure, callback
+		@connection.driver.Request::execute.call @, procedure, (err, recordsets, returnValue) =>
+			@emit 'done', err, recordsets
+			callback? err, recordsets, returnValue
+			
 		@
 		
 	###
@@ -521,6 +584,66 @@ class Request
 	cancel: ->
 		@connection.driver.Request::cancel.call @
 		@
+
+class ConnectionError extends Error
+	constructor: (message) ->
+		unless @ instanceof ConnectionError
+			if message instanceof Error
+				err = new ConnectionError message.message
+				err.originalError = message
+				Error.captureStackTrace err, arguments.callee
+				return err
+				
+			else
+				err = new ConnectionError message
+				Error.captureStackTrace err, arguments.callee
+				return err
+		
+		@name = @constructor.name
+		@message = message
+		
+		super()
+		Error.captureStackTrace @, @constructor
+
+class TransactionError extends Error
+	constructor: (message) ->
+		unless @ instanceof TransactionError
+			if message instanceof Error
+				err = new TransactionError message.message
+				err.originalError = message
+				Error.captureStackTrace err, arguments.callee
+				return err
+				
+			else
+				err = new TransactionError message
+				Error.captureStackTrace err, arguments.callee
+				return err
+		
+		@name = @constructor.name
+		@message = message
+		
+		super()
+		Error.captureStackTrace @, @constructor
+
+class RequestError extends Error
+	constructor: (message) ->
+		unless @ instanceof RequestError
+			if message instanceof Error
+				err = new RequestError message.message
+				err.originalError = message
+				Error.captureStackTrace err, arguments.callee
+				return err
+				
+			else
+				err = new RequestError message
+				Error.captureStackTrace err, arguments.callee
+				return err
+		
+		@name = @constructor.name
+		@message = message
+		
+		super()
+		Error.captureStackTrace @, @constructor
 
 ###
 Open global connection.
@@ -542,16 +665,22 @@ Close global connection.
 @returns {Connection}
 ###
 
-module.exports.close = ->
-	global_connection?.close()
+module.exports.close = (callback) ->
+	global_connection?.close callback
 
 module.exports.Connection = Connection
 module.exports.Transaction = Transaction
 module.exports.Request = Request
 
+module.exports.ConnectionError = ConnectionError
+module.exports.TransactionError = TransactionError
+module.exports.RequestError = RequestError
+
+module.exports.ISOLATION_LEVEL = ISOLATION_LEVEL
 module.exports.DRIVERS = DRIVERS
 module.exports.TYPES = TYPES
 module.exports.map = map
+module.exports.fix = true
 
 # append datatypes to this modules export
 

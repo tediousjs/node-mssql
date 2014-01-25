@@ -1,3 +1,21 @@
+v0.5.0 (2014-01-25)
+-------------------
+[new] You can now attach event listeners to Connection (connect, close), Transaction (begin, commit, rollback) and Request (row, recordset, done)
+[new] You can now set length of Char, NChar and Binary output parameters
+[new] You can now change default transaction isolation level
+[change] Errors are now splitted to three categories for better error handling - ConnectionError, TransactionError, ReqestError
+[new] Tedious: Binary and VarBinary types are now available as input and output parameters
+[new] Tedious: Image type is now available as input parameter
+[change] Tedious: Binary, VarBinary and Image types are now returned as buffer (was byte array)
+[change] Tedious: Transaction isolationLevel default is now READ_COMMITED (was READ_UNCOMMITED)
+[fix] Tedious: Fixed issue when zero value was casted as null when using BigInt as input parameter
+[fix] Tedious: Fixed issue when dates before 1900/01/01 in input parameters resulted in "Out of bounds" error
+[new] node-tds: UniqueIdentifier type in now available as input and output parameter
+[fix] node-tds: UniqueIdentifier type is now parsed correctly as string value (was buffer)
+[fix] node-tds: Text, NText, Char, NChar, VarChar and NVarChar input parameters has correct lengths
+[fix] node-tds: Fixed Error messages
+[fix] Msnodesql: Char, NChar, Xml, Text, NText and VarBinary types are now correctly functional as output parameters
+
 v0.4.5 (2014-01-23)
 -------------------
 [new] Added support for "co" flow controller via co-mssql module
