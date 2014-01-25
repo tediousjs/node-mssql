@@ -19,23 +19,23 @@ At the moment it support three TDS modules:
 
 ## What's new in 0.5.0
 
-- You can now attach event listeners to Connection (connect, close), Transaction (begin, commit, rollback) and Request (row, recordset, done)
+- You can now attach event listeners to `Connection` (`connect`, `close`), `Transaction` (`begin`, `commit`, `rollback`) and `Request` (`row`, `recordset`, `done`)
 - You can now set length of Char, NChar and Binary output parameters
 - You can now change default transaction isolation level
-- Errors are now splitted to three categories for better error handling - ConnectionError, TransactionError, ReqestError
-- New features and bug fixes for Tedious
+- Errors are now splitted to three categories for better error handling - `ConnectionError`, `TransactionError`, `ReqestError`
+- New features and bug fixes for [Tedious](https://github.com/pekim/tedious)
     - Binary and VarBinary types are now available as input and output parameters
     - Image type is now available as input parameter
     - Binary, VarBinary and Image types are now returned as buffer (was array)
-    - Transaction isolationLevel default is now READ_COMMITED (was READ_UNCOMMITED)
+    - Transaction isolationLevel default is now `READ_COMMITED` (was `READ_UNCOMMITED`)
     - Fixed issue when zero value was casted as null when using BigInt as input parameter
     - Fixed issue when dates before 1900/01/01 in input parameters resulted in "Out of bounds" error
-- New features and bug fixes for node-tds
+- New features and bug fixes for [node-tds](https://github.com/cretz/node-tds)
     - UniqueIdentifier type in now available as input and output parameter
     - UniqueIdentifier type is now parsed correctly as string value (was buffer)
     - Text, NText, Char, NChar, VarChar and NVarChar input parameters has correct lengths
-    - Fixed Error messages
-- New features and bug fixes for Microsoft Driver for Node.js for SQL Server
+    - Fixed `Error` messages
+- New features and bug fixes for [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver)
     - Char, NChar, Xml, Text, NText and VarBinary types are now correctly functional as output parameters
 
 ## Installation
@@ -221,7 +221,7 @@ var connection = new sql.Connection({ /* config */ });
 ### Events
 
 - **connect** - Dispatched after connection has established.
-- **close** - Dispatched after connection has closed a pool (by calling close).
+- **close** - Dispatched after connection has closed a pool (by calling `close`).
 
 ---------------------------------------
 
@@ -273,9 +273,9 @@ If you ommit connection argument, global connection is used instead.
 
 ### Events
 
-- **begin** - Dispatched when transaction begin.
-- **commit** - Dispatched on successful commit.
-- **rollback** - Dispatched on successful rollback.
+- **recordset(recordset)** - Dispatched when new recordset is parsed (and all its rows).
+- **row(row)** - Dispatched when new row is parsed.
+- **done(err, recordsets)** - Dispatched when request is complete.
 
 ---------------------------------------
 
@@ -444,9 +444,9 @@ Transaction can also be created by `var transaction = connection.transaction();`
 
 ### Events
 
-- **recordset(recordset)** - Dispatched when new recordset is parsed (with all rows).
-- **row(row)** - Dispatched when new row is parsed.
-- **done(err, recordsets)** - Dispatched when request is complete.
+- **begin** - Dispatched when transaction begin.
+- **commit** - Dispatched on successful commit.
+- **rollback** - Dispatched on successful rollback.
 
 ---------------------------------------
 
@@ -457,7 +457,7 @@ Begin a transaction.
 
 __Arguments__
 
-- **isolationLevel** - Controls the locking and row versioning behavior of TSQL statements issued by a connection. Optional, READ_COMMITTED by default. For possible values see `sql.ISOLATION_LEVEL`.
+- **isolationLevel** - Controls the locking and row versioning behavior of TSQL statements issued by a connection. Optional. `READ_COMMITTED` by default. For possible values see `sql.ISOLATION_LEVEL`.
 - **callback(err)** - A callback which is called after transaction has began, or an error has occurred. Optional.
 
 __Example__
