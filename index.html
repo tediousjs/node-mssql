@@ -34,7 +34,9 @@
 
 <p>An easy-to-use MSSQL database connector for Node.js.</p>
 
-<p>There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without loosing any important functionality.</p>
+<p>There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without loosing any important functionality. node-mssql uses other TDS modules as drivers and offer easy to use unified interface. It also add some extra features and bug fixes.</p>
+
+<p>There is also <a href="https://github.com/visionmedia/co">co</a> warpper available - <a href="https://github.com/patriksimek/co-mssql">co-mssql</a>.</p>
 
 <p><strong>Extra features:</strong></p>
 
@@ -43,6 +45,7 @@
 <li>Connection pooling with Transactions support</li>
 <li>Parametrized Stored Procedures in <a href="https://github.com/cretz/node-tds">node-tds</a> and <a href="https://github.com/WindowsAzure/node-sqlserver">Microsoft Driver for Node.js for SQL Server</a>
 </li>
+<li>Injects original TDS modules with enhancements and bug fixes</li>
 </ul><p>At the moment it support three TDS modules:</p>
 
 <ul>
@@ -53,10 +56,40 @@
 <li>
 <a href="https://github.com/cretz/node-tds">node-tds</a> by Chad Retz (pure javascript - windows/osx/linux)</li>
 </ul><h2>
-<a name="whats-new-in-045" class="anchor" href="#whats-new-in-045"><span class="octicon octicon-link"></span></a>What's new in 0.4.5</h2>
+<a name="whats-new-in-050" class="anchor" href="#whats-new-in-050"><span class="octicon octicon-link"></span></a>What's new in 0.5.0</h2>
 
 <ul>
-<li>Added support for <a href="https://github.com/visionmedia/co">co</a> flow controller via <a href="https://github.com/patriksimek/co-mssql">co-mssql</a> module</li>
+<li>You can now attach event listeners to <code>Connection</code> (<code>connect</code>, <code>close</code>), <code>Transaction</code> (<code>begin</code>, <code>commit</code>, <code>rollback</code>) and <code>Request</code> (<code>row</code>, <code>recordset</code>, <code>done</code>)</li>
+<li>You can now set length of Char, NChar and Binary output parameters</li>
+<li>You can now change default transaction isolation level</li>
+<li>Errors are now splitted to three categories for better error handling - <code>ConnectionError</code>, <code>TransactionError</code>, <code>ReqestError</code>
+</li>
+<li>New features and bug fixes for <a href="https://github.com/pekim/tedious">Tedious</a>
+
+<ul>
+<li>Binary and VarBinary types are now available as input and output parameters</li>
+<li>Image type is now available as input parameter</li>
+<li>Binary, VarBinary and Image types are now returned as buffer (was array)</li>
+<li>Transaction isolationLevel default is now <code>READ_COMMITED</code> (was <code>READ_UNCOMMITED</code>)</li>
+<li>Fixed issue when zero value was casted as null when using BigInt as input parameter</li>
+<li>Fixed issue when dates before 1900/01/01 in input parameters resulted in "Out of bounds" error</li>
+</ul>
+</li>
+<li>New features and bug fixes for <a href="https://github.com/cretz/node-tds">node-tds</a>
+
+<ul>
+<li>UniqueIdentifier type in now available as input and output parameter</li>
+<li>UniqueIdentifier type is now parsed correctly as string value (was buffer)</li>
+<li>Text, NText, Char, NChar, VarChar and NVarChar input parameters has correct lengths</li>
+<li>Fixed <code>Error</code> messages</li>
+</ul>
+</li>
+<li>New features and bug fixes for <a href="https://github.com/WindowsAzure/node-sqlserver">Microsoft Driver for Node.js for SQL Server</a>
+
+<ul>
+<li>Char, NChar, Xml, Text, NText and VarBinary types are now correctly functional as output parameters</li>
+</ul>
+</li>
 </ul><h2>
 <a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
 
@@ -178,6 +211,7 @@
 <a name="other" class="anchor" href="#other"><span class="octicon octicon-link"></span></a>Other</h3>
 
 <ul>
+<li><a href="#errors">Errors</a></li>
 <li><a href="#meta">Metadata</a></li>
 <li><a href="#data-types">Data Types</a></li>
 <li><a href="#verbose">Verbose Mode</a></li>
@@ -233,7 +267,9 @@
 <li>
 <strong>options</strong> - Object of Tedious specific options. More information: <a href="http://pekim.github.io/tedious/api-connection.html">http://pekim.github.io/tedious/api-connection.html</a>
 </li>
-</ul><p><a name="cfg-msnodesql"></a></p>
+</ul><p><strong>This module update Tedious driver with some extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with <code>var sql = require('mssql/nofix')</code>.</strong></p>
+
+<p><a name="cfg-msnodesql"></a></p>
 
 <h3>
 <a name="microsoft-driver-for-nodejs-for-sql-server" class="anchor" href="#microsoft-driver-for-nodejs-for-sql-server"><span class="octicon octicon-link"></span></a>Microsoft Driver for Node.js for SQL Server</h3>
@@ -253,6 +289,8 @@
 
 <p>This driver is not part of the default package and must be installed separately by 'npm install tds'.</p>
 
+<p><strong>This module update node-tds driver with some extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with <code>var sql = require('mssql/nofix')</code>.</strong></p>
+
 <p><a name="connection"></a></p>
 
 <h2>
@@ -261,10 +299,18 @@
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">connection</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Connection</span><span class="p">({</span> <span class="cm">/* config */</span> <span class="p">});</span>
 </pre></div>
 
-<p><a name="connect"></a></p>
+<h3>
+<a name="events" class="anchor" href="#events"><span class="octicon octicon-link"></span></a>Events</h3>
+
+<ul>
+<li>
+<strong>connect</strong> - Dispatched after connection has established.</li>
+<li>
+<strong>close</strong> - Dispatched after connection has closed a pool (by calling <code>close</code>).</li>
+</ul><hr><p><a name="connect"></a></p>
 
 <h3>
-<a name="connectcallback" class="anchor" href="#connectcallback"><span class="octicon octicon-link"></span></a>connect(callback)</h3>
+<a name="connectcallback" class="anchor" href="#connectcallback"><span class="octicon octicon-link"></span></a>connect([callback])</h3>
 
 <p>Create connection to the server.</p>
 
@@ -272,7 +318,7 @@
 
 <ul>
 <li>
-<strong>callback(err)</strong> - A callback which is called after connection has established, or an error has occurred.</li>
+<strong>callback(err)</strong> - A callback which is called after connection has established, or an error has occurred. Optional.</li>
 </ul><p><strong>Example</strong></p>
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">connection</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Connection</span><span class="p">({</span>
@@ -309,7 +355,17 @@
 
 <p>If you ommit connection argument, global connection is used instead.</p>
 
-<p><a name="execute"></a></p>
+<h3>
+<a name="events-1" class="anchor" href="#events-1"><span class="octicon octicon-link"></span></a>Events</h3>
+
+<ul>
+<li>
+<strong>recordset(recordset)</strong> - Dispatched when new recordset is parsed (and all its rows).</li>
+<li>
+<strong>row(row)</strong> - Dispatched when new row is parsed.</li>
+<li>
+<strong>done(err, recordsets)</strong> - Dispatched when request is complete.</li>
+</ul><hr><p><a name="execute"></a></p>
 
 <h3>
 <a name="executeprocedure-callback" class="anchor" href="#executeprocedure-callback"><span class="octicon octicon-link"></span></a>execute(procedure, [callback])</h3>
@@ -394,7 +450,7 @@
 <hr><p><a name="output"></a></p>
 
 <h3>
-<a name="outputname-type" class="anchor" href="#outputname-type"><span class="octicon octicon-link"></span></a>output(name, type)</h3>
+<a name="outputname-type-length" class="anchor" href="#outputname-type-length"><span class="octicon octicon-link"></span></a>output(name, type, [length])</h3>
 
 <p>Add an output parameter to the request.</p>
 
@@ -405,9 +461,12 @@
 <strong>name</strong> - Name of the output parameter without @ char.</li>
 <li>
 <strong>type</strong> - SQL data type of output parameter.</li>
+<li>
+<strong>length</strong> - Expected length (for Char, Binary). Optional.</li>
 </ul><p><strong>Example</strong></p>
 
 <div class="highlight highlight-javascript"><pre><span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Char</span><span class="p">,</span> <span class="mi">50</span><span class="p">);</span>
 </pre></div>
 
 <hr><p><a name="query"></a></p>
@@ -482,10 +541,20 @@
 
 <p>Transaction can also be created by <code>var transaction = connection.transaction();</code>. Requests can also be created by <code>var request = transaction.request();</code>.</p>
 
-<p><a name="begin"></a></p>
+<h3>
+<a name="events-2" class="anchor" href="#events-2"><span class="octicon octicon-link"></span></a>Events</h3>
+
+<ul>
+<li>
+<strong>begin</strong> - Dispatched when transaction begin.</li>
+<li>
+<strong>commit</strong> - Dispatched on successful commit.</li>
+<li>
+<strong>rollback</strong> - Dispatched on successful rollback.</li>
+</ul><hr><p><a name="begin"></a></p>
 
 <h3>
-<a name="begincallback" class="anchor" href="#begincallback"><span class="octicon octicon-link"></span></a>begin(callback)</h3>
+<a name="beginisolationlevel-callback" class="anchor" href="#beginisolationlevel-callback"><span class="octicon octicon-link"></span></a>begin([isolationLevel], [callback])</h3>
 
 <p>Begin a transaction.</p>
 
@@ -493,7 +562,9 @@
 
 <ul>
 <li>
-<strong>callback(err)</strong> - A callback which is called after transaction has began, or an error has occurred.</li>
+<strong>isolationLevel</strong> - Controls the locking and row versioning behavior of TSQL statements issued by a connection. Optional. <code>READ_COMMITTED</code> by default. For possible values see <code>sql.ISOLATION_LEVEL</code>.</li>
+<li>
+<strong>callback(err)</strong> - A callback which is called after transaction has began, or an error has occurred. Optional.</li>
 </ul><p><strong>Example</strong></p>
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Transaction</span><span class="p">();</span>
@@ -505,7 +576,7 @@
 <hr><p><a name="commit"></a></p>
 
 <h3>
-<a name="commitcallback" class="anchor" href="#commitcallback"><span class="octicon octicon-link"></span></a>commit(callback)</h3>
+<a name="commitcallback" class="anchor" href="#commitcallback"><span class="octicon octicon-link"></span></a>commit([callback])</h3>
 
 <p>Commit a transaction.</p>
 
@@ -513,7 +584,7 @@
 
 <ul>
 <li>
-<strong>callback(err)</strong> - A callback which is called after transaction has commited, or an error has occurred.</li>
+<strong>callback(err)</strong> - A callback which is called after transaction has commited, or an error has occurred. Optional.</li>
 </ul><p><strong>Example</strong></p>
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Transaction</span><span class="p">();</span>
@@ -529,7 +600,7 @@
 <hr><p><a name="rollback"></a></p>
 
 <h3>
-<a name="rollbackcallback" class="anchor" href="#rollbackcallback"><span class="octicon octicon-link"></span></a>rollback(callback)</h3>
+<a name="rollbackcallback" class="anchor" href="#rollbackcallback"><span class="octicon octicon-link"></span></a>rollback([callback])</h3>
 
 <p>Rollback a transaction.</p>
 
@@ -537,7 +608,7 @@
 
 <ul>
 <li>
-<strong>callback(err)</strong> - A callback which is called after transaction has rolled back, or an error has occurred.</li>
+<strong>callback(err)</strong> - A callback which is called after transaction has rolled back, or an error has occurred. Optional.</li>
 </ul><p><strong>Example</strong></p>
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Transaction</span><span class="p">();</span>
@@ -549,6 +620,22 @@
     <span class="p">})</span>
 <span class="p">});</span>
 </pre></div>
+
+<p><a name="data-types"></a></p>
+
+<h2>
+<a name="errors" class="anchor" href="#errors"><span class="octicon octicon-link"></span></a>Errors</h2>
+
+<p>There are three type of errors you can handle:</p>
+
+<ul>
+<li>
+<strong>ConnectionError</strong> - Errors related to connections and connection pool.</li>
+<li>
+<strong>TransactionError</strong> - Errors related to creating, commiting and rolling back transactions.</li>
+<li>
+<strong>RequestError</strong> - Errors related to queries and stored procedures execution.</li>
+</ul><p>Those errors are initialized in node-mssql module and it's stack can be cropped. You can always access original error with <code>err.originalError</code>.</p>
 
 <p><a name="data-types"></a></p>
 
@@ -577,7 +664,8 @@
 <h2>
 <a name="data-types" class="anchor" href="#data-types"><span class="octicon octicon-link"></span></a>Data Types</h2>
 
-<pre><code>sql.BigInt
+<pre><code>sql.Bit
+sql.BigInt
 sql.Decimal
 sql.Float
 sql.Int
@@ -601,14 +689,10 @@ sql.DateTime
 sql.DateTimeOffset
 sql.SmallDateTime
 
-sql.Bit
 sql.UniqueIdentifier
-</code></pre>
 
-<p>Binary types as input parameters are only available with Microsoft's native driver.</p>
-
-<pre><code>sql.VarBinary
-sql.NVarBinary
+sql.Binary
+sql.VarBinary
 sql.Image
 </code></pre>
 
@@ -656,21 +740,16 @@ sql.Image
 <a name="tedious-1" class="anchor" href="#tedious-1"><span class="octicon octicon-link"></span></a>Tedious</h3>
 
 <ul>
-<li>Tedious 1.5 contains bug where 0 is casted as null when using BigInt.</li>
 <li>If you're facing problems with text codepage, try using NVarChar as default data type for string values - <code>sql.map.register(String, sql.NVarChar)</code>.</li>
 </ul><h3>
 <a name="node-tds-1" class="anchor" href="#node-tds-1"><span class="octicon octicon-link"></span></a>node-tds</h3>
 
 <ul>
+<li>If you're facing problems with date, try changing your tsql language <code>set language 'English';</code>.</li>
 <li>node-tds 0.1.0 contains bug and return same value for columns with same name.</li>
-<li>node-tds 0.1.0 doesn't support encoding of input parameters.</li>
+<li>node-tds 0.1.0 doesn't support codepage of input parameters.</li>
 <li>node-tds 0.1.0 contains bug in selects that doesn't return any values <em>(select <a href="https://github.com/param" class="user-mention">@param</a> = 'value')</em>.</li>
-</ul><h2>
-<a name="todo" class="anchor" href="#todo"><span class="octicon octicon-link"></span></a>TODO</h2>
-
-<ul>
-<li>UniqueIdentifier testing.</li>
-<li>Binary, VarBinary, Image testing.</li>
+<li>node-tds 0.1.0 doesn't support Binary, VarBinary and Image as parameters.</li>
 </ul><p><a name="license"></a></p>
 
 <h2>
