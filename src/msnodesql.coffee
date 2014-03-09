@@ -8,6 +8,9 @@ ISOLATION_LEVEL = require('./isolationlevel')
 DECLARATIONS = require('./datatypes').DECLARATIONS
 EMPTY_BUFFER = new Buffer(0)
 
+CONNECTION_STRING_PORT = 'Driver={SQL Server Native Client 11.0};Server={#{server},#{port}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};'
+CONNECTION_STRING_NAMED_INSTANCE = 'Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};'
+
 ###
 @ignore
 ###
@@ -121,13 +124,20 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 		pool: null
 		
 		connect: (config, callback) ->
+			defaultConnectionString = CONNECTION_STRING_PORT
+			
+			if config.options.instanceName?
+				defaultConnectionString = CONNECTION_STRING_NAMED_INSTANCE
+			
 			cfg =
-				connectionString: config.connectionString ? 'Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};Connection Timeout=#{timeout};'
+				connectionString: config.connectionString ? defaultConnectionString
 			
 			cfg.connectionString = cfg.connectionString.replace new RegExp('#{([^}]*)}', 'g'), (p) ->
 				key = p.substr(2, p.length - 3)
-				if key is 'timeout'
-					return Math.ceil((config.timeout ? 15000) / 1000)
+				if key is 'instance'
+					return config.options.instanceName
+				else if key is 'trusted'
+					return if config.options.trustedConnection then 'Yes' else 'No'
 				else
 					return config[key] ? ''
 

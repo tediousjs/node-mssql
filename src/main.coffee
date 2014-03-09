@@ -106,6 +106,11 @@ class Connection extends EventEmitter
 		# set defaults
 		@config.driver ?= 'tedious'
 		@config.port ?= 1433
+		@config.options ?= {}
+		
+		if /^(.*)\\(.*)$/.exec @config.server
+			@config.server = RegExp.$1
+			@config.options.instanceName = RegExp.$2
 		
 		if @config.driver in DRIVERS
 			@driver = @initializeDriver require("./#{@config.driver}")

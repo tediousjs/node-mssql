@@ -45,6 +45,7 @@ At the moment it support three TDS modules:
 - Added support for TDS 7.3+ data types Date, Time, DateTime2 and DateTimeOffset
 - Added support for UDT data types
 - Serialization of Geography and Geometry CLR types
+- Connecting to named instances simplified
 
 ## Installation
 
@@ -58,7 +59,7 @@ var sql = require('mssql');
 var config = {
     user: '...',
     password: '...',
-    server: 'localhost',
+    server: 'localhost', // To connect to named instance use: 'localhost\\instance'
     database: '...'
 }
 
@@ -96,7 +97,7 @@ var sql = require('mssql');
 var config = {
     user: '...',
     password: '...',
-    server: 'localhost',
+    server: 'localhost', // To connect to named instance use: 'localhost\\instance'
     database: '...'
 }
 
@@ -187,10 +188,10 @@ var config = {
 - **driver** - Driver to use (default: `tedious`). Possible values: `tedious` or `msnodesql`.
 - **user** - User name to use for authentication.
 - **password** - Password to use for authentication.
-- **server** - Hostname to connect to.
-- **port** - Port to connect to (default: `1433`).
+- **server** - Server to connect to. To connect to named instance use: `server\\instance`
+- **port** - Port to connect to (default: `1433`). Don't set when connecting to named instance.
 - **database** - Database to connect to (default: dependent on server configuration).
-- **timeout** - Connection timeout in ms (default: 15000).
+- **timeout** - Connection timeout in ms (default: `15000`).
 - **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
 - **pool.min** - The minimun of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
@@ -198,27 +199,35 @@ var config = {
 <a name="cfg-tedious" />
 ### Tedious
 
-- **options** - Object of Tedious specific options. More information: http://pekim.github.io/tedious/api-connection.html
+- **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`) **Encryption support is experimental.**
+- **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_2`, `7_3_A`, `7_3_B`, `7_4`).**
 
-__This module update Tedious driver with some extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`.__
+More information about Tedious specific options: http://pekim.github.io/tedious/api-connection.html
 
 <a name="cfg-msnodesql" />
 ### Microsoft Driver for Node.js for SQL Server
 
-This driver is not part of the default package and must be installed separately by 'npm install msnodesql'. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
+This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
 
 - **connectionString** - Connection string (default: see below).
+- **options.trustedConnection** - Use Windows Authentication (default: `false`)
 
+Default connection string when connecting to port:
 ```
-Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};Connection Timeout=#{timeout};
+Driver={SQL Server Native Client 11.0};Server={#{server},#{port}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
+```
+
+Default connection string when connecting to named instance:
+```
+Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
 ```
 
 <a name="cfg-node-tds" />
 ### node-tds
 
-This driver is not part of the default package and must be installed separately by 'npm install tds'.
+This driver is not part of the default package and must be installed separately by `npm install tds`.
 
-__This module update node-tds driver with some extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`.__
+__This module update node-tds driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`.__
 
 <a name="connection" />
 ## Connections
@@ -677,6 +686,7 @@ Output for example above could look similar to this.
 ### node-tds
 
 - If you're facing problems with date, try changing your tsql language `set language 'English';`.
+- node-tds 0.1.0 doesn't support connecting to named instances.
 - node-tds 0.1.0 contains bug and return same value for columns with same name.
 - node-tds 0.1.0 doesn't support codepage of input parameters.
 - node-tds 0.1.0 contains bug in selects that doesn't return any values *(select @param = 'value')*.

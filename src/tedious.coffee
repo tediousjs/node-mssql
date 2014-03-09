@@ -129,10 +129,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				server: config.server
 				options: config.options
 			
-			cfg.options ?= {}
 			cfg.options.database ?= config.database
 			cfg.options.port ?= config.port
 			cfg.options.connectTimeout ?= config.timeout ? 15000
+			cfg.options.tdsVersion ?= '7_4'
 			
 			# tedious always connect via tcp when port is specified
 			if cfg.options.instanceName then delete cfg.options.port
