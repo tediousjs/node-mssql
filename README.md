@@ -41,7 +41,7 @@ At the moment it support three TDS modules:
 
 ## What's new in 0.5.1 (unstable, git)
 
-- Updated to new Tedious 0.1.7 (unstable)
+- Updated to new Tedious 0.1.7 (unstable, development branch)
 - Added support for TDS 7.3+ data types Date, Time, DateTime2 and DateTimeOffset
 - Added support for UDT data types
 - Serialization of Geography and Geometry CLR types
@@ -547,7 +547,7 @@ select geometry::STGeomFromText('LINESTRING (100 100 10.3 12, 20 180, 180 180)',
 
 Results in:
 
-```json
+```javascript
 { srid: 4326,
   version: 1,
   points: [ { x: 47.656, y: -122.36 }, { x: 47.656, y: -122.343 } ],
@@ -594,7 +594,7 @@ request.query('select 1 as first, \'asdf\' as second', function(err, recordset) 
 
 Columns structure for example above:
 
-```json
+```javascript
 { first: { name: 'first', size: 10, type: { name: 'int' } },
   second: { name: 'second', size: 4, type: { name: 'varchar' } } }
 ```
