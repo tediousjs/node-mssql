@@ -199,8 +199,8 @@ var config = {
 <a name="cfg-tedious" />
 ### Tedious
 
-- **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`) **Encryption support is experimental.**
-- **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_2`, `7_3_A`, `7_3_B`, `7_4`).**
+- **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`) Encryption support is experimental.
+- **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_2`, `7_3_A`, `7_3_B`, `7_4`).
 
 More information about Tedious specific options: http://pekim.github.io/tedious/api-connection.html
 
@@ -227,7 +227,7 @@ Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database=
 
 This driver is not part of the default package and must be installed separately by `npm install tds`.
 
-__This module update node-tds driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`.__
+_This module update node-tds driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`._
 
 <a name="connection" />
 ## Connections
