@@ -2,7 +2,7 @@
 
 An easy-to-use MSSQL database connector for Node.js.
 
-There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without losing any important functionality. node-mssql uses other TDS modules as drivers and offer easy to use unified interface. It also add some extra features and bug fixes.
+There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without losing any important functionality. node-mssql uses other TDS modules as drivers and offer easy to use unified interface. It also add extra features and bug fixes.
 
 There is also [co](https://github.com/visionmedia/co) warpper available - [co-mssql](https://github.com/patriksimek/co-mssql).
 
@@ -10,6 +10,7 @@ There is also [co](https://github.com/visionmedia/co) warpper available - [co-ms
 - Unified interface for multiple MSSQL modules
 - Connection pooling with Transactions support
 - Parametrized Stored Procedures in [node-tds](https://github.com/cretz/node-tds) and [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver)
+- Serialization of Geography and Geometry CLR types
 - Injects original TDS modules with enhancements and bug fixes
 
 At the moment it support three TDS modules:
@@ -17,7 +18,7 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 0.5.0
+## What's new in 0.5.0 (stable, npm)
 
 - You can now attach event listeners to `Connection` (`connect`, `close`), `Transaction` (`begin`, `commit`, `rollback`) and `Request` (`row`, `recordset`, `done`)
 - You can now set length of Char, NChar and Binary output parameters
@@ -37,6 +38,13 @@ At the moment it support three TDS modules:
     - Fixed `Error` messages
 - New features and bug fixes for [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver)
     - Char, NChar, Xml, Text, NText and VarBinary types are now correctly functional as output parameters
+
+## What's new in 0.5.1 (unstable, git)
+
+- Updated to new Tedious 0.1.7 (unstable)
+- Added support for TDS 7.3+ data types Date, Time, DateTime2 and DateTimeOffset
+- Added support for UDT data types
+- Serialization of Geography and Geometry CLR types
 
 ## Installation
 
@@ -100,7 +108,7 @@ sql.connect(config, function(err) {
     var request = new sql.Request();
     request.query('select 1 as number', function(err, recordset) {
         // ... error checks
-    	
+
         console.dir(recordset);
     });
 	
@@ -111,7 +119,7 @@ sql.connect(config, function(err) {
     request.output('output_parameter', sql.Int);
     request.execute('procedure_name', function(err, recordsets, returnValue) {
         // ... error checks
-    	
+
         console.dir(recordsets);
     });
 	
@@ -150,6 +158,7 @@ sql.connect(config, function(err) {
 
 ### Other
 
+* [Geography and Geometry](#geography)
 * [Errors](#errors)
 * [Metadata](#meta)
 * [Data Types](#data-types)
@@ -412,7 +421,7 @@ request.query('select 1 as number; select 2 as number', function(err, recordsets
 <a name="transaction" />
 ## Transactions
 
-**Important:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is aquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. After you call `commit` or `rollback`, connection is then released back to the connection pool.
+**Important:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is aquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. Transaction also contains queue to make sure your requests are executed in series. After you call `commit` or `rollback`, connection is then released back to the connection pool.
 
 ```javascript
 var transaction = new sql.Transaction(/* [connection] */);
@@ -517,7 +526,38 @@ transaction.begin(function(err) {
 });
 ```
 
-<a name="data-types" />
+<a name="geography" />
+## Geography and Geometry
+
+Introduced in 0.5.1. node-mssql has built-in serializer for Geography and Geometry CLR data types.
+
+```sql
+select geography::STGeomFromText('LINESTRING(-122.360 47.656, -122.343 47.656 )', 4326)
+select geometry::STGeomFromText('LINESTRING (100 100 10.3 12, 20 180, 180 180)', 0)
+```
+
+Results in:
+
+```json
+{ srid: 4326,
+  version: 1,
+  points: [ { x: 47.656, y: -122.36 }, { x: 47.656, y: -122.343 } ],
+  figures: [ { attribute: 1, pointOffset: 0 } ],
+  shapes: [ { parentOffset: -1, figureOffset: 0, type: 2 } ],
+  segments: [] }
+  
+{ srid: 0,
+  version: 1,
+  points: 
+   [ { x: 100, y: 100, z: 10.3, m: 12 },
+     { x: 20, y: 180, z: NaN, m: NaN },
+     { x: 180, y: 180, z: NaN, m: NaN } ],
+  figures: [ { attribute: 1, pointOffset: 0 } ],
+  shapes: [ { parentOffset: -1, figureOffset: 0, type: 2 } ],
+  segments: [] }
+```
+
+<a name="errors" />
 ## Errors
 
 There are three type of errors you can handle:
@@ -528,7 +568,7 @@ There are three type of errors you can handle:
 
 Those errors are initialized in node-mssql module and it's stack can be cropped. You can always access original error with `err.originalError`.
 
-<a name="data-types" />
+<a name="meta" />
 ## Metadata
 
 Recordset metadata are accessible trough `recordset.columns` property.
@@ -545,7 +585,7 @@ request.query('select 1 as first, \'asdf\' as second', function(err, recordset) 
 
 Columns structure for example above:
 
-```
+```json
 { first: { name: 'first', size: 10, type: { name: 'int' } },
   second: { name: 'second', size: 4, type: { name: 'varchar' } } }
 ```
@@ -574,8 +614,10 @@ sql.VarChar
 sql.NVarChar
 sql.Xml
 
+sql.Time
 sql.Date
 sql.DateTime
+sql.DateTime2
 sql.DateTimeOffset
 sql.SmallDateTime
 
@@ -627,6 +669,10 @@ Output for example above could look similar to this.
 ### Tedious
 
 - If you're facing problems with text codepage, try using NVarChar as default data type for string values - `sql.map.register(String, sql.NVarChar)`.
+
+### msnodesql
+
+- msnodesql 0.2.1 contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
 
 ### node-tds
 

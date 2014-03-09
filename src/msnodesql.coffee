@@ -3,6 +3,7 @@ msnodesql = require 'msnodesql'
 util = require 'util'
 
 TYPES = require('./datatypes').TYPES
+UDT = require('./udt').PARSERS
 ISOLATION_LEVEL = require('./isolationlevel')
 DECLARATIONS = require('./datatypes').DECLARATIONS
 EMPTY_BUFFER = new Buffer(0)
@@ -59,6 +60,10 @@ createColumns = (meta) ->
 			name: value.name
 			size: value.size
 			type: DECLARATIONS[value.sqlType]
+		
+		if value.udtType?
+			out[value.name].udt =
+				name: value.udtType
 			
 	out
 
@@ -87,6 +92,25 @@ isolationLevelDeclaration = (type) ->
 		when ISOLATION_LEVEL.SERIALIZABLE then return "SERIALIZABLE"
 		when ISOLATION_LEVEL.SNAPSHOT then return "SNAPSHOT"
 		else throw new TransactionError "Invalid isolation level."
+
+###
+@ignore
+###
+
+valueCorrection = (value, metadata) ->
+	if metadata.sqlType is 'time' and value?
+		value.setFullYear(1970)
+		value
+		
+	else if metadata.sqlType is 'udt' and value?
+		if UDT[metadata.udtType]
+			UDT[metadata.udtType] value
+			
+		else
+			value
+		
+	else
+		value
 
 ###
 @ignore
@@ -254,6 +278,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						recordset.push row
 						
 					req.on 'column', (idx, data, more) =>
+						data = valueCorrection(data, columns[idx])
+
 						exi = row[columns[idx].name]
 						if exi?
 							if exi instanceof Array

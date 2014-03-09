@@ -73,6 +73,52 @@ global.TESTS =
 			assert.equal err, null
 			
 			doneevent = true
+	
+	'user defined types': (done) ->
+		request = new sql.Request
+		request.query "declare @g geography = geography::[Null];select geography::STGeomFromText('LINESTRING(-122.360 47.656, -122.343 47.656 )', 4326) as geography, geometry::STGeomFromText('LINESTRING (100 100 10.3 12, 20 180, 180 180)', 0) geometry, @g as nullgeography", (err, rst) ->
+			if err then return done err
+			
+			#console.dir rst[0].geography
+			#console.dir rst[0].geometry
+
+			#assert.deepEqual rst[0].geography, sample1
+			#assert.deepEqual rst[0].geometry, sample2
+			
+			assert rst[0].geography instanceof sql.Geography
+			assert rst[0].geometry instanceof sql.Geometry
+			
+			assert.strictEqual rst[0].geography.srid, 4326
+			assert.strictEqual rst[0].geography.version, 1
+			assert.strictEqual rst[0].geography.points.length, 2
+			assert.strictEqual rst[0].geography.points[0].x, 47.656
+			assert.strictEqual rst[0].geography.points[1].y, -122.343
+			assert.strictEqual rst[0].geography.figures.length, 1
+			assert.strictEqual rst[0].geography.figures[0].attribute, 0x01
+			assert.strictEqual rst[0].geography.shapes.length, 1
+			assert.strictEqual rst[0].geography.shapes[0].type, 0x02
+			assert.strictEqual rst[0].geography.segments.length, 0
+			
+			assert.strictEqual rst[0].geometry.srid, 0
+			assert.strictEqual rst[0].geometry.version, 1
+			assert.strictEqual rst[0].geometry.points.length, 3
+			assert.strictEqual rst[0].geometry.points[0].z, 10.3
+			assert.strictEqual rst[0].geometry.points[0].m, 12
+			assert.strictEqual rst[0].geometry.points[1].x, 20
+			assert.strictEqual rst[0].geometry.points[2].y, 180
+			assert isNaN(rst[0].geometry.points[2].z)
+			assert isNaN(rst[0].geometry.points[2].m)
+			assert.strictEqual rst[0].geometry.figures.length, 1
+			assert.strictEqual rst[0].geometry.figures[0].attribute, 0x01
+			assert.strictEqual rst[0].geometry.shapes.length, 1
+			assert.strictEqual rst[0].geometry.shapes[0].type, 0x02
+			assert.strictEqual rst[0].geometry.segments.length, 0
+			
+			if DRIVER in ['tedious', 'msnodesql']
+				assert.equal rst.columns.geography.udt.name, 'geography'
+				assert.equal rst.columns.geometry.udt.name, 'geometry'
+
+			done()
 
 	'binary data': (done) ->
 		sample = new Buffer([0x00, 0x01, 0xe2, 0x40])

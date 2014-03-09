@@ -8,6 +8,8 @@ connection2 = null
 if process.platform.match(/^win/)
 	describe 'msnodesql test suite', ->
 		before (done) ->
+			global.DRIVER = 'msnodesql'
+		
 			sql.connect
 				driver: 'msnodesql'
 				
@@ -24,6 +26,9 @@ if process.platform.match(/^win/)
 		
 		it 'stored procedure', (done) ->
 			TESTS['stored procedure'] done
+	
+		it 'user defined types', (done) ->
+			TESTS['user defined types'] done
 		
 		it 'binary data', (done) ->
 			TESTS['binary data'] done
@@ -61,8 +66,34 @@ if process.platform.match(/^win/)
 		it 'transaction queue', (done) ->
 			TESTS['transaction queue'] done
 	
-	after ->
-		sql.close()
+	describe 'msnodesql dates and times', ->
+		it 'time', (done) ->
+			TIMES['time'] done
+			
+		it 'time as parameter', (done) ->
+			TIMES['time as parameter'] done
+			
+		it 'date', (done) ->
+			TIMES['date'] done
+			
+		it 'date as parameter', (done) ->
+			TIMES['date as parameter'] done
+			
+		it 'datetime2', (done) ->
+			TIMES['datetime2'] done
+			
+		it 'datetime2 as parameter', (done) ->
+			TIMES['datetime2 as parameter'] done
+		
+		# https://github.com/WindowsAzure/node-sqlserver/issues/160	
+		it.skip 'datetimeoffset', (done) ->
+			TIMES['datetimeoffset'] done
+			
+		it 'datetimeoffset as parameter', (done) ->
+			TIMES['datetimeoffset as parameter'] done
+		
+		after ->
+			sql.close()
 
 	describe 'msnodesql multiple connections test suite', ->
 		before (done) ->
@@ -109,10 +140,10 @@ if process.platform.match(/^win/)
 		it 'login failed', (done) ->
 			TESTS['login failed'] done, 'msnodesql', /Login failed for user 'xsp_test'\./
 	
-		it 'timeout', (done) ->
+		it.skip 'timeout', (done) ->
 			TESTS['timeout'] done, 'msnodesql'
 	
-		it 'network error', (done) ->
+		it.skip 'network error', (done) ->
 			TESTS['network error'] done, 'msnodesql'
 	
 	describe 'msnodesql connection pooling', ->

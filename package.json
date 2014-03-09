@@ -33,14 +33,14 @@
 		"generic-pool": ">=2.0.4"
 	},
 	"devDependencies": {
-		"coffee-script": ">=1.6.2",
+		"coffee-script": ">=1.7.1",
 		"mocha": ">=1.12.0"
 	},
 	"engines": {
 		"node": ">=0.6"
 	},
 	"scripts": {
-		"test": "mocha --expose-gc",
+		"test": "mocha",
 		"prepublish": "coffee --compile --output ./lib ./src"
 	}
 }

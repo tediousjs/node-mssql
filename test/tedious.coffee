@@ -5,11 +5,20 @@ connection2 = null
 
 describe 'tedious test suite', ->
 	before (done) ->
+		global.DRIVER = 'tedious'
+		
 		sql.connect
 			user: 'xsp_test'
 			password: 'sweet'
 			server: '192.168.2.2'
 			database: 'xsp'
+			options:
+				tdsVersion: '7_4'
+				debug:
+					packet: false
+					token: false
+					data: false
+					payload: false
 			
 		, (err) ->
 			if err then return done err
@@ -19,6 +28,9 @@ describe 'tedious test suite', ->
 	
 	it 'stored procedure', (done) ->
 		TESTS['stored procedure'] done
+	
+	it 'user defined types', (done) ->
+		TESTS['user defined types'] done
 	
 	it 'binary data', (done) ->
 		TESTS['binary data'] done
@@ -55,6 +67,31 @@ describe 'tedious test suite', ->
 	
 	it 'transaction queue', (done) ->
 		TESTS['transaction queue'] done
+
+describe 'tedious dates and times', ->
+	it 'time', (done) ->
+		TIMES['time'] done
+		
+	it 'time as parameter', (done) ->
+		TIMES['time as parameter'] done
+		
+	it 'date', (done) ->
+		TIMES['date'] done
+		
+	it 'date as parameter', (done) ->
+		TIMES['date as parameter'] done
+		
+	it 'datetime2', (done) ->
+		TIMES['datetime2'] done
+		
+	it 'datetime2 as parameter', (done) ->
+		TIMES['datetime2 as parameter'] done
+		
+	it 'datetimeoffset', (done) ->
+		TIMES['datetimeoffset'] done
+		
+	it 'datetimeoffset as parameter', (done) ->
+		TIMES['datetimeoffset as parameter'] done
 	
 	after ->
 		sql.close()

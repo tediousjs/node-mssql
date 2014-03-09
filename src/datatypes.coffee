@@ -41,6 +41,9 @@ TYPES =
 	DateTime:
 		name: 'datetime'
 		
+	DateTime2:
+		name: 'datetime2'
+		
 	DateTimeOffset:
 		name: 'datetimeoffset'
 		
@@ -79,6 +82,9 @@ TYPES =
 	
 	NText:
 		name: 'ntext'
+	
+	UDT:
+		name: 'udt'
 
 module.exports.TYPES = TYPES
 module.exports.DECLARATIONS = {}

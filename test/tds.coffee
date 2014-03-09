@@ -6,6 +6,8 @@ connection2 = null
 
 describe 'node-tds test suite', ->
 	before (done) ->
+		global.DRIVER = 'tds'
+		
 		sql.connect
 			user: 'xsp_test'
 			password: 'sweet'
@@ -21,6 +23,9 @@ describe 'node-tds test suite', ->
 	
 	it 'stored procedure', (done) ->
 		TESTS['stored procedure'] done, false
+	
+	it.skip 'user defined types (not supported by node-tds)', (done) ->
+		TESTS['user defined types'] done
 	
 	it.skip 'binary data (not supported by node-tds)', (done) ->
 		TESTS['binary data'] done
@@ -60,6 +65,31 @@ describe 'node-tds test suite', ->
 	it 'transaction queue', (done) ->
 		TESTS['transaction queue'] done
 
+describe 'tds dates and times', ->
+	it.skip 'time (not supported by node-tds)', (done) ->
+		TIMES['time'] done
+		
+	it.skip 'time as parameter (not supported by node-tds)', (done) ->
+		TIMES['time as parameter'] done
+		
+	it.skip 'date (not supported by node-tds)', (done) ->
+		TIMES['date'] done
+		
+	it.skip 'date as parameter (not supported by node-tds)', (done) ->
+		TIMES['date as parameter'] done
+		
+	it.skip 'datetime2 (not supported by node-tds)', (done) ->
+		TIMES['datetime2'] done
+		
+	it.skip 'datetime2 as parameter (not supported by node-tds)', (done) ->
+		TIMES['datetime2 as parameter'] done
+		
+	it.skip 'datetimeoffset (not supported by node-tds)', (done) ->
+		TIMES['datetimeoffset'] done
+		
+	it.skip 'datetimeoffset as parameter (not supported by node-tds)', (done) ->
+		TIMES['datetimeoffset as parameter'] done
+	
 	after ->
 		sql.close()
 

@@ -2,8 +2,8 @@
 tds = require 'tedious'
 util = require 'util'
 
-FIXED = false
 TYPES = require('./datatypes').TYPES
+UDT = require('./udt').PARSERS
 
 ###
 @ignore
@@ -23,9 +23,11 @@ getTediousType = (type) ->
 		when TYPES.Decimal then return tds.TYPES.Float
 		when TYPES.Numeric then return tds.TYPES.Float
 		when TYPES.Real then return tds.TYPES.Real
-		when TYPES.Date then return tds.TYPES.DateTime
+		when TYPES.Time then return tds.TYPES.TimeN
+		when TYPES.Date then return tds.TYPES.DateN
 		when TYPES.DateTime then return tds.TYPES.DateTime
-		when TYPES.DateTimeOffset then return tds.TYPES.DateTime
+		when TYPES.DateTime2 then return tds.TYPES.DateTime2N
+		when TYPES.DateTimeOffset then return tds.TYPES.DateTimeOffsetN
 		when TYPES.SmallDateTime then return tds.TYPES.SmallDateTime
 		when TYPES.UniqueIdentifier then return tds.TYPES.UniqueIdentifierN
 		when TYPES.Xml then return tds.TYPES.VarChar
@@ -35,6 +37,7 @@ getTediousType = (type) ->
 		when TYPES.Image then return tds.TYPES.Image
 		when TYPES.Binary then return tds.TYPES.Binary
 		when TYPES.VarBinary then return tds.TYPES.VarBinary
+		when TYPES.UDT then return tds.TYPES.UDT
 		else return type
 
 ###
@@ -61,12 +64,17 @@ getMssqlType = (type) ->
 		when tds.TYPES.Numeric, tds.TYPES.NumericN then return TYPES.Numeric
 		when tds.TYPES.Decimal, tds.TYPES.DecimalN then return TYPES.Decimal
 		when tds.TYPES.DateTime, tds.TYPES.DateTimeN then return TYPES.DateTime
+		when tds.TYPES.TimeN then return TYPES.Time
+		when tds.TYPES.DateN then return TYPES.Date
+		when tds.TYPES.DateTime2N then return TYPES.DateTime2
+		when tds.TYPES.DateTimeOffsetN then return TYPES.DateTimeOffset
 		when tds.TYPES.SmallDateTime then return TYPES.SmallDateTime
 		when tds.TYPES.UniqueIdentifierN then return TYPES.UniqueIdentifier
 		when tds.TYPES.Image then return TYPES.Image
 		when tds.TYPES.Binary then return TYPES.Binary
 		when tds.TYPES.VarBinary then return TYPES.VarBinary
 		when tds.TYPES.Xml then return TYPES.Xml
+		when tds.TYPES.UDT then return TYPES.UDT
 
 ###
 @ignore
@@ -79,8 +87,32 @@ createColumns = (meta) ->
 			name: value.colName
 			size: value.dataLength
 			type: getMssqlType(value.type)
+			scale: value.scale
+			precision: value.precision
+		
+		if value.udtInfo?
+			out[key].udt =
+				name: value.udtInfo.typeName
+				database: value.udtInfo.dbname
+				schema: value.udtInfo.owningSchema
+				assembly: value.udtInfo.assemblyName
 	
 	out
+
+###
+@ignore
+###
+
+valueCorrection = (value, metadata) ->
+	if metadata.type is tds.TYPES.UDT and value?
+		if UDT[metadata.udtInfo.typeName]
+			UDT[metadata.udtInfo.typeName] value
+			
+		else
+			value
+		
+	else
+		value
 
 ###
 @ignore
@@ -131,6 +163,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						callback null, c
 
 					c.once 'connect', connect
+					
+					#c.on 'debug', (msg) -> console.log msg
 
 				validate: (c) ->
 					c? and !c.closed
@@ -269,11 +303,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							
 						row = {}
 						for col in columns
-							if col.value?
-								# convert binary data type from array to buffer
-								if col.metadata.type is tds.TYPES.Binary or col.metadata.type is tds.TYPES.VarBinary or col.metadata.type is tds.TYPES.Image
-									col.value = new Buffer col.value
-									
+							col.value = valueCorrection col.value, col.metadata
+							
 							exi = row[col.metadata.colName]
 							if exi?
 								if exi instanceof Array
@@ -353,10 +384,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							
 						row = {}
 						for col in columns
-							if col.value?
-								# convert binary data type from array to buffer
-								if col.metadata.type is tds.TYPES.Binary or col.metadata.type is tds.TYPES.VarBinary or col.metadata.type is tds.TYPES.Image
-									col.value = new Buffer col.value
+							col.value = valueCorrection col.value, col.metadata
 							
 							exi = row[col.metadata.colName]
 							if exi?
@@ -438,8 +466,5 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 		Connection: TediousConnection
 		Transaction: TediousTransaction
 		Request: TediousRequest
-		fix: ->
-			unless FIXED
-				require './tedious-fix'
-				FIXED = true
+		fix: -> # there is nothing to fix in this driver
 	}
