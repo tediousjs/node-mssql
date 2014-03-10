@@ -85,9 +85,6 @@ global.TESTS =
 			#assert.deepEqual rst[0].geography, sample1
 			#assert.deepEqual rst[0].geometry, sample2
 			
-			assert rst[0].geography instanceof sql.Geography
-			assert rst[0].geometry instanceof sql.Geometry
-			
 			assert.strictEqual rst[0].geography.srid, 4326
 			assert.strictEqual rst[0].geography.version, 1
 			assert.strictEqual rst[0].geography.points.length, 2
@@ -115,6 +112,8 @@ global.TESTS =
 			assert.strictEqual rst[0].geometry.segments.length, 0
 			
 			if DRIVER in ['tedious', 'msnodesql']
+				assert rst.columns.geography.type is sql.Geography
+				assert rst.columns.geometry.type is sql.Geometry
 				assert.equal rst.columns.geography.udt.name, 'geography'
 				assert.equal rst.columns.geometry.udt.name, 'geometry'
 

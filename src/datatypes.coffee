@@ -85,6 +85,12 @@ TYPES =
 	
 	UDT:
 		name: 'udt'
+	
+	Geography:
+		name: 'geography'
+	
+	Geometry:
+		name: 'geometry'
 
 module.exports.TYPES = TYPES
 module.exports.DECLARATIONS = {}

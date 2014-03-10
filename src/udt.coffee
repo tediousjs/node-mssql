@@ -43,32 +43,16 @@ class Point
 	z: null
 	m: null
 
-class Geography
-	srid: null
-	version: null
-	points: null
-	figures: null
-	shapes: null
-	segments: null
-
-class Geometry
-	srid: null
-	version: null
-	points: null
-	figures: null
-	shapes: null
-	segments: null
-
 parseGeography = (buffer, geometry = false) ->
 	# s2.1.1 + s.2.1.2
 		
 	srid = buffer.readInt32LE 0
 	if srid is -1 then return null
 	
-	value = if geometry then new Geometry else new Geography
-	
-	value.srid = srid
-	value.version = buffer.readUInt8 4
+	value =
+		srid: srid
+		version: buffer.readUInt8 4
+		
 	flags = buffer.readUInt8 5
 	buffer.position = 6
 	
@@ -252,10 +236,6 @@ parseSegments = (buffer, count) ->
 		buffer.position++
 	
 	segments
-
-exports.TYPES =
-	Geography: Geography
-	Geometry: Geometry
 
 exports.PARSERS =
 	geography: (buffer) ->

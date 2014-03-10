@@ -2,7 +2,6 @@
 util = require 'util'
 
 TYPES = require('./datatypes').TYPES
-UDT_TYPES = require('./udt').TYPES
 ISOLATION_LEVEL = require('./isolationlevel')
 DRIVERS = ['msnodesql', 'tedious', 'tds']
 
@@ -685,19 +684,12 @@ module.exports.RequestError = RequestError
 module.exports.ISOLATION_LEVEL = ISOLATION_LEVEL
 module.exports.DRIVERS = DRIVERS
 module.exports.TYPES = TYPES
-module.exports.UDT_TYPES = UDT_TYPES
 module.exports.map = map
 module.exports.fix = true
 
 # append datatypes to this modules export
 
 for key, value of TYPES
-	module.exports[key] = value
-	module.exports[key.toUpperCase()] = value
-
-# append udt datatypes to this modules export
-
-for key, value of UDT_TYPES
 	module.exports[key] = value
 	module.exports[key.toUpperCase()] = value
 	

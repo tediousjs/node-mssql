@@ -3,6 +3,7 @@ tds = require 'tedious'
 util = require 'util'
 
 TYPES = require('./datatypes').TYPES
+DECLARATIONS = require('./datatypes').DECLARATIONS
 UDT = require('./udt').PARSERS
 
 ###
@@ -37,7 +38,7 @@ getTediousType = (type) ->
 		when TYPES.Image then return tds.TYPES.Image
 		when TYPES.Binary then return tds.TYPES.Binary
 		when TYPES.VarBinary then return tds.TYPES.VarBinary
-		when TYPES.UDT then return tds.TYPES.UDT
+		when TYPES.UDT, TYPES.Geography, TYPES.Geometry then return tds.TYPES.UDT
 		else return type
 
 ###
@@ -96,6 +97,9 @@ createColumns = (meta) ->
 				database: value.udtInfo.dbname
 				schema: value.udtInfo.owningSchema
 				assembly: value.udtInfo.assemblyName
+			
+			if DECLARATIONS[value.udtInfo.typeName]
+				out[key].type = DECLARATIONS[value.udtInfo.typeName]
 	
 	out
 
@@ -144,25 +148,11 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				idleTimeoutMillis: 30000
 				create: (callback) =>
 					c = new tds.Connection cfg
-					connecting = true
 
-					# replace default behaviour of tedious's dispatchEvent
-					defDE = c.dispatchEvent
-					c.dispatchEvent = (event) ->
-						defDE.call c, arguments...
-						
-						# listen for internal socketError so we can have it as a reason for connection failure
-						if event is 'socketError' and connecting
-							c.removeListener 'connect', connect
-							callback arguments[1], null # there must be a second argument null
-
-					connect = (err) ->
-						connecting = false
-						
+					c.once 'connect', (err) ->
+						if err then err = ConnectionError err
 						if err then return callback err, null # there must be a second argument null
 						callback null, c
-
-					c.once 'connect', connect
 					
 					#c.on 'debug', (msg) -> console.log msg
 
@@ -180,8 +170,6 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			
 			#create one testing connection to check if everything is ok
 			@pool.acquire (err, connection) =>
-				if err then err = ConnectionError err
-				
 				# and release it immediately
 				@pool.release connection
 				callback err

@@ -64,8 +64,23 @@ describe 'node-tds test suite', ->
 	
 	it 'transaction queue', (done) ->
 		TESTS['transaction queue'] done
+	
+	after ->
+		sql.close()
 
 describe 'tds dates and times', ->
+	before (done) ->
+		global.DRIVER = 'tds'
+		
+		sql.connect
+			user: 'xsp_test'
+			password: 'sweet'
+			server: '192.168.2.2'
+			database: 'xsp'
+			driver: 'tds'
+			
+		, done
+			
 	it.skip 'time (not supported by node-tds)', (done) ->
 		TIMES['time'] done
 		
@@ -78,6 +93,12 @@ describe 'tds dates and times', ->
 	it.skip 'date as parameter (not supported by node-tds)', (done) ->
 		TIMES['date as parameter'] done
 		
+	it 'datetime', (done) ->
+		TIMES['datetime'] done
+		
+	it 'datetime as parameter', (done) ->
+		TIMES['datetime as parameter'] done
+		
 	it.skip 'datetime2 (not supported by node-tds)', (done) ->
 		TIMES['datetime2'] done
 		
@@ -89,6 +110,12 @@ describe 'tds dates and times', ->
 		
 	it.skip 'datetimeoffset as parameter (not supported by node-tds)', (done) ->
 		TIMES['datetimeoffset as parameter'] done
+			
+	it 'smalldatetime', (done) ->
+		TIMES['smalldatetime'] done
+		
+	it 'smalldatetime as parameter', (done) ->
+		TIMES['smalldatetime as parameter'] done
 	
 	after ->
 		sql.close()

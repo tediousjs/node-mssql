@@ -41,10 +41,11 @@ At the moment it support three TDS modules:
 
 ## What's new in 0.5.1 (unstable, git)
 
-- Updated to new Tedious 0.1.7 (unstable, development branch)
+- Updated to new Tedious 0.2.0 (unstable, [development branch](https://github.com/pekim/tedious/tree/development))
 - Added support for TDS 7.3+ data types Date, Time, DateTime2 and DateTimeOffset
 - Added support for UDT data types
 - Serialization of Geography and Geometry CLR types
+- Option to choose whether to pass times in UTC or local time
 - Connecting to named instances simplified
 
 ## Installation
@@ -199,6 +200,7 @@ var config = {
 <a name="cfg-tedious" />
 ### Tedious
 
+- **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
 - **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`) Encryption support is experimental.
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_2`, `7_3_A`, `7_3_B`, `7_4`).
 
@@ -210,7 +212,8 @@ More information about Tedious specific options: http://pekim.github.io/tedious/
 This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
 
 - **connectionString** - Connection string (default: see below).
-- **options.trustedConnection** - Use Windows Authentication (default: `false`)
+- **options.trustedConnection** - Use Windows Authentication (default: `false`).
+- **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
 
 Default connection string when connecting to port:
 ```
@@ -635,6 +638,10 @@ sql.UniqueIdentifier
 sql.Binary
 sql.VarBinary
 sql.Image
+
+sql.UDT
+sql.Geography
+sql.Geometry
 ```
 
 <a name="verbose" />

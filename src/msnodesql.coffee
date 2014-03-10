@@ -68,6 +68,9 @@ createColumns = (meta) ->
 			out[value.name].udt =
 				name: value.udtType
 			
+			if DECLARATIONS[value.udtType]
+				out[value.name].type = DECLARATIONS[value.udtType]
+			
 	out
 
 ###

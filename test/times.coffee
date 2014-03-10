@@ -62,6 +62,29 @@ global.TIMES =
 			assert.equal rst[0].d2, null
 			
 			done()
+			
+	'datetime': (done) ->
+		r1 = new sql.Request
+		r1.query "select convert(datetime, '2014-02-14 22:59:59') as dt1", (err, rst) ->
+			if err then return done err
+
+			assert.equal +rst[0].dt1, new Date(Date.UTC(2014, 1, 14, 22, 59, 59)).getTime()
+
+			done()
+	
+	'datetime as parameter': (done) ->
+		date = new Date(Date.UTC(2014, 1, 14, 22, 59, 59))
+
+		r1 = new sql.Request
+		r1.input 'dt1', sql.DateTime, date
+		r1.input 'dt2', sql.DateTime, null
+		r1.query "select @dt1 as dt1, @dt2 as dt2", (err, rst) ->
+			if err then return done err
+
+			assert.equal +rst[0].dt1, date.getTime()
+			assert.equal rst[0].dt2, null
+
+			done()
 	
 	'datetime2': (done) ->
 		r1 = new sql.Request
@@ -86,7 +109,7 @@ global.TIMES =
 		r1.query "select @dt1 as dt1, @dt2 as dt2", (err, rst) ->
 			if err then return done err
 
-			assert.equal +rst[0].dt1, new Date(2014, 1, 14, 22, 59, 59, 999).getTime()
+			assert.equal +rst[0].dt1, date.getTime()
 			assert.equal rst[0].dt2, null
 			
 			if DRIVER is 'tedious'
@@ -128,4 +151,27 @@ global.TIMES =
 			if DRIVER is 'tedious'
 				assert.equal rst.columns.dto1.scale, 7
 			
+			done()
+			
+	'smalldatetime': (done) ->
+		r1 = new sql.Request
+		r1.query "select convert(datetime, '2014-02-14 22:59:59') as dt1", (err, rst) ->
+			if err then return done err
+
+			assert.equal +rst[0].dt1, new Date(Date.UTC(2014, 1, 14, 22, 59, 59)).getTime()
+
+			done()
+	
+	'smalldatetime as parameter': (done) ->
+		date = new Date(2014, 1, 14, 22, 59)
+		
+		r1 = new sql.Request
+		r1.input 'dt1', sql.SmallDateTime, date
+		r1.input 'dt2', sql.SmallDateTime, null
+		r1.query "select @dt1 as dt1, @dt2 as dt2", (err, rst) ->
+			if err then return done err
+
+			assert.equal +rst[0].dt1, date.getTime()
+			assert.equal rst[0].dt2, null
+
 			done()

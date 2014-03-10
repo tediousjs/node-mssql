@@ -67,8 +67,29 @@ describe 'tedious test suite', ->
 	
 	it 'transaction queue', (done) ->
 		TESTS['transaction queue'] done
+	
+	after ->
+		sql.close()
 
 describe 'tedious dates and times', ->
+	before (done) ->
+		global.DRIVER = 'tedious'
+		
+		sql.connect
+			user: 'xsp_test'
+			password: 'sweet'
+			server: '192.168.2.2'
+			database: 'xsp'
+			options:
+				tdsVersion: '7_4'
+				debug:
+					packet: false
+					token: false
+					data: false
+					payload: false
+			
+		, done
+			
 	it 'time', (done) ->
 		TIMES['time'] done
 		
@@ -81,6 +102,12 @@ describe 'tedious dates and times', ->
 	it 'date as parameter', (done) ->
 		TIMES['date as parameter'] done
 		
+	it 'datetime', (done) ->
+		TIMES['datetime'] done
+		
+	it 'datetime as parameter', (done) ->
+		TIMES['datetime as parameter'] done
+		
 	it 'datetime2', (done) ->
 		TIMES['datetime2'] done
 		
@@ -92,6 +119,12 @@ describe 'tedious dates and times', ->
 		
 	it 'datetimeoffset as parameter', (done) ->
 		TIMES['datetimeoffset as parameter'] done
+			
+	it 'smalldatetime', (done) ->
+		TIMES['smalldatetime'] done
+		
+	it 'smalldatetime as parameter', (done) ->
+		TIMES['smalldatetime as parameter'] done
 	
 	after ->
 		sql.close()
@@ -136,13 +169,13 @@ describe 'tedious multiple connections test suite', ->
 
 describe 'tedious connection errors', ->
 	it 'login failed', (done) ->
-		TESTS['login failed'] done, 'tedious', /Login failed; one or more errorMessage events should have been emitted/
+		TESTS['login failed'] done, 'tedious', /Login failed for user 'xsp_test'/
 
 	it 'timeout', (done) ->
-		TESTS['timeout'] done, 'tedious', /timeout : failed to connect to 10\.0\.0\.1:1433 in 1000ms/
+		TESTS['timeout'] done, 'tedious', /Failed to connect to 10.0.0.1:1433 in 1000ms/
 
 	it 'network error', (done) ->
-		TESTS['network error'] done, 'tedious', /connection to \.\.\.:1433 - failed Error: getaddrinfo ENOTFOUND/
+		TESTS['network error'] done, 'tedious', /Failed to connect to \.\.\.:1433 - getaddrinfo ENOTFOUND/
 
 describe 'tedious connection pooling', ->
 	before (done) ->
