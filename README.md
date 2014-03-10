@@ -60,7 +60,7 @@ var sql = require('mssql');
 var config = {
     user: '...',
     password: '...',
-    server: 'localhost', // To connect to named instance use: 'localhost\\instance'
+    server: 'localhost', // Since 0.5.1 you can use 'localhost\\instance' to connect to named instance
     database: '...'
 }
 
@@ -98,7 +98,7 @@ var sql = require('mssql');
 var config = {
     user: '...',
     password: '...',
-    server: 'localhost', // To connect to named instance use: 'localhost\\instance'
+    server: 'localhost', // Since 0.5.1 you can use 'localhost\\instance' to connect to named instance
     database: '...'
 }
 
@@ -189,7 +189,7 @@ var config = {
 - **driver** - Driver to use (default: `tedious`). Possible values: `tedious` or `msnodesql`.
 - **user** - User name to use for authentication.
 - **password** - Password to use for authentication.
-- **server** - Server to connect to. To connect to named instance use: `server\\instance`
+- **server** - Server to connect to. Since 0.5.1 you can use 'localhost\\instance' to connect to named instance.
 - **port** - Port to connect to (default: `1433`). Don't set when connecting to named instance.
 - **database** - Database to connect to (default: dependent on server configuration).
 - **timeout** - Connection timeout in ms (default: `15000`).
@@ -200,6 +200,7 @@ var config = {
 <a name="cfg-tedious" />
 ### Tedious
 
+- **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
 - **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`) Encryption support is experimental.
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_2`, `7_3_A`, `7_3_B`, `7_4`).
@@ -211,6 +212,7 @@ More information about Tedious specific options: http://pekim.github.io/tedious/
 
 This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
 
+- **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **connectionString** - Connection string (default: see below).
 - **options.trustedConnection** - Use Windows Authentication (default: `false`).
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
