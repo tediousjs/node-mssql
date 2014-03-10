@@ -42,10 +42,12 @@ At the moment it support three TDS modules:
 ## What's new in 0.5.1 (unstable, git)
 
 - Updated to new Tedious 0.2.0 (unstable, [development branch](https://github.com/pekim/tedious/tree/development))
-- Added support for TDS 7.3+ data types Date, Time, DateTime2 and DateTimeOffset
-- Added support for UDT data types
+    - Added support for TDS 7.4
+    - Added support for UDT, Time, Date, DateTime2 and DateTimeOffset data types
+    - Fixed compatibility with TDS 7.1 (SQL Server 2000)
+    - Minor fixes
 - Serialization of Geography and Geometry CLR types
-- Option to choose whether to pass times in UTC or local time
+- Option to choose whether to pass/receive times in UTC or local time
 - Connecting to named instances simplified
 
 ## Installation
