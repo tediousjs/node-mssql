@@ -216,10 +216,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				if err then return callback err
 				
 				@_pooledConnection = connection
-				connection.setAutoCommit false, (err) =>
+				@request().query "set transaction isolation level #{isolationLevelDeclaration(@isolationLevel)}", (err) =>
 					if err then return TransactionError err
 					
-					@request().query "set transaction isolation level #{isolationLevelDeclaration(@isolationLevel)}", callback
+					connection.setAutoCommit false, callback
 			
 		commit: (callback) ->
 			@_pooledConnection.commit (err) =>
