@@ -352,6 +352,16 @@ global.TESTS =
 				if err then return done err
 				if --countdown is 0 then complete()
 	
+	'cancel request': (done, message) ->
+		r = new sql.Request
+		r.query 'waitfor delay \'00:00:05\';select 1', (err, recordset) ->
+			console.log err
+			assert.equal (if message then message.exec(err.message)? else (err instanceof sql.RequestError)), true
+
+			done null
+		
+		r.cancel()
+	
 	'connection 1': (done, connection) ->
 		request = connection.request()
 		request.query 'select SYSTEM_USER as u', (err, recordset) ->

@@ -230,7 +230,6 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 		###
 
 		query: (command, callback) ->
-			
 			columns = {}
 			recordset = []
 			recordsets = []
@@ -239,6 +238,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			@_acquire (err, connection) =>
 				unless err
 					if @verbose then console.log "---------- sql query ----------\n    query: #{command}"
+
+					if @canceled
+						if @verbose then console.log "---------- canceling ----------"
+						@_release connection
+						return callback? new RequestError "Canceled.", 'ECANCEL'
+					
+					@_cancel = =>
+						if @verbose then console.log "---------- canceling ----------"
+						connection.cancel()
 					
 					req = new tds.Request command, (err) =>
 						if err then err = RequestError err
@@ -253,8 +261,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							Object.defineProperty recordset, 'columns', 
 								enumerable: false
 								value: columns
-					
+						
+						@_cancel = null
 						@_release connection
+						
 						callback? err, if @multiple then recordsets else recordsets[0]
 					
 					req.on 'columnMetadata', (metadata) =>
@@ -346,6 +356,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				unless err
 					if @verbose then console.log "---------- sql execute --------\n     proc: #{procedure}"
 					
+					if @canceled
+						if @verbose then console.log "---------- canceling ----------"
+						@_release connection
+						return callback? new RequestError "Canceled.", 'ECANCEL'
+					
+					@_cancel = =>
+						if @verbose then console.log "---------- canceling ----------"
+						connection.cancel()
+					
 					req = new tds.Request procedure, (err) =>
 						if err then err = RequestError err
 						
@@ -356,7 +375,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							console.log "   return: #{returnValue}"
 							console.log " duration: #{elapsed}ms"
 							console.log "---------- completed ----------"
-							
+						
+						@_cancel = null
 						@_release connection
 						
 						recordsets.returnValue = returnValue
@@ -448,7 +468,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 		###
 		
 		cancel: ->
-			throw new RequestError "Request canceling is not implemented by Tedious driver."
+			if @_cancel then return @_cancel()
+			true
 		
 	return {
 		Connection: TediousConnection

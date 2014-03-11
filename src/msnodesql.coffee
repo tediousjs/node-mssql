@@ -405,13 +405,13 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					
 					recordsets.returnValue = returnValue
 					callback? null, recordsets, returnValue
+					
+		###
+		Cancel currently executed request.
+		###
 		
 		cancel: ->
-			###
-			Cancel currently executed request.
-			###
-			
-			throw new Error "Request canceling is not implemented by msnodesql driver."
+			false # Request canceling is not implemented by msnodesql driver.
 	
 	return {
 		Connection: MsnodesqlConnection

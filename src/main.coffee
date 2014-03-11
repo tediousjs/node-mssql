@@ -118,7 +118,7 @@ class Connection extends EventEmitter
 			if module.exports.fix then @driver.fix()
 
 		else
-			err = new ConnectionError "Unknown driver #{@config.driver}!"
+			err = new ConnectionError "Unknown driver #{@config.driver}!", 'EDRIVER'
 			
 			if callback
 				callback err
@@ -150,7 +150,7 @@ class Connection extends EventEmitter
 	
 	connect: (callback) ->
 		if @connected
-			err = new ConnectionError "Database is already connected! Call close before connecting to different database."
+			err = new ConnectionError "Database is already connected! Call close before connecting to different database.", 'EALREADYCONNECTED'
 			
 			if callback
 				callback err
@@ -158,7 +158,7 @@ class Connection extends EventEmitter
 				throw err
 		
 		if @connecting
-			err = new ConnectionError "Already connecting to database! Call close before connecting to different database."
+			err = new ConnectionError "Already connecting to database! Call close before connecting to different database.", 'EALREADYCONNECTING'
 			
 			if callback
 				callback err
@@ -375,6 +375,7 @@ Class Request.
 @property {*} parameters Collection of input and output parameters.
 @property {Boolean} verbose If `true`, debug messages are printed to message log.
 @property {Boolean} multiple If `true`, `query` will handle multiple recordsets (`execute` always expect multiple recordsets).
+@property {Boolean} canceled `true` if request was canceled.
 
 @event recordset Dispatched when new recordset is parsed (with all rows).
 @event row Dispatched when new row is parsed.
@@ -387,6 +388,7 @@ class Request extends EventEmitter
 	parameters: null
 	verbose: false
 	multiple: false
+	canceled: false
 	
 	###
 	Create new Request.
@@ -438,7 +440,7 @@ class Request extends EventEmitter
 
 	input: (name, type, value) ->
 		if arguments.length is 1
-			throw new RequestError "Invalid number of arguments. At least 2 arguments expected."
+			throw new RequestError "Invalid number of arguments. At least 2 arguments expected.", 'EARGS'
 			
 		else if arguments.length is 2
 			value = type
@@ -483,7 +485,7 @@ class Request extends EventEmitter
 		unless type then type = TYPES.VarChar
 		
 		if type is TYPES.Text or type is TYPES.NText or type is TYPES.Image
-			throw new RequestError "Deprecated types (Text, NText, Image) are not supported as OUTPUT parameters."
+			throw new RequestError "Deprecated types (Text, NText, Image) are not supported as OUTPUT parameters.", 'EDEPRECATED'
 		
 		@parameters[name] =
 			name: name
@@ -531,7 +533,9 @@ class Request extends EventEmitter
 	query: (command, callback) ->
 		unless @connection
 			return process.nextTick ->
-				callback? new RequestError "No connection is specified for that request."
+				callback? new RequestError "No connection is specified for that request.", 'ENOCONN'
+		
+		@canceled = false
 		
 		@connection.driver.Request::query.call @, command, (err, recordset) =>
 			unless err then @emit 'done', err, recordset
@@ -572,7 +576,9 @@ class Request extends EventEmitter
 	execute: (procedure, callback) ->
 		unless @connection
 			return process.nextTick ->
-				callback? new RequestError "No connection is specified for that request."
+				callback? new RequestError "No connection is specified for that request.", 'ENOCONN'
+		
+		@canceled = false
 		
 		@connection.driver.Request::execute.call @, procedure, (err, recordsets, returnValue) =>
 			@emit 'done', err, recordsets
@@ -587,14 +593,15 @@ class Request extends EventEmitter
 	###
 	
 	cancel: ->
+		@canceled = true
 		@connection.driver.Request::cancel.call @
 		@
 
 class ConnectionError extends Error
-	constructor: (message) ->
+	constructor: (message, code) ->
 		unless @ instanceof ConnectionError
 			if message instanceof Error
-				err = new ConnectionError message.message
+				err = new ConnectionError message.message, message.code
 				err.originalError = message
 				Error.captureStackTrace err, arguments.callee
 				return err
@@ -606,15 +613,16 @@ class ConnectionError extends Error
 		
 		@name = @constructor.name
 		@message = message
+		@code = code
 		
 		super()
 		Error.captureStackTrace @, @constructor
 
 class TransactionError extends Error
-	constructor: (message) ->
+	constructor: (message, code) ->
 		unless @ instanceof TransactionError
 			if message instanceof Error
-				err = new TransactionError message.message
+				err = new TransactionError message.message, message.code
 				err.originalError = message
 				Error.captureStackTrace err, arguments.callee
 				return err
@@ -626,15 +634,16 @@ class TransactionError extends Error
 		
 		@name = @constructor.name
 		@message = message
+		@code = code
 		
 		super()
 		Error.captureStackTrace @, @constructor
 
 class RequestError extends Error
-	constructor: (message) ->
+	constructor: (message, code) ->
 		unless @ instanceof RequestError
 			if message instanceof Error
-				err = new RequestError message.message
+				err = new RequestError message.message, message.code
 				err.originalError = message
 				Error.captureStackTrace err, arguments.callee
 				return err
@@ -646,6 +655,7 @@ class RequestError extends Error
 		
 		@name = @constructor.name
 		@message = message
+		@code = code
 		
 		super()
 		Error.captureStackTrace @, @constructor

@@ -65,6 +65,9 @@ describe 'node-tds test suite', ->
 	it 'transaction queue', (done) ->
 		TESTS['transaction queue'] done
 	
+	it.skip 'cancel request (not supported by node-tds)', (done) ->
+		TESTS['cancel request'] done
+	
 	after ->
 		sql.close()
 

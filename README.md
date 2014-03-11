@@ -43,6 +43,7 @@ At the moment it support three TDS modules:
 
 - Updated to new Tedious 0.2.0 (unstable, [development branch](https://github.com/pekim/tedious/tree/development))
     - Added support for TDS 7.4
+    - Added request cancelation
     - Added support for UDT, Time, Date, DateTime2 and DateTimeOffset data types
     - Fixed compatibility with TDS 7.1 (SQL Server 2000)
     - Minor fixes
@@ -152,6 +153,7 @@ sql.connect(config, function(err) {
 * [input](#input)
 * [output](#output)
 * [query](#query)
+* [cancel](#cancel)
 
 ### Transactions
 
@@ -432,6 +434,28 @@ request.query('select 1 as number; select 2 as number', function(err, recordsets
     console.log(recordsets[0][0].number); // return 1
     console.log(recordsets[1][0].number); // return 2
 });
+```
+
+---------------------------------------
+
+<a name="cancel" />
+### cancel()
+
+Cancel currently executing request. Return `true` if cancelation packet was send successfully. Not available in `msnodesql` and `tds` drivers.
+
+__Example__
+
+```javascript
+var request = new sql.Request();
+request.query('waitfor delay \'00:00:05\'; select 1 as number', function(err, recordset) {
+    console.log(err instanceof sql.RequestError);  // true
+    console.log(err.message);                      // Canceled.
+    console.log(err.code);                         // ECANCEL
+	
+    // ...
+});
+
+request.cancel();
 ```
 
 <a name="transaction" />

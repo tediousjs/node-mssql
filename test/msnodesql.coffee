@@ -65,6 +65,9 @@ if process.platform.match(/^win/)
 		
 		it 'transaction queue', (done) ->
 			TESTS['transaction queue'] done
+	
+		it.skip 'cancel request (not supported by msnodesql)', (done) ->
+			TESTS['cancel request'] done
 		
 		after ->
 			sql.close()
@@ -95,7 +98,7 @@ if process.platform.match(/^win/)
 		it 'date as parameter', (done) ->
 			TIMES['date as parameter'] done
 			
-		it.only 'datetime', (done) ->
+		it 'datetime', (done) ->
 			TIMES['datetime'] done
 			
 		it 'datetime as parameter', (done) ->
@@ -108,10 +111,11 @@ if process.platform.match(/^win/)
 			TIMES['datetime2 as parameter'] done
 		
 		# https://github.com/WindowsAzure/node-sqlserver/issues/160	
-		it 'datetimeoffset', (done) ->
+		it.skip 'datetimeoffset (buggy in msnodesql)', (done) ->
 			TIMES['datetimeoffset'] done
-			
-		it 'datetimeoffset as parameter', (done) ->
+		
+		# https://github.com/WindowsAzure/node-sqlserver/issues/160	
+		it.skip 'datetimeoffset as parameter (buggy in msnodesql)', (done) ->
 			TIMES['datetimeoffset as parameter'] done
 			
 		it 'smalldatetime', (done) ->

@@ -68,6 +68,9 @@ describe 'tedious test suite', ->
 	it 'transaction queue', (done) ->
 		TESTS['transaction queue'] done
 	
+	it 'cancel request', (done) ->
+		TESTS['cancel request'] done, /Canceled./
+	
 	after ->
 		sql.close()
 

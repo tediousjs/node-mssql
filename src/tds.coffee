@@ -430,13 +430,13 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					
 					recordsets.returnValue = returnValue
 					callback? null, recordsets, returnValue
+					
+		###
+		Cancel currently executed request.
+		###
 		
 		cancel: ->
-			###
-			Cancel currently executed request.
-			###
-			
-			throw new RequestError "Request canceling is not implemented by TDS driver."
+			false # Request canceling is not implemented by TDS driver.
 		
 	return {
 		Connection: TDSConnection
