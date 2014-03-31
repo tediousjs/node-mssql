@@ -15,10 +15,10 @@ describe 'tedious test suite', ->
 			options:
 				tdsVersion: '7_4'
 				debug:
-					packet: false
-					token: false
-					data: false
-					payload: false
+					packet: true
+					token: true
+					data: true
+					payload: true
 			
 		, (err) ->
 			if err then return done err

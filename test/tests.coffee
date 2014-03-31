@@ -13,7 +13,7 @@ global.TESTS =
 		request.output 'out2', sql.Int
 		request.output 'out3', sql.UniqueIdentifier
 		request.output 'out4', sql.DateTime
-		request.output 'out5', sql.Char, 10
+		request.output 'out5', sql.Char(10)
 		
 		request.execute '__test', (err, recordsets, returnValue) ->
 			unless err
@@ -129,7 +129,7 @@ global.TESTS =
 		request.input 'in4', sql.VarBinary, null
 		request.input 'in5', sql.Image, sample
 		request.input 'in6', sql.Image, null
-		request.output 'out', sql.Binary, 4
+		request.output 'out', sql.Binary(4)
 		request.output 'out2', sql.VarBinary
 		request.execute '__test5', (err, recordsets) ->
 			unless err

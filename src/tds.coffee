@@ -68,7 +68,7 @@ createColumns = (meta) ->
 	for key, value of meta
 		out[key] =
 			name: value.name
-			size: value.length
+			length: value.length
 			type: TYPES[value.type.sqlType]
 	
 	out
@@ -77,14 +77,16 @@ createColumns = (meta) ->
 @ignore
 ###
 
-typeDeclaration = (type, length) ->
+typeDeclaration = (type, options) ->
 	switch type
 		when TYPES.VarChar, TYPES.NVarChar, TYPES.VarBinary
-			return "#{type.name} (MAX)"
+			return "#{type.declaration} (MAX)"
 		when TYPES.Char, TYPES.NChar, TYPES.Binary
-			return "#{type.name} (#{length ? 1})"
+			return "#{type.declaration} (#{options.length ? 1})"
+		when TYPES.Time, TYPES.DateTime2, TYPES.DateTimeOffset
+			return "#{type.declaration} (#{options.scale ? 7})"
 		else
-			return type.name
+			return type.declaration
 
 ###
 @ignore
@@ -281,7 +283,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			# nested = function is called by this.execute
 			
 			unless @nested
-				input = ("@#{param.name} #{typeDeclaration(param.type, param.length)}" for name, param of @parameters when param.io is 2)
+				input = ("@#{param.name} #{typeDeclaration(param.type, param)}" for name, param of @parameters when param.io is 2)
 				output = ("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2)
 				if input.length then command = "declare #{input.join ','};#{command};"
 				if output.length
@@ -351,7 +353,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 									param.value = last[param.name]
 				
 									if @verbose
-										console.log "   output: @#{param.name}, #{param.type.name}, #{param.value}"
+										console.log "   output: @#{param.name}, #{param.type.declaration}, #{param.value}"
 						
 							if @verbose
 								if error then console.log "    error: #{error}"
@@ -376,7 +378,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 	
 			started = Date.now()
 			
-			cmd = "declare #{['@___return___ int'].concat("@#{param.name} #{typeDeclaration(param.type, param.length)}" for name, param of @parameters when param.io is 2).join ', '};"
+			cmd = "declare #{['@___return___ int'].concat("@#{param.name} #{typeDeclaration(param.type, param)}" for name, param of @parameters when param.io is 2).join ', '};"
 			cmd += "exec @___return___ = #{procedure} "
 			
 			spp = []
@@ -386,7 +388,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					spp.push "@#{param.name}=@#{param.name} output"
 				else
 					if @verbose
-						console.log "    input: @#{param.name}, #{param.type.name}, #{param.value}"
+						console.log "    input: @#{param.name}, #{param.type.declaration}, #{param.value}"
 							
 					# input parameter
 					spp.push "@#{param.name}=@#{param.name}"
@@ -420,7 +422,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							param.value = last[param.name]
 		
 							if @verbose
-								console.log "   output: @#{param.name}, #{param.type.name}, #{param.value}"
+								console.log "   output: @#{param.name}, #{param.type.declaration}, #{param.value}"
 		
 					if @verbose
 						elapsed = Date.now() - started

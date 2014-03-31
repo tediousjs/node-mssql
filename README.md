@@ -44,12 +44,16 @@ At the moment it support three TDS modules:
 - Updated to new Tedious 0.2.0 (unstable, [development branch](https://github.com/pekim/tedious/tree/development))
     - Added support for TDS 7.4
     - Added request cancelation
-    - Added support for UDT, Time, Date, DateTime2 and DateTimeOffset data types
+    - Added support for UDT, TVP, Time, Date, DateTime2 and DateTimeOffset data types
     - Fixed compatibility with TDS 7.1 (SQL Server 2000)
     - Minor fixes
-- Serialization of Geography and Geometry CLR types
+- You can now easily setup type's length/scale (`sql.VarChar(50)`)
+- Serialization of [Geography and Geometry](#geography) CLR types
+- Support for creating [Table-Value Parameters](#tvp) (`var tvp = new sql.Table()`)
+- Output parameters are now Input-Output and can handle initial value
 - Option to choose whether to pass/receive times in UTC or local time
 - Connecting to named instances simplified
+- Default SQL data type for JS String type is now NVarChar (was VarChar)
 
 ## Installation
 
@@ -83,7 +87,7 @@ var connection = new sql.Connection(config, function(err) {
 	
     var request = new sql.Request(connection);
     request.input('input_parameter', sql.Int, 10);
-    request.output('output_parameter', sql.Int);
+    request.output('output_parameter', sql.VarChar(30));
     request.execute('procedure_name', function(err, recordsets, returnValue) {
         // ... error checks
         
@@ -121,7 +125,7 @@ sql.connect(config, function(err) {
 	
     var request = new sql.Request();
     request.input('input_parameter', sql.Int, value);
-    request.output('output_parameter', sql.Int);
+    request.output('output_parameter', sql.VarChar(sql.MAX));
     request.execute('procedure_name', function(err, recordsets, returnValue) {
         // ... error checks
 
@@ -165,6 +169,7 @@ sql.connect(config, function(err) {
 ### Other
 
 * [Geography and Geometry](#geography)
+* [Table-Value Parameter](#tvp)
 * [Errors](#errors)
 * [Metadata](#meta)
 * [Data Types](#data-types)
@@ -190,7 +195,7 @@ var config = {
 <a name="cfg-basic" />
 ### Basic configuration is same for all drivers.
 
-- **driver** - Driver to use (default: `tedious`). Possible values: `tedious` or `msnodesql`.
+- **driver** - Driver to use (default: `tedious`). Possible values: `tedious`, `msnodesql` or `tds`.
 - **user** - User name to use for authentication.
 - **password** - Password to use for authentication.
 - **server** - Server to connect to. Since 0.5.1 you can use 'localhost\\instance' to connect to named instance.
@@ -358,12 +363,14 @@ request.input('input_parameter', sql.Int, value);
 
 __JS Data Type To SQL Data Type Map__
 
-- `String` -> `sql.VarChar`
+- `String` -> `sql.NVarChar`
 - `Number` -> `sql.Int`
 - `Boolean` -> `sql.Bit`
 - `Date` -> `sql.DateTime`
+- `Buffer` -> `sql.VarBinary`
+- `sql.Table` -> `sql.TVP`
 
-Default data type for unknown object is `sql.VarChar`.
+Default data type for unknown object is `sql.NVarChar`.
 
 You can define you own type map.
 
@@ -380,7 +387,7 @@ sql.map.register(Number, sql.BigInt);
 ---------------------------------------
 
 <a name="output" />
-### output(name, type, [length])
+### output(name, type, [value])
 
 Add an output parameter to the request.
 
@@ -388,13 +395,13 @@ __Arguments__
 
 - **name** - Name of the output parameter without @ char.
 - **type** - SQL data type of output parameter.
-- **length** - Expected length (for Char, Binary). Optional.
+- **value** - Output parameter value initial value. `undefined` and `NaN` values are automatically converted to `null` values. Optional.
 
 __Example__
 
 ```javascript
 request.output('output_parameter', sql.Int);
-request.output('output_parameter', sql.Char, 50);
+request.output('output_parameter', sql.VarChar(50), 'abc');
 ```
 
 ---------------------------------------
@@ -597,6 +604,52 @@ Results in:
   segments: [] }
 ```
 
+<a name="tvp" />
+## Table-Value Parameter (TVP)
+
+Introduced in 0.5.1. Supported on SQL Server 2008 and later. Not supported by optional drivers `msnodesql` and `tds`.
+
+You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.
+
+__Example__
+
+```sql
+CREATE TYPE TestType AS TABLE ( a VARCHAR(50), b INT );
+```
+
+Next we will need a stored procedure.
+
+```sql
+CREATE PROCEDURE MyCustomStoredProcedure (@tvp TestType readonly) AS SELECT * FROM @tvp
+```
+
+Now let's go back to our Node.js app.
+
+```javascript
+var tvp = new sql.Table()
+
+// Columns must correspond with type we have created in database.
+tvp.columns.add('a', sql.VarChar(50));
+tvp.columns.add('b', sql.Int);
+
+// Add rows
+tvp.rows.add('hello tvp', 777); // Values are in same order as columns.
+```
+
+You can send table as a parameter to stored procedure.
+
+```javascript
+var request = new sql.Request();
+request.input('tvp', tvp);
+request.execute('MyCustomStoredProcedure', function(err, recordsets, returnValue) {
+    // ... error checks
+    
+    console.dir(recordsets[0][0]); // {a: 'hello tvp', b: 777}
+});
+```
+
+*TIP*: You can also create Table variable from any recordset with `recordset.toTable()`.
+
 <a name="errors" />
 ## Errors
 
@@ -626,8 +679,8 @@ request.query('select 1 as first, \'asdf\' as second', function(err, recordset) 
 Columns structure for example above:
 
 ```javascript
-{ first: { name: 'first', size: 10, type: { name: 'int' } },
-  second: { name: 'second', size: 4, type: { name: 'varchar' } } }
+{ first: { name: 'first', length: 10, type: { name: 'int' } },
+  second: { name: 'second', length: 4, type: { name: 'varchar' } } }
 ```
 
 <a name="data-types" />
@@ -646,31 +699,33 @@ sql.SmallMoney
 sql.Real
 sql.TinyInt
 
-sql.Char
-sql.NChar
+sql.Char [length]
+sql.NChar [length]
 sql.Text
 sql.NText
-sql.VarChar
-sql.NVarChar
+sql.VarChar [length]
+sql.NVarChar [length]
 sql.Xml
 
-sql.Time
+sql.Time [scale]
 sql.Date
 sql.DateTime
-sql.DateTime2
-sql.DateTimeOffset
+sql.DateTime2 [scale]
+sql.DateTimeOffset [scale]
 sql.SmallDateTime
 
 sql.UniqueIdentifier
 
 sql.Binary
-sql.VarBinary
+sql.VarBinary [length]
 sql.Image
 
 sql.UDT
 sql.Geography
 sql.Geometry
 ```
+
+To setup MAX length for `VarChar`, `NVarChar` and `VarBinary` use `sql.MAX` length.
 
 <a name="verbose" />
 ## Verbose Mode
@@ -709,10 +764,6 @@ Output for example above could look similar to this.
 
 <a name="issues" />
 ## Known issues
-
-### Tedious
-
-- If you're facing problems with text codepage, try using NVarChar as default data type for string values - `sql.map.register(String, sql.NVarChar)`.
 
 ### msnodesql
 

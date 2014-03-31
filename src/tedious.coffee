@@ -5,6 +5,7 @@ util = require 'util'
 TYPES = require('./datatypes').TYPES
 DECLARATIONS = require('./datatypes').DECLARATIONS
 UDT = require('./udt').PARSERS
+Table = require('./table')
 
 ###
 @ignore
@@ -39,6 +40,7 @@ getTediousType = (type) ->
 		when TYPES.Binary then return tds.TYPES.Binary
 		when TYPES.VarBinary then return tds.TYPES.VarBinary
 		when TYPES.UDT, TYPES.Geography, TYPES.Geometry then return tds.TYPES.UDT
+		when TYPES.TVP then return tds.TYPES.TVP
 		else return type
 
 ###
@@ -76,6 +78,7 @@ getMssqlType = (type) ->
 		when tds.TYPES.VarBinary then return TYPES.VarBinary
 		when tds.TYPES.Xml then return TYPES.Xml
 		when tds.TYPES.UDT then return TYPES.UDT
+		when tds.TYPES.TVP then return TYPES.TVP
 
 ###
 @ignore
@@ -86,7 +89,7 @@ createColumns = (meta) ->
 	for key, value of meta
 		out[key] =
 			name: value.colName
-			size: value.dataLength
+			length: value.dataLength
 			type: getMssqlType(value.type)
 			scale: value.scale
 			precision: value.precision
@@ -122,6 +125,29 @@ valueCorrection = (value, metadata) ->
 @ignore
 ###
 
+parameterCorrection = (value) ->
+	if value instanceof Table
+		tvp =
+			columns: []
+			rows: value.rows
+			
+		for col in value.columns
+			tvp.columns.push
+				name: col.name
+				type: getTediousType col.type
+				length: col.length
+				scale: col.scale
+				precision: col.precision
+			
+		tvp
+			
+	else
+		value
+
+###
+@ignore
+###
+
 module.exports = (Connection, Transaction, Request, ConnectionError, TransactionError, RequestError) ->
 	class TediousConnection extends Connection
 		pool: null
@@ -137,6 +163,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			cfg.options.port ?= config.port
 			cfg.options.connectTimeout ?= config.timeout ? 15000
 			cfg.options.tdsVersion ?= '7_4'
+			cfg.options.rowCollectionOnDone = false
+			cfg.options.rowCollectionOnRequestCompletion = false
+			cfg.options.useColumnNames = false
 			
 			# tedious always connect via tcp when port is specified
 			if cfg.options.instanceName then delete cfg.options.port
@@ -279,6 +308,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						Object.defineProperty recordset, 'columns', 
 							enumerable: false
 							value: createColumns(columns)
+							
+						Object.defineProperty recordset, 'toTable', 
+							enumerable: false
+							value: -> Table.fromRecordset @
 						
 						@emit 'recordset', recordset
 						
@@ -291,7 +324,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							if value is tds.TYPES.Null
 								console.log "   output: @#{parameterName}, null"
 							else
-								console.log "   output: @#{parameterName}, #{@parameters[parameterName].type.name.toLowerCase()}, #{value}"
+								console.log "   output: @#{parameterName}, #{@parameters[parameterName].type.declaration.toLowerCase()}, #{value}"
 								
 						@parameters[parameterName].value = if value is tds.TYPES.Null then null else value
 					
@@ -327,12 +360,12 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							if param.value is tds.TYPES.Null
 								console.log "    input: @#{param.name}, null"
 							else
-								console.log "    input: @#{param.name}, #{param.type.name.toLowerCase()}, #{param.value}"
+								console.log "    input: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
 						
-						req.addParameter param.name, getTediousType(param.type), param.value, null
+						req.addParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 					
 					for name, param of @parameters when param.io is 2
-						req.addOutputParameter param.name, getTediousType(param.type), {length: param.length}
+						req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 					
 					if @verbose then console.log "---------- response -----------"
 					connection.execSql req
@@ -421,6 +454,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						Object.defineProperty recordset, 'columns', 
 							enumerable: false
 							value: createColumns(columns)
+							
+						Object.defineProperty recordset, 'toTable', 
+							enumerable: false
+							value: -> Table.fromRecordset @
 						
 						@emit 'recordset', recordset
 						
@@ -440,7 +477,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							if value is tds.TYPES.Null
 								console.log "   output: @#{parameterName}, null"
 							else
-								console.log "   output: @#{parameterName}, #{@parameters[parameterName].type.name.toLowerCase()}, #{value}"
+								console.log "   output: @#{parameterName}, #{@parameters[parameterName].type.declaration.toLowerCase()}, #{value}"
 								
 						@parameters[parameterName].value = if value is tds.TYPES.Null then null else value
 					
@@ -449,12 +486,12 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							if param.value is tds.TYPES.Null
 								console.log "    input: @#{param.name}, null"
 							else
-								console.log "    input: @#{param.name}, #{param.type.name.toLowerCase()}, #{param.value}"
+								console.log "    input: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
 						
-						req.addParameter param.name, getTediousType(param.type), param.value, null
+						req.addParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 						
 					for name, param of @parameters when param.io is 2
-						req.addOutputParameter param.name, getTediousType(param.type), {length: param.length}
+						req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 					
 					if @verbose then console.log "---------- response -----------"
 					connection.callProcedure req

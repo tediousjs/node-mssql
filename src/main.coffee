@@ -4,6 +4,7 @@ util = require 'util'
 TYPES = require('./datatypes').TYPES
 ISOLATION_LEVEL = require('./isolationlevel')
 DRIVERS = ['msnodesql', 'tedious', 'tds']
+Table = require('./table')
 
 global_connection = null
 
@@ -37,24 +38,26 @@ map.register = (jstype, sqltype) ->
 	
 	null
 
-map.register String, TYPES.VarChar
+map.register String, TYPES.NVarChar
 map.register Number, TYPES.Int
 map.register Boolean, TYPES.Bit
 map.register Date, TYPES.DateTime
+map.register Buffer, TYPES.VarBinary
+map.register Table, TYPES.TVP
 
 ###
 @ignore
 ###
 
 getTypeByValue = (value) ->
-	if value is null or value is undefined then return TYPES.VarChar
+	if value is null or value is undefined then return TYPES.NVarChar
 
 	switch typeof value
 		when 'string'
 			for item in map when item.js is String
 				return item.sql
 
-			return TYPES.VarChar
+			return TYPES.NVarChar
 			
 		when 'number'
 			for item in map when item.js is Number
@@ -72,10 +75,10 @@ getTypeByValue = (value) ->
 			for item in map when value instanceof item.js
 				return item.sql
 
-			return TYPES.VarChar
+			return TYPES.NVarChar
 			
 		else
-			return TYPES.VarChar
+			return TYPES.NVarChar
 
 ###
 Class Connection.
@@ -445,10 +448,6 @@ class Request extends EventEmitter
 		else if arguments.length is 2
 			value = type
 			type = getTypeByValue(value)
-		
-		# this should be enabled for tedious only
-		#unless type.writeParameterData
-		#	throw new Error "Data type #{type.name} is not supported as procedure parameter. (parameter name: #{name})"
 
 		# support for custom data types
 		if value?.valueOf and value not instanceof Date then value = value.valueOf()
@@ -459,11 +458,17 @@ class Request extends EventEmitter
 		# NaN to null
 		if value isnt value then value = null
 		
+		if type instanceof Function
+			type = type()
+		
 		@parameters[name] =
 			name: name
-			type: type
+			type: type.type
 			io: 1
 			value: value
+			length: type.length
+			scale: type.scale
+			precision: type.precision
 		
 		@
 			
@@ -473,25 +478,41 @@ class Request extends EventEmitter
 	**Example:**
 	```
 	request.output('output_parameter', sql.Int);
+	request.output('output_parameter', sql.VarChar(50), 'abc');
 	```
 	
 	@param {String} name Name of the output parameter without @ char.
 	@param {*} type SQL data type of output parameter.
-	@param {Number} [length] Expected length.
+	@param {*} [value] Output parameter value initial value. `undefined` and `NaN` values are automatically converted to `null` values. Optional.
 	@returns {Request}
 	###
 	
-	output: (name, type, length) ->
-		unless type then type = TYPES.VarChar
+	output: (name, type, value) ->
+		unless type then type = TYPES.NVarChar
 		
 		if type is TYPES.Text or type is TYPES.NText or type is TYPES.Image
 			throw new RequestError "Deprecated types (Text, NText, Image) are not supported as OUTPUT parameters.", 'EDEPRECATED'
 		
+		# support for custom data types
+		if value?.valueOf and value not instanceof Date then value = value.valueOf()
+		
+		# undefined to null
+		if value is undefined then value = null
+		
+		# NaN to null
+		if value isnt value then value = null
+		
+		if type instanceof Function
+			type = type()
+		
 		@parameters[name] =
 			name: name
-			type: type
+			type: type.type
 			io: 2
-			length: length
+			value: value
+			length: type.length
+			scale: type.scale
+			precision: type.precision
 		
 		@
 			
@@ -686,6 +707,7 @@ module.exports.close = (callback) ->
 module.exports.Connection = Connection
 module.exports.Transaction = Transaction
 module.exports.Request = Request
+module.exports.Table = Table
 
 module.exports.ConnectionError = ConnectionError
 module.exports.TransactionError = TransactionError
@@ -694,6 +716,7 @@ module.exports.RequestError = RequestError
 module.exports.ISOLATION_LEVEL = ISOLATION_LEVEL
 module.exports.DRIVERS = DRIVERS
 module.exports.TYPES = TYPES
+module.exports.MAX = 65535 # (1 << 16) - 1
 module.exports.map = map
 module.exports.fix = true
 

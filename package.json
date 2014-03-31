@@ -29,7 +29,7 @@
 		}
 	],
 	"dependencies": {
-		"tedious": ">=0.1.5",
+		"tedious": ">=0.2.0",
 		"generic-pool": ">=2.0.4"
 	},
 	"devDependencies": {
