@@ -1,3 +1,14 @@
+v0.5.1 (2014-04-01)
+-------------------
+[change] Updated to new Tedious 0.2.1
+[new] You can now easily setup type's length/scale (sql.VarChar(50))
+[new] Serialization of Geography and Geometry CLR types
+[new] Support for creating Table-Value Parameters (var tvp = new sql.Table())
+[new] Output parameters are now Input-Output and can handle initial value
+[new] Option to choose whether to pass/receive times in UTC or local time
+[new] Connecting to named instances simplified
+[change] Default SQL data type for JS String type is now NVarChar (was VarChar)
+
 v0.5.0 (2014-01-25)
 -------------------
 [new] You can now attach event listeners to Connection (connect, close), Transaction (begin, commit, rollback) and Request (row, recordset, done)

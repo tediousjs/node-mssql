@@ -18,33 +18,13 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 0.5.0 (stable, npm)
+## What's new in 0.5.1 (stable, npm)
 
-- You can now attach event listeners to `Connection` (`connect`, `close`), `Transaction` (`begin`, `commit`, `rollback`) and `Request` (`row`, `recordset`, `done`)
-- You can now set length of Char, NChar and Binary output parameters
-- You can now change default transaction isolation level
-- Errors are now splitted to three categories for better error handling - `ConnectionError`, `TransactionError`, `ReqestError`
-- New features and bug fixes for [Tedious](https://github.com/pekim/tedious)
-    - Binary and VarBinary types are now available as input and output parameters
-    - Image type is now available as input parameter
-    - Binary, VarBinary and Image types are now returned as buffer (was array)
-    - Transaction isolationLevel default is now `READ_COMMITED` (was `READ_UNCOMMITED`)
-    - Fixed issue when zero value was casted as null when using BigInt as input parameter
-    - Fixed issue when dates before 1900/01/01 in input parameters resulted in "Out of bounds" error
-- New features and bug fixes for [node-tds](https://github.com/cretz/node-tds)
-    - UniqueIdentifier type in now available as input and output parameter
-    - UniqueIdentifier type is now parsed correctly as string value (was buffer)
-    - Text, NText, Char, NChar, VarChar and NVarChar input parameters has correct lengths
-    - Fixed `Error` messages
-- New features and bug fixes for [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver)
-    - Char, NChar, Xml, Text, NText and VarBinary types are now correctly functional as output parameters
-
-## What's new in 0.5.1 (unstable, git)
-
-- Updated to new Tedious 0.2.0 (unstable, [development branch](https://github.com/pekim/tedious/tree/development))
+- Updated to new Tedious 0.2.1
     - Added support for TDS 7.4
     - Added request cancelation
-    - Added support for UDT, TVP, Time, Date, DateTime2, DateTimeOffset, Numeric, Decimal, Money and SmallMoney data types
+    - Added support for UDT, TVP, Time, Date, DateTime2 and DateTimeOffset data types
+    - Numeric, Decimal, SmallMoney and Money are now supported as input parameters
     - Fixed compatibility with TDS 7.1 (SQL Server 2000)
     - Minor fixes
 - You can now easily setup type's length/scale (`sql.VarChar(50)`)
@@ -67,7 +47,7 @@ var sql = require('mssql');
 var config = {
     user: '...',
     password: '...',
-    server: 'localhost', // Since 0.5.1 you can use 'localhost\\instance' to connect to named instance
+    server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
     database: '...'
 }
 
@@ -87,7 +67,7 @@ var connection = new sql.Connection(config, function(err) {
 	
     var request = new sql.Request(connection);
     request.input('input_parameter', sql.Int, 10);
-    request.output('output_parameter', sql.Int);
+    request.output('output_parameter', sql.VarChar(50));
     request.execute('procedure_name', function(err, recordsets, returnValue) {
         // ... error checks
         
@@ -105,7 +85,7 @@ var sql = require('mssql');
 var config = {
     user: '...',
     password: '...',
-    server: 'localhost', // Since 0.5.1 you can use 'localhost\\instance' to connect to named instance
+    server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
     database: '...'
 }
 
@@ -125,7 +105,7 @@ sql.connect(config, function(err) {
 	
     var request = new sql.Request();
     request.input('input_parameter', sql.Int, value);
-    request.output('output_parameter', sql.Int);
+    request.output('output_parameter', sql.VarChar(50));
     request.execute('procedure_name', function(err, recordsets, returnValue) {
         // ... error checks
 
@@ -198,7 +178,7 @@ var config = {
 - **driver** - Driver to use (default: `tedious`). Possible values: `tedious`, `msnodesql` or `tds`.
 - **user** - User name to use for authentication.
 - **password** - Password to use for authentication.
-- **server** - Server to connect to. Since 0.5.1 you can use 'localhost\\instance' to connect to named instance.
+- **server** - Server to connect to. You can use 'localhost\\instance' to connect to named instance.
 - **port** - Port to connect to (default: `1433`). Don't set when connecting to named instance.
 - **database** - Database to connect to (default: dependent on server configuration).
 - **timeout** - Connection timeout in ms (default: `15000`).
@@ -576,7 +556,7 @@ transaction.begin(function(err) {
 <a name="geography" />
 ## Geography and Geometry
 
-Introduced in 0.5.1. node-mssql has built-in serializer for Geography and Geometry CLR data types.
+node-mssql has built-in serializer for Geography and Geometry CLR data types.
 
 ```sql
 select geography::STGeomFromText('LINESTRING(-122.360 47.656, -122.343 47.656 )', 4326)
@@ -607,7 +587,7 @@ Results in:
 <a name="tvp" />
 ## Table-Value Parameter (TVP)
 
-Introduced in 0.5.1. Supported on SQL Server 2008 and later. Not supported by optional drivers `msnodesql` and `tds`. You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.
+Supported on SQL Server 2008 and later. Not supported by optional drivers `msnodesql` and `tds`. You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.
 
 ```sql
 CREATE TYPE TestType AS TABLE ( a VARCHAR(50), b INT );
@@ -675,14 +655,14 @@ request.query('select 1 as first, \'asdf\' as second', function(err, recordset) 
 Columns structure for example above:
 
 ```javascript
-{ first: { name: 'first', length: 10, type: { name: 'int' } },
-  second: { name: 'second', length: 4, type: { name: 'varchar' } } }
+{ first: { name: 'first', length: 10, type: [sql.Int] },
+  second: { name: 'second', length: 4, type: [sql.VarChar] } }
 ```
 
 <a name="data-types" />
 ## Data Types
 
-Since version 0.5.1 you can define data types multiple ways:
+You can define data types with length/precision/scale:
 
 ```javascript
 request.input("name", sql.VarChar, "abc");               // varchar(3)
