@@ -34,7 +34,7 @@
 
 <p>An easy-to-use MSSQL database connector for Node.js.</p>
 
-<p>There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without loosing any important functionality. node-mssql uses other TDS modules as drivers and offer easy to use unified interface. It also add some extra features and bug fixes.</p>
+<p>There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without losing any important functionality. node-mssql uses other TDS modules as drivers and offer easy to use unified interface. It also add extra features and bug fixes.</p>
 
 <p>There is also <a href="https://github.com/visionmedia/co">co</a> warpper available - <a href="https://github.com/patriksimek/co-mssql">co-mssql</a>.</p>
 
@@ -45,6 +45,7 @@
 <li>Connection pooling with Transactions support</li>
 <li>Parametrized Stored Procedures in <a href="https://github.com/cretz/node-tds">node-tds</a> and <a href="https://github.com/WindowsAzure/node-sqlserver">Microsoft Driver for Node.js for SQL Server</a>
 </li>
+<li>Serialization of Geography and Geometry CLR types</li>
 <li>Injects original TDS modules with enhancements and bug fixes</li>
 </ul><p>At the moment it support three TDS modules:</p>
 
@@ -56,40 +57,27 @@
 <li>
 <a href="https://github.com/cretz/node-tds">node-tds</a> by Chad Retz (pure javascript - windows/osx/linux)</li>
 </ul><h2>
-<a name="whats-new-in-050" class="anchor" href="#whats-new-in-050"><span class="octicon octicon-link"></span></a>What's new in 0.5.0</h2>
+<a name="whats-new-in-051-stable-npm" class="anchor" href="#whats-new-in-051-stable-npm"><span class="octicon octicon-link"></span></a>What's new in 0.5.1 (stable, npm)</h2>
 
 <ul>
-<li>You can now attach event listeners to <code>Connection</code> (<code>connect</code>, <code>close</code>), <code>Transaction</code> (<code>begin</code>, <code>commit</code>, <code>rollback</code>) and <code>Request</code> (<code>row</code>, <code>recordset</code>, <code>done</code>)</li>
-<li>You can now set length of Char, NChar and Binary output parameters</li>
-<li>You can now change default transaction isolation level</li>
-<li>Errors are now splitted to three categories for better error handling - <code>ConnectionError</code>, <code>TransactionError</code>, <code>ReqestError</code>
-</li>
-<li>New features and bug fixes for <a href="https://github.com/pekim/tedious">Tedious</a>
+<li>Updated to new Tedious 0.2.1
 
 <ul>
-<li>Binary and VarBinary types are now available as input and output parameters</li>
-<li>Image type is now available as input parameter</li>
-<li>Binary, VarBinary and Image types are now returned as buffer (was array)</li>
-<li>Transaction isolationLevel default is now <code>READ_COMMITED</code> (was <code>READ_UNCOMMITED</code>)</li>
-<li>Fixed issue when zero value was casted as null when using BigInt as input parameter</li>
-<li>Fixed issue when dates before 1900/01/01 in input parameters resulted in "Out of bounds" error</li>
+<li>Added support for TDS 7.4</li>
+<li>Added request cancelation</li>
+<li>Added support for UDT, TVP, Time, Date, DateTime2 and DateTimeOffset data types</li>
+<li>Numeric, Decimal, SmallMoney and Money are now supported as input parameters</li>
+<li>Fixed compatibility with TDS 7.1 (SQL Server 2000)</li>
+<li>Minor fixes</li>
 </ul>
 </li>
-<li>New features and bug fixes for <a href="https://github.com/cretz/node-tds">node-tds</a>
-
-<ul>
-<li>UniqueIdentifier type in now available as input and output parameter</li>
-<li>UniqueIdentifier type is now parsed correctly as string value (was buffer)</li>
-<li>Text, NText, Char, NChar, VarChar and NVarChar input parameters has correct lengths</li>
-<li>Fixed <code>Error</code> messages</li>
-</ul>
-</li>
-<li>New features and bug fixes for <a href="https://github.com/WindowsAzure/node-sqlserver">Microsoft Driver for Node.js for SQL Server</a>
-
-<ul>
-<li>Char, NChar, Xml, Text, NText and VarBinary types are now correctly functional as output parameters</li>
-</ul>
-</li>
+<li>You can now easily setup type's length/scale (<code>sql.VarChar(50)</code>)</li>
+<li>Serialization of <a href="#geography">Geography and Geometry</a> CLR types</li>
+<li>Support for creating <a href="#tvp">Table-Value Parameters</a> (<code>var tvp = new sql.Table()</code>)</li>
+<li>Output parameters are now Input-Output and can handle initial value</li>
+<li>Option to choose whether to pass/receive times in UTC or local time</li>
+<li>Connecting to named instances simplified</li>
+<li>Default SQL data type for JS String type is now NVarChar (was VarChar)</li>
 </ul><h2>
 <a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
 
@@ -104,7 +92,7 @@
 <span class="kd">var</span> <span class="nx">config</span> <span class="o">=</span> <span class="p">{</span>
     <span class="nx">user</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
     <span class="nx">password</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
-    <span class="nx">server</span><span class="o">:</span> <span class="s1">'localhost'</span><span class="p">,</span>
+    <span class="nx">server</span><span class="o">:</span> <span class="s1">'localhost'</span><span class="p">,</span> <span class="c1">// You can use 'localhost\\instance' to connect to named instance</span>
     <span class="nx">database</span><span class="o">:</span> <span class="s1">'...'</span>
 <span class="p">}</span>
 
@@ -124,7 +112,7 @@
 
     <span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">(</span><span class="nx">connection</span><span class="p">);</span>
     <span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'input_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
-    <span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+    <span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">(</span><span class="mi">50</span><span class="p">));</span>
     <span class="nx">request</span><span class="p">.</span><span class="nx">execute</span><span class="p">(</span><span class="s1">'procedure_name'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordsets</span><span class="p">,</span> <span class="nx">returnValue</span><span class="p">)</span> <span class="p">{</span>
         <span class="c1">// ... error checks</span>
 
@@ -142,7 +130,7 @@
 <span class="kd">var</span> <span class="nx">config</span> <span class="o">=</span> <span class="p">{</span>
     <span class="nx">user</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
     <span class="nx">password</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
-    <span class="nx">server</span><span class="o">:</span> <span class="s1">'localhost'</span><span class="p">,</span>
+    <span class="nx">server</span><span class="o">:</span> <span class="s1">'localhost'</span><span class="p">,</span> <span class="c1">// You can use 'localhost\\instance' to connect to named instance</span>
     <span class="nx">database</span><span class="o">:</span> <span class="s1">'...'</span>
 <span class="p">}</span>
 
@@ -162,7 +150,7 @@
 
     <span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
     <span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'input_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">,</span> <span class="nx">value</span><span class="p">);</span>
-    <span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+    <span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">(</span><span class="mi">50</span><span class="p">));</span>
     <span class="nx">request</span><span class="p">.</span><span class="nx">execute</span><span class="p">(</span><span class="s1">'procedure_name'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordsets</span><span class="p">,</span> <span class="nx">returnValue</span><span class="p">)</span> <span class="p">{</span>
         <span class="c1">// ... error checks</span>
 
@@ -199,6 +187,7 @@
 <li><a href="#input">input</a></li>
 <li><a href="#output">output</a></li>
 <li><a href="#query">query</a></li>
+<li><a href="#cancel">cancel</a></li>
 </ul><h3>
 <a name="transactions" class="anchor" href="#transactions"><span class="octicon octicon-link"></span></a>Transactions</h3>
 
@@ -211,6 +200,8 @@
 <a name="other" class="anchor" href="#other"><span class="octicon octicon-link"></span></a>Other</h3>
 
 <ul>
+<li><a href="#geography">Geography and Geometry</a></li>
+<li><a href="#tvp">Table-Value Parameter</a></li>
 <li><a href="#errors">Errors</a></li>
 <li><a href="#meta">Metadata</a></li>
 <li><a href="#data-types">Data Types</a></li>
@@ -239,19 +230,19 @@
 
 <ul>
 <li>
-<strong>driver</strong> - Driver to use (default: <code>tedious</code>). Possible values: <code>tedious</code> or <code>msnodesql</code>.</li>
+<strong>driver</strong> - Driver to use (default: <code>tedious</code>). Possible values: <code>tedious</code>, <code>msnodesql</code> or <code>tds</code>.</li>
 <li>
 <strong>user</strong> - User name to use for authentication.</li>
 <li>
 <strong>password</strong> - Password to use for authentication.</li>
 <li>
-<strong>server</strong> - Hostname to connect to.</li>
+<strong>server</strong> - Server to connect to. You can use 'localhost\instance' to connect to named instance.</li>
 <li>
-<strong>port</strong> - Port to connect to (default: <code>1433</code>).</li>
+<strong>port</strong> - Port to connect to (default: <code>1433</code>). Don't set when connecting to named instance.</li>
 <li>
 <strong>database</strong> - Database to connect to (default: dependent on server configuration).</li>
 <li>
-<strong>timeout</strong> - Connection timeout in ms (default: 15000).</li>
+<strong>timeout</strong> - Connection timeout in ms (default: <code>15000</code>).</li>
 <li>
 <strong>pool.max</strong> - The maximum number of connections there can be in the pool (default: <code>10</code>).</li>
 <li>
@@ -265,21 +256,39 @@
 
 <ul>
 <li>
-<strong>options</strong> - Object of Tedious specific options. More information: <a href="http://pekim.github.io/tedious/api-connection.html">http://pekim.github.io/tedious/api-connection.html</a>
-</li>
-</ul><p><strong>This module update Tedious driver with some extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with <code>var sql = require('mssql/nofix')</code>.</strong></p>
+<strong>options.instanceName</strong> - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.</li>
+<li>
+<strong>options.useUTC</strong> - A boolean determining whether or not use UTC time for values without time zone offset (default: <code>true</code>).</li>
+<li>
+<strong>options.encrypt</strong> - A boolean determining whether or not the connection will be encrypted (default: <code>false</code>) Encryption support is experimental.</li>
+<li>
+<strong>options.tdsVersion</strong> - The version of TDS to use (default: <code>7_4</code>, available: <code>7_2</code>, <code>7_3_A</code>, <code>7_3_B</code>, <code>7_4</code>).</li>
+</ul><p>More information about Tedious specific options: <a href="http://pekim.github.io/tedious/api-connection.html">http://pekim.github.io/tedious/api-connection.html</a></p>
 
 <p><a name="cfg-msnodesql"></a></p>
 
 <h3>
 <a name="microsoft-driver-for-nodejs-for-sql-server" class="anchor" href="#microsoft-driver-for-nodejs-for-sql-server"><span class="octicon octicon-link"></span></a>Microsoft Driver for Node.js for SQL Server</h3>
 
-<p>This driver is not part of the default package and must be installed separately by 'npm install msnodesql'. If you are looking for compiled binaries, see <a href="https://github.com/jorgeazevedo/node-sqlserver-binary">node-sqlserver-binary</a>.</p>
+<p>This driver is not part of the default package and must be installed separately by <code>npm install msnodesql</code>. If you are looking for compiled binaries, see <a href="https://github.com/jorgeazevedo/node-sqlserver-binary">node-sqlserver-binary</a>.</p>
 
 <ul>
 <li>
+<strong>options.instanceName</strong> - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.</li>
+<li>
 <strong>connectionString</strong> - Connection string (default: see below).</li>
-</ul><pre><code>Driver={SQL Server Native Client 11.0};Server=#{server},#{port};Database=#{database};Uid=#{user};Pwd=#{password};Connection Timeout=#{timeout};
+<li>
+<strong>options.trustedConnection</strong> - Use Windows Authentication (default: <code>false</code>).</li>
+<li>
+<strong>options.useUTC</strong> - A boolean determining whether or not use UTC time for values without time zone offset (default: <code>true</code>).</li>
+</ul><p>Default connection string when connecting to port:</p>
+
+<pre><code>Driver={SQL Server Native Client 11.0};Server={#{server},#{port}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
+</code></pre>
+
+<p>Default connection string when connecting to named instance:</p>
+
+<pre><code>Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
 </code></pre>
 
 <p><a name="cfg-node-tds"></a></p>
@@ -287,9 +296,9 @@
 <h3>
 <a name="node-tds" class="anchor" href="#node-tds"><span class="octicon octicon-link"></span></a>node-tds</h3>
 
-<p>This driver is not part of the default package and must be installed separately by 'npm install tds'.</p>
+<p>This driver is not part of the default package and must be installed separately by <code>npm install tds</code>.</p>
 
-<p><strong>This module update node-tds driver with some extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with <code>var sql = require('mssql/nofix')</code>.</strong></p>
+<p><em>This module update node-tds driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with <code>var sql = require('mssql/nofix')</code>.</em></p>
 
 <p><a name="connection"></a></p>
 
@@ -424,7 +433,7 @@
 
 <ul>
 <li>
-<code>String</code> -&gt; <code>sql.VarChar</code>
+<code>String</code> -&gt; <code>sql.NVarChar</code>
 </li>
 <li>
 <code>Number</code> -&gt; <code>sql.Int</code>
@@ -435,7 +444,13 @@
 <li>
 <code>Date</code> -&gt; <code>sql.DateTime</code>
 </li>
-</ul><p>Default data type for unknown object is <code>sql.VarChar</code>.</p>
+<li>
+<code>Buffer</code> -&gt; <code>sql.VarBinary</code>
+</li>
+<li>
+<code>sql.Table</code> -&gt; <code>sql.TVP</code>
+</li>
+</ul><p>Default data type for unknown object is <code>sql.NVarChar</code>.</p>
 
 <p>You can define you own type map.</p>
 
@@ -450,7 +465,7 @@
 <hr><p><a name="output"></a></p>
 
 <h3>
-<a name="outputname-type-length" class="anchor" href="#outputname-type-length"><span class="octicon octicon-link"></span></a>output(name, type, [length])</h3>
+<a name="outputname-type-value" class="anchor" href="#outputname-type-value"><span class="octicon octicon-link"></span></a>output(name, type, [value])</h3>
 
 <p>Add an output parameter to the request.</p>
 
@@ -462,11 +477,11 @@
 <li>
 <strong>type</strong> - SQL data type of output parameter.</li>
 <li>
-<strong>length</strong> - Expected length (for Char, Binary). Optional.</li>
+<strong>value</strong> - Output parameter value initial value. <code>undefined</code> and <code>NaN</code> values are automatically converted to <code>null</code> values. Optional.</li>
 </ul><p><strong>Example</strong></p>
 
 <div class="highlight highlight-javascript"><pre><span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
-<span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Char</span><span class="p">,</span> <span class="mi">50</span><span class="p">);</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span> <span class="s1">'abc'</span><span class="p">);</span>
 </pre></div>
 
 <hr><p><a name="query"></a></p>
@@ -508,12 +523,33 @@
 <span class="p">});</span>
 </pre></div>
 
+<hr><p><a name="cancel"></a></p>
+
+<h3>
+<a name="cancel" class="anchor" href="#cancel"><span class="octicon octicon-link"></span></a>cancel()</h3>
+
+<p>Cancel currently executing request. Return <code>true</code> if cancelation packet was send successfully. Not available in <code>msnodesql</code> and <code>tds</code> drivers.</p>
+
+<p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">'waitfor delay \'00:00:05\'; select 1 as number'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">err</span> <span class="k">instanceof</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">RequestError</span><span class="p">);</span>  <span class="c1">// true</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">err</span><span class="p">.</span><span class="nx">message</span><span class="p">);</span>                      <span class="c1">// Canceled.</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">err</span><span class="p">.</span><span class="nx">code</span><span class="p">);</span>                         <span class="c1">// ECANCEL</span>
+
+    <span class="c1">// ...</span>
+<span class="p">});</span>
+
+<span class="nx">request</span><span class="p">.</span><span class="nx">cancel</span><span class="p">();</span>
+</pre></div>
+
 <p><a name="transaction"></a></p>
 
 <h2>
 <a name="transactions-1" class="anchor" href="#transactions-1"><span class="octicon octicon-link"></span></a>Transactions</h2>
 
-<p><strong>Important:</strong> always use <code>Transaction</code> class to create transactions - it ensures that all your requests are executed on one connection. Once you call <code>begin</code>, a single connection is aquired from the connection pool and all subsequent requests (initialized with the <code>Transaction</code> object) are executed exclusively on this connection. After you call <code>commit</code> or <code>rollback</code>, connection is then released back to the connection pool.</p>
+<p><strong>Important:</strong> always use <code>Transaction</code> class to create transactions - it ensures that all your requests are executed on one connection. Once you call <code>begin</code>, a single connection is aquired from the connection pool and all subsequent requests (initialized with the <code>Transaction</code> object) are executed exclusively on this connection. Transaction also contains queue to make sure your requests are executed in series. After you call <code>commit</code> or <code>rollback</code>, connection is then released back to the connection pool.</p>
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Transaction</span><span class="p">(</span><span class="cm">/* [connection] */</span><span class="p">);</span>
 </pre></div>
@@ -621,7 +657,78 @@
 <span class="p">});</span>
 </pre></div>
 
-<p><a name="data-types"></a></p>
+<p><a name="geography"></a></p>
+
+<h2>
+<a name="geography-and-geometry" class="anchor" href="#geography-and-geometry"><span class="octicon octicon-link"></span></a>Geography and Geometry</h2>
+
+<p>node-mssql has built-in serializer for Geography and Geometry CLR data types.</p>
+
+<div class="highlight highlight-sql"><pre><span class="k">select</span> <span class="n">geography</span><span class="p">::</span><span class="n">STGeomFromText</span><span class="p">(</span><span class="s1">'LINESTRING(-122.360 47.656, -122.343 47.656 )'</span><span class="p">,</span> <span class="mi">4326</span><span class="p">)</span>
+<span class="k">select</span> <span class="n">geometry</span><span class="p">::</span><span class="n">STGeomFromText</span><span class="p">(</span><span class="s1">'LINESTRING (100 100 10.3 12, 20 180, 180 180)'</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</pre></div>
+
+<p>Results in:</p>
+
+<div class="highlight highlight-javascript"><pre><span class="p">{</span> <span class="nx">srid</span><span class="o">:</span> <span class="mi">4326</span><span class="p">,</span>
+  <span class="nx">version</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nx">points</span><span class="o">:</span> <span class="p">[</span> <span class="p">{</span> <span class="nx">x</span><span class="o">:</span> <span class="mf">47.656</span><span class="p">,</span> <span class="nx">y</span><span class="o">:</span> <span class="o">-</span><span class="mf">122.36</span> <span class="p">},</span> <span class="p">{</span> <span class="nx">x</span><span class="o">:</span> <span class="mf">47.656</span><span class="p">,</span> <span class="nx">y</span><span class="o">:</span> <span class="o">-</span><span class="mf">122.343</span> <span class="p">}</span> <span class="p">],</span>
+  <span class="nx">figures</span><span class="o">:</span> <span class="p">[</span> <span class="p">{</span> <span class="nx">attribute</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">pointOffset</span><span class="o">:</span> <span class="mi">0</span> <span class="p">}</span> <span class="p">],</span>
+  <span class="nx">shapes</span><span class="o">:</span> <span class="p">[</span> <span class="p">{</span> <span class="nx">parentOffset</span><span class="o">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nx">figureOffset</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">type</span><span class="o">:</span> <span class="mi">2</span> <span class="p">}</span> <span class="p">],</span>
+  <span class="nx">segments</span><span class="o">:</span> <span class="p">[]</span> <span class="p">}</span>
+
+<span class="p">{</span> <span class="nx">srid</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+  <span class="nx">version</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nx">points</span><span class="o">:</span> 
+   <span class="p">[</span> <span class="p">{</span> <span class="nx">x</span><span class="o">:</span> <span class="mi">100</span><span class="p">,</span> <span class="nx">y</span><span class="o">:</span> <span class="mi">100</span><span class="p">,</span> <span class="nx">z</span><span class="o">:</span> <span class="mf">10.3</span><span class="p">,</span> <span class="nx">m</span><span class="o">:</span> <span class="mi">12</span> <span class="p">},</span>
+     <span class="p">{</span> <span class="nx">x</span><span class="o">:</span> <span class="mi">20</span><span class="p">,</span> <span class="nx">y</span><span class="o">:</span> <span class="mi">180</span><span class="p">,</span> <span class="nx">z</span><span class="o">:</span> <span class="kc">NaN</span><span class="p">,</span> <span class="nx">m</span><span class="o">:</span> <span class="kc">NaN</span> <span class="p">},</span>
+     <span class="p">{</span> <span class="nx">x</span><span class="o">:</span> <span class="mi">180</span><span class="p">,</span> <span class="nx">y</span><span class="o">:</span> <span class="mi">180</span><span class="p">,</span> <span class="nx">z</span><span class="o">:</span> <span class="kc">NaN</span><span class="p">,</span> <span class="nx">m</span><span class="o">:</span> <span class="kc">NaN</span> <span class="p">}</span> <span class="p">],</span>
+  <span class="nx">figures</span><span class="o">:</span> <span class="p">[</span> <span class="p">{</span> <span class="nx">attribute</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">pointOffset</span><span class="o">:</span> <span class="mi">0</span> <span class="p">}</span> <span class="p">],</span>
+  <span class="nx">shapes</span><span class="o">:</span> <span class="p">[</span> <span class="p">{</span> <span class="nx">parentOffset</span><span class="o">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nx">figureOffset</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">type</span><span class="o">:</span> <span class="mi">2</span> <span class="p">}</span> <span class="p">],</span>
+  <span class="nx">segments</span><span class="o">:</span> <span class="p">[]</span> <span class="p">}</span>
+</pre></div>
+
+<p><a name="tvp"></a></p>
+
+<h2>
+<a name="table-value-parameter-tvp" class="anchor" href="#table-value-parameter-tvp"><span class="octicon octicon-link"></span></a>Table-Value Parameter (TVP)</h2>
+
+<p>Supported on SQL Server 2008 and later. Not supported by optional drivers <code>msnodesql</code> and <code>tds</code>. You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.</p>
+
+<div class="highlight highlight-sql"><pre><span class="k">CREATE</span> <span class="k">TYPE</span> <span class="n">TestType</span> <span class="k">AS</span> <span class="k">TABLE</span> <span class="p">(</span> <span class="n">a</span> <span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span> <span class="n">b</span> <span class="nb">INT</span> <span class="p">);</span>
+</pre></div>
+
+<p>Next we will need a stored procedure.</p>
+
+<div class="highlight highlight-sql"><pre><span class="k">CREATE</span> <span class="k">PROCEDURE</span> <span class="n">MyCustomStoredProcedure</span> <span class="p">(</span><span class="o">@</span><span class="n">tvp</span> <span class="n">TestType</span> <span class="n">readonly</span><span class="p">)</span> <span class="k">AS</span> <span class="k">SELECT</span> <span class="o">*</span> <span class="k">FROM</span> <span class="o">@</span><span class="n">tvp</span>
+</pre></div>
+
+<p>Now let's go back to our Node.js app.</p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">tvp</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Table</span><span class="p">()</span>
+
+<span class="c1">// Columns must correspond with type we have created in database.</span>
+<span class="nx">tvp</span><span class="p">.</span><span class="nx">columns</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">'a'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">(</span><span class="mi">50</span><span class="p">));</span>
+<span class="nx">tvp</span><span class="p">.</span><span class="nx">columns</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">'b'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+
+<span class="c1">// Add rows</span>
+<span class="nx">tvp</span><span class="p">.</span><span class="nx">rows</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">'hello tvp'</span><span class="p">,</span> <span class="mi">777</span><span class="p">);</span> <span class="c1">// Values are in same order as columns.</span>
+</pre></div>
+
+<p>You can send table as a parameter to stored procedure.</p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'tvp'</span><span class="p">,</span> <span class="nx">tvp</span><span class="p">);</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">execute</span><span class="p">(</span><span class="s1">'MyCustomStoredProcedure'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordsets</span><span class="p">,</span> <span class="nx">returnValue</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+
+    <span class="nx">console</span><span class="p">.</span><span class="nx">dir</span><span class="p">(</span><span class="nx">recordsets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]);</span> <span class="c1">// {a: 'hello tvp', b: 777}</span>
+<span class="p">});</span>
+</pre></div>
+
+<p><strong>TIP</strong>: You can also create Table variable from any recordset with <code>recordset.toTable()</code>.</p>
+
+<p><a name="errors"></a></p>
 
 <h2>
 <a name="errors" class="anchor" href="#errors"><span class="octicon octicon-link"></span></a>Errors</h2>
@@ -637,7 +744,7 @@
 <strong>RequestError</strong> - Errors related to queries and stored procedures execution.</li>
 </ul><p>Those errors are initialized in node-mssql module and it's stack can be cropped. You can always access original error with <code>err.originalError</code>.</p>
 
-<p><a name="data-types"></a></p>
+<p><a name="meta"></a></p>
 
 <h2>
 <a name="metadata" class="anchor" href="#metadata"><span class="octicon octicon-link"></span></a>Metadata</h2>
@@ -655,46 +762,72 @@
 
 <p>Columns structure for example above:</p>
 
-<pre><code>{ first: { name: 'first', size: 10, type: { name: 'int' } },
-  second: { name: 'second', size: 4, type: { name: 'varchar' } } }
-</code></pre>
+<div class="highlight highlight-javascript"><pre><span class="p">{</span> <span class="nx">first</span><span class="o">:</span> <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">'first'</span><span class="p">,</span> <span class="nx">length</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nx">type</span><span class="o">:</span> <span class="p">[</span><span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">]</span> <span class="p">},</span>
+  <span class="nx">second</span><span class="o">:</span> <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">'second'</span><span class="p">,</span> <span class="nx">length</span><span class="o">:</span> <span class="mi">4</span><span class="p">,</span> <span class="nx">type</span><span class="o">:</span> <span class="p">[</span><span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">]</span> <span class="p">}</span> <span class="p">}</span>
+</pre></div>
 
 <p><a name="data-types"></a></p>
 
 <h2>
 <a name="data-types" class="anchor" href="#data-types"><span class="octicon octicon-link"></span></a>Data Types</h2>
 
+<p>You can define data types with length/precision/scale:</p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">,</span> <span class="s2">"abc"</span><span class="p">);</span>               <span class="c1">// varchar(3)</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span> <span class="s2">"abc"</span><span class="p">);</span>           <span class="c1">// varchar(50)</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">(</span><span class="nx">sql</span><span class="p">.</span><span class="nx">MAX</span><span class="p">),</span> <span class="s2">"abc"</span><span class="p">);</span>      <span class="c1">// varchar(MAX)</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">);</span>                     <span class="c1">// varchar(8000)</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">,</span> <span class="s2">"abc"</span><span class="p">);</span>              <span class="c1">// varchar(3)</span>
+
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Decimal</span><span class="p">,</span> <span class="mf">155.33</span><span class="p">);</span>              <span class="c1">// decimal(18, 0)</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Decimal</span><span class="p">(</span><span class="mi">10</span><span class="p">),</span> <span class="mf">155.33</span><span class="p">);</span>          <span class="c1">// decimal(10, 0)</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Decimal</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="mf">155.33</span><span class="p">);</span>       <span class="c1">// decimal(10, 2)</span>
+
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">DateTime2</span><span class="p">,</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">());</span>        <span class="c1">// datetime2(7)</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s2">"name"</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">DateTime2</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">());</span>     <span class="c1">// datetime2(5)</span>
+</pre></div>
+
+<p>List of supported data types:</p>
+
 <pre><code>sql.Bit
 sql.BigInt
-sql.Decimal
+sql.Decimal ([precision], [scale])
 sql.Float
 sql.Int
 sql.Money
-sql.Numeric
+sql.Numeric ([precision], [scale])
 sql.SmallInt
 sql.SmallMoney
 sql.Real
 sql.TinyInt
 
-sql.Char
-sql.NChar
+sql.Char ([length])
+sql.NChar ([length])
 sql.Text
 sql.NText
-sql.VarChar
-sql.NVarChar
+sql.VarChar ([length])
+sql.NVarChar ([length])
 sql.Xml
 
+sql.Time ([scale])
 sql.Date
 sql.DateTime
-sql.DateTimeOffset
+sql.DateTime2 ([scale])
+sql.DateTimeOffset ([scale])
 sql.SmallDateTime
 
 sql.UniqueIdentifier
 
 sql.Binary
-sql.VarBinary
+sql.VarBinary ([length])
 sql.Image
+
+sql.UDT
+sql.Geography
+sql.Geometry
 </code></pre>
+
+<p>To setup MAX length for <code>VarChar</code>, <code>NVarChar</code> and <code>VarBinary</code> use <code>sql.MAX</code> length.</p>
 
 <p><a name="verbose"></a></p>
 
@@ -737,15 +870,16 @@ sql.Image
 <a name="known-issues" class="anchor" href="#known-issues"><span class="octicon octicon-link"></span></a>Known issues</h2>
 
 <h3>
-<a name="tedious-1" class="anchor" href="#tedious-1"><span class="octicon octicon-link"></span></a>Tedious</h3>
+<a name="msnodesql" class="anchor" href="#msnodesql"><span class="octicon octicon-link"></span></a>msnodesql</h3>
 
 <ul>
-<li>If you're facing problems with text codepage, try using NVarChar as default data type for string values - <code>sql.map.register(String, sql.NVarChar)</code>.</li>
+<li>msnodesql 0.2.1 contains bug in DateTimeOffset (<a href="https://github.com/WindowsAzure/node-sqlserver/issues/160">reported</a>)</li>
 </ul><h3>
 <a name="node-tds-1" class="anchor" href="#node-tds-1"><span class="octicon octicon-link"></span></a>node-tds</h3>
 
 <ul>
 <li>If you're facing problems with date, try changing your tsql language <code>set language 'English';</code>.</li>
+<li>node-tds 0.1.0 doesn't support connecting to named instances.</li>
 <li>node-tds 0.1.0 contains bug and return same value for columns with same name.</li>
 <li>node-tds 0.1.0 doesn't support codepage of input parameters.</li>
 <li>node-tds 0.1.0 contains bug in selects that doesn't return any values <em>(select <a href="https://github.com/param" class="user-mention">@param</a> = 'value')</em>.</li>
