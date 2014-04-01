@@ -22,9 +22,11 @@ getTediousType = (type) ->
 		when TYPES.SmallInt then return tds.TYPES.SmallInt
 		when TYPES.Bit then return tds.TYPES.Bit
 		when TYPES.Float then return tds.TYPES.Float
-		when TYPES.Decimal then return tds.TYPES.Float
-		when TYPES.Numeric then return tds.TYPES.Float
+		when TYPES.Decimal then return tds.TYPES.Decimal
+		when TYPES.Numeric then return tds.TYPES.Numeric
 		when TYPES.Real then return tds.TYPES.Real
+		when TYPES.Money then return tds.TYPES.Money
+		when TYPES.SmallMoney then return tds.TYPES.SmallMoney
 		when TYPES.Time then return tds.TYPES.TimeN
 		when TYPES.Date then return tds.TYPES.DateN
 		when TYPES.DateTime then return tds.TYPES.DateTime

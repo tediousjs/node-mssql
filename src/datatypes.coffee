@@ -8,8 +8,8 @@ TYPES =
 	SmallInt: -> type: TYPES.SmallInt
 	Bit: -> type: TYPES.Bit
 	Float: -> type: TYPES.Float
-	Numeric: -> type: TYPES.Numeric
-	Decimal: -> type: TYPES.Decimal
+	Numeric: (precision, scale) -> type: TYPES.Numeric, precision: precision, scale: scale
+	Decimal: (precision, scale) -> type: TYPES.Decimal, precision: precision, scale: scale
 	Real: -> type: TYPES.Real
 	Date: -> type: TYPES.Date
 	DateTime: -> type: TYPES.DateTime

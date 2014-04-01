@@ -44,7 +44,7 @@ At the moment it support three TDS modules:
 - Updated to new Tedious 0.2.0 (unstable, [development branch](https://github.com/pekim/tedious/tree/development))
     - Added support for TDS 7.4
     - Added request cancelation
-    - Added support for UDT, TVP, Time, Date, DateTime2 and DateTimeOffset data types
+    - Added support for UDT, TVP, Time, Date, DateTime2, DateTimeOffset, Numeric, Decimal, Money and SmallMoney data types
     - Fixed compatibility with TDS 7.1 (SQL Server 2000)
     - Minor fixes
 - You can now easily setup type's length/scale (`sql.VarChar(50)`)
@@ -87,7 +87,7 @@ var connection = new sql.Connection(config, function(err) {
 	
     var request = new sql.Request(connection);
     request.input('input_parameter', sql.Int, 10);
-    request.output('output_parameter', sql.VarChar(30));
+    request.output('output_parameter', sql.Int);
     request.execute('procedure_name', function(err, recordsets, returnValue) {
         // ... error checks
         
@@ -125,7 +125,7 @@ sql.connect(config, function(err) {
 	
     var request = new sql.Request();
     request.input('input_parameter', sql.Int, value);
-    request.output('output_parameter', sql.VarChar(sql.MAX));
+    request.output('output_parameter', sql.Int);
     request.execute('procedure_name', function(err, recordsets, returnValue) {
         // ... error checks
 
@@ -607,11 +607,7 @@ Results in:
 <a name="tvp" />
 ## Table-Value Parameter (TVP)
 
-Introduced in 0.5.1. Supported on SQL Server 2008 and later. Not supported by optional drivers `msnodesql` and `tds`.
-
-You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.
-
-__Example__
+Introduced in 0.5.1. Supported on SQL Server 2008 and later. Not supported by optional drivers `msnodesql` and `tds`. You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.
 
 ```sql
 CREATE TYPE TestType AS TABLE ( a VARCHAR(50), b INT );
@@ -648,7 +644,7 @@ request.execute('MyCustomStoredProcedure', function(err, recordsets, returnValue
 });
 ```
 
-*TIP*: You can also create Table variable from any recordset with `recordset.toTable()`.
+**TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
 
 <a name="errors" />
 ## Errors
@@ -686,38 +682,57 @@ Columns structure for example above:
 <a name="data-types" />
 ## Data Types
 
+Since version 0.5.1 you can define data types multiple ways:
+
+```javascript
+request.input("name", sql.VarChar, "abc");               // varchar(3)
+request.input("name", sql.VarChar(50), "abc");           // varchar(50)
+request.input("name", sql.VarChar(sql.MAX), "abc");      // varchar(MAX)
+request.output("name", sql.VarChar);                     // varchar(8000)
+request.output("name", sql.VarChar, "abc");              // varchar(3)
+
+request.input("name", sql.Decimal, 155.33);              // decimal(18, 0)
+request.input("name", sql.Decimal(10), 155.33);          // decimal(10, 0)
+request.input("name", sql.Decimal(10, 2), 155.33);       // decimal(10, 2)
+
+request.input("name", sql.DateTime2, new Date());        // datetime2(7)
+request.input("name", sql.DateTime2(5), new Date());     // datetime2(5)
+```
+
+List of supported data types:
+
 ```
 sql.Bit
 sql.BigInt
-sql.Decimal
+sql.Decimal ([precision], [scale])
 sql.Float
 sql.Int
 sql.Money
-sql.Numeric
+sql.Numeric ([precision], [scale])
 sql.SmallInt
 sql.SmallMoney
 sql.Real
 sql.TinyInt
 
-sql.Char [length]
-sql.NChar [length]
+sql.Char ([length])
+sql.NChar ([length])
 sql.Text
 sql.NText
-sql.VarChar [length]
-sql.NVarChar [length]
+sql.VarChar ([length])
+sql.NVarChar ([length])
 sql.Xml
 
-sql.Time [scale]
+sql.Time ([scale])
 sql.Date
 sql.DateTime
-sql.DateTime2 [scale]
-sql.DateTimeOffset [scale]
+sql.DateTime2 ([scale])
+sql.DateTimeOffset ([scale])
 sql.SmallDateTime
 
 sql.UniqueIdentifier
 
 sql.Binary
-sql.VarBinary [length]
+sql.VarBinary ([length])
 sql.Image
 
 sql.UDT

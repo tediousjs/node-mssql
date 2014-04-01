@@ -8,7 +8,7 @@ class MSSQLTestType extends sql.Table
 		@columns.add 'a', sql.VarChar(50)
 		@columns.add 'b', sql.Int
 
-describe 'tvp test suite', ->
+describe 'tedious tvp', ->
 	before (done) ->
 		global.DRIVER = 'tedious'
 		
