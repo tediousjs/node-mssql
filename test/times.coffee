@@ -67,8 +67,12 @@ global.TIMES =
 		r1 = new sql.Request
 		r1.query "select convert(datetime, '2014-02-14 22:59:59') as dt1", (err, rst) ->
 			if err then return done err
-
-			assert.equal +rst[0].dt1, new Date(Date.UTC(2014, 1, 14, 22, 59, 59)).getTime()
+			
+			if DRIVER is 'tds'
+				# tds always return date/time in local time
+				assert.equal +rst[0].dt1, new Date(2014, 1, 14, 22, 59, 59).getTime()
+			else
+				assert.equal +rst[0].dt1, new Date(Date.UTC(2014, 1, 14, 22, 59, 59)).getTime()
 
 			done()
 	
@@ -158,7 +162,11 @@ global.TIMES =
 		r1.query "select convert(datetime, '2014-02-14 22:59:59') as dt1", (err, rst) ->
 			if err then return done err
 
-			assert.equal +rst[0].dt1, new Date(Date.UTC(2014, 1, 14, 22, 59, 59)).getTime()
+			if DRIVER is 'tds'
+				# tds always return date/time in local time
+				assert.equal +rst[0].dt1, new Date(2014, 1, 14, 22, 59, 59).getTime()
+			else
+				assert.equal +rst[0].dt1, new Date(Date.UTC(2014, 1, 14, 22, 59, 59)).getTime()
 
 			done()
 	

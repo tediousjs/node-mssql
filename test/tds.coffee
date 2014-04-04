@@ -56,6 +56,12 @@ describe 'node-tds test suite', ->
 	it 'query with error', (done) ->
 		TESTS['query with error'] done
 	
+	it 'prepared statement', (done) ->
+		TESTS['prepared statement'] done
+	
+	it 'prepared statement in transaction', (done) ->
+		TESTS['prepared statement in transaction'] done
+	
 	it 'transaction with rollback', (done) ->
 		TESTS['transaction with rollback'] done
 	

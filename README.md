@@ -8,7 +8,7 @@ There is also [co](https://github.com/visionmedia/co) warpper available - [co-ms
 
 **Extra features:**
 - Unified interface for multiple MSSQL modules
-- Connection pooling with Transactions support
+- Connection pooling with Transactions and Prepared statements
 - Parametrized Stored Procedures in [node-tds](https://github.com/cretz/node-tds) and [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver)
 - Serialization of Geography and Geometry CLR types
 - Injects original TDS modules with enhancements and bug fixes
@@ -18,9 +18,15 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 0.5.1 (stable, npm)
+## What's new in 0.5.2 (stable, npm)
 
-- Updated to new Tedious 0.2.1
+- Support for [Prepared Statements](#prepared-statement)
+- Fixed order of output parameters
+- Minor fixes in node-tds driver
+
+## What's new in 0.5.1
+
+- Updated to new Tedious 0.2.2
     - Added support for TDS 7.4
     - Added request cancelation
     - Added support for UDT, TVP, Time, Date, DateTime2 and DateTimeOffset data types
@@ -146,10 +152,19 @@ sql.connect(config, function(err) {
 * [commit](#commit)
 * [rollback](#rollback)
 
+### Prepared Statements
+
+* [PreparedStatement](#prepared-statement)
+* [input](#prepared-statement-input)
+* [output](#prepared-statement-output)
+* [prepare](#prepare)
+* [execute](#prepared-statement-execute)
+* [unprepare](#unprepare)
+
 ### Other
 
 * [Geography and Geometry](#geography)
-* [Table-Value Parameter](#tvp)
+* [Table-Valued Parameter](#tvp)
 * [Errors](#errors)
 * [Metadata](#meta)
 * [Data Types](#data-types)
@@ -501,7 +516,7 @@ __Example__
 ```javascript
 var transaction = new sql.Transaction();
 transaction.begin(function(err) {
-    // ...
+    // ... error checks
 });
 ```
 
@@ -521,10 +536,10 @@ __Example__
 ```javascript
 var transaction = new sql.Transaction();
 transaction.begin(function(err) {
-    // ...
+    // ... error checks
     
     transaction.commit(function(err) {
-        //...
+        // ... error checks
     })
 });
 ```
@@ -545,11 +560,160 @@ __Example__
 ```javascript
 var transaction = new sql.Transaction();
 transaction.begin(function(err) {
-    // ...
+    // ... error checks
     
     transaction.rollback(function(err) {
-        //...
+        // ... error checks
     })
+});
+```
+
+<a name="prepared-statement" />
+## PreparedStatement
+
+**Important:** always use `PreparedStatement` class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call `prepare`, a single connection is aquired from the connection pool and all subsequent executions are executed exclusively on this connection. Prepared Statement also contains queue to make sure your executions are executed in series. After you call `unprepare`, connection is then released back to the connection pool.
+
+```javascript
+var ps = new sql.PreparedStatement(/* [connection] */);
+```
+
+If you ommit connection argument, global connection is used instead.
+
+__Example__
+
+```javascript
+var ps = new sql.PreparedStatement(/* [connection] */);
+ps.input('param', sql.Int);
+ps.prepare('select @param as value', function(err, recordsets) {
+    // ... error checks
+
+    ps.execute({param: 12345}, function(err, recordset) {
+        // ... error checks
+
+        ps.unprepare(function(err) {
+            // ... error checks
+            
+        });
+    });
+});
+```
+
+**IMPORTANT**: Rememeber that each prepared statement means one reserved connection from the pool. Don't forget to unprepare a prepared statement!
+
+**TIP**: You can also create prepared statements in transactions (`new sql.PreparedStatement(transaction)`), but keep in mind you can't execute other requests in the transaction until you call `unprepare`.
+
+---------------------------------------
+
+<a name="prepared-statement-input" />
+### input(name, [type], value)
+
+Add an input parameter to the prepared statement.
+
+__Arguments__
+
+- **name** - Name of the input parameter without @ char.
+- **type** - SQL data type of input parameter.
+
+__Example__
+
+```javascript
+ps.input('input_parameter', sql.Int);
+ps.input('input_parameter', sql.VarChar(50));
+```
+
+---------------------------------------
+
+<a name="prepared-statement-output" />
+### output(name, type, [value])
+
+Add an output parameter to the prepared statement.
+
+__Arguments__
+
+- **name** - Name of the output parameter without @ char.
+- **type** - SQL data type of output parameter.
+
+__Example__
+
+```javascript
+ps.output('output_parameter', sql.Int);
+ps.output('output_parameter', sql.VarChar(50));
+```
+
+---------------------------------------
+
+<a name="prepare" />
+### prepare(statement, [callback])
+
+Prepare a statement.
+
+__Arguments__
+
+- **statement** - T-SQL statement to prepare.
+- **callback(err)** - A callback which is called after preparation has completed, or an error has occurred. Optional.
+
+__Example__
+
+```javascript
+var ps = new sql.PreparedStatement();
+ps.prepare('select @param as value', function(err) {
+    // ... error checks
+});
+```
+
+---------------------------------------
+
+<a name="prepared-statement-execute" />
+### execute(values, [callback])
+
+Execute a prepared statement.
+
+__Arguments__
+
+- **values** - An object whose names correspond to the names of parameters that were added to the prepared statement before it was prepared.
+- **callback(err)** - A callback which is called after execution has completed, or an error has occurred. Optional.
+
+__Example__
+
+```javascript
+var ps = new sql.PreparedStatement();
+ps.input('param', sql.Int);
+ps.prepare('select @param as value', function(err) {
+    // ... error checks
+    
+    ps.execute({param: 12345}, function(err, recordset) {
+        // ... error checks
+    })
+});
+```
+
+---------------------------------------
+
+<a name="unprepare" />
+### unprepare([callback])
+
+Unprepare a prepared statement.
+
+__Arguments__
+
+- **callback(err)** - A callback which is called after unpreparation has completed, or an error has occurred. Optional.
+
+__Example__
+
+```javascript
+var ps = new sql.PreparedStatement();
+ps.input('param', sql.Int);
+ps.prepare('select @param as value', function(err, recordsets) {
+    // ... error checks
+
+    ps.execute({param: 12345}, function(err, recordset) {
+        // ... error checks
+
+        ps.unprepare(function(err) {
+            // ... error checks
+            
+        });
+    });
 });
 ```
 
@@ -585,7 +749,7 @@ Results in:
 ```
 
 <a name="tvp" />
-## Table-Value Parameter (TVP)
+## Table-Valued Parameter (TVP)
 
 Supported on SQL Server 2008 and later. Not supported by optional drivers `msnodesql` and `tds`. You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.
 
@@ -634,6 +798,7 @@ There are three type of errors you can handle:
 - **ConnectionError** - Errors related to connections and connection pool.
 - **TransactionError** - Errors related to creating, commiting and rolling back transactions.
 - **RequestError** - Errors related to queries and stored procedures execution.
+- **PreparedStatementError** - Errors related to prepared statements.
 
 Those errors are initialized in node-mssql module and it's stack can be cropped. You can always access original error with `err.originalError`.
 
@@ -772,6 +937,7 @@ Output for example above could look similar to this.
 - node-tds 0.1.0 doesn't support codepage of input parameters.
 - node-tds 0.1.0 contains bug in selects that doesn't return any values *(select @param = 'value')*.
 - node-tds 0.1.0 doesn't support Binary, VarBinary and Image as parameters.
+- node-tds 0.1.0 always return date/time values in local time.
 
 <a name="license" />
 ## License

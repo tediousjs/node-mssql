@@ -227,6 +227,39 @@ global.TESTS =
 
 			done()
 	
+	'prepared statement': (done) ->
+		ps = new sql.PreparedStatement
+		ps.input 'num', sql.Int
+		ps.prepare 'select @num as number', (err) ->
+			if err then return done err
+			
+			ps.execute {num: 555}, (err, recordsets) ->
+				assert.equal recordsets[0].length, 1
+				assert.equal recordsets[0][0].number, 555
+				
+				ps.unprepare done
+	
+	'prepared statement in transaction': (done) ->
+		tran = new sql.Transaction
+		tran.begin (err) ->
+			if err then return done err
+			
+			ps = new sql.PreparedStatement tran
+			ps.input 'num', sql.Int
+			ps.prepare 'select @num as number', (err) ->
+				if err then return done err
+				
+				assert.ok tran._pooledConnection is ps._pooledConnection
+				
+				ps.execute {num: 555}, (err, recordsets) ->
+					assert.equal recordsets[0].length, 1
+					assert.equal recordsets[0][0].number, 555
+					
+					ps.unprepare (err) ->
+						if err then return done err
+						
+						tran.commit done
+	
 	'transaction with rollback': (done) ->
 		tran = new sql.Transaction
 		tran.begin (err) ->
@@ -355,7 +388,6 @@ global.TESTS =
 	'cancel request': (done, message) ->
 		r = new sql.Request
 		r.query 'waitfor delay \'00:00:05\';select 1', (err, recordset) ->
-			console.log err
 			assert.equal (if message then message.exec(err.message)? else (err instanceof sql.RequestError)), true
 
 			done null

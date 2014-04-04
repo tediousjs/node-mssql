@@ -41,3 +41,16 @@ for key, value of TYPES
 	
 	do (key, value) ->
 		value.inspect = -> "[sql.#{key}]"
+
+module.exports.declare = (type, options) ->
+	switch type
+		when TYPES.VarChar, TYPES.NVarChar, TYPES.VarBinary
+			return "#{type.declaration} (#{options.length ? 'MAX'})"
+		when TYPES.Char, TYPES.NChar, TYPES.Binary
+			return "#{type.declaration} (#{options.length ? 1})"
+		when TYPES.Decimal, TYPES.Numeric
+			return "#{type.precision ? 18} (#{options.scale ? 0})"
+		when TYPES.Time, TYPES.DateTime2, TYPES.DateTimeOffset
+			return "#{type.declaration} (#{options.scale ? 7})"
+		else
+			return type.declaration

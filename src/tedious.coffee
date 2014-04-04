@@ -244,18 +244,6 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				callback err
 		
 	class TediousRequest extends Request
-		_acquire: (callback) ->
-			if @transaction
-				@transaction.queue callback
-			else
-				@connection.pool.acquire callback
-		
-		_release: (connection) ->
-			if @transaction
-				@transaction.next()
-			else
-				@connection.pool.release connection
-		
 		###
 		Execute specified sql command.
 		###
@@ -483,18 +471,18 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 								
 						@parameters[parameterName].value = if value is tds.TYPES.Null then null else value
 					
-					for name, param of @parameters when param.io is 1
+					for name, param of @parameters
 						if @verbose
 							if param.value is tds.TYPES.Null
-								console.log "    input: @#{param.name}, null"
+								console.log "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, null"
 							else
-								console.log "    input: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
+								console.log "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
 						
-						req.addParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
-						
-					for name, param of @parameters when param.io is 2
-						req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
-					
+						if param.io is 1
+							req.addParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
+						else
+							req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
+
 					if @verbose then console.log "---------- response -----------"
 					connection.callProcedure req
 				

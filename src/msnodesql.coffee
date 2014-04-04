@@ -2,7 +2,7 @@
 msnodesql = require 'msnodesql'
 util = require 'util'
 
-TYPES = require('./datatypes').TYPES
+{TYPES, declare} = require('./datatypes')
 UDT = require('./udt').PARSERS
 ISOLATION_LEVEL = require('./isolationlevel')
 DECLARATIONS = require('./datatypes').DECLARATIONS
@@ -72,21 +72,6 @@ createColumns = (meta) ->
 				out[value.name].type = DECLARATIONS[value.udtType]
 			
 	out
-
-###
-@ignore
-###
-
-typeDeclaration = (type, options) ->
-	switch type
-		when TYPES.VarChar, TYPES.NVarChar, TYPES.VarBinary
-			return "#{type.declaration} (MAX)"
-		when TYPES.Char, TYPES.NChar, TYPES.Binary
-			return "#{type.declaration} (#{options.length ? 1})"
-		when TYPES.Time, TYPES.DateTime2, TYPES.DateTimeOffset
-			return "#{type.declaration} (#{options.scale ? 7})"
-		else
-			return type.declaration
 
 ###
 @ignore
@@ -207,20 +192,6 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				callback err
 
 	class MsnodesqlRequest extends Request
-		connection: null # ref to connection
-
-		_acquire: (callback) ->
-			if @transaction
-				@transaction.queue callback
-			else
-				@connection.pool.acquire callback
-		
-		_release: (connection) ->
-			if @transaction
-				@transaction.next()
-			else
-				@connection.pool.release connection
-
 		query: (command, callback) ->
 			if @verbose and not @nested then console.log "---------- sql query ----------\n    query: #{command}"
 			
@@ -244,7 +215,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			# nested = function is called by this.execute
 			
 			unless @nested
-				input = ("@#{param.name} #{typeDeclaration(param.type, param)}" for name, param of @parameters)
+				input = ("@#{param.name} #{declare(param.type, param)}" for name, param of @parameters)
 				sets = ("set @#{param.name}=?" for name, param of @parameters when param.io is 1)
 				output = ("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2)
 				if input.length then command = "declare #{input.join ','};#{sets.join ';'};#{command};"
@@ -353,18 +324,18 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 	
 			started = Date.now()
 			
-			cmd = "declare #{['@___return___ int'].concat("@#{param.name} #{typeDeclaration(param.type, param)}" for name, param of @parameters when param.io is 2).join ', '};"
+			cmd = "declare #{['@___return___ int'].concat("@#{param.name} #{declare(param.type, param)}" for name, param of @parameters when param.io is 2).join ', '};"
 			cmd += "exec @___return___ = #{procedure} "
 			
 			spp = []
 			for name, param of @parameters
+				if @verbose
+					console.log "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, #{param.type.declaration}, #{param.value}"
+						
 				if param.io is 2
 					# output parameter
 					spp.push "@#{param.name}=@#{param.name} output"
 				else
-					if @verbose
-						console.log "    input: @#{param.name}, #{param.type.declaration}, #{param.value}"
-							
 					# input parameter
 					spp.push "@#{param.name}=?"
 			

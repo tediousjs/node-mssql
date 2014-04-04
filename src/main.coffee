@@ -1,7 +1,7 @@
 {EventEmitter} = require 'events'
 util = require 'util'
 
-TYPES = require('./datatypes').TYPES
+{TYPES, declare} = require('./datatypes')
 ISOLATION_LEVEL = require('./isolationlevel')
 DRIVERS = ['msnodesql', 'tedious', 'tds']
 Table = require('./table')
@@ -232,6 +232,265 @@ class Connection extends EventEmitter
 		new Transaction @
 
 ###
+Class PreparedStatement.
+
+IMPORTANT: Rememeber that each prepared statement means one reserved connection from the pool. Don't forget to unprepare a prepared statement!
+
+@property {Connection} connection Reference to used connection.
+@property {String} statement Prepared SQL statement.
+###
+
+class PreparedStatement extends EventEmitter
+	_pooledConnection: null
+	_queue: null
+	_working: false # if true, there is a request running at the moment
+	_handle: 0 # sql prepared statement handle
+	
+	connection: null # sql.Connection
+	transaction: null # !null in case we're in transaction
+	prepared: false
+	statement: null
+	parameters: null
+	
+	###
+	Create new Prepared Statement.
+	
+	@param {String} statement SQL statement.
+	@param {Connection} [connection] If ommited, global connection is used instead.
+	###
+	
+	constructor: (connection) ->
+		if connection instanceof Transaction
+			@transaction = connection
+			@connection = connection.connection
+		
+		else if connection instanceof Connection
+			@connection = connection
+		
+		else
+			@connection = global_connection
+
+		@_queue = []
+		@parameters = {}
+	
+	###
+	Add an input parameter to the prepared statement.
+	
+	**Example:**
+	```
+	statement.input('input_parameter', sql.Int);
+	statement.input('input_parameter', sql.VarChar(50));
+	```
+	
+	@param {String} name Name of the input parameter without @ char.
+	@param {*} type SQL data type of input parameter.
+	@returns {PreparedStatement}
+	###
+
+	input: (name, type) ->
+		if arguments.length < 2
+			throw new PreparedStatementError "Invalid number of arguments. 2 arguments expected.", 'EARGS'
+
+		if type instanceof Function
+			type = type()
+		
+		@parameters[name] =
+			name: name
+			type: type.type
+			io: 1
+			length: type.length
+			scale: type.scale
+			precision: type.precision
+		
+		@
+			
+	###
+	Add an output parameter to the prepared statement.
+	
+	**Example:**
+	```
+	statement.output('output_parameter', sql.Int);
+	statement.output('output_parameter', sql.VarChar(50));
+	```
+	
+	@param {String} name Name of the output parameter without @ char.
+	@param {*} type SQL data type of output parameter.
+	@returns {PreparedStatement}
+	###
+	
+	output: (name, type) ->
+		if arguments.length < 2
+			throw new PreparedStatementError "Invalid number of arguments. 2 arguments expected.", 'EARGS'
+
+		if type instanceof Function
+			type = type()
+		
+		@parameters[name] =
+			name: name
+			type: type.type
+			io: 2
+			length: type.length
+			scale: type.scale
+			precision: type.precision
+		
+		@
+	
+	###
+	Prepare a statement.
+	
+	@property {String} [statement] SQL statement to prepare.
+	@callback [callback] A callback which is called after preparation has completed, or an error has occurred.
+		@param {Error} err Error on error, otherwise null.
+	@returns {PreparedStatement}
+	###
+	
+	prepare: (statement, callback) ->
+		if @_pooledConnection
+			callback? new PreparedStatementError "Statement is already prepared."
+			return @
+		
+		if typeof statement is 'function'
+			callback = statement
+			statement = undefined
+		
+		@statement = statement if statement?
+		
+		done = (err, connection) =>
+			if err then return callback? err
+				
+			@_pooledConnection = connection
+				
+			req = new Request @
+			req.output 'handle', TYPES.Int
+			req.input 'params', TYPES.NVarChar, ("@#{name} #{declare(param.type, param)}#{if param.io is 2 then " output" else ""}" for name, param of @parameters).join(',')
+			req.input 'stmt', TYPES.NVarChar, @statement
+			req.execute 'sp_prepare', (err) =>
+				if err
+					if @transaction
+						@transaction.next()
+					else
+						@connection.pool.release @_pooledConnection
+						@_pooledConnection = null
+					
+					return callback? err
+				
+				@_handle = req.parameters.handle.value
+			
+				callback? null
+		
+		if @transaction
+			unless @transaction._pooledConnection
+				callback? new PreparedStatementError "Transaction has not started. Call begin() first."
+				return @
+			
+			@transaction.queue done
+				
+		else
+			@connection.pool.acquire done
+		
+		@
+	
+	###
+	Execute next request in queue.
+	
+	@private
+	@returns {PreparedStatement}
+	###
+	
+	next: ->
+		if @_queue.length
+			@_queue.shift() null, @_pooledConnection
+		
+		else
+			@_working = false
+		
+		@
+	
+	###
+	Add request to queue for connection. If queue is empty, execute the request immediately.
+	
+	@private
+	@callback callback A callback to call when connection in ready to execute request.
+		@param {Error} err Error on error, otherwise null.
+		@param {*} conn Internal driver's connection.
+	@returns {PreparedStatement}
+	###
+	
+	queue: (callback) ->
+		unless @_pooledConnection
+			callback new PreparedStatementError "Statement is not prepared. Call prepare() first."
+			return @
+			
+		if @_working
+			@_queue.push callback
+		
+		else
+			@_working = true
+			callback null, @_pooledConnection
+		
+		@
+	
+	###
+	Execute a prepared statement.
+	
+	@property {String} values An object whose names correspond to the names of parameters that were added to the prepared statement before it was prepared.
+	@callback [callback] A callback which is called after execution has completed, or an error has occurred.
+		@param {Error} err Error on error, otherwise null.
+	@returns {Request}
+	###
+	
+	execute: (values, callback) ->
+		req = new Request @
+		req.input 'handle', TYPES.Int, @_handle
+		
+		# copy parameters with new values
+		for name, param of @parameters
+			req.parameters[name] =
+				name: name
+				type: param.type
+				io: param.io
+				value: values[name]
+				length: param.length
+				scale: param.scale
+				precision: param.precision
+		
+		req.execute 'sp_execute', callback
+		
+		req
+		
+	###
+	Unprepare a prepared statement.
+	
+	@callback [callback] A callback which is called after unpreparation has completed, or an error has occurred.
+		@param {Error} err Error on error, otherwise null.
+	@returns {PreparedStatement}
+	###
+		
+	unprepare: (callback) ->
+		unless @_pooledConnection
+			callback? new PreparedStatementError "Statement is not prepared. Call prepare() first."
+			return @
+		
+		done = (err) =>
+			if err then return callback? err
+			
+			if @transaction
+				@transaction.next()
+			else
+				@connection.pool.release @_pooledConnection
+				@_pooledConnection = null
+			
+			@_handle = 0
+			
+			callback? null
+
+		req = new Request @
+		req.input 'handle', TYPES.Int, @_handle
+		req.execute 'sp_unprepare', done
+			
+		@
+
+###
 Class Transaction.
 
 @property {Connection} connection Reference to used connection.
@@ -249,12 +508,13 @@ class Transaction extends EventEmitter
 	_working: false # if true, there is a request running at the moment
 
 	name: ""
+	connection: null # sql.Connection
 	isolationLevel: ISOLATION_LEVEL.READ_COMMITTED
 	
 	###
 	Create new Transaction.
 	
-	@param {Connection} connection If ommited, global connection is used instead.
+	@param {Connection} [connection] If ommited, global connection is used instead.
 	###
 	
 	constructor: (connection) ->
@@ -300,6 +560,10 @@ class Transaction extends EventEmitter
 			callback? new TransactionError "Transaction has not started. Call begin() first."
 			return @
 			
+		if @_working
+			callback? new TransactionError "Can't commit transaction. There is a request in progress."
+			return @
+
 		@connection.driver.Transaction::commit.call @, (err) =>
 			unless err then @emit 'commit'
 			callback? err
@@ -319,6 +583,8 @@ class Transaction extends EventEmitter
 		
 		else
 			@_working = false
+		
+		@
 	
 	###
 	Add request to queue for connection. If queue is empty, execute the request immediately.
@@ -341,6 +607,8 @@ class Transaction extends EventEmitter
 		else
 			@_working = true
 			callback null, @_pooledConnection
+		
+		@
 	
 	###
 	Returns new request using this transaction.
@@ -364,6 +632,10 @@ class Transaction extends EventEmitter
 			callback? new TransactionError "Transaction has not started. Call begin() first."
 			return @
 			
+		if @_working
+			callback? new TransactionError "Can't rollback transaction. There is a request in progress."
+			return @
+
 		@connection.driver.Transaction::rollback.call @, (err) =>
 			unless err then @emit 'rollback'
 			callback? err
@@ -388,6 +660,7 @@ Class Request.
 class Request extends EventEmitter
 	connection: null
 	transaction: null
+	pstatement: null
 	parameters: null
 	verbose: false
 	multiple: false
@@ -404,6 +677,10 @@ class Request extends EventEmitter
 			@transaction = connection
 			@connection = connection.connection
 		
+		else if connection instanceof PreparedStatement
+			@pstatement = connection
+			@connection = connection.connection
+
 		else if connection instanceof Connection
 			@connection = connection
 		
@@ -417,14 +694,24 @@ class Request extends EventEmitter
 	###
 	
 	_acquire: (callback) ->
-		@connection.driver.Request::_acquire.call @, callback
+		if @transaction
+			@transaction.queue callback
+		else if @pstatement
+			@pstatement.queue callback
+		else
+			@connection.pool.acquire callback
 	
 	###
 	Release connection used by this request.
 	###
 	
 	_release: (connection) ->
-		@connection.driver.Request::_release.call @, connection
+		if @transaction
+			@transaction.next()
+		else if @pstatement
+			@pstatement.next()
+		else
+			@connection.pool.release connection
 	
 	###
 	Add an input parameter to the request.
@@ -606,7 +893,7 @@ class Request extends EventEmitter
 			callback? err, recordsets, returnValue
 			
 		@
-		
+	
 	###
 	Cancel currently executed request.
 	
@@ -681,6 +968,27 @@ class RequestError extends Error
 		super()
 		Error.captureStackTrace @, @constructor
 
+class PreparedStatementError extends Error
+	constructor: (message, code) ->
+		unless @ instanceof PreparedStatementError
+			if message instanceof Error
+				err = new PreparedStatementError message.message, message.code
+				err.originalError = message
+				Error.captureStackTrace err, arguments.callee
+				return err
+				
+			else
+				err = new PreparedStatementError message
+				Error.captureStackTrace err, arguments.callee
+				return err
+		
+		@name = @constructor.name
+		@message = message
+		@code = code
+		
+		super()
+		Error.captureStackTrace @, @constructor
+
 ###
 Open global connection.
 
@@ -708,10 +1016,12 @@ module.exports.Connection = Connection
 module.exports.Transaction = Transaction
 module.exports.Request = Request
 module.exports.Table = Table
+module.exports.PreparedStatement = PreparedStatement
 
 module.exports.ConnectionError = ConnectionError
 module.exports.TransactionError = TransactionError
 module.exports.RequestError = RequestError
+module.exports.PreparedStatementError = PreparedStatementError
 
 module.exports.ISOLATION_LEVEL = ISOLATION_LEVEL
 module.exports.DRIVERS = DRIVERS
