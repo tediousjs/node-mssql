@@ -42,7 +42,7 @@
 
 <ul>
 <li>Unified interface for multiple MSSQL modules</li>
-<li>Connection pooling with Transactions support</li>
+<li>Connection pooling with Transactions and Prepared statements</li>
 <li>Parametrized Stored Procedures in <a href="https://github.com/cretz/node-tds">node-tds</a> and <a href="https://github.com/WindowsAzure/node-sqlserver">Microsoft Driver for Node.js for SQL Server</a>
 </li>
 <li>Serialization of Geography and Geometry CLR types</li>
@@ -57,10 +57,18 @@
 <li>
 <a href="https://github.com/cretz/node-tds">node-tds</a> by Chad Retz (pure javascript - windows/osx/linux)</li>
 </ul><h2>
-<a name="whats-new-in-051-stable-npm" class="anchor" href="#whats-new-in-051-stable-npm"><span class="octicon octicon-link"></span></a>What's new in 0.5.1 (stable, npm)</h2>
+<a name="whats-new-in-053-stable-npm" class="anchor" href="#whats-new-in-053-stable-npm"><span class="octicon octicon-link"></span></a>What's new in 0.5.3 (stable, npm)</h2>
 
 <ul>
-<li>Updated to new Tedious 0.2.1
+<li>Support for <a href="#prepared-statement">Prepared Statements</a>
+</li>
+<li>Fixed order of output parameters</li>
+<li>Minor fixes in node-tds driver</li>
+</ul><h2>
+<a name="whats-new-in-051" class="anchor" href="#whats-new-in-051"><span class="octicon octicon-link"></span></a>What's new in 0.5.1</h2>
+
+<ul>
+<li>Updated to new Tedious 0.2.2
 
 <ul>
 <li>Added support for TDS 7.4</li>
@@ -197,11 +205,21 @@
 <li><a href="#commit">commit</a></li>
 <li><a href="#rollback">rollback</a></li>
 </ul><h3>
+<a name="prepared-statements" class="anchor" href="#prepared-statements"><span class="octicon octicon-link"></span></a>Prepared Statements</h3>
+
+<ul>
+<li><a href="#prepared-statement">PreparedStatement</a></li>
+<li><a href="#prepared-statement-input">input</a></li>
+<li><a href="#prepared-statement-output">output</a></li>
+<li><a href="#prepare">prepare</a></li>
+<li><a href="#prepared-statement-execute">execute</a></li>
+<li><a href="#unprepare">unprepare</a></li>
+</ul><h3>
 <a name="other" class="anchor" href="#other"><span class="octicon octicon-link"></span></a>Other</h3>
 
 <ul>
 <li><a href="#geography">Geography and Geometry</a></li>
-<li><a href="#tvp">Table-Value Parameter</a></li>
+<li><a href="#tvp">Table-Valued Parameter</a></li>
 <li><a href="#errors">Errors</a></li>
 <li><a href="#meta">Metadata</a></li>
 <li><a href="#data-types">Data Types</a></li>
@@ -605,7 +623,7 @@
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Transaction</span><span class="p">();</span>
 <span class="nx">transaction</span><span class="p">.</span><span class="nx">begin</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// ...</span>
+    <span class="c1">// ... error checks</span>
 <span class="p">});</span>
 </pre></div>
 
@@ -625,10 +643,10 @@
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Transaction</span><span class="p">();</span>
 <span class="nx">transaction</span><span class="p">.</span><span class="nx">begin</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// ...</span>
+    <span class="c1">// ... error checks</span>
 
     <span class="nx">transaction</span><span class="p">.</span><span class="nx">commit</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">//...</span>
+        <span class="c1">// ... error checks</span>
     <span class="p">})</span>
 <span class="p">});</span>
 </pre></div>
@@ -649,11 +667,178 @@
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">transaction</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Transaction</span><span class="p">();</span>
 <span class="nx">transaction</span><span class="p">.</span><span class="nx">begin</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// ...</span>
+    <span class="c1">// ... error checks</span>
 
     <span class="nx">transaction</span><span class="p">.</span><span class="nx">rollback</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">//...</span>
+        <span class="c1">// ... error checks</span>
     <span class="p">})</span>
+<span class="p">});</span>
+</pre></div>
+
+<p><a name="prepared-statement"></a></p>
+
+<h2>
+<a name="preparedstatement" class="anchor" href="#preparedstatement"><span class="octicon octicon-link"></span></a>PreparedStatement</h2>
+
+<p><strong>Important:</strong> always use <code>PreparedStatement</code> class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call <code>prepare</code>, a single connection is aquired from the connection pool and all subsequent executions are executed exclusively on this connection. Prepared Statement also contains queue to make sure your executions are executed in series. After you call <code>unprepare</code>, connection is then released back to the connection pool.</p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">ps</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">PreparedStatement</span><span class="p">(</span><span class="cm">/* [connection] */</span><span class="p">);</span>
+</pre></div>
+
+<p>If you ommit connection argument, global connection is used instead.</p>
+
+<p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">ps</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">PreparedStatement</span><span class="p">(</span><span class="cm">/* [connection] */</span><span class="p">);</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'param'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">prepare</span><span class="p">(</span><span class="s1">'select @param as value'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordsets</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+
+    <span class="nx">ps</span><span class="p">.</span><span class="nx">execute</span><span class="p">({</span><span class="nx">param</span><span class="o">:</span> <span class="mi">12345</span><span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ... error checks</span>
+
+        <span class="nx">ps</span><span class="p">.</span><span class="nx">unprepare</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">// ... error checks</span>
+
+        <span class="p">});</span>
+    <span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
+
+<p><strong>IMPORTANT</strong>: Rememeber that each prepared statement means one reserved connection from the pool. Don't forget to unprepare a prepared statement!</p>
+
+<p><strong>TIP</strong>: You can also create prepared statements in transactions (<code>new sql.PreparedStatement(transaction)</code>), but keep in mind you can't execute other requests in the transaction until you call <code>unprepare</code>.</p>
+
+<hr><p><a name="prepared-statement-input"></a></p>
+
+<h3>
+<a name="inputname-type" class="anchor" href="#inputname-type"><span class="octicon octicon-link"></span></a>input(name, type)</h3>
+
+<p>Add an input parameter to the prepared statement.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>name</strong> - Name of the input parameter without @ char.</li>
+<li>
+<strong>type</strong> - SQL data type of input parameter.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">ps</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'input_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'input_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">(</span><span class="mi">50</span><span class="p">));</span>
+</pre></div>
+
+<hr><p><a name="prepared-statement-output"></a></p>
+
+<h3>
+<a name="outputname-type" class="anchor" href="#outputname-type"><span class="octicon octicon-link"></span></a>output(name, type)</h3>
+
+<p>Add an output parameter to the prepared statement.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>name</strong> - Name of the output parameter without @ char.</li>
+<li>
+<strong>type</strong> - SQL data type of output parameter.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="nx">ps</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">(</span><span class="mi">50</span><span class="p">));</span>
+</pre></div>
+
+<hr><p><a name="prepare"></a></p>
+
+<h3>
+<a name="preparestatement-callback" class="anchor" href="#preparestatement-callback"><span class="octicon octicon-link"></span></a>prepare(statement, [callback])</h3>
+
+<p>Prepare a statement.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>statement</strong> - T-SQL statement to prepare.</li>
+<li>
+<strong>callback(err)</strong> - A callback which is called after preparation has completed, or an error has occurred. Optional.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">ps</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">PreparedStatement</span><span class="p">();</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">prepare</span><span class="p">(</span><span class="s1">'select @param as value'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+<span class="p">});</span>
+</pre></div>
+
+<hr><p><a name="prepared-statement-execute"></a></p>
+
+<h3>
+<a name="executevalues-callback" class="anchor" href="#executevalues-callback"><span class="octicon octicon-link"></span></a>execute(values, [callback])</h3>
+
+<p>Execute a prepared statement.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>values</strong> - An object whose names correspond to the names of parameters that were added to the prepared statement before it was prepared.</li>
+<li>
+<strong>callback(err)</strong> - A callback which is called after execution has completed, or an error has occurred. Optional.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">ps</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">PreparedStatement</span><span class="p">();</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'param'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">prepare</span><span class="p">(</span><span class="s1">'select @param as value'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+
+    <span class="nx">ps</span><span class="p">.</span><span class="nx">execute</span><span class="p">({</span><span class="nx">param</span><span class="o">:</span> <span class="mi">12345</span><span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ... error checks</span>
+
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordset</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">value</span><span class="p">);</span> <span class="c1">// return 12345</span>
+    <span class="p">})</span>
+<span class="p">});</span>
+</pre></div>
+
+<p>You can enable multiple recordsets by <code>ps.multiple = true</code> command.</p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">ps</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">PreparedStatement</span><span class="p">();</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'param'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">prepare</span><span class="p">(</span><span class="s1">'select @param as value'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+
+    <span class="nx">ps</span><span class="p">.</span><span class="nx">multiple</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="nx">ps</span><span class="p">.</span><span class="nx">execute</span><span class="p">({</span><span class="nx">param</span><span class="o">:</span> <span class="mi">12345</span><span class="p">},</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordsets</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ... error checks</span>
+
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordsets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">].</span><span class="nx">value</span><span class="p">);</span> <span class="c1">// return 12345</span>
+    <span class="p">})</span>
+<span class="p">});</span>
+</pre></div>
+
+<hr><p><a name="unprepare"></a></p>
+
+<h3>
+<a name="unpreparecallback" class="anchor" href="#unpreparecallback"><span class="octicon octicon-link"></span></a>unprepare([callback])</h3>
+
+<p>Unprepare a prepared statement.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>callback(err)</strong> - A callback which is called after unpreparation has completed, or an error has occurred. Optional.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">ps</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">PreparedStatement</span><span class="p">();</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'param'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">prepare</span><span class="p">(</span><span class="s1">'select @param as value'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordsets</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+
+    <span class="nx">ps</span><span class="p">.</span><span class="nx">unprepare</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ... error checks</span>
+
+    <span class="p">});</span>
 <span class="p">});</span>
 </pre></div>
 
@@ -691,7 +876,7 @@
 <p><a name="tvp"></a></p>
 
 <h2>
-<a name="table-value-parameter-tvp" class="anchor" href="#table-value-parameter-tvp"><span class="octicon octicon-link"></span></a>Table-Value Parameter (TVP)</h2>
+<a name="table-valued-parameter-tvp" class="anchor" href="#table-valued-parameter-tvp"><span class="octicon octicon-link"></span></a>Table-Valued Parameter (TVP)</h2>
 
 <p>Supported on SQL Server 2008 and later. Not supported by optional drivers <code>msnodesql</code> and <code>tds</code>. You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.</p>
 
@@ -742,7 +927,9 @@
 <strong>TransactionError</strong> - Errors related to creating, commiting and rolling back transactions.</li>
 <li>
 <strong>RequestError</strong> - Errors related to queries and stored procedures execution.</li>
-</ul><p>Those errors are initialized in node-mssql module and it's stack can be cropped. You can always access original error with <code>err.originalError</code>.</p>
+<li>
+<strong>PreparedStatementError</strong> - Errors related to prepared statements.</li>
+</ul><p>Those errors are initialized in node-mssql module and it's original stack can be cropped. You can always access original error with <code>err.originalError</code>.</p>
 
 <p><a name="meta"></a></p>
 
@@ -884,6 +1071,7 @@ sql.Geometry
 <li>node-tds 0.1.0 doesn't support codepage of input parameters.</li>
 <li>node-tds 0.1.0 contains bug in selects that doesn't return any values <em>(select <a href="https://github.com/param" class="user-mention">@param</a> = 'value')</em>.</li>
 <li>node-tds 0.1.0 doesn't support Binary, VarBinary and Image as parameters.</li>
+<li>node-tds 0.1.0 always return date/time values in local time.</li>
 </ul><p><a name="license"></a></p>
 
 <h2>
