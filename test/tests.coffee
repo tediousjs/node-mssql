@@ -233,9 +233,9 @@ global.TESTS =
 		ps.prepare 'select @num as number', (err) ->
 			if err then return done err
 			
-			ps.execute {num: 555}, (err, recordsets) ->
-				assert.equal recordsets[0].length, 1
-				assert.equal recordsets[0][0].number, 555
+			ps.execute {num: 555}, (err, recordset) ->
+				assert.equal recordset.length, 1
+				assert.equal recordset[0].number, 555
 				
 				ps.unprepare done
 	
@@ -251,6 +251,7 @@ global.TESTS =
 				
 				assert.ok tran._pooledConnection is ps._pooledConnection
 				
+				ps.multiple = true
 				ps.execute {num: 555}, (err, recordsets) ->
 					assert.equal recordsets[0].length, 1
 					assert.equal recordsets[0][0].number, 555

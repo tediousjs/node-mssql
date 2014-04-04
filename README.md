@@ -18,7 +18,7 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 0.5.2 (stable, npm)
+## What's new in 0.5.3 (stable, npm)
 
 - Support for [Prepared Statements](#prepared-statement)
 - Fixed order of output parameters
@@ -683,9 +683,25 @@ ps.prepare('select @param as value', function(err) {
     
     ps.execute({param: 12345}, function(err, recordset) {
         // ... error checks
+        
+        console.log(recordset[0].value); // return 12345
     })
 });
 ```
+
+You can enable multiple recordsets by `ps.multiple = true` command.
+
+var ps = new sql.PreparedStatement();
+ps.input('param', sql.Int);
+ps.prepare('select @param as value', function(err) {
+    // ... error checks
+    
+    ps.execute({param: 12345}, function(err, recordsets) {
+        // ... error checks
+        
+        console.log(recordsets[0][0].value); // return 12345
+    })
+});
 
 ---------------------------------------
 

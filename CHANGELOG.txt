@@ -1,3 +1,7 @@
+v0.5.3 (2014-04-04)
+-------------------
+[fix] Multiple recordsets in Prepared Statements
+
 v0.5.2 (2014-04-04)
 -------------------
 [new] Support for Prepared Statements

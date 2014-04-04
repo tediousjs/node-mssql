@@ -237,6 +237,7 @@ Class PreparedStatement.
 IMPORTANT: Rememeber that each prepared statement means one reserved connection from the pool. Don't forget to unprepare a prepared statement!
 
 @property {Connection} connection Reference to used connection.
+@property {Boolean} multiple If `true`, `execute` will handle multiple recordsets.
 @property {String} statement Prepared SQL statement.
 ###
 
@@ -251,6 +252,7 @@ class PreparedStatement extends EventEmitter
 	prepared: false
 	statement: null
 	parameters: null
+	multiple: false
 	
 	###
 	Create new Prepared Statement.
@@ -454,7 +456,10 @@ class PreparedStatement extends EventEmitter
 				scale: param.scale
 				precision: param.precision
 		
-		req.execute 'sp_execute', callback
+		req.execute 'sp_execute', (err, recordsets, returnValue) =>
+			if err then return callback err
+			
+			callback null, (if @multiple then recordsets else recordsets[0])
 		
 		req
 		
