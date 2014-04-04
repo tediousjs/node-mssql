@@ -605,7 +605,7 @@ ps.prepare('select @param as value', function(err, recordsets) {
 ---------------------------------------
 
 <a name="prepared-statement-input" />
-### input(name, [type], value)
+### input(name, type)
 
 Add an input parameter to the prepared statement.
 
@@ -624,7 +624,7 @@ ps.input('input_parameter', sql.VarChar(50));
 ---------------------------------------
 
 <a name="prepared-statement-output" />
-### output(name, type, [value])
+### output(name, type)
 
 Add an output parameter to the prepared statement.
 
@@ -706,13 +706,9 @@ ps.input('param', sql.Int);
 ps.prepare('select @param as value', function(err, recordsets) {
     // ... error checks
 
-    ps.execute({param: 12345}, function(err, recordset) {
+    ps.unprepare(function(err) {
         // ... error checks
-
-        ps.unprepare(function(err) {
-            // ... error checks
-            
-        });
+        
     });
 });
 ```
@@ -800,7 +796,7 @@ There are three type of errors you can handle:
 - **RequestError** - Errors related to queries and stored procedures execution.
 - **PreparedStatementError** - Errors related to prepared statements.
 
-Those errors are initialized in node-mssql module and it's stack can be cropped. You can always access original error with `err.originalError`.
+Those errors are initialized in node-mssql module and it's original stack can be cropped. You can always access original error with `err.originalError`.
 
 <a name="meta" />
 ## Metadata
