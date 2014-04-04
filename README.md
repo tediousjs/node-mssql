@@ -691,6 +691,7 @@ ps.prepare('select @param as value', function(err) {
 
 You can enable multiple recordsets by `ps.multiple = true` command.
 
+```javascript
 var ps = new sql.PreparedStatement();
 ps.input('param', sql.Int);
 ps.prepare('select @param as value', function(err) {
@@ -702,6 +703,7 @@ ps.prepare('select @param as value', function(err) {
         console.log(recordsets[0][0].value); // return 12345
     })
 });
+```
 
 ---------------------------------------
 
