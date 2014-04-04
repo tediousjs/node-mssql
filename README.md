@@ -697,6 +697,7 @@ ps.input('param', sql.Int);
 ps.prepare('select @param as value', function(err) {
     // ... error checks
     
+    ps.multiple = true;
     ps.execute({param: 12345}, function(err, recordsets) {
         // ... error checks
         
