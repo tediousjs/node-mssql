@@ -4,7 +4,7 @@ An easy-to-use MSSQL database connector for Node.js.
 
 There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without losing any important functionality. node-mssql uses other TDS modules as drivers and offer easy to use unified interface. It also add extra features and bug fixes.
 
-There is also [co](https://github.com/visionmedia/co) warpper available - [co-mssql](https://github.com/patriksimek/co-mssql).
+There is also [co](https://github.com/visionmedia/co) wrapper available - [co-mssql](https://github.com/patriksimek/co-mssql).
 
 **Extra features:**
 - Unified interface for multiple MSSQL modules
@@ -33,7 +33,7 @@ At the moment it support three TDS modules:
     - Numeric, Decimal, SmallMoney and Money are now supported as input parameters
     - Fixed compatibility with TDS 7.1 (SQL Server 2000)
     - Minor fixes
-- You can now easily setup type's length/scale (`sql.VarChar(50)`)
+- You can now easily set up types' length/scale (`sql.VarChar(50)`)
 - Serialization of [Geography and Geometry](#geography) CLR types
 - Support for creating [Table-Value Parameters](#tvp) (`var tvp = new sql.Table()`)
 - Output parameters are now Input-Output and can handle initial value
@@ -219,7 +219,7 @@ This driver is not part of the default package and must be installed separately 
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **connectionString** - Connection string (default: see below).
 - **options.trustedConnection** - Use Windows Authentication (default: `false`).
-- **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
+- **options.useUTC** - A boolean determining whether or not to use UTC time for values without time zone offset (default: `true`).
 
 Default connection string when connecting to port:
 ```
@@ -296,7 +296,7 @@ connection.close();
 var request = new sql.Request(/* [connection] */);
 ```
 
-If you ommit connection argument, global connection is used instead.
+If you omit connection argument, global connection is used instead.
 
 ### Events
 
@@ -367,13 +367,13 @@ __JS Data Type To SQL Data Type Map__
 
 Default data type for unknown object is `sql.NVarChar`.
 
-You can define you own type map.
+You can define your own type map.
 
 ```javascript
 sql.map.register(MyClass, sql.Text);
 ```
 
-You can also overwrite default type map.
+You can also overwrite the default type map.
 
 ```javascript
 sql.map.register(Number, sql.BigInt);
@@ -424,7 +424,7 @@ request.query('select 1 as number', function(err, recordset) {
 });
 ```
 
-You can enable multiple recordsets in querries by `request.multiple = true` command.
+You can enable multiple recordsets in queries with the `request.multiple = true` command.
 
 ```javascript
 var request = new sql.Request();
@@ -443,7 +443,7 @@ request.query('select 1 as number; select 2 as number', function(err, recordsets
 <a name="cancel" />
 ### cancel()
 
-Cancel currently executing request. Return `true` if cancelation packet was send successfully. Not available in `msnodesql` and `tds` drivers.
+Cancel currently executing request. Return `true` if cancellation packet was send successfully. Not available in `msnodesql` and `tds` drivers.
 
 __Example__
 
@@ -463,13 +463,13 @@ request.cancel();
 <a name="transaction" />
 ## Transactions
 
-**Important:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is aquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. Transaction also contains queue to make sure your requests are executed in series. After you call `commit` or `rollback`, connection is then released back to the connection pool.
+**Important:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is acquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. Transaction also contains a queue to make sure your requests are executed in series. After you call `commit` or `rollback`, connection is then released back to the connection pool.
 
 ```javascript
 var transaction = new sql.Transaction(/* [connection] */);
 ```
 
-If you ommit connection argument, global connection is used instead.
+If you omit connection argument, global connection is used instead.
 
 __Example__
 
@@ -529,7 +529,7 @@ Commit a transaction.
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after transaction has commited, or an error has occurred. Optional.
+- **callback(err)** - A callback which is called after transaction has committed, or an error has occurred. Optional.
 
 __Example__
 
@@ -571,13 +571,13 @@ transaction.begin(function(err) {
 <a name="prepared-statement" />
 ## PreparedStatement
 
-**Important:** always use `PreparedStatement` class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call `prepare`, a single connection is aquired from the connection pool and all subsequent executions are executed exclusively on this connection. Prepared Statement also contains queue to make sure your executions are executed in series. After you call `unprepare`, connection is then released back to the connection pool.
+**Important:** always use `PreparedStatement` class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call `prepare`, a single connection is aquired from the connection pool and all subsequent executions are executed exclusively on this connection. Prepared Statement also contains a queue to make sure your executions are executed in series. After you call `unprepare`, the connection is then released back to the connection pool.
 
 ```javascript
 var ps = new sql.PreparedStatement(/* [connection] */);
 ```
 
-If you ommit connection argument, global connection is used instead.
+If you omit the connection argument, the global connection is used instead.
 
 __Example__
 
@@ -598,7 +598,7 @@ ps.prepare('select @param as value', function(err, recordsets) {
 });
 ```
 
-**IMPORTANT**: Rememeber that each prepared statement means one reserved connection from the pool. Don't forget to unprepare a prepared statement!
+**IMPORTANT**: Remember that each prepared statement means one reserved connection from the pool. Don't forget to unprepare a prepared statement!
 
 **TIP**: You can also create prepared statements in transactions (`new sql.PreparedStatement(transaction)`), but keep in mind you can't execute other requests in the transaction until you call `unprepare`.
 
@@ -815,12 +815,12 @@ There are three type of errors you can handle:
 - **RequestError** - Errors related to queries and stored procedures execution.
 - **PreparedStatementError** - Errors related to prepared statements.
 
-Those errors are initialized in node-mssql module and it's original stack can be cropped. You can always access original error with `err.originalError`.
+Those errors are initialized in node-mssql module and its original stack can be cropped. You can always access original error with `err.originalError`.
 
 <a name="meta" />
 ## Metadata
 
-Recordset metadata are accessible trough `recordset.columns` property.
+Recordset metadata are accessible through the `recordset.columns` property.
 
 ```javascript
 var request = new sql.Request();
@@ -916,7 +916,7 @@ request.input('attempts', 2);
 request.execute('my_stored_procedure');
 ```
 
-Output for example above could look similar to this.
+Output for the example above could look similar to this.
 
 ```
 ---------- sql execute --------
