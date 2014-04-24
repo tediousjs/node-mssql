@@ -169,7 +169,7 @@ sql.connect(config, function(err) {
 * [Metadata](#meta)
 * [Data Types](#data-types)
 * [Verbose Mode](#verbose)
-* [Known issues](#issues)
+* [Known Issues](#issues)
 
 ## Configuration
 
@@ -207,7 +207,7 @@ var config = {
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
 - **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`) Encryption support is experimental.
-- **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_2`, `7_3_A`, `7_3_B`, `7_4`).
+- **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_1`, `7_2`, `7_3_A`, `7_3_B`, `7_4`).
 
 More information about Tedious specific options: http://pekim.github.io/tedious/api-connection.html
 
@@ -942,6 +942,7 @@ Output for the example above could look similar to this.
 
 ### msnodesql
 
+- If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/patriksimek/node-mssql/issues/36))
 - msnodesql 0.2.1 contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
 
 ### node-tds
