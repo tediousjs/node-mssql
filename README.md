@@ -940,9 +940,12 @@ Output for the example above could look similar to this.
 <a name="issues" />
 ## Known issues
 
-### msnodesql
+### Tedious
 
 - If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/patriksimek/node-mssql/issues/36))
+
+### msnodesql
+
 - msnodesql 0.2.1 contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
 
 ### node-tds
