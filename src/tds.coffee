@@ -226,15 +226,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			
 	class TDSRequest extends Request
 		query: (command, callback) ->
-			if @verbose and not @nested then console.log "---------- sql query ----------\n    query: #{command}"
+			if @verbose and not @nested then @doLog "---------- sql query ----------\n    query: #{command}"
 			
 			if command.length is 0
 				return process.nextTick ->
 					if @verbose and not @nested
-						console.log "---------- response -----------"
+						@doLog "---------- response -----------"
 						elapsed = Date.now() - started
-						console.log " duration: #{elapsed}ms"
-						console.log "---------- completed ----------"
+						@doLog " duration: #{elapsed}ms"
+						@doLog "---------- completed ----------"
 		
 					callback? null, if @multiple or @nested then [] else null
 			
@@ -287,8 +287,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 								row[col.name] = value
 
 						if @verbose
-							console.log util.inspect(row)
-							console.log "---------- --------------------"
+							@doLog util.inspect(row)
+							@doLog "---------- --------------------"
 						
 						unless row["___return___"]?
 							# row with ___return___ col is the last row
@@ -324,13 +324,13 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 									param.value = last[param.name]
 				
 									if @verbose
-										console.log "   output: @#{param.name}, #{param.type.declaration}, #{param.value}"
+										@doLog "   output: @#{param.name}, #{param.type.declaration}, #{param.value}"
 						
 							if @verbose
-								if error then console.log "    error: #{error}"
+								if error then @doLog "    error: #{error}"
 								elapsed = Date.now() - started
-								console.log " duration: #{elapsed}ms"
-								console.log "---------- completed ----------"
+								@doLog " duration: #{elapsed}ms"
+								@doLog "---------- completed ----------"
 		
 						@_release connection
 						callback? error, if @multiple or @nested then recordsets else recordsets[0]
@@ -345,7 +345,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					callback? err
 
 		execute: (procedure, callback) ->
-			if @verbose then console.log "---------- sql execute --------\n     proc: #{procedure}"
+			if @verbose then @doLog "---------- sql execute --------\n     proc: #{procedure}"
 	
 			started = Date.now()
 			
@@ -355,7 +355,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			spp = []
 			for name, param of @parameters
 				if @verbose
-					console.log "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, #{param.type.declaration}, #{param.value}"
+					@doLog "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, #{param.type.declaration}, #{param.value}"
 						
 				if param.io is 2
 					# output parameter
@@ -367,7 +367,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			cmd += "#{spp.join ', '};"
 			cmd += "select #{['@___return___ as \'___return___\''].concat("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2).join ', '};"
 			
-			if @verbose then console.log "---------- response -----------"
+			if @verbose then @doLog "---------- response -----------"
 			
 			@nested = true
 			
@@ -378,9 +378,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				if err
 					if @verbose
 						elapsed = Date.now() - started
-						console.log "    error: #{err}"
-						console.log " duration: #{elapsed}ms"
-						console.log "---------- completed ----------"
+						@doLog "    error: #{err}"
+						@doLog " duration: #{elapsed}ms"
+						@doLog "---------- completed ----------"
 					
 					callback? err
 				
@@ -393,13 +393,13 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							param.value = last[param.name]
 		
 							if @verbose
-								console.log "   output: @#{param.name}, #{param.type.declaration}, #{param.value}"
+								@doLog "   output: @#{param.name}, #{param.type.declaration}, #{param.value}"
 		
 					if @verbose
 						elapsed = Date.now() - started
-						console.log "   return: #{returnValue}"
-						console.log " duration: #{elapsed}ms"
-						console.log "---------- completed ----------"
+						@doLog "   return: #{returnValue}"
+						@doLog " duration: #{elapsed}ms"
+						@doLog "---------- completed ----------"
 					
 					recordsets.returnValue = returnValue
 					callback? null, recordsets, returnValue

@@ -185,7 +185,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						if err then return callback err, null # there must be a second argument null
 						callback null, c
 					
-					#c.on 'debug', (msg) -> console.log msg
+					#c.on 'debug', (msg) -> @doLog msg
 
 				validate: (c) ->
 					c? and !c.closed
@@ -256,25 +256,25 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 
 			@_acquire (err, connection) =>
 				unless err
-					if @verbose then console.log "---------- sql query ----------\n    query: #{command}"
+					if @verbose then @doLog "---------- sql query ----------\n    query: #{command}"
 
 					if @canceled
-						if @verbose then console.log "---------- canceling ----------"
+						if @verbose then @doLog "---------- canceling ----------"
 						@_release connection
 						return callback? new RequestError "Canceled.", 'ECANCEL'
 					
 					@_cancel = =>
-						if @verbose then console.log "---------- canceling ----------"
+						if @verbose then @doLog "---------- canceling ----------"
 						connection.cancel()
 					
 					req = new tds.Request command, (err) =>
 						if err then err = RequestError err
 						
 						if @verbose 
-							if err then console.log "    error: #{err}"
+							if err then @doLog "    error: #{err}"
 							elapsed = Date.now() - started
-							console.log " duration: #{elapsed}ms"
-							console.log "---------- completed ----------"
+							@doLog " duration: #{elapsed}ms"
+							@doLog "---------- completed ----------"
 
 						if recordset
 							Object.defineProperty recordset, 'columns', 
@@ -312,9 +312,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req.on 'returnValue', (parameterName, value, metadata) =>
 						if @verbose
 							if value is tds.TYPES.Null
-								console.log "   output: @#{parameterName}, null"
+								@doLog "   output: @#{parameterName}, null"
 							else
-								console.log "   output: @#{parameterName}, #{@parameters[parameterName].type.declaration.toLowerCase()}, #{value}"
+								@doLog "   output: @#{parameterName}, #{@parameters[parameterName].type.declaration.toLowerCase()}, #{value}"
 								
 						@parameters[parameterName].value = if value is tds.TYPES.Null then null else value
 					
@@ -338,8 +338,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 								row[col.metadata.colName] = col.value
 						
 						if @verbose
-							console.log util.inspect(row)
-							console.log "---------- --------------------"
+							@doLog util.inspect(row)
+							@doLog "---------- --------------------"
 						
 						@emit 'row', row
 						
@@ -348,16 +348,16 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					for name, param of @parameters when param.io is 1
 						if @verbose
 							if param.value is tds.TYPES.Null
-								console.log "    input: @#{param.name}, null"
+								@doLog "    input: @#{param.name}, null"
 							else
-								console.log "    input: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
+								@doLog "    input: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
 						
 						req.addParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 					
 					for name, param of @parameters when param.io is 2
 						req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 					
-					if @verbose then console.log "---------- response -----------"
+					if @verbose then @doLog "---------- response -----------"
 					connection.execSql req
 				
 				else
@@ -377,27 +377,27 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 
 			@_acquire (err, connection) =>
 				unless err
-					if @verbose then console.log "---------- sql execute --------\n     proc: #{procedure}"
+					if @verbose then @doLog "---------- sql execute --------\n     proc: #{procedure}"
 					
 					if @canceled
-						if @verbose then console.log "---------- canceling ----------"
+						if @verbose then @doLog "---------- canceling ----------"
 						@_release connection
 						return callback? new RequestError "Canceled.", 'ECANCEL'
 					
 					@_cancel = =>
-						if @verbose then console.log "---------- canceling ----------"
+						if @verbose then @doLog "---------- canceling ----------"
 						connection.cancel()
 					
 					req = new tds.Request procedure, (err) =>
 						if err then err = RequestError err
 						
 						if @verbose 
-							if err then console.log "    error: #{err}"
+							if err then @doLog "    error: #{err}"
 							
 							elapsed = Date.now() - started
-							console.log "   return: #{returnValue}"
-							console.log " duration: #{elapsed}ms"
-							console.log "---------- completed ----------"
+							@doLog "   return: #{returnValue}"
+							@doLog " duration: #{elapsed}ms"
+							@doLog "---------- completed ----------"
 						
 						@_cancel = null
 						@_release connection
@@ -429,8 +429,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 								row[col.metadata.colName] = col.value
 						
 						if @verbose
-							console.log util.inspect(row)
-							console.log "---------- --------------------"
+							@doLog util.inspect(row)
+							@doLog "---------- --------------------"
 						
 						@emit 'row', row
 						
@@ -465,25 +465,25 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							
 						if @verbose
 							if value is tds.TYPES.Null
-								console.log "   output: @#{parameterName}, null"
+								@doLog "   output: @#{parameterName}, null"
 							else
-								console.log "   output: @#{parameterName}, #{@parameters[parameterName].type.declaration.toLowerCase()}, #{value}"
+								@doLog "   output: @#{parameterName}, #{@parameters[parameterName].type.declaration.toLowerCase()}, #{value}"
 								
 						@parameters[parameterName].value = if value is tds.TYPES.Null then null else value
 					
 					for name, param of @parameters
 						if @verbose
 							if param.value is tds.TYPES.Null
-								console.log "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, null"
+								@doLog "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, null"
 							else
-								console.log "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
+								@doLog "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
 						
 						if param.io is 1
 							req.addParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 						else
 							req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 
-					if @verbose then console.log "---------- response -----------"
+					if @verbose then @doLog "---------- response -----------"
 					connection.callProcedure req
 				
 				else

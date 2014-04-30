@@ -672,6 +672,13 @@ class Request extends EventEmitter
 	canceled: false
 	
 	###
+	Log to a function if assigned. Else, use console.log.
+	###
+
+	doLog: (out) ->
+		if @logger and typeof @logger == "function" then @logger out else console.log out
+
+	###
 	Create new Request.
 	
 	@param {Connection|Transaction} connection If ommited, global connection is used instead.
