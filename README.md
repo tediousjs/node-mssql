@@ -584,7 +584,7 @@ __Example__
 ```javascript
 var ps = new sql.PreparedStatement(/* [connection] */);
 ps.input('param', sql.Int);
-ps.prepare('select @param as value', function(err, recordsets) {
+ps.prepare('select @param as value', function(err) {
     // ... error checks
 
     ps.execute({param: 12345}, function(err, recordset) {
