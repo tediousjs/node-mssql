@@ -41,6 +41,10 @@ At the moment it support three TDS modules:
 - Connecting to named instances simplified
 - Default SQL data type for JS String type is now NVarChar (was VarChar)
 
+## Comming soon in 0.5.4 (unstable, git)
+
+- Multiple errors handling (`err.precedingErrors`)
+
 ## Installation
 
     npm install mssql
@@ -816,6 +820,8 @@ There are three type of errors you can handle:
 - **PreparedStatementError** - Errors related to prepared statements.
 
 Those errors are initialized in node-mssql module and its original stack can be cropped. You can always access original error with `err.originalError`.
+
+SQL Server may generate more than one error for one request so you can access preceding errors with `err.precedingErrors`.
 
 <a name="meta" />
 ## Metadata

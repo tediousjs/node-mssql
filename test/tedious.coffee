@@ -59,6 +59,9 @@ describe 'tedious test suite', ->
 	it 'query with error', (done) ->
 		TESTS['query with error'] done
 	
+	it 'query with multiple errors', (done) ->
+		TESTS['query with multiple errors'] done
+	
 	it 'prepared statement', (done) ->
 		TESTS['prepared statement'] done
 	

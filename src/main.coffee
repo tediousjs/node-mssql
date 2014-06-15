@@ -922,7 +922,7 @@ class ConnectionError extends Error
 		unless @ instanceof ConnectionError
 			if message instanceof Error
 				err = new ConnectionError message.message, message.code
-				err.originalError = message
+				Object.defineProperty err, 'originalError', value: message
 				Error.captureStackTrace err, arguments.callee
 				return err
 				
@@ -933,7 +933,7 @@ class ConnectionError extends Error
 		
 		@name = @constructor.name
 		@message = message
-		@code = code
+		@code = code if code?
 		
 		super()
 		Error.captureStackTrace @, @constructor
@@ -943,7 +943,7 @@ class TransactionError extends Error
 		unless @ instanceof TransactionError
 			if message instanceof Error
 				err = new TransactionError message.message, message.code
-				err.originalError = message
+				Object.defineProperty err, 'originalError', value: message
 				Error.captureStackTrace err, arguments.callee
 				return err
 				
@@ -954,7 +954,7 @@ class TransactionError extends Error
 		
 		@name = @constructor.name
 		@message = message
-		@code = code
+		@code = code if code?
 		
 		super()
 		Error.captureStackTrace @, @constructor
@@ -964,7 +964,8 @@ class RequestError extends Error
 		unless @ instanceof RequestError
 			if message instanceof Error
 				err = new RequestError message.message, message.code
-				err.originalError = message
+				
+				Object.defineProperty err, 'originalError', value: message
 				Error.captureStackTrace err, arguments.callee
 				return err
 				
@@ -975,7 +976,7 @@ class RequestError extends Error
 		
 		@name = @constructor.name
 		@message = message
-		@code = code
+		@code = code if code?
 		
 		super()
 		Error.captureStackTrace @, @constructor

@@ -227,6 +227,17 @@ global.TESTS =
 
 			done()
 	
+	'query with multiple errors': (done) ->
+		r = new sql.Request
+		r.query 'select a;select b;', (err, recordset) ->
+			assert.equal err instanceof sql.RequestError, true
+			assert.equal err.message, 'Invalid column name \'b\'.'
+			assert.equal err.precedingErrors.length, 1
+			assert.equal err.precedingErrors[0] instanceof sql.RequestError, true
+			assert.equal err.precedingErrors[0].message, 'Invalid column name \'a\'.'
+
+			done()
+	
 	'prepared statement': (done) ->
 		ps = new sql.PreparedStatement
 		ps.input 'num', sql.Int

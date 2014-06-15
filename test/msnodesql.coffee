@@ -57,6 +57,9 @@ if process.platform.match(/^win/)
 		it 'query with error', (done) ->
 			TESTS['query with error'] done
 	
+		it.skip 'query with multiple errors (not supported by msnodesql)', (done) ->
+			TESTS['query with multiple errors'] done
+	
 		it 'prepared statement', (done) ->
 			TESTS['prepared statement'] done
 	

@@ -243,7 +243,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			recordsets = []
 			started = Date.now()
 			handleOutput = false
-			error = null
+			errors = []
 
 			paramHeaders = {}
 			paramValues = {}
@@ -327,16 +327,22 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 										@doLog "   output: @#{param.name}, #{param.type.declaration}, #{param.value}"
 						
 							if @verbose
-								if error then @doLog "    error: #{error}"
+								if errors.length
+									@doLog "    error: #{error}" for error in errors
+									
 								elapsed = Date.now() - started
 								@doLog " duration: #{elapsed}ms"
 								@doLog "---------- completed ----------"
+						
+						if errors.length
+							error = errors.pop()
+							error.precedingErrors = errors
 		
 						@_release connection
 						callback? error, if @multiple or @nested then recordsets else recordsets[0]
 					
 					req.on 'error', (err) ->
-						error = RequestError err
+						errors.push RequestError err
 		
 					req.execute paramValues
 				

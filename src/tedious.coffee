@@ -253,7 +253,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			recordset = []
 			recordsets = []
 			started = Date.now()
-
+			errors = []
+			handleError = (err) -> errors.push new RequestError err.message, 'EREQUEST'
+			
 			@_acquire (err, connection) =>
 				unless err
 					if @verbose then @doLog "---------- sql query ----------\n    query: #{command}"
@@ -267,11 +269,18 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						if @verbose then @doLog "---------- canceling ----------"
 						connection.cancel()
 					
+					# attach handler to handle multiple error messages
+					connection.on 'errorMessage', handleError
+					
 					req = new tds.Request command, (err) =>
-						if err then err = RequestError err
+						# to make sure we handle no-sql errors as well
+						if err and err.message isnt errors[errors.length - 1]?.message
+							errors.push RequestError err
 						
 						if @verbose 
-							if err then @doLog "    error: #{err}"
+							if errors.length
+								@doLog "    error: #{error}" for error in errors
+							
 							elapsed = Date.now() - started
 							@doLog " duration: #{elapsed}ms"
 							@doLog "---------- completed ----------"
@@ -282,14 +291,20 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 								value: columns
 						
 						@_cancel = null
+						
+						if errors.length
+							error = errors.pop()
+							error.precedingErrors = errors
+						
+						connection.removeListener 'errorMessage', handleError
 						@_release connection
 						
-						callback? err, if @multiple then recordsets else recordsets[0]
+						callback? error, if @multiple then recordsets else recordsets[0]
 					
 					req.on 'columnMetadata', (metadata) =>
 						for col in metadata
 							columns[col.colName] = col
-					
+
 					req.on 'doneInProc', (rowCount, more, rows) =>
 						# this function is called even when select only set variables so we should skip adding a new recordset
 						if Object.keys(columns).length is 0 then return
@@ -374,6 +389,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			recordsets = []
 			returnValue = 0
 			started = Date.now()
+			errors = []
+			handleError = (err) -> errors.push new RequestError err.message, 'EREQUEST'
 
 			@_acquire (err, connection) =>
 				unless err
@@ -388,11 +405,17 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						if @verbose then @doLog "---------- canceling ----------"
 						connection.cancel()
 					
+					# attach handler to handle multiple error messages
+					connection.on 'errorMessage', handleError
+					
 					req = new tds.Request procedure, (err) =>
-						if err then err = RequestError err
+						# to make sure we handle no-sql errors as well
+						if err and err.message isnt errors[errors.length - 1]?.message
+							errors.push RequestError err
 						
 						if @verbose 
-							if err then @doLog "    error: #{err}"
+							if errors.length
+								@doLog "    error: #{error}" for error in errors
 							
 							elapsed = Date.now() - started
 							@doLog "   return: #{returnValue}"
@@ -400,10 +423,16 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							@doLog "---------- completed ----------"
 						
 						@_cancel = null
+						
+						if errors.length
+							error = errors.pop()
+							error.precedingErrors = errors
+						
+						connection.removeListener 'errorMessage', handleError
 						@_release connection
 						
 						recordsets.returnValue = returnValue
-						callback? err, recordsets, returnValue
+						callback? error, recordsets, returnValue
 					
 					req.on 'columnMetadata', (metadata) =>
 						for col in metadata
