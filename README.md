@@ -58,7 +58,11 @@ var config = {
     user: '...',
     password: '...',
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
-    database: '...'
+    database: '...',
+    
+    options: {
+        encrypt: true // Use this if you're on Windows Azure
+    }
 }
 
 var connection = new sql.Connection(config, function(err) {
@@ -96,7 +100,11 @@ var config = {
     user: '...',
     password: '...',
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
-    database: '...'
+    database: '...',
+    
+    options: {
+        encrypt: true // Use this if you're on Windows Azure
+    }
 }
 
 sql.connect(config, function(err) {
