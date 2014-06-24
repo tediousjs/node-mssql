@@ -18,17 +18,11 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 0.5.4 (stable, npm)
+## What's new in 0.5.5 (stable, npm)
 
-- Multiple errors handling (`err.precedingErrors`)
+- Fix: Failed login left open connection pool
 
-## What's new in 0.5.3
-
-- Support for [Prepared Statements](#prepared-statement)
-- Fixed order of output parameters
-- Minor fixes in node-tds driver
-
-## What's new in 0.5.1
+## What's new in 0.5.x
 
 - Updated to new Tedious 0.2.2
     - Added support for TDS 7.4
@@ -44,6 +38,10 @@ At the moment it support three TDS modules:
 - Option to choose whether to pass/receive times in UTC or local time
 - Connecting to named instances simplified
 - Default SQL data type for JS String type is now NVarChar (was VarChar)
+- Support for [Prepared Statements](#prepared-statement)
+- Fixed order of output parameters
+- Minor fixes in node-tds driver
+- Multiple errors handling (`err.precedingErrors`)
 
 ## Installation
 
