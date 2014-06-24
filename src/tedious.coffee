@@ -203,6 +203,11 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			@pool.acquire (err, connection) =>
 				# and release it immediately
 				@pool.release connection
+				
+				if err
+					@pool.destroyAllNow()
+					@pool = null
+
 				callback err
 		
 		close: (callback) ->

@@ -160,6 +160,11 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				
 				# and release it immediately
 				@pool.release connection
+				
+				if err
+					@pool.destroyAllNow()
+					@pool = null
+					
 				callback err
 			
 		close: (callback) ->
