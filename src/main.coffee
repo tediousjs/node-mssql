@@ -711,6 +711,9 @@ class Request extends EventEmitter
 		else if @pstatement
 			@pstatement.queue callback
 		else
+			unless @connection.pool
+				return callback new RequestError "Connection not yet open.", 'ECONNCLOSED'
+			
 			@connection.pool.acquire callback
 	
 	###
