@@ -241,12 +241,14 @@ global.TESTS =
 	'prepared statement': (done) ->
 		ps = new sql.PreparedStatement
 		ps.input 'num', sql.Int
-		ps.prepare 'select @num as number', (err) ->
+		ps.input 'num2', sql.Decimal(5, 2)
+		ps.prepare 'select @num as number, @num2 as number2', (err) ->
 			if err then return done err
 			
-			ps.execute {num: 555}, (err, recordset) ->
+			ps.execute {num: 555, num2: 666.77}, (err, recordset) ->
 				assert.equal recordset.length, 1
 				assert.equal recordset[0].number, 555
+				assert.equal recordset[0].number2, 666.77
 				
 				ps.unprepare done
 	
