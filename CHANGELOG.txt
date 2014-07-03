@@ -1,3 +1,7 @@
+v0.6.1 (2014-07-04)
+-------------------
+[change] TDS debugging simplified
+
 v0.6.0 (2014-07-03)
 -------------------
 [change] Updated to latest Tedious 1.0.0

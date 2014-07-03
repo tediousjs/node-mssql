@@ -18,7 +18,7 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 0.6.0 (stable, npm)
+## What's new in 0.6.x (stable, npm)
 
 - Updated to latest Tedious 1.0.0
 - Added support for [Streaming](#streaming)
@@ -70,7 +70,7 @@ var connection = new sql.Connection(config, function(err) {
 });
 ```
 
-## Quick Example with one global connection
+### Quick Example with one global connection
 
 ```javascript
 var sql = require('mssql'); 
@@ -113,7 +113,7 @@ sql.connect(config, function(err) {
 ```
 
 <a name="streaming" />
-## Streaming example with one global connection
+### Streaming example with one global connection
 
 If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.
 
