@@ -242,13 +242,13 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						@doLog "---------- completed ----------"
 		
 					callback? null, if @multiple or @nested then [] else null
-			
-			columns = null
+
 			recordset = null
 			recordsets = []
 			started = Date.now()
 			handleOutput = false
 			errors = []
+			lastrow = null
 
 			paramHeaders = {}
 			paramValues = {}
@@ -297,30 +297,31 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						
 						unless row["___return___"]?
 							# row with ___return___ col is the last row
-							@emit 'row', row
+							if @stream then @emit 'row', row
+						else
+							lastrow = row
 						
-						recordset.push row
+						unless @stream
+							recordset.push row
 					
 					req.on 'metadata', (metadata) =>
-						if recordset
-							@emit 'recordset', recordset
-							
-						columns = metadata.columnsByName
 						recordset = []
 						
 						Object.defineProperty recordset, 'columns', 
 							enumerable: false
 							value: createColumns(metadata.columnsByName)
 							@nested
-
-						recordsets.push recordset
+						
+						if @stream
+							unless recordset.columns["___return___"]?
+								# row with ___return___ col is the last row
+								@emit 'recordset', recordset.columns
+						
+						else
+							recordsets.push recordset
 					
 					req.on 'done', (res) =>
 						unless @nested
-							# if nested queries, last recordset is full of return values
-							if recordset
-								@emit 'recordset', recordset
-							
 							# do we have output parameters to handle?
 							if handleOutput
 								last = recordsets.pop()?[0]
@@ -339,15 +340,25 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 								@doLog " duration: #{elapsed}ms"
 								@doLog "---------- completed ----------"
 						
-						if errors.length
+						if errors.length and not @stream
 							error = errors.pop()
 							error.precedingErrors = errors
 		
 						@_release connection
-						callback? error, if @multiple or @nested then recordsets else recordsets[0]
+						
+						if @stream
+							callback null, if @nested then lastrow else null
+							
+						else
+							callback? error, if @multiple or @nested then recordsets else recordsets[0]
 					
-					req.on 'error', (err) ->
-						errors.push RequestError err
+					req.on 'error', (err) =>
+						e = RequestError err, 'EREQUEST'
+						
+						if @stream
+							@emit 'error', e
+						else
+							errors.push e
 		
 					req.execute paramValues
 				
@@ -396,7 +407,11 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					callback? err
 				
 				else
-					last = recordsets.pop()?[0]
+					if @stream
+						last = recordsets
+					else
+						last = recordsets.pop()?[0]
+					
 					if last and last.___return___?
 						returnValue = last.___return___
 						
@@ -412,8 +427,12 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						@doLog " duration: #{elapsed}ms"
 						@doLog "---------- completed ----------"
 					
-					recordsets.returnValue = returnValue
-					callback? null, recordsets, returnValue
+					if @stream
+						callback null, null, returnValue
+					
+					else
+						recordsets.returnValue = returnValue
+						callback? null, recordsets, returnValue
 					
 		###
 		Cancel currently executed request.

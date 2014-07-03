@@ -1,3 +1,12 @@
+v0.6.0 (2014-07-03)
+-------------------
+[change] Updated to latest Tedious 1.0.0
+[new] Added support for Streaming
+[new] Added option to set request timeout (config.requestTimeout = 15000)
+[new] Errors documented
+[change] Connection timeout renamed from config.timeout to config.connectionTimeout
+[fix] Minor bug fixes
+
 v0.5.5 (2014-06-24)
 -------------------
 [fix] Failed login left open connection pool

@@ -241,10 +241,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 
 							unless row["___return___"]?
 								# row with ___return___ col is the last row
-								@emit 'row', row
-						
-						if recordset
-							@emit 'recordset', recordset
+								if @stream then @emit 'row', row
 						
 						row = null
 						columns = metadata
@@ -252,8 +249,13 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						Object.defineProperty recordset, 'columns', 
 							enumerable: false
 							value: createColumns(metadata)
-							
-						recordsets.push recordset
+						
+						if @stream
+							unless recordset.columns["___return___"]?
+								@emit 'recordset', recordset.columns
+						
+						else
+							recordsets.push recordset
 						
 					req.on 'row', (rownumber) =>
 						if row
@@ -263,10 +265,12 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 
 							unless row["___return___"]?
 								# row with ___return___ col is the last row
-								@emit 'row', row
+								if @stream then @emit 'row', row
 						
 						row = {}
-						recordset.push row
+						
+						unless @stream
+							recordset.push row
 						
 					req.on 'column', (idx, data, more) =>
 						data = valueCorrection(data, columns[idx])
@@ -293,14 +297,14 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					
 					req.once 'done', =>
 						unless @nested
-							# if nested queries, last recordset is full of return values
-							if recordset
-								@emit 'recordset', recordset
-								
-							if @verbose
-								if row
+							if row
+								if @verbose
 									@doLog util.inspect(row)
 									@doLog "---------- --------------------"
+								
+								unless row["___return___"]?
+									# row with ___return___ col is the last row
+									if @stream then @emit 'row', row
 		
 							# do we have output parameters to handle?
 							if handleOutput
@@ -318,7 +322,12 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 								@doLog "---------- completed ----------"
 
 						@_release connection
-						callback? null, if @multiple or @nested then recordsets else recordsets[0]
+						
+						if @stream
+							callback null, if @nested then row else null
+						
+						else
+							callback? null, if @multiple or @nested then recordsets else recordsets[0]
 				
 				else
 					if connection then @_release connection
@@ -365,7 +374,11 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					callback? err
 				
 				else
-					last = recordsets.pop()?[0]
+					if @stream
+						last = recordsets
+					else
+						last = recordsets.pop()?[0]
+						
 					if last and last.___return___?
 						returnValue = last.___return___
 						
@@ -381,8 +394,12 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						@doLog " duration: #{elapsed}ms"
 						@doLog "---------- completed ----------"
 					
-					recordsets.returnValue = returnValue
-					callback? null, recordsets, returnValue
+					if @stream
+						callback null, null, returnValue
+						
+					else
+						recordsets.returnValue = returnValue
+						callback? null, recordsets, returnValue
 					
 		###
 		Cancel currently executed request.

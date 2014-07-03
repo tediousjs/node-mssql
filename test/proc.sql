@@ -99,3 +99,21 @@ go
 create table [dbo].[tran_test] (
 	data varchar(50) not null
 )
+
+go
+
+create table [dbo].[streaming] (
+	text varchar(4000)
+)
+
+go
+
+;with nums as
+(
+    select 0 AS n
+    union all
+    select n + 1 from nums where n < 32767
+)
+insert into streaming(text)
+select 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras commodo lacinia turpis, et volutpat magna euismod at. Sed eget interdum enim, sed sagittis augue. Donec aliquet lacinia commodo. Nunc ultricies felis ut ante lobortis consectetur. Etiam dictum elit quis eros fermentum, sed venenatis libero elementum. Cras sed luctus eros. Donec ultrices mauris a velit gravida lobortis. Sed at nulla sit amet eros semper viverra. Pellentesque aliquam accumsan ligula, sed euismod est suscipit ut. Etiam facilisis dapibus viverra. In hac habitasse platea dictumst. Quisque lacinia mattis quam, sit amet lacinia felis convallis id. Interdum et malesuada fames ac ante ipsum primis in faucibus. Proin dapibus auctor lacinia. Nam dictum orci at neque adipiscing sollicitudin. Quisque id enim rutrum, tempor arcu ut, tempor mi. Vivamus fringilla velit vel massa fringilla, a interdum felis pellentesque. Etiam faucibus felis nec elit sodales molestie. Quisque sit amet porta nisi. Nunc tellus diam, sagittis eu porta vel, sagittis eu urna. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur quis scelerisque nisl. Nulla egestas blandit felis id condimentum. Sed eleifend neque sit amet nisl vehicula molestie. Nulla ut mi dignissim, faucibus nulla quis, hendrerit neque. Maecenas luctus urna urna, eget placerat metus tempor nec. Aenean accumsan nunc at leo tempus vehicula. In hac habitasse platea dictumst. Vestibulum faucibus scelerisque nisi, et adipiscing justo. Praesent posuere placerat nibh aliquet suscipit. Morbi eget consectetur sem. Nulla erat ipsum, dapibus sit amet nulla in, dictum malesuada felis. Sed eu blandit est. Etiam suscipit lacus elit, quis pretium diam ultricies ac. Sed tincidunt mollis accumsan. Donec scelerisque sapien ac tincidunt eleifend. Quisque nec sem dolor. Suspendisse imperdiet facilisis velit, non faucibus justo consequat elementum. Sed id purus mauris. Nunc id tortor rutrum, ornare leo at, ultrices urna. Nam dolor augue, fermentum sed condimentum et, pulvinar interdum augue. Sed arcu nibh, tincidunt id bibendum ut, placerat eu odio. Phasellus viverra nisi sagittis auctor tristique. Phasellus ullamcorper mauris eget ipsum faucibus accumsan. Mauris non quam orci.' from nums
+option (maxrecursion 32767);

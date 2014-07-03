@@ -15,7 +15,10 @@ describe 'tedious test suite', ->
 			req.query 'delete from tran_test', done
 	
 	it 'stored procedure', (done) ->
-		TESTS['stored procedure'] done
+		TESTS['stored procedure'] done, true
+	
+	it 'stored procedure (stream)', (done) ->
+		TESTS['stored procedure'] done, true, true
 	
 	it 'user defined types', (done) ->
 		TESTS['user defined types'] done
@@ -36,7 +39,10 @@ describe 'tedious test suite', ->
 		TESTS['query with one recordset'] done
 	
 	it 'query with multiple recordsets', (done) ->
-		TESTS['query with multiple recordsets'] done
+		TESTS['query with multiple recordsets'] done, true
+	
+	it 'query with multiple recordsets (stream)', (done) ->
+		TESTS['query with multiple recordsets'] done, true, true
 	
 	it 'query with input parameters', (done) ->
 		TESTS['query with input parameters'] done
@@ -47,8 +53,14 @@ describe 'tedious test suite', ->
 	it 'query with error', (done) ->
 		TESTS['query with error'] done
 	
+	it 'query with error (stream)', (done) ->
+		TESTS['query with error'] done, true
+	
 	it 'query with multiple errors', (done) ->
 		TESTS['query with multiple errors'] done
+	
+	it 'query with multiple errors (stream)', (done) ->
+		TESTS['query with multiple errors'] done, true
 	
 	it 'prepared statement', (done) ->
 		TESTS['prepared statement'] true, done
@@ -167,3 +179,9 @@ describe 'tedious stress', ->
 	
 	it.skip 'concurrent requests', (done) ->
 		TESTS['concurrent requests'] done, 'tedious'
+
+	it.skip 'streaming off', (done) ->
+		TESTS['streaming off'] done, 'tedious'
+	
+	it.skip 'streaming on', (done) ->
+		TESTS['streaming on'] done, 'tedious'

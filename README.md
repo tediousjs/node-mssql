@@ -18,30 +18,11 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 0.5.5 (stable, npm)
+## What's new in 0.6.0 (stable, npm)
 
-- Fix: Failed login left open connection pool
-
-## What's new in 0.5.x
-
-- Updated to new Tedious 0.2.2
-    - Added support for TDS 7.4
-    - Added request cancelation
-    - Added support for UDT, TVP, Time, Date, DateTime2 and DateTimeOffset data types
-    - Numeric, Decimal, SmallMoney and Money are now supported as input parameters
-    - Fixed compatibility with TDS 7.1 (SQL Server 2000)
-    - Minor fixes
-- You can now easily set up types' length/scale (`sql.VarChar(50)`)
-- Serialization of [Geography and Geometry](#geography) CLR types
-- Support for creating [Table-Value Parameters](#tvp) (`var tvp = new sql.Table()`)
-- Output parameters are now Input-Output and can handle initial value
-- Option to choose whether to pass/receive times in UTC or local time
-- Connecting to named instances simplified
-- Default SQL data type for JS String type is now NVarChar (was VarChar)
-- Support for [Prepared Statements](#prepared-statement)
-- Fixed order of output parameters
-- Minor fixes in node-tds driver
-- Multiple errors handling (`err.precedingErrors`)
+- Updated to latest Tedious 1.0.0
+- Added support for [Streaming](#streaming)
+- Added option to set request timeout (`config.requestTimeout = 15000`)
 
 ## Installation
 
@@ -173,6 +154,7 @@ sql.connect(config, function(err) {
 
 ### Other
 
+* [Streaming](#streaming)
 * [Geography and Geometry](#geography)
 * [Table-Valued Parameter](#tvp)
 * [Errors](#errors)
@@ -206,7 +188,9 @@ var config = {
 - **server** - Server to connect to. You can use 'localhost\\instance' to connect to named instance.
 - **port** - Port to connect to (default: `1433`). Don't set when connecting to named instance.
 - **database** - Database to connect to (default: dependent on server configuration).
-- **timeout** - Connection timeout in ms (default: `15000`).
+- **connectionTimeout** - Connection timeout in ms (default: `15000`).
+- **requestTimeout** - Request timeout in ms (default: `15000`).
+- **stream** - Stream recordsets/rows instead of returning them all at once as an argument of callback (default: `false`). You can also enable streaming for each request independently (`request.stream = true`). Always set to `true` if you plan to work with large amount of rows.
 - **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
 - **pool.min** - The minimun of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
@@ -321,9 +305,10 @@ If you omit connection argument, global connection is used instead.
 
 ### Events
 
-- **recordset(recordset)** - Dispatched when new recordset is parsed (and all its rows).
+- **recordset(columns)** - Dispatched when metadata for new recordset are parsed.
 - **row(row)** - Dispatched when new row is parsed.
-- **done(err, recordsets)** - Dispatched when request is complete.
+- **done(returnValue)** - Dispatched when request is complete.
+- **error(err)** - Dispatched on error.
 
 ---------------------------------------
 
@@ -801,6 +786,37 @@ ps.prepare('select @param as value', function(err, recordsets) {
 __Errors__
 - ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
 
+<a name="streaming" />
+## Streaming
+
+If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.
+
+```javascript
+sql.connect(config, function(err) {
+    // ... error checks
+	
+    var request = new sql.Request();
+    request.stream = true; // You can set streaming differently for each request
+    request.query('select * from verylargetable'); // or request.execute(procedure);
+    
+    request.on('recordset', function(columns) {
+    	// Emitted once for each recordset in a query
+    });
+    
+    request.on('row', function(row) {
+    	// Emitted for each row in a recordset
+    });
+    
+    request.on('error', function(err) {
+    	// May be emitted multiple times
+    });
+    
+    request.on('done', function(returnValue) {
+    	// Always emitted as the last one
+    });
+});
+```
+
 <a name="geography" />
 ## Geography and Geometry
 
@@ -835,7 +851,7 @@ Results in:
 <a name="tvp" />
 ## Table-Valued Parameter (TVP)
 
-Supported on SQL Server 2008 and later. Not supported by optional drivers `msnodesql` and `tds`. You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.
+Supported on SQL Server 2008 and later. You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.
 
 ```sql
 CREATE TYPE TestType AS TABLE ( a VARCHAR(50), b INT );
@@ -1044,6 +1060,8 @@ Output for the example above could look similar to this.
 ### msnodesql
 
 - msnodesql 0.2.1 contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
+- msnodesql 0.2.1 doesn't support TVP data type.
+- msnodesql 0.2.1 doesn't support request timeout.
 
 ### node-tds
 
@@ -1054,6 +1072,9 @@ Output for the example above could look similar to this.
 - node-tds 0.1.0 contains bug in selects that doesn't return any values *(select @param = 'value')*.
 - node-tds 0.1.0 doesn't support Binary, VarBinary and Image as parameters.
 - node-tds 0.1.0 always return date/time values in local time.
+- node-tds 0.1.0 has serious problems with MAX types.
+- node-tds 0.1.0 doesn't support TVP data type.
+- node-tds 0.1.0 doesn't support request timeout.
 
 <a name="license" />
 ## License

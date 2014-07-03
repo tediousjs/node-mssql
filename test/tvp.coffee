@@ -13,9 +13,7 @@ describe 'tedious tvp', ->
 	before (done) ->
 		global.DRIVER = 'tedious'
 		
-		sql.connect config()
-			
-		, done
+		sql.connect config(), done
 		
 	it 'new Table', (done) ->
 		tvp = new MSSQLTestType

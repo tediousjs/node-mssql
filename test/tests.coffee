@@ -2,8 +2,9 @@ sql = require '../'
 assert = require "assert"
 
 global.TESTS =
-	'stored procedure': (done, checkmulti = true) ->
+	'stored procedure': (done, checkmulti = true, stream = false) ->
 		request = new sql.Request
+		request.stream = stream
 		request.input 'in', sql.Int, null
 		request.input 'in2', sql.BigInt, 0
 		request.input 'in3', sql.NVarChar, 'anystring'
@@ -15,7 +16,7 @@ global.TESTS =
 		request.output 'out4', sql.DateTime
 		request.output 'out5', sql.Char(10)
 		
-		request.execute '__test', (err, recordsets, returnValue) ->
+		complete = (err, recordsets, returnValue) ->
 			unless err
 				assert.equal returnValue, 11
 				assert.equal recordsets.length, 3
@@ -43,37 +44,29 @@ global.TESTS =
 				assert.equal request.parameters.out3.value, 'D916DD31-5CB3-44A7-83D4-2DD83E40279F'
 				assert.equal request.parameters.out4.value.getTime(), +new Date(1860, 0, 24, 1, 52)
 				assert.equal request.parameters.out5.value, 'anystring '
-				
-				assert.equal rows, 3
-				assert.equal rsts, 3
-				assert.equal doneevent, true
 			
 			done err
+
+		request.execute '__test', complete
 		
-		rsts = 0
-		request.on 'recordset', (recordset) ->
-			switch rsts
-				when 0 then assert.equal recordset.length, 2
-				when 1 then assert.equal recordset.length, 1
-				when 2 then assert.equal recordset.length, 0
-			
-			rsts++
+		rsts = []
+		errs = []
 		
-		rows = 0
-		request.on 'row', (row) ->
-			switch rows
-				when 0 then assert.equal row.a, 1
-				when 1 then assert.equal row.b, 4
-				when 2 then assert.equal row.g, 'anystring'
+		if stream
+			request.on 'recordset', (columns) ->
+				rst = []
+				rst.columns = columns
+				rsts.push rst
 			
-			rows++
-		
-		doneevent = false
-		request.on 'done', (err) ->
-			assert.equal err, null
+			request.on 'row', (row) ->
+				rsts[rsts.length - 1].push row
 			
-			doneevent = true
-	
+			request.on 'error', (err) ->
+				errs.push err
+
+			request.on 'done', (returnValue) ->
+				complete errs.pop(), rsts, returnValue
+
 	'user defined types': (done) ->
 		request = new sql.Request
 		request.query "declare @g geography = geography::[Null];select geography::STGeomFromText('LINESTRING(-122.360 47.656, -122.343 47.656 )', 4326) as geography, geometry::STGeomFromText('LINESTRING (100 100 10.3 12, 20 180, 180 180)', 0) geometry, @g as nullgeography", (err, rst) ->
@@ -181,10 +174,12 @@ global.TESTS =
 
 			done err
 	
-	'query with multiple recordsets': (done, checkmulti) ->
+	'query with multiple recordsets': (done, checkmulti = true, stream = false) ->
 		r = new sql.Request
+		r.stream = stream
 		r.multiple = true
-		r.query 'select 41 as test, 5 as num, 6 as num;select 999 as second', (err, recordsets) ->
+		
+		complete = (err, recordsets) ->
 			unless err
 				assert.equal recordsets.length, 2
 				assert.equal recordsets[0].length, 1
@@ -199,6 +194,26 @@ global.TESTS =
 				assert.equal recordsets[0].columns.test.type, sql.Int
 
 			done err
+		
+		r.query 'select 41 as test, 5 as num, 6 as num;select 999 as second', complete
+		
+		rsts = []
+		errs = []
+		
+		if stream
+			r.on 'recordset', (columns) ->
+				rst = []
+				rst.columns = columns
+				rsts.push rst
+			
+			r.on 'row', (row) ->
+				rsts[rsts.length - 1].push row
+			
+			r.on 'error', (err) ->
+				errs.push err
+
+			r.on 'done', (returnValue) ->
+				complete errs.pop(), rsts, returnValue
 	
 	'query with input parameters': (done) ->
 		r = new sql.Request
@@ -220,16 +235,31 @@ global.TESTS =
 
 			done err
 	
-	'query with error': (done) ->
+	'query with error': (done, stream = false) ->
 		r = new sql.Request
-		r.query 'select * from notexistingtable', (err, recordset) ->
+		r.stream = stream
+		
+		complete = (err, recordset) ->
 			assert.equal err instanceof sql.RequestError, true
 
 			done()
+		
+		r.query 'select * from notexistingtable', complete
+		
+		if stream
+			error = null
+			
+			r.on 'error', (err) ->
+				error = err
+			
+			r.on 'done', ->
+				complete error
 	
-	'query with multiple errors': (done) ->
+	'query with multiple errors': (done, stream = false) ->
 		r = new sql.Request
-		r.query 'select a;select b;', (err, recordset) ->
+		r.stream = stream
+		
+		complete = (err, recordset) ->
 			assert.equal err instanceof sql.RequestError, true
 			assert.equal err.message, 'Invalid column name \'b\'.'
 			assert.equal err.precedingErrors.length, 1
@@ -237,6 +267,20 @@ global.TESTS =
 			assert.equal err.precedingErrors[0].message, 'Invalid column name \'a\'.'
 
 			done()
+		
+		r.query 'select a;select b;', complete
+		
+		if stream
+			errors = []
+			
+			r.on 'error', (err) ->
+				errors.push err
+			
+			r.on 'done', ->
+				error = errors.pop()
+				error.precedingErrors = errors
+				
+				complete error
 	
 	'prepared statement': (decimal, done) ->
 		if decimal
@@ -607,3 +651,39 @@ global.TESTS =
 				r = new sql.Request conn
 				r.query "select 123456 as num, 'asdfasdfasdfasdfasdfasdfasdfasdfasdf' as str", completed
 				requests.push r
+
+	'streaming off': (done, driver) ->
+		@timeout 60000
+		
+		sql.connect require('./_connection')(driver)(requestTimeout: 60000), (err) ->
+			if err then return done err
+			
+			r = new sql.Request
+			r.query 'select * from streaming', (err, recordset) ->
+				if err then return done err
+				
+				console.log "Got #{recordset.length} rows."
+	
+				done()
+
+	'streaming on': (done, driver) ->
+		@timeout 60000
+		
+		rows = 0
+		
+		sql.connect require('./_connection')(driver)(requestTimeout: 60000), (err) ->
+			if err then return done err
+			
+			r = new sql.Request
+			r.stream = true
+			r.query 'select * from streaming'
+			r.on 'error', (err) ->
+				console.error err
+			
+			r.on 'row', (row) ->
+				rows++
+			
+			r.on 'done', ->
+				console.log "Got #{rows} rows."
+	
+				done()

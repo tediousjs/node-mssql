@@ -163,7 +163,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			
 			cfg.options.database ?= config.database
 			cfg.options.port ?= config.port
-			cfg.options.connectTimeout ?= config.timeout ? 15000
+			cfg.options.connectTimeout ?= config.connectionTimeout ? config.timeout ? 15000 # config.timeout deprecated in 0.6.0
+			cfg.options.requestTimeout ?= config.requestTimeout ? 15000
 			cfg.options.tdsVersion ?= '7_4'
 			cfg.options.rowCollectionOnDone = false
 			cfg.options.rowCollectionOnRequestCompletion = false
@@ -259,7 +260,14 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			recordsets = []
 			started = Date.now()
 			errors = []
-			handleError = (err) -> errors.push new RequestError err.message, 'EREQUEST'
+			handleError = (err) =>
+				e = new RequestError err.message, 'EREQUEST'
+				
+				if @stream
+					@emit 'error', e
+				
+				# we must collect errors even in stream mode
+				errors.push e
 			
 			@_acquire (err, connection) =>
 				unless err
@@ -280,7 +288,12 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req = new tds.Request command, (err) =>
 						# to make sure we handle no-sql errors as well
 						if err and err.message isnt errors[errors.length - 1]?.message
-							errors.push RequestError err
+							err = RequestError err
+							
+							if @stream
+								@emit 'error', err
+							
+							errors.push err
 						
 						if @verbose 
 							if errors.length
@@ -290,25 +303,29 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							@doLog " duration: #{elapsed}ms"
 							@doLog "---------- completed ----------"
 
-						if recordset
-							Object.defineProperty recordset, 'columns', 
-								enumerable: false
-								value: columns
-						
 						@_cancel = null
 						
-						if errors.length
+						if errors.length and not @stream
 							error = errors.pop()
 							error.precedingErrors = errors
 						
 						connection.removeListener 'errorMessage', handleError
 						@_release connection
 						
-						callback? error, if @multiple then recordsets else recordsets[0]
+						if @stream
+							callback null, null
+						
+						else
+							callback? error, if @multiple then recordsets else recordsets[0]
 					
 					req.on 'columnMetadata', (metadata) =>
 						for col in metadata
 							columns[col.colName] = col
+						
+						columns = createColumns(columns)
+						
+						if @stream
+							@emit 'recordset', columns
 
 					req.on 'doneInProc', (rowCount, more, rows) =>
 						# this function is called even when select only set variables so we should skip adding a new recordset
@@ -317,15 +334,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						# all rows of current recordset loaded
 						Object.defineProperty recordset, 'columns', 
 							enumerable: false
-							value: createColumns(columns)
+							value: columns
 							
 						Object.defineProperty recordset, 'toTable', 
 							enumerable: false
 							value: -> Table.fromRecordset @
-						
-						@emit 'recordset', recordset
-						
-						recordsets.push recordset
+
+						unless @stream
+							recordsets.push recordset
+							
 						recordset = []
 						columns = {}
 					
@@ -363,7 +380,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						
 						@emit 'row', row
 						
-						recordset.push row
+						unless @stream
+							recordset.push row
 					
 					for name, param of @parameters when param.io is 1
 						if @verbose
@@ -395,7 +413,14 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			returnValue = 0
 			started = Date.now()
 			errors = []
-			handleError = (err) -> errors.push new RequestError err.message, 'EREQUEST'
+			handleError = (err) =>
+				e = new RequestError err.message, 'EREQUEST'
+				
+				if @stream
+					@emit 'error', e
+				
+				# we must collect errors even in stream mode
+				errors.push e
 
 			@_acquire (err, connection) =>
 				unless err
@@ -416,7 +441,12 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req = new tds.Request procedure, (err) =>
 						# to make sure we handle no-sql errors as well
 						if err and err.message isnt errors[errors.length - 1]?.message
-							errors.push RequestError err
+							err = RequestError err
+							
+							if @stream
+								@emit 'error', err
+							
+							errors.push err
 						
 						if @verbose 
 							if errors.length
@@ -429,19 +459,28 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						
 						@_cancel = null
 						
-						if errors.length
+						if errors.length and not @stream
 							error = errors.pop()
 							error.precedingErrors = errors
 						
 						connection.removeListener 'errorMessage', handleError
 						@_release connection
 						
-						recordsets.returnValue = returnValue
-						callback? error, recordsets, returnValue
+						if @stream
+							callback null, null, returnValue
+						
+						else
+							recordsets.returnValue = returnValue
+							callback? error, recordsets, returnValue
 					
 					req.on 'columnMetadata', (metadata) =>
 						for col in metadata
 							columns[col.colName] = col
+						
+						columns = createColumns(columns)
+						
+						if @stream
+							@emit 'recordset', columns
 					
 					req.on 'row', (columns) =>
 						unless recordset
@@ -468,7 +507,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						
 						@emit 'row', row
 						
-						recordset.push row
+						unless @stream
+							recordset.push row
 					
 					req.on 'doneInProc', (rowCount, more, rows) =>
 						# filter empty recordsets when NOCOUNT is OFF
@@ -477,15 +517,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						# all rows of current recordset loaded
 						Object.defineProperty recordset, 'columns', 
 							enumerable: false
-							value: createColumns(columns)
+							value: columns
 							
 						Object.defineProperty recordset, 'toTable', 
 							enumerable: false
 							value: -> Table.fromRecordset @
 						
-						@emit 'recordset', recordset
-						
-						recordsets.push recordset
+						unless @stream
+							recordsets.push recordset
+							
 						recordset = []
 						columns = {}
 					
@@ -493,10 +533,6 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						returnValue = returnStatus
 					
 					req.on 'returnValue', (parameterName, value, metadata) =>
-						# convert binary data type from array to buffer
-						if metadata.type is tds.TYPES.Binary or metadata.type is tds.TYPES.VarBinary or metadata.type is tds.TYPES.Image
-							value = new Buffer value
-							
 						if @verbose
 							if value is tds.TYPES.Null
 								@doLog "   output: @#{parameterName}, null"

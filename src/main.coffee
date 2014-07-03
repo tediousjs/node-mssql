@@ -109,6 +109,7 @@ class Connection extends EventEmitter
 		@config.driver ?= 'tedious'
 		@config.port ?= 1433
 		@config.options ?= {}
+		@config.stream ?= false
 		
 		if /^(.*)\\(.*)$/.exec @config.server
 			@config.server = RegExp.$1
@@ -657,9 +658,10 @@ Class Request.
 @property {Boolean} multiple If `true`, `query` will handle multiple recordsets (`execute` always expect multiple recordsets).
 @property {Boolean} canceled `true` if request was canceled.
 
-@event recordset Dispatched when new recordset is parsed (with all rows).
+@event recordset Dispatched when metadata for new recordset are parsed.
 @event row Dispatched when new row is parsed.
 @event done Dispatched when request is complete.
+@event error Dispatched on error.
 ###
 
 class Request extends EventEmitter
@@ -670,6 +672,7 @@ class Request extends EventEmitter
 	verbose: false
 	multiple: false
 	canceled: false
+	stream: null
 	
 	###
 	Log to a function if assigned. Else, use console.log.
@@ -855,15 +858,26 @@ class Request extends EventEmitter
 
 	query: (command, callback) ->
 		unless @connection
-			return process.nextTick ->
-				callback? new RequestError "No connection is specified for that request.", 'ENOCONN'
+			return process.nextTick =>
+				e = new RequestError "No connection is specified for that request.", 'ENOCONN'
+				
+				if @stream
+					@emit 'error', e
+					@emit 'done'
+					
+				else
+					callback? e
 		
 		@canceled = false
+		@stream ?= @connection.config.stream
 		
 		@connection.driver.Request::query.call @, command, (err, recordset) =>
-			unless err then @emit 'done', err, recordset
+			if @stream
+				if err then @emit 'error', err
+				@emit 'done'
 			
-			callback? err, recordset
+			else
+				callback? err, recordset
 			
 		@
 	
@@ -899,13 +913,25 @@ class Request extends EventEmitter
 	execute: (procedure, callback) ->
 		unless @connection
 			return process.nextTick ->
-				callback? new RequestError "No connection is specified for that request.", 'ENOCONN'
+				e = new RequestError "No connection is specified for that request.", 'ENOCONN'
+				
+				if @stream
+					@emit 'error', e
+					@emit 'done'
+					
+				else
+					callback? e
 		
 		@canceled = false
+		@stream ?= @connection.config.stream
 		
 		@connection.driver.Request::execute.call @, procedure, (err, recordsets, returnValue) =>
-			@emit 'done', err, recordsets
-			callback? err, recordsets, returnValue
+			if @stream
+				if err then @emit 'error', err
+				@emit 'done', returnValue
+			
+			else
+				callback? err, recordsets, returnValue
 			
 		@
 	
