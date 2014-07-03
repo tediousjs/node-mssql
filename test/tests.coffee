@@ -238,19 +238,33 @@ global.TESTS =
 
 			done()
 	
-	'prepared statement': (done) ->
-		ps = new sql.PreparedStatement
-		ps.input 'num', sql.Int
-		ps.input 'num2', sql.Decimal(5, 2)
-		ps.prepare 'select @num as number, @num2 as number2', (err) ->
-			if err then return done err
-			
-			ps.execute {num: 555, num2: 666.77}, (err, recordset) ->
-				assert.equal recordset.length, 1
-				assert.equal recordset[0].number, 555
-				assert.equal recordset[0].number2, 666.77
+	'prepared statement': (decimal, done) ->
+		if decimal
+			ps = new sql.PreparedStatement
+			ps.input 'num', sql.Int
+			ps.input 'num2', sql.Decimal(5, 2)
+			ps.prepare 'select @num as number, @num2 as number2', (err) ->
+				if err then return done err
 				
-				ps.unprepare done
+				ps.execute {num: 555, num2: 666.77}, (err, recordset) ->
+					assert.equal recordset.length, 1
+					assert.equal recordset[0].number, 555
+					assert.equal recordset[0].number2, 666.77
+					
+					ps.unprepare done
+		
+		else
+			# node-tds doesn't support decimal/numeric in PS
+			ps = new sql.PreparedStatement
+			ps.input 'num', sql.Int
+			ps.prepare 'select @num as number', (err) ->
+				if err then return done err
+				
+				ps.execute {num: 555}, (err, recordset) ->
+					assert.equal recordset.length, 1
+					assert.equal recordset[0].number, 555
+					
+					ps.unprepare done
 	
 	'prepared statement in transaction': (done) ->
 		tran = new sql.Transaction
@@ -427,11 +441,7 @@ global.TESTS =
 			done err
 	
 	'login failed': (done, driver, message) ->
-		conn = new sql.Connection
-			user: 'xsp_test'
-			password: 'sweetx'
-			server: '192.168.2.2'
-			driver: driver
+		conn = new sql.Connection require('./_connection')(driver).bad()
 		
 		, (err) ->
 			assert.equal (if message then message.exec(err.message)? else (err instanceof sql.ConnectionError)), true
@@ -556,28 +566,15 @@ global.TESTS =
 					done()
 		
 		for i in [1..peak]
-			c = new sql.Connection
-				user: 'xsp_test'
-				password: 'sweet'
-				server: '192.168.2.2'
-				driver: driver
-				database: 'xsp'
-				
+			c = new sql.Connection require('./_connection')(driver)()
+
 			c.connect connected
 			conns.push c
 	
 	'concurrent requests': (done, driver) ->
 		console.log ""
 		
-		conn = new sql.Connection
-			user: 'xsp_test'
-			password: 'sweet'
-			server: '192.168.2.2'
-			driver: driver
-			database: 'xsp'
-			pool:
-				min: 0
-				max: 50
+		conn = new sql.Connection require('./_connection')(driver)(pool: {min: 0, max: 50})
 		
 		conn.connect (err) ->
 			if err then return done err

@@ -1,5 +1,6 @@
 sql = require '../'
 assert = require "assert"
+config = require('./_connection') 'msnodesql'
 
 connection1 = null
 connection2 = null
@@ -10,15 +11,7 @@ if process.platform.match(/^win/)
 		before (done) ->
 			global.DRIVER = 'msnodesql'
 		
-			sql.connect
-				driver: 'msnodesql'
-				
-				user: 'xsp_test'
-				password: 'sweet'
-				server: '192.168.2.2'
-				database: 'xsp'
-				
-			, (err) ->
+			sql.connect config(), (err) ->
 				if err then return done err
 				
 				req = new sql.Request
@@ -61,7 +54,7 @@ if process.platform.match(/^win/)
 			TESTS['query with multiple errors'] done
 	
 		it 'prepared statement', (done) ->
-			TESTS['prepared statement'] done
+			TESTS['prepared statement'] true, done
 	
 		it 'prepared statement in transaction', (done) ->
 			TESTS['prepared statement in transaction'] done
@@ -85,15 +78,7 @@ if process.platform.match(/^win/)
 		before (done) ->
 			global.DRIVER = 'msnodesql'
 		
-			sql.connect
-				driver: 'msnodesql'
-				
-				user: 'xsp_test'
-				password: 'sweet'
-				server: '192.168.2.2'
-				database: 'xsp'
-				
-			, done
+			sql.connect config(), done
 				
 		it 'time', (done) ->
 			TIMES['time'] done
@@ -138,30 +123,9 @@ if process.platform.match(/^win/)
 
 	describe 'msnodesql multiple connections test suite', ->
 		before (done) ->
-			connection1 = new sql.Connection
-				user: 'xsp_test2'
-				password: 'sweet'
-				server: '192.168.2.2'
-				database: 'xsp'
-				driver: 'msnodesql'
-				
-			, ->
-				connection2 = new sql.Connection
-					user: 'xsp_test3'
-					password: 'sweet'
-					server: '192.168.2.2'
-					database: 'xsp'
-					driver: 'msnodesql'
-					
-				, ->
-					sql.connect
-						user: 'xsp_test'
-						password: 'sweet'
-						server: '192.168.2.2'
-						database: 'xsp'
-						driver: 'msnodesql'
-						
-					, done
+			connection1 = new sql.Connection config.user2(), ->
+				connection2 = new sql.Connection config.user3(), ->
+					sql.connect config(), done
 		
 		it 'connection 1', (done) ->
 			TESTS['connection 1'] done, connection1
@@ -189,25 +153,8 @@ if process.platform.match(/^win/)
 	
 	describe 'msnodesql connection pooling', ->
 		before (done) ->
-			connection1 = new sql.Connection
-				user: 'xsp_test2'
-				password: 'sweet'
-				server: '192.168.2.2'
-				database: 'xsp'
-				driver: 'msnodesql'
-				
-			, ->
-				connection2 = new sql.Connection
-					user: 'xsp_test3'
-					password: 'sweet'
-					server: '192.168.2.2'
-					database: 'xsp'
-					driver: 'msnodesql'
-					
-					pool:
-						max: 1
-				
-				, done
+			connection1 = new sql.Connection config.user2(), ->
+				connection2 = new sql.Connection config.user3(pool: max: 1), done
 			
 		it 'max 10', (done) ->
 			TESTS['max 10'] done, connection1

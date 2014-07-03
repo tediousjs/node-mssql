@@ -1,5 +1,6 @@
 sql = require '../'
 assert = require 'assert'
+config = require('./_connection') 'tedious'
 
 class MSSQLTestType extends sql.Table
 	constructor: ->
@@ -12,18 +13,7 @@ describe 'tedious tvp', ->
 	before (done) ->
 		global.DRIVER = 'tedious'
 		
-		sql.connect
-			user: 'xsp_test'
-			password: 'sweet'
-			server: '192.168.2.2'
-			database: 'xsp'
-			options:
-				tdsVersion: '7_4'
-				debug:
-					packet: false
-					token: false
-					data: false
-					payload: false
+		sql.connect config()
 			
 		, done
 		

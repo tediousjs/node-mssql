@@ -78,6 +78,24 @@ end
 
 go
 
+create type [dbo].[MSSQLTestType] as table(
+	[a] [varchar](50) null,
+	[b] [integer] null
+)
+
+go
+
+create procedure [dbo].[__test7]
+	@tvp MSSQLTestType readonly
+as
+begin
+
+	select * from @tvp
+
+end
+
+go
+
 create table [dbo].[tran_test] (
 	data varchar(50) not null
 )

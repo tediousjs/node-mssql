@@ -3,3 +3,4 @@ node_modules
 .svn
 .coffeemaker
 /lib/*.js
+/test/_connection.coffee

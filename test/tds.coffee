@@ -1,5 +1,6 @@
 sql = require '../'
 assert = require "assert"
+config = require('./_connection') 'tds'
 
 connection1 = null
 connection2 = null
@@ -8,14 +9,7 @@ describe 'node-tds test suite', ->
 	before (done) ->
 		global.DRIVER = 'tds'
 		
-		sql.connect
-			user: 'xsp_test'
-			password: 'sweet'
-			server: '192.168.2.2'
-			database: 'xsp'
-			driver: 'tds'
-			
-		, (err) ->
+		sql.connect config(), (err) ->
 			if err then return done err
 			
 			req = new sql.Request
@@ -60,7 +54,7 @@ describe 'node-tds test suite', ->
 		TESTS['query with multiple errors'] done
 	
 	it 'prepared statement', (done) ->
-		TESTS['prepared statement'] done
+		TESTS['prepared statement'] false, done
 	
 	it 'prepared statement in transaction', (done) ->
 		TESTS['prepared statement in transaction'] done
@@ -84,14 +78,7 @@ describe 'tds dates and times', ->
 	before (done) ->
 		global.DRIVER = 'tds'
 		
-		sql.connect
-			user: 'xsp_test'
-			password: 'sweet'
-			server: '192.168.2.2'
-			database: 'xsp'
-			driver: 'tds'
-			
-		, done
+		sql.connect config(), done
 			
 	it.skip 'time (not supported by node-tds)', (done) ->
 		TIMES['time'] done
@@ -134,30 +121,9 @@ describe 'tds dates and times', ->
 
 describe 'tds multiple connections test suite', ->
 	before (done) ->
-		connection1 = new sql.Connection
-			user: 'xsp_test2'
-			password: 'sweet'
-			server: '192.168.2.2'
-			database: 'xsp'
-			driver: 'tds'
-			
-		, ->
-			connection2 = new sql.Connection
-				user: 'xsp_test3'
-				password: 'sweet'
-				server: '192.168.2.2'
-				database: 'xsp'
-				driver: 'tds'
-				
-			, ->
-				sql.connect
-					user: 'xsp_test'
-					password: 'sweet'
-					server: '192.168.2.2'
-					database: 'xsp'
-					driver: 'tds'
-					
-				, done
+		connection1 = new sql.Connection config.user2(), ->
+			connection2 = new sql.Connection config.user3(), ->
+				sql.connect config(), done
 	
 	it 'connection 1', (done) ->
 		TESTS['connection 1'] done, connection1
@@ -185,25 +151,8 @@ describe 'tds connection errors', ->
 
 describe 'tds connection pooling', ->
 	before (done) ->
-		connection1 = new sql.Connection
-			user: 'xsp_test2'
-			password: 'sweet'
-			server: '192.168.2.2'
-			database: 'xsp'
-			driver: 'tds'
-			
-		, ->
-			connection2 = new sql.Connection
-				user: 'xsp_test3'
-				password: 'sweet'
-				server: '192.168.2.2'
-				database: 'xsp'
-				driver: 'tds'
-				
-				pool:
-					max: 1
-			
-			, done
+		connection1 = new sql.Connection config.user2(), ->
+			connection2 = new sql.Connection config.user3(pool: max: 1), done
 		
 	it 'max 10', (done) ->
 		TESTS['max 10'] done, connection1

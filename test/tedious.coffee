@@ -1,4 +1,5 @@
 sql = require '../'
+config = require('./_connection') 'tedious'
 
 connection1 = null
 connection2 = null
@@ -7,20 +8,7 @@ describe 'tedious test suite', ->
 	before (done) ->
 		global.DRIVER = 'tedious'
 		
-		sql.connect
-			user: 'xsp_test'
-			password: 'sweet'
-			server: '192.168.2.2'
-			database: 'xsp'
-			options:
-				tdsVersion: '7_4'
-				debug:
-					packet: true
-					token: true
-					data: true
-					payload: true
-			
-		, (err) ->
+		sql.connect config(), (err) ->
 			if err then return done err
 			
 			req = new sql.Request
@@ -63,7 +51,7 @@ describe 'tedious test suite', ->
 		TESTS['query with multiple errors'] done
 	
 	it 'prepared statement', (done) ->
-		TESTS['prepared statement'] done
+		TESTS['prepared statement'] true, done
 	
 	it 'prepared statement in transaction', (done) ->
 		TESTS['prepared statement in transaction'] done
@@ -87,20 +75,7 @@ describe 'tedious dates and times', ->
 	before (done) ->
 		global.DRIVER = 'tedious'
 		
-		sql.connect
-			user: 'xsp_test'
-			password: 'sweet'
-			server: '192.168.2.2'
-			database: 'xsp'
-			options:
-				tdsVersion: '7_4'
-				debug:
-					packet: false
-					token: false
-					data: false
-					payload: false
-			
-		, done
+		sql.connect config(), done
 			
 	it 'time', (done) ->
 		TIMES['time'] done
@@ -143,27 +118,9 @@ describe 'tedious dates and times', ->
 
 describe 'tedious multiple connections test suite', ->
 	before (done) ->
-		connection1 = new sql.Connection
-			user: 'xsp_test2'
-			password: 'sweet'
-			server: '192.168.2.2'
-			database: 'xsp'
-			
-		, ->
-			connection2 = new sql.Connection
-				user: 'xsp_test3'
-				password: 'sweet'
-				server: '192.168.2.2'
-				database: 'xsp'
-				
-			, ->
-				sql.connect
-					user: 'xsp_test'
-					password: 'sweet'
-					server: '192.168.2.2'
-					database: 'xsp'
-					
-				, done
+		connection1 = new sql.Connection config.user2(), ->
+			connection2 = new sql.Connection config.user3(), ->
+				sql.connect config(), done
 	
 	it 'connection 1', (done) ->
 		TESTS['connection 1'] done, connection1
@@ -191,23 +148,8 @@ describe 'tedious connection errors', ->
 
 describe 'tedious connection pooling', ->
 	before (done) ->
-		connection1 = new sql.Connection
-			user: 'xsp_test2'
-			password: 'sweet'
-			server: '192.168.2.2'
-			database: 'xsp'
-			
-		, ->
-			connection2 = new sql.Connection
-				user: 'xsp_test3'
-				password: 'sweet'
-				server: '192.168.2.2'
-				database: 'xsp'
-				
-				pool:
-					max: 1
-			
-			, done
+		connection1 = new sql.Connection config.user2(), ->
+			connection2 = new sql.Connection config.user3(pool: max: 1), done
 		
 	it 'max 10', (done) ->
 		TESTS['max 10'] done, connection1
