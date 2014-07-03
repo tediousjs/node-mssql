@@ -169,9 +169,17 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			cfg.options.rowCollectionOnDone = false
 			cfg.options.rowCollectionOnRequestCompletion = false
 			cfg.options.useColumnNames = false
+			cfg.options.appName ?= 'node-mssql'
 			
 			# tedious always connect via tcp when port is specified
 			if cfg.options.instanceName then delete cfg.options.port
+			
+			if config.debug
+				cfg.options.debug =
+					packet: true
+					token: true
+					data: true
+					payload: true
 
 			cfg_pool =
 				name: 'mssql'
@@ -186,7 +194,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						if err then return callback err, null # there must be a second argument null
 						callback null, c
 					
-					#c.on 'debug', (msg) -> @doLog msg
+					if config.debug
+						c.on 'debug', (msg) => @_debug msg
 
 				validate: (c) ->
 					c? and !c.closed
@@ -271,15 +280,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			
 			@_acquire (err, connection) =>
 				unless err
-					if @verbose then @doLog "---------- sql query ----------\n    query: #{command}"
+					if @verbose then @_log "---------- sql query ----------\n    query: #{command}"
 
 					if @canceled
-						if @verbose then @doLog "---------- canceling ----------"
+						if @verbose then @_log "---------- canceling ----------"
 						@_release connection
 						return callback? new RequestError "Canceled.", 'ECANCEL'
 					
 					@_cancel = =>
-						if @verbose then @doLog "---------- canceling ----------"
+						if @verbose then @_log "---------- canceling ----------"
 						connection.cancel()
 					
 					# attach handler to handle multiple error messages
@@ -297,11 +306,11 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						
 						if @verbose 
 							if errors.length
-								@doLog "    error: #{error}" for error in errors
+								@_log "    error: #{error}" for error in errors
 							
 							elapsed = Date.now() - started
-							@doLog " duration: #{elapsed}ms"
-							@doLog "---------- completed ----------"
+							@_log " duration: #{elapsed}ms"
+							@_log "---------- completed ----------"
 
 						@_cancel = null
 						
@@ -349,9 +358,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req.on 'returnValue', (parameterName, value, metadata) =>
 						if @verbose
 							if value is tds.TYPES.Null
-								@doLog "   output: @#{parameterName}, null"
+								@_log "   output: @#{parameterName}, null"
 							else
-								@doLog "   output: @#{parameterName}, #{@parameters[parameterName].type.declaration.toLowerCase()}, #{value}"
+								@_log "   output: @#{parameterName}, #{@parameters[parameterName].type.declaration.toLowerCase()}, #{value}"
 								
 						@parameters[parameterName].value = if value is tds.TYPES.Null then null else value
 					
@@ -375,8 +384,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 								row[col.metadata.colName] = col.value
 						
 						if @verbose
-							@doLog util.inspect(row)
-							@doLog "---------- --------------------"
+							@_log util.inspect(row)
+							@_log "---------- --------------------"
 						
 						@emit 'row', row
 						
@@ -386,16 +395,16 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					for name, param of @parameters when param.io is 1
 						if @verbose
 							if param.value is tds.TYPES.Null
-								@doLog "    input: @#{param.name}, null"
+								@_log "    input: @#{param.name}, null"
 							else
-								@doLog "    input: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
+								@_log "    input: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
 						
 						req.addParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 					
 					for name, param of @parameters when param.io is 2
 						req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 					
-					if @verbose then @doLog "---------- response -----------"
+					if @verbose then @_log "---------- response -----------"
 					connection.execSql req
 				
 				else
@@ -424,15 +433,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 
 			@_acquire (err, connection) =>
 				unless err
-					if @verbose then @doLog "---------- sql execute --------\n     proc: #{procedure}"
+					if @verbose then @_log "---------- sql execute --------\n     proc: #{procedure}"
 					
 					if @canceled
-						if @verbose then @doLog "---------- canceling ----------"
+						if @verbose then @_log "---------- canceling ----------"
 						@_release connection
 						return callback? new RequestError "Canceled.", 'ECANCEL'
 					
 					@_cancel = =>
-						if @verbose then @doLog "---------- canceling ----------"
+						if @verbose then @_log "---------- canceling ----------"
 						connection.cancel()
 					
 					# attach handler to handle multiple error messages
@@ -450,12 +459,12 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						
 						if @verbose 
 							if errors.length
-								@doLog "    error: #{error}" for error in errors
+								@_log "    error: #{error}" for error in errors
 							
 							elapsed = Date.now() - started
-							@doLog "   return: #{returnValue}"
-							@doLog " duration: #{elapsed}ms"
-							@doLog "---------- completed ----------"
+							@_log "   return: #{returnValue}"
+							@_log " duration: #{elapsed}ms"
+							@_log "---------- completed ----------"
 						
 						@_cancel = null
 						
@@ -502,8 +511,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 								row[col.metadata.colName] = col.value
 						
 						if @verbose
-							@doLog util.inspect(row)
-							@doLog "---------- --------------------"
+							@_log util.inspect(row)
+							@_log "---------- --------------------"
 						
 						@emit 'row', row
 						
@@ -535,25 +544,25 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req.on 'returnValue', (parameterName, value, metadata) =>
 						if @verbose
 							if value is tds.TYPES.Null
-								@doLog "   output: @#{parameterName}, null"
+								@_log "   output: @#{parameterName}, null"
 							else
-								@doLog "   output: @#{parameterName}, #{@parameters[parameterName].type.declaration.toLowerCase()}, #{value}"
+								@_log "   output: @#{parameterName}, #{@parameters[parameterName].type.declaration.toLowerCase()}, #{value}"
 								
 						@parameters[parameterName].value = if value is tds.TYPES.Null then null else value
 					
 					for name, param of @parameters
 						if @verbose
 							if param.value is tds.TYPES.Null
-								@doLog "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, null"
+								@_log "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, null"
 							else
-								@doLog "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
+								@_log "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
 						
 						if param.io is 1
 							req.addParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 						else
 							req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 
-					if @verbose then @doLog "---------- response -----------"
+					if @verbose then @_log "---------- response -----------"
 					connection.callProcedure req
 				
 				else

@@ -198,15 +198,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 
 	class MsnodesqlRequest extends Request
 		query: (command, callback) ->
-			if @verbose and not @nested then @doLog "---------- sql query ----------\n    query: #{command}"
+			if @verbose and not @nested then @_log "---------- sql query ----------\n    query: #{command}"
 			
 			if command.length is 0
 				return process.nextTick ->
 					if @verbose and not @nested
-						@doLog "---------- response -----------"
+						@_log "---------- response -----------"
 						elapsed = Date.now() - started
-						@doLog " duration: #{elapsed}ms"
-						@doLog "---------- completed ----------"
+						@_log " duration: #{elapsed}ms"
+						@_log "---------- completed ----------"
 		
 					callback? null, if @multiple or @nested then [] else null
 			
@@ -231,13 +231,13 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			@_acquire (err, connection) =>
 				unless err
 					req = connection.queryRaw command, (castParameter(param.value, param.type) for name, param of @parameters when param.io is 1)
-					if @verbose and not @nested then @doLog "---------- response -----------"
+					if @verbose and not @nested then @_log "---------- response -----------"
 					
 					req.on 'meta', (metadata) =>
 						if row
 							if @verbose
-								@doLog util.inspect(row)
-								@doLog "---------- --------------------"
+								@_log util.inspect(row)
+								@_log "---------- --------------------"
 
 							unless row["___return___"]?
 								# row with ___return___ col is the last row
@@ -260,8 +260,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req.on 'row', (rownumber) =>
 						if row
 							if @verbose
-								@doLog util.inspect(row)
-								@doLog "---------- --------------------"
+								@_log util.inspect(row)
+								@_log "---------- --------------------"
 
 							unless row["___return___"]?
 								# row with ___return___ col is the last row
@@ -289,9 +289,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req.once 'error', (err) =>
 						if @verbose and not @nested
 							elapsed = Date.now() - started
-							@doLog "    error: #{err}"
-							@doLog " duration: #{elapsed}ms"
-							@doLog "---------- completed ----------"
+							@_log "    error: #{err}"
+							@_log " duration: #{elapsed}ms"
+							@_log "---------- completed ----------"
 							
 						callback? RequestError err
 					
@@ -299,8 +299,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						unless @nested
 							if row
 								if @verbose
-									@doLog util.inspect(row)
-									@doLog "---------- --------------------"
+									@_log util.inspect(row)
+									@_log "---------- --------------------"
 								
 								unless row["___return___"]?
 									# row with ___return___ col is the last row
@@ -314,12 +314,12 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 									param.value = last[param.name]
 				
 									if @verbose
-										@doLog "   output: @#{param.name}, #{param.type.declaration}, #{param.value}"
+										@_log "   output: @#{param.name}, #{param.type.declaration}, #{param.value}"
 							
 							if @verbose
 								elapsed = Date.now() - started
-								@doLog " duration: #{elapsed}ms"
-								@doLog "---------- completed ----------"
+								@_log " duration: #{elapsed}ms"
+								@_log "---------- completed ----------"
 
 						@_release connection
 						
@@ -334,7 +334,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					callback? err
 	
 		execute: (procedure, callback) ->
-			if @verbose then @doLog "---------- sql execute --------\n     proc: #{procedure}"
+			if @verbose then @_log "---------- sql execute --------\n     proc: #{procedure}"
 	
 			started = Date.now()
 			
@@ -344,7 +344,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			spp = []
 			for name, param of @parameters
 				if @verbose
-					@doLog "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, #{param.type.declaration}, #{param.value}"
+					@_log "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, #{param.type.declaration}, #{param.value}"
 						
 				if param.io is 2
 					# output parameter
@@ -356,7 +356,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			cmd += "#{spp.join ', '};"
 			cmd += "select #{['@___return___ as \'___return___\''].concat("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2).join ', '};"
 			
-			if @verbose then @doLog "---------- response -----------"
+			if @verbose then @_log "---------- response -----------"
 			
 			@nested = true
 			
@@ -367,9 +367,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				if err
 					if @verbose
 						elapsed = Date.now() - started
-						@doLog "    error: #{err}"
-						@doLog " duration: #{elapsed}ms"
-						@doLog "---------- completed ----------"
+						@_log "    error: #{err}"
+						@_log " duration: #{elapsed}ms"
+						@_log "---------- completed ----------"
 					
 					callback? err
 				
@@ -386,13 +386,13 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							param.value = last[param.name]
 		
 							if @verbose
-								@doLog "   output: @#{param.name}, #{param.type.declaration}, #{param.value}"
+								@_log "   output: @#{param.name}, #{param.type.declaration}, #{param.value}"
 		
 					if @verbose
 						elapsed = Date.now() - started
-						@doLog "   return: #{returnValue}"
-						@doLog " duration: #{elapsed}ms"
-						@doLog "---------- completed ----------"
+						@_log "   return: #{returnValue}"
+						@_log " duration: #{elapsed}ms"
+						@_log "---------- completed ----------"
 					
 					if @stream
 						callback null, null, returnValue

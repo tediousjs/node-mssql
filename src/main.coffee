@@ -1,5 +1,6 @@
 {EventEmitter} = require 'events'
 util = require 'util'
+fs = require 'fs'
 
 {TYPES, declare} = require('./datatypes')
 ISOLATION_LEVEL = require('./isolationlevel')
@@ -132,6 +133,13 @@ class Connection extends EventEmitter
 		if callback then @connect callback
 	
 	###
+	Write message to debug stream.
+	###
+	
+	_debug: (msg) ->
+		@_debugStream?.write "#{String(msg).replace(/\x1B\[[0-9;]*m/g, '')}\n"
+	
+	###
 	Initializes driver for this connection. Separated from constructor and used by co-mssql.
 	
 	@private
@@ -168,17 +176,40 @@ class Connection extends EventEmitter
 				callback err
 			else
 				throw err
-		
-		@connecting = true
-		@driver.Connection::connect.call @, @config, (err) =>
-			unless @connecting then return
-			
-			@connecting = false
-			unless err
-				@connected = true
-				@emit 'connect'
 				
-			callback? err
+		go = =>
+			@connecting = true
+			@driver.Connection::connect.call @, @config, (err) =>
+				unless @connecting then return
+				
+				@connecting = false
+				if err
+					if @_debugStream
+						@_debugStream.removeAllListeners()
+						@_debugStream.end()
+						@_debugStream = null
+				
+				else
+					@connected = true
+					@emit 'connect'
+					
+				callback? err
+
+		if @config.debug
+			@_debugStream = fs.createWriteStream "./mssql_debug_#{Date.now()}.log"
+			@_debugStream.once 'open', go
+			@_debugStream.on 'error', (err) ->
+				if @connecting or @connected
+					# error after successful open
+					console.error err.stack
+				
+				else
+					@_debugStream.removeListener 'open', go
+					
+					callback? new ConnectionError("Failed to open debug stream. #{err.message}", 'EDEBUG')
+		
+		else
+			go()
 		
 		@
 
@@ -192,6 +223,11 @@ class Connection extends EventEmitter
 	###
 	
 	close: (callback) ->
+		if @_debugStream
+			@_debugStream.removeAllListeners()
+			@_debugStream.end()
+			@_debugStream = null
+			
 		if @connecting
 			@connecting = false
 			
@@ -673,13 +709,6 @@ class Request extends EventEmitter
 	multiple: false
 	canceled: false
 	stream: null
-	
-	###
-	Log to a function if assigned. Else, use console.log.
-	###
-
-	doLog: (out) ->
-		if @logger and typeof @logger == "function" then @logger out else console.log out
 
 	###
 	Create new Request.
@@ -703,6 +732,13 @@ class Request extends EventEmitter
 			@connection = global_connection
 		
 		@parameters = {}
+	
+	###
+	Log to a function if assigned. Else, use console.log.
+	###
+
+	_log: (out) ->
+		if typeof @logger is "function" then @logger out else console.log out
 	
 	###
 	Acquire connection for this request from connection.

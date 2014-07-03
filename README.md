@@ -112,6 +112,50 @@ sql.connect(config, function(err) {
 });
 ```
 
+<a name="streaming" />
+## Streaming example with one global connection
+
+If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.
+
+```javascript
+var sql = require('mssql'); 
+
+var config = {
+    user: '...',
+    password: '...',
+    server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
+    database: '...',
+    
+    options: {
+        encrypt: true // Use this if you're on Windows Azure
+    }
+}
+
+sql.connect(config, function(err) {
+    // ... error checks
+	
+    var request = new sql.Request();
+    request.stream = true; // You can set streaming differently for each request
+    request.query('select * from verylargetable'); // or request.execute(procedure);
+    
+    request.on('recordset', function(columns) {
+    	// Emitted once for each recordset in a query
+    });
+    
+    request.on('row', function(row) {
+    	// Emitted for each row in a recordset
+    });
+    
+    request.on('error', function(err) {
+    	// May be emitted multiple times
+    });
+    
+    request.on('done', function(returnValue) {
+    	// Always emitted as the last one
+    });
+});
+```
+
 ## Documentation
 
 ### Configuration
@@ -154,7 +198,6 @@ sql.connect(config, function(err) {
 
 ### Other
 
-* [Streaming](#streaming)
 * [Geography and Geometry](#geography)
 * [Table-Valued Parameter](#tvp)
 * [Errors](#errors)
@@ -202,6 +245,7 @@ var config = {
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
 - **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`) Encryption support is experimental.
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_1`, `7_2`, `7_3_A`, `7_3_B`, `7_4`).
+- **options.appName** - Application name used for SQL server logging.
 
 More information about Tedious specific options: http://pekim.github.io/tedious/api-connection.html
 
@@ -785,37 +829,6 @@ ps.prepare('select @param as value', function(err, recordsets) {
 
 __Errors__
 - ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
-
-<a name="streaming" />
-## Streaming
-
-If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.
-
-```javascript
-sql.connect(config, function(err) {
-    // ... error checks
-	
-    var request = new sql.Request();
-    request.stream = true; // You can set streaming differently for each request
-    request.query('select * from verylargetable'); // or request.execute(procedure);
-    
-    request.on('recordset', function(columns) {
-    	// Emitted once for each recordset in a query
-    });
-    
-    request.on('row', function(row) {
-    	// Emitted for each row in a recordset
-    });
-    
-    request.on('error', function(err) {
-    	// May be emitted multiple times
-    });
-    
-    request.on('done', function(returnValue) {
-    	// Always emitted as the last one
-    });
-});
-```
 
 <a name="geography" />
 ## Geography and Geometry
