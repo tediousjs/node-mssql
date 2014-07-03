@@ -256,7 +256,7 @@ var connection = new sql.Connection({ /* config */ });
 ```
 
 __Errors__
-- **EDRIVER** (`ConnectionError`) - Unknown driver.
+- EDRIVER (`ConnectionError`) - Unknown driver.
 
 ### Events
 
@@ -290,12 +290,12 @@ connection.connect(function(err) {
 ```
 
 __Errors__
-- **ELOGIN** (`ConnectionError`) - Login failed.
-- **ETIMEOUT** (`ConnectionError`) - Connection timeout.
-- **EALREADYCONNECTED** (`ConnectionError`) - Database is already connected!
-- **EALREADYCONNECTING** (`ConnectionError`) - Already connecting to database!
-- **EINSTLOOKUP** (`ConnectionError`) - Instance lookup failed.
-- **ESOCKET** (`ConnectionError`) - Socket error.
+- ELOGIN (`ConnectionError`) - Login failed.
+- ETIMEOUT (`ConnectionError`) - Connection timeout.
+- EALREADYCONNECTED (`ConnectionError`) - Database is already connected!
+- EALREADYCONNECTING (`ConnectionError`) - Already connecting to database!
+- EINSTLOOKUP (`ConnectionError`) - Instance lookup failed.
+- ESOCKET (`ConnectionError`) - Socket error.
 
 ---------------------------------------
 
@@ -358,12 +358,12 @@ request.execute('procedure_name', function(err, recordsets, returnValue) {
 ```
 
 __Errors__
-- **EREQUEST** (`RequestError`) - *Message from SQL Server*
-- **ECANCEL** (`RequestError`) - Canceled.
-- **ETIMEOUT** (`RequestError`) - Request timeout.
-- **ENOCONN** (`RequestError`) - No connection is specified for that request.
-- **ENOTOPEN** (`ConnectionError`) - Connection not yet open.
-- **ENOTBEGUN** (`TransactionError`) - Transaction has not begun.
+- EREQUEST (`RequestError`) - *Message from SQL Server*
+- ECANCEL (`RequestError`) - Canceled.
+- ETIMEOUT (`RequestError`) - Request timeout.
+- ENOCONN (`RequestError`) - No connection is specified for that request.
+- ENOTOPEN (`ConnectionError`) - Connection not yet open.
+- ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 
 ---------------------------------------
 
@@ -409,7 +409,7 @@ sql.map.register(Number, sql.BigInt);
 ```
 
 __Errors__
-- **EARGS** (`RequestError`) - Invalid number of arguments.
+- EARGS (`RequestError`) - Invalid number of arguments.
 
 ---------------------------------------
 
@@ -457,12 +457,12 @@ request.query('select 1 as number', function(err, recordset) {
 ```
 
 __Errors__
-- **ETIMEOUT** (`RequestError`) - Request timeout.
-- **EREQUEST** (`RequestError`) - *Message from SQL Server*
-- **ECANCEL** (`RequestError`) - Canceled.
-- **ENOCONN** (`RequestError`) - No connection is specified for that request.
-- **ENOTOPEN** (`ConnectionError`) - Connection not yet open.
-- **ENOTBEGUN** (`TransactionError`) - Transaction has not begun.
+- ETIMEOUT (`RequestError`) - Request timeout.
+- EREQUEST (`RequestError`) - *Message from SQL Server*
+- ECANCEL (`RequestError`) - Canceled.
+- ENOCONN (`RequestError`) - No connection is specified for that request.
+- ENOTOPEN (`ConnectionError`) - Connection not yet open.
+- ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 
 You can enable multiple recordsets in queries with the `request.multiple = true` command.
 
@@ -561,8 +561,8 @@ transaction.begin(function(err) {
 ```
 
 __Errors__
-- **ENOTOPEN** (`ConnectionError`) - Connection not yet open.
-- **EALREADYBEGUN** (`TransactionError`) - Transaction has already begun.
+- ENOTOPEN (`ConnectionError`) - Connection not yet open.
+- EALREADYBEGUN (`TransactionError`) - Transaction has already begun.
 
 ---------------------------------------
 
@@ -589,8 +589,8 @@ transaction.begin(function(err) {
 ```
 
 __Errors__
-- **ENOTBEGUN** (`TransactionError`) - Transaction has not begun.
-- **EREQINPROG** (`TransactionError`) - Can't commit transaction. There is a request in progress.
+- ENOTBEGUN (`TransactionError`) - Transaction has not begun.
+- EREQINPROG (`TransactionError`) - Can't commit transaction. There is a request in progress.
 
 ---------------------------------------
 
@@ -617,8 +617,8 @@ transaction.begin(function(err) {
 ```
 
 __Errors__
-- **ENOTBEGUN** (`TransactionError`) - Transaction has not begun.
-- **EREQINPROG** (`TransactionError`) - Can't rollback transaction. There is a request in progress.
+- ENOTBEGUN (`TransactionError`) - Transaction has not begun.
+- EREQINPROG (`TransactionError`) - Can't rollback transaction. There is a request in progress.
 
 <a name="prepared-statement" />
 ## PreparedStatement
@@ -674,7 +674,7 @@ ps.input('input_parameter', sql.VarChar(50));
 ```
 
 __Errors__
-- **EARGS** (`PreparedStatementError`) - Invalid number of arguments.
+- EARGS (`PreparedStatementError`) - Invalid number of arguments.
 
 ---------------------------------------
 
@@ -696,7 +696,7 @@ ps.output('output_parameter', sql.VarChar(50));
 ```
 
 __Errors__
-- **EARGS** (`PreparedStatementError`) - Invalid number of arguments.
+- EARGS (`PreparedStatementError`) - Invalid number of arguments.
 
 ---------------------------------------
 
@@ -720,9 +720,9 @@ ps.prepare('select @param as value', function(err) {
 ```
 
 __Errors__
-- **ENOTOPEN** (`ConnectionError`) - Connection not yet open.
-- **EALREADYPREPARED** (`PreparedStatementError`) - Statement is already prepared.
-- **ENOTBEGUN** (`TransactionError`) - Transaction has not started.
+- ENOTOPEN (`ConnectionError`) - Connection not yet open.
+- EALREADYPREPARED (`PreparedStatementError`) - Statement is already prepared.
+- ENOTBEGUN (`TransactionError`) - Transaction has not started.
 
 ---------------------------------------
 
@@ -770,7 +770,7 @@ ps.prepare('select @param as value', function(err) {
 ```
 
 __Errors__
-- **ENOTPREPARED** (`PreparedStatementError`) - Statement is not prepared.
+- ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
 
 ---------------------------------------
 
@@ -799,7 +799,7 @@ ps.prepare('select @param as value', function(err, recordsets) {
 ```
 
 __Errors__
-- **ENOTPREPARED** (`PreparedStatementError`) - Statement is not prepared.
+- ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
 
 <a name="geography" />
 ## Geography and Geometry
@@ -894,28 +894,25 @@ Each known error has `code` property.
 
 Type | Code | Description
 :--- | :--- | :---
-`ConnectionError` | **ELOGIN** | Login failed.
-`ConnectionError` | **ETIMEOUT** | Connection timeout.
-`ConnectionError` | **EDRIVER** | Unknown driver.
-`ConnectionError` | **EALREADYCONNECTED** | Database is already connected!
-`ConnectionError` | **EALREADYCONNECTING** | Already connecting to database!
-`ConnectionError` | **ENOTOPEN** | Connection not yet open.
-`ConnectionError` | **EINSTLOOKUP** | Instance lookup failed.
-`ConnectionError` | **ESOCKET** | Scoket error.
-
-`TransactionError` | **ENOTBEGUN** | Transaction has not begun.
-`TransactionError` | **EALREADYBEGUN** | Transaction has already begun.
-`TransactionError` | **EREQINPROG** | Can't commit/rollback transaction. There is a request in progress.
-
-`RequestError` | **EREQUEST** | *Message from SQL Server*
-`RequestError` | **ECANCEL** | Canceled.
-`RequestError` | **ETIMEOUT** | Request timeout.
-`RequestError` | **EARGS** | Invalid number of arguments.
-`RequestError` | **ENOCONN** | No connection is specified for that request.
-
-`PreparedStatementError` | **EARGS** | Invalid number of arguments.
-`PreparedStatementError` | **EALREADYPREPARED** | Statement is already prepared.
-`PreparedStatementError` | **ENOTPREPARED** | Statement is not prepared.
+`ConnectionError` | ELOGIN | Login failed.
+`ConnectionError` | ETIMEOUT | Connection timeout.
+`ConnectionError` | EDRIVER | Unknown driver.
+`ConnectionError` | EALREADYCONNECTED | Database is already connected!
+`ConnectionError` | EALREADYCONNECTING | Already connecting to database!
+`ConnectionError` | ENOTOPEN | Connection not yet open.
+`ConnectionError` | EINSTLOOKUP | Instance lookup failed.
+`ConnectionError` | ESOCKET | Scoket error.
+`TransactionError` | ENOTBEGUN | Transaction has not begun.
+`TransactionError` | EALREADYBEGUN | Transaction has already begun.
+`TransactionError` | EREQINPROG | Can't commit/rollback transaction. There is a request in progress.
+`RequestError` | EREQUEST | *Message from SQL Server*
+`RequestError` | ECANCEL | Canceled.
+`RequestError` | ETIMEOUT | Request timeout.
+`RequestError` | EARGS | Invalid number of arguments.
+`RequestError` | ENOCONN | No connection is specified for that request.
+`PreparedStatementError` | EARGS | Invalid number of arguments.
+`PreparedStatementError` | EALREADYPREPARED | Statement is already prepared.
+`PreparedStatementError` | ENOTPREPARED | Statement is not prepared.
 
 <a name="meta" />
 ## Metadata
