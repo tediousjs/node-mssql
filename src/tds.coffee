@@ -157,7 +157,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					tmr = setTimeout ->
 						timeouted = true
 						c._client._socket.destroy()
-						callback new ConnectionError "Connection timeout.", null # there must be a second argument null
+						callback new ConnectionError("Connection timeout.", 'ETIMEOUT'), null # there must be a second argument null
 						
 					, config.timeout ? 15000
 

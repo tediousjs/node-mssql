@@ -348,7 +348,7 @@ class PreparedStatement extends EventEmitter
 	
 	prepare: (statement, callback) ->
 		if @_pooledConnection
-			callback? new PreparedStatementError "Statement is already prepared."
+			callback? new PreparedStatementError "Statement is already prepared.", 'EALREADYPREPARED'
 			return @
 		
 		if typeof statement is 'function'
@@ -382,7 +382,7 @@ class PreparedStatement extends EventEmitter
 		
 		if @transaction
 			unless @transaction._pooledConnection
-				callback? new PreparedStatementError "Transaction has not started. Call begin() first."
+				callback? new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
 				return @
 			
 			@transaction.queue done
@@ -420,7 +420,7 @@ class PreparedStatement extends EventEmitter
 	
 	queue: (callback) ->
 		unless @_pooledConnection
-			callback new PreparedStatementError "Statement is not prepared. Call prepare() first."
+			callback new PreparedStatementError "Statement is not prepared. Call prepare() first.", 'ENOTPREPARED'
 			return @
 			
 		if @_working
@@ -473,7 +473,7 @@ class PreparedStatement extends EventEmitter
 		
 	unprepare: (callback) ->
 		unless @_pooledConnection
-			callback? new PreparedStatementError "Statement is not prepared. Call prepare() first."
+			callback? new PreparedStatementError "Statement is not prepared. Call prepare() first.", 'ENOTPREPARED'
 			return @
 		
 		done = (err) =>
@@ -543,7 +543,7 @@ class Transaction extends EventEmitter
 		@isolationLevel = isolationLevel if isolationLevel?
 		
 		if @_pooledConnection
-			callback? new TransactionError "Transaction is already running."
+			callback? new TransactionError "Transaction has already begun.", 'EALREADYBEGUN'
 			return @
 			
 		@connection.driver.Transaction::begin.call @, (err) =>
@@ -562,11 +562,11 @@ class Transaction extends EventEmitter
 	
 	commit: (callback) ->
 		unless @_pooledConnection
-			callback? new TransactionError "Transaction has not started. Call begin() first."
+			callback? new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
 			return @
 			
 		if @_working
-			callback? new TransactionError "Can't commit transaction. There is a request in progress."
+			callback? new TransactionError "Can't commit transaction. There is a request in progress.", 'EREQINPROG'
 			return @
 
 		@connection.driver.Transaction::commit.call @, (err) =>
@@ -603,7 +603,7 @@ class Transaction extends EventEmitter
 	
 	queue: (callback) ->
 		unless @_pooledConnection
-			callback new TransactionError "Transaction has not started. Call begin() first."
+			callback new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
 			return @
 			
 		if @_working
@@ -634,11 +634,11 @@ class Transaction extends EventEmitter
 		
 	rollback: (callback) ->
 		unless @_pooledConnection
-			callback? new TransactionError "Transaction has not started. Call begin() first."
+			callback? new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
 			return @
 			
 		if @_working
-			callback? new TransactionError "Can't rollback transaction. There is a request in progress."
+			callback? new TransactionError "Can't rollback transaction. There is a request in progress.", 'EREQINPROG'
 			return @
 
 		@connection.driver.Transaction::rollback.call @, (err) =>
@@ -712,7 +712,7 @@ class Request extends EventEmitter
 			@pstatement.queue callback
 		else
 			unless @connection.pool
-				return callback new RequestError "Connection not yet open.", 'ECONNCLOSED'
+				return callback new ConnectionError "Connection not yet open.", 'ENOTOPEN'
 			
 			@connection.pool.acquire callback
 	
