@@ -260,6 +260,14 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 		
 	class TediousRequest extends Request
 		###
+		Execute specified sql batch.
+		###
+		
+		batch: (batch, callback) ->
+			@_batch = true
+			TediousRequest::query.call @, batch, callback
+		
+		###
 		Execute specified sql command.
 		###
 
@@ -280,7 +288,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			
 			@_acquire (err, connection) =>
 				unless err
-					if @verbose then @_log "---------- sql query ----------\n    query: #{command}"
+					if @verbose then @_log "---------- sql #{if @_batch then 'batch' else 'query'} ----------\n    #{if @_batch then 'batch' else 'query'}: #{command}"
 
 					if @canceled
 						if @verbose then @_log "---------- canceling ----------"
@@ -336,24 +344,27 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						if @stream
 							@emit 'recordset', columns
 
-					req.on 'doneInProc', (rowCount, more, rows) =>
+					doneHandler = (rowCount, more, rows) =>
 						# this function is called even when select only set variables so we should skip adding a new recordset
 						if Object.keys(columns).length is 0 then return
-						
-						# all rows of current recordset loaded
-						Object.defineProperty recordset, 'columns', 
-							enumerable: false
-							value: columns
-							
-						Object.defineProperty recordset, 'toTable', 
-							enumerable: false
-							value: -> Table.fromRecordset @
 
 						unless @stream
+							# all rows of current recordset loaded
+							Object.defineProperty recordset, 'columns', 
+								enumerable: false
+								value: columns
+								
+							Object.defineProperty recordset, 'toTable', 
+								enumerable: false
+								value: -> Table.fromRecordset @
+								
 							recordsets.push recordset
 							
 						recordset = []
 						columns = {}
+					
+					req.on 'doneInProc', doneHandler # doneInProc handlers are used in both queries and batches
+					req.on 'done', doneHandler # done handlers are used in batches
 					
 					req.on 'returnValue', (parameterName, value, metadata) =>
 						if @verbose
@@ -387,25 +398,27 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							@_log util.inspect(row)
 							@_log "---------- --------------------"
 						
-						@emit 'row', row
-						
-						unless @stream
+						if @stream
+							@emit 'row', row
+							
+						else
 							recordset.push row
 					
-					for name, param of @parameters when param.io is 1
-						if @verbose
-							if param.value is tds.TYPES.Null
-								@_log "    input: @#{param.name}, null"
-							else
-								@_log "    input: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
+					unless @_batch
+						for name, param of @parameters when param.io is 1
+							if @verbose
+								if param.value is tds.TYPES.Null
+									@_log "    input: @#{param.name}, null"
+								else
+									@_log "    input: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
+							
+							req.addParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 						
-						req.addParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
-					
-					for name, param of @parameters when param.io is 2
-						req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
+						for name, param of @parameters when param.io is 2
+							req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 					
 					if @verbose then @_log "---------- response -----------"
-					connection.execSql req
+					connection[if @_batch then 'execSqlBatch' else 'execSql'] req
 				
 				else
 					if connection then @_release connection
@@ -514,25 +527,26 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							@_log util.inspect(row)
 							@_log "---------- --------------------"
 						
-						@emit 'row', row
+						if @stream
+							@emit 'row', row
 						
-						unless @stream
+						else
 							recordset.push row
 					
 					req.on 'doneInProc', (rowCount, more, rows) =>
 						# filter empty recordsets when NOCOUNT is OFF
 						if Object.keys(columns).length is 0 then return
 						
-						# all rows of current recordset loaded
-						Object.defineProperty recordset, 'columns', 
-							enumerable: false
-							value: columns
-							
-						Object.defineProperty recordset, 'toTable', 
-							enumerable: false
-							value: -> Table.fromRecordset @
-						
 						unless @stream
+							# all rows of current recordset loaded
+							Object.defineProperty recordset, 'columns', 
+								enumerable: false
+								value: columns
+								
+							Object.defineProperty recordset, 'toTable', 
+								enumerable: false
+								value: -> Table.fromRecordset @
+							
 							recordsets.push recordset
 							
 						recordset = []

@@ -197,6 +197,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				callback err
 
 	class MsnodesqlRequest extends Request
+		batch: (batch, callback) ->
+			MsnodesqlRequest::query.call @, batch, callback
+			
 		query: (command, callback) ->
 			if @verbose and not @nested then @_log "---------- sql query ----------\n    query: #{command}"
 			

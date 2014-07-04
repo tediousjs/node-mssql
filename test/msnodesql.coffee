@@ -62,6 +62,15 @@ if process.platform.match(/^win/)
 		it.skip 'query with multiple errors (not supported by msnodesql)', (done) ->
 			TESTS['query with multiple errors'] done
 	
+		it 'batch', (done) ->
+			TESTS['batch'] done
+		
+		it 'batch (stream)', (done) ->
+			TESTS['batch'] done, true
+		
+		it 'create procedure batch', (done) ->
+			TESTS['create procedure batch'] done
+	
 		it 'prepared statement', (done) ->
 			TESTS['prepared statement'] true, done
 	

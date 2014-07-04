@@ -230,6 +230,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				callback err
 			
 	class TDSRequest extends Request
+		batch: (batch, callback) ->
+			TDSRequest::query.call @, batch, callback
+
 		query: (command, callback) ->
 			if @verbose and not @nested then @_log "---------- sql query ----------\n    query: #{command}"
 			
@@ -268,6 +271,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			
 			@_acquire (err, connection) =>
 				unless err
+					if @canceled
+						if @verbose then @_log "---------- canceling ----------"
+						@_release connection
+						return callback? new RequestError "Canceled.", 'ECANCEL'
+					
+					@_cancel = =>
+						if @verbose then @_log "---------- canceling ----------"
+						req.cancel()
+						
 					req = connection.createStatement command, paramHeaders
 					
 					req.on 'row', (tdsrow) =>
@@ -321,6 +333,14 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							recordsets.push recordset
 					
 					req.on 'done', (res) =>
+						if @canceled
+							e = new RequestError "Canceled.", 'ECANCEL'
+							
+							if @stream
+								@emit 'error', e
+							else
+								errors.push e
+
 						unless @nested
 							# do we have output parameters to handle?
 							if handleOutput
@@ -439,7 +459,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 		###
 		
 		cancel: ->
-			false # Request canceling is not implemented by TDS driver.
+			if @_cancel then return @_cancel()
+			true
 		
 	return {
 		Connection: TDSConnection

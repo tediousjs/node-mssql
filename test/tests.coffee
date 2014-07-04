@@ -282,6 +282,63 @@ global.TESTS =
 				
 				complete error
 	
+	'batch': (done, stream = false) ->
+		r = new sql.Request
+		r.stream = stream
+		r.multiple = true
+		
+		complete = (err, recordsets) ->
+			if err then return done err
+			
+			assert.equal recordsets[0][0].num, 1
+			assert.equal recordsets[1][0].text, 'asdf'
+		
+			done()
+		
+		r.batch 'select 1 as num;select \'asdf\' as text', complete
+		
+		rsts = []
+		errs = []
+		
+		if stream
+			r.on 'recordset', (columns) ->
+				rst = []
+				rst.columns = columns
+				rsts.push rst
+			
+			r.on 'row', (row) ->
+				rsts[rsts.length - 1].push row
+			
+			r.on 'error', (err) ->
+				errs.push err
+
+			r.on 'done', ->
+				complete errs.pop(), rsts
+	
+	'create procedure batch': (done) ->
+			r = new sql.Request
+			r.batch 'create procedure #temporary as select 1 as num', (err, recordset) ->
+				if err then return done err
+				
+				assert.equal recordset, null
+				
+				r = new sql.Request
+				r.batch 'exec #temporary', (err, recordset) ->
+					if err then return done err
+					
+					assert.equal recordset[0].num, 1
+				
+					r = new sql.Request
+					r.multiple = true
+					r.batch 'exec #temporary;exec #temporary;exec #temporary', (err, recordsets) ->
+						if err then return done err
+						
+						assert.equal recordsets[0][0].num, 1
+						assert.equal recordsets[1][0].num, 1
+						assert.equal recordsets[2][0].num, 1
+			
+						done()
+	
 	'prepared statement': (decimal, done) ->
 		if decimal
 			ps = new sql.PreparedStatement

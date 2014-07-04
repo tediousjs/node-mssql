@@ -65,6 +65,15 @@ describe 'node-tds test suite', ->
 	it 'query with multiple errors (stream)', (done) ->
 		TESTS['query with multiple errors'] done, true
 	
+	it 'batch', (done) ->
+		TESTS['batch'] done
+	
+	it 'batch (stream)', (done) ->
+		TESTS['batch'] done, true
+	
+	it 'create procedure batch', (done) ->
+		TESTS['create procedure batch'] done
+	
 	it 'prepared statement', (done) ->
 		TESTS['prepared statement'] false, done
 	
@@ -80,7 +89,7 @@ describe 'node-tds test suite', ->
 	it 'transaction queue', (done) ->
 		TESTS['transaction queue'] done
 	
-	it.skip 'cancel request (not supported by node-tds)', (done) ->
+	it 'cancel request', (done) ->
 		TESTS['cancel request'] done
 	
 	after ->

@@ -858,6 +858,42 @@ class Request extends EventEmitter
 		@
 			
 	###
+	Execute the SQL batch.
+
+	@param {String} batch T-SQL batch to be executed.
+	@callback [callback] A callback which is called after execution has completed, or an error has occurred.
+		@param {Error} err Error on error, otherwise null.
+		@param {*} recordset Recordset.
+	
+	@returns {Request}
+	###
+
+	batch: (batch, callback) ->
+		unless @connection
+			return process.nextTick =>
+				e = new RequestError "No connection is specified for that request.", 'ENOCONN'
+				
+				if @stream
+					@emit 'error', e
+					@emit 'done'
+					
+				else
+					callback? e
+		
+		@canceled = false
+		@stream ?= @connection.config.stream
+		
+		@connection.driver.Request::batch.call @, batch, (err, recordset) =>
+			if @stream
+				if err then @emit 'error', err
+				@emit 'done'
+			
+			else
+				callback? err, recordset
+			
+		@
+			
+	###
 	Execute the SQL command.
 	
 	**Example:**
