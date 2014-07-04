@@ -545,10 +545,11 @@
 <div class="highlight highlight-javascript"><pre><span class="nx">sql</span><span class="p">.</span><span class="nx">map</span><span class="p">.</span><span class="nx">register</span><span class="p">(</span><span class="nb">Number</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">BigInt</span><span class="p">);</span>
 </pre></div>
 
-<p><strong>Errors</strong></p>
+<p><strong>Errors</strong> (synchronous)</p>
 
 <ul>
 <li>EARGS (<code>RequestError</code>) - Invalid number of arguments.</li>
+<li>EINJECT (<code>RequestError</code>) - SQL injection warning.</li>
 </ul><hr><p><a name="output"></a></p>
 
 <h3>
@@ -571,12 +572,17 @@
 <span class="nx">request</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span> <span class="s1">'abc'</span><span class="p">);</span>
 </pre></div>
 
-<hr><p><a name="query"></a></p>
+<p><strong>Errors</strong> (synchronous)</p>
+
+<ul>
+<li>EARGS (<code>RequestError</code>) - Invalid number of arguments.</li>
+<li>EINJECT (<code>RequestError</code>) - SQL injection warning.</li>
+</ul><hr><p><a name="query"></a></p>
 
 <h3>
 <a name="querycommand-callback" class="anchor" href="#querycommand-callback"><span class="octicon octicon-link"></span></a>query(command, [callback])</h3>
 
-<p>Execute the SQL command. To execute commands like <code>create procedure</code> use <a href="#batch">batch</a> instead.</p>
+<p>Execute the SQL command. To execute commands like <code>create procedure</code> or if you plan to work with local temporary tables, use <a href="#batch">batch</a> instead.</p>
 
 <p><strong>Arguments</strong></p>
 
@@ -625,7 +631,9 @@
 <h3>
 <a name="batchbatch-callback" class="anchor" href="#batchbatch-callback"><span class="octicon octicon-link"></span></a>batch(batch, [callback])</h3>
 
-<p>Execute the SQL command. There is no param support, and unlike <a href="#query">query</a>, it doesn't use <code>sp_executesql</code>, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like <code>create procedure</code> which can't be executed with <a href="#query">query</a>.</p>
+<p>Execute the SQL command. Unlike <a href="#query">query</a>, it doesn't use <code>sp_executesql</code>, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like <code>create procedure</code> which can't be executed with <a href="#query">query</a>. Also you should use this if you're plan to work with local temporary tables (<a href="http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx">more information here</a>).</p>
+
+<p>NOTE: Table-Valued Parameter (TVP) is not supported in batch.</p>
 
 <p><strong>Arguments</strong></p>
 
@@ -637,7 +645,7 @@
 </ul><p><strong>Example</strong></p>
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
-<span class="nx">request</span><span class="p">.</span><span class="nx">batch</span><span class="p">(</span><span class="s1">'create procedure #temporary'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">batch</span><span class="p">(</span><span class="s1">'create procedure #temporary as select * from table'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
     <span class="c1">// ... error checks</span>
 <span class="p">});</span>
 </pre></div>
@@ -857,10 +865,11 @@
 <span class="nx">ps</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'input_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">(</span><span class="mi">50</span><span class="p">));</span>
 </pre></div>
 
-<p><strong>Errors</strong></p>
+<p><strong>Errors</strong> (synchronous)</p>
 
 <ul>
 <li>EARGS (<code>PreparedStatementError</code>) - Invalid number of arguments.</li>
+<li>EINJECT (<code>PreparedStatementError</code>) - SQL injection warning.</li>
 </ul><hr><p><a name="prepared-statement-output"></a></p>
 
 <h3>
@@ -881,10 +890,11 @@
 <span class="nx">ps</span><span class="p">.</span><span class="nx">output</span><span class="p">(</span><span class="s1">'output_parameter'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">(</span><span class="mi">50</span><span class="p">));</span>
 </pre></div>
 
-<p><strong>Errors</strong></p>
+<p><strong>Errors</strong> (synchronous)</p>
 
 <ul>
 <li>EARGS (<code>PreparedStatementError</code>) - Invalid number of arguments.</li>
+<li>EINJECT (<code>PreparedStatementError</code>) - SQL injection warning.</li>
 </ul><hr><p><a name="prepare"></a></p>
 
 <h3>
@@ -1204,6 +1214,11 @@
 </tr>
 <tr>
 <td align="left"><code>RequestError</code></td>
+<td align="left">EINJECT</td>
+<td align="left">SQL injection warning.</td>
+</tr>
+<tr>
+<td align="left"><code>RequestError</code></td>
 <td align="left">ENOCONN</td>
 <td align="left">No connection is specified for that request.</td>
 </tr>
@@ -1211,6 +1226,11 @@
 <td align="left"><code>PreparedStatementError</code></td>
 <td align="left">EARGS</td>
 <td align="left">Invalid number of arguments.</td>
+</tr>
+<tr>
+<td align="left"><code>PreparedStatementError</code></td>
+<td align="left">EINJECT</td>
+<td align="left">SQL injection warning.</td>
 </tr>
 <tr>
 <td align="left"><code>PreparedStatementError</code></td>
