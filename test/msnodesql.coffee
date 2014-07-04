@@ -73,6 +73,9 @@ if process.platform.match(/^win/)
 	
 		it 'prepared statement', (done) ->
 			TESTS['prepared statement'] true, done
+		
+		it 'prepared statement (stream)', (done) ->
+			TESTS['prepared statement'] true, done, true
 	
 		it 'prepared statement in transaction', (done) ->
 			TESTS['prepared statement in transaction'] done

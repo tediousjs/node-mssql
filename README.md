@@ -810,7 +810,7 @@ ps.prepare('select @param as value', function(err) {
         // ... error checks
         
         console.log(recordset[0].value); // return 12345
-    })
+    });
 });
 ```
 
@@ -827,7 +827,36 @@ ps.prepare('select @param as value', function(err) {
         // ... error checks
         
         console.log(recordsets[0][0].value); // return 12345
-    })
+    });
+});
+```
+
+You can also stream executed request.
+
+```javascript
+var ps = new sql.PreparedStatement();
+ps.input('param', sql.Int);
+ps.prepare('select @param as value', function(err) {
+    // ... error checks
+    
+    ps.stream = true;
+    request = ps.execute({param: 12345});
+    
+    request.on('recordset', function(columns) {
+    	// Emitted once for each recordset in a query
+    });
+    
+    request.on('row', function(row) {
+    	// Emitted for each row in a recordset
+    });
+    
+    request.on('error', function(err) {
+    	// May be emitted multiple times
+    });
+    
+    request.on('done', function(returnValue) {
+    	// Always emitted as the last one
+    });
 });
 ```
 

@@ -290,6 +290,7 @@ class PreparedStatement extends EventEmitter
 	statement: null
 	parameters: null
 	multiple: false
+	stream: null
 	
 	###
 	Create new Prepared Statement.
@@ -400,6 +401,7 @@ class PreparedStatement extends EventEmitter
 			@_pooledConnection = connection
 				
 			req = new Request @
+			req.stream = false
 			req.output 'handle', TYPES.Int
 			req.input 'params', TYPES.NVarChar, ("@#{name} #{declare(param.type, param)}#{if param.io is 2 then " output" else ""}" for name, param of @parameters).join(',')
 			req.input 'stmt', TYPES.NVarChar, @statement
@@ -480,6 +482,7 @@ class PreparedStatement extends EventEmitter
 	
 	execute: (values, callback) ->
 		req = new Request @
+		req.stream = @stream if @stream?
 		req.input 'handle', TYPES.Int, @_handle
 		
 		# copy parameters with new values
@@ -527,6 +530,7 @@ class PreparedStatement extends EventEmitter
 			callback? null
 
 		req = new Request @
+		req.stream = false
 		req.input 'handle', TYPES.Int, @_handle
 		req.execute 'sp_unprepare', done
 			

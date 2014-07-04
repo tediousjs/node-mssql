@@ -1,3 +1,7 @@
+v1.0.1 (2014-07-04)
+-------------------
+[new] Added support for Streaming in Prepared Statements
+
 v1.0.0 (2014-07-04)
 -------------------
 [new] Start of semantic versioning, and commitment to stable API until 2.0.0

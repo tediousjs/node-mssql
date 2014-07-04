@@ -339,7 +339,7 @@ global.TESTS =
 			
 						done()
 	
-	'prepared statement': (decimal, done) ->
+	'prepared statement': (decimal, done, stream = false) ->
 		if decimal
 			ps = new sql.PreparedStatement
 			ps.input 'num', sql.Int
@@ -347,14 +347,35 @@ global.TESTS =
 			ps.input 'chr', sql.VarChar(sql.MAX)
 			ps.prepare 'select @num as number, @num2 as number2, @chr as chars', (err) ->
 				if err then return done err
-				
-				ps.execute {num: 555, num2: 666.77, chr: 'asdf'}, (err, recordset) ->
+
+				complete = (err, recordset) ->
 					assert.equal recordset.length, 1
 					assert.equal recordset[0].number, 555
 					assert.equal recordset[0].number2, 666.77
 					assert.equal recordset[0].chars, 'asdf'
 					
 					ps.unprepare done
+				
+				ps.stream = stream
+				r = ps.execute {num: 555, num2: 666.77, chr: 'asdf'}, complete
+			
+				rsts = []
+				errs = []
+				
+				if stream
+					r.on 'recordset', (columns) ->
+						rst = []
+						rst.columns = columns
+						rsts.push rst
+					
+					r.on 'row', (row) ->
+						rsts[rsts.length - 1].push row
+					
+					r.on 'error', (err) ->
+						errs.push err
+		
+					r.on 'done', ->
+						complete errs.pop(), rsts.shift()
 		
 		else
 			# node-tds doesn't support decimal/numeric in PS
@@ -363,11 +384,32 @@ global.TESTS =
 			ps.prepare 'select @num as number', (err) ->
 				if err then return done err
 				
-				ps.execute {num: 555}, (err, recordset) ->
+				complete = (err, recordset) ->
 					assert.equal recordset.length, 1
 					assert.equal recordset[0].number, 555
 					
 					ps.unprepare done
+				
+				ps.stream = stream
+				r = ps.execute {num: 555}, complete
+				
+				rsts = []
+				errs = []
+				
+				if stream
+					r.on 'recordset', (columns) ->
+						rst = []
+						rst.columns = columns
+						rsts.push rst
+					
+					r.on 'row', (row) ->
+						rsts[rsts.length - 1].push row
+					
+					r.on 'error', (err) ->
+						errs.push err
+		
+					r.on 'done', ->
+						complete errs.pop(), rsts.shift()
 	
 	'prepared statement in transaction': (done) ->
 		tran = new sql.Transaction

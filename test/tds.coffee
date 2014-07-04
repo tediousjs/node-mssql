@@ -77,6 +77,9 @@ describe 'node-tds test suite', ->
 	it 'prepared statement', (done) ->
 		TESTS['prepared statement'] false, done
 	
+	it 'prepared statement (stream)', (done) ->
+		TESTS['prepared statement'] false, done, true
+	
 	it 'prepared statement in transaction', (done) ->
 		TESTS['prepared statement in transaction'] done
 	
