@@ -46,6 +46,8 @@ module.exports.declare = (type, options) ->
 	switch type
 		when TYPES.VarChar, TYPES.NVarChar, TYPES.VarBinary
 			return "#{type.declaration} (#{if options.length > 8000 then 'MAX' else (options.length ? 'MAX')})"
+		when TYPES.NVarChar
+			return "#{type.declaration} (#{if options.length > 4000 then 'MAX' else (options.length ? 'MAX')})"
 		when TYPES.Char, TYPES.NChar, TYPES.Binary
 			return "#{type.declaration} (#{options.length ? 1})"
 		when TYPES.Decimal, TYPES.Numeric
@@ -54,3 +56,46 @@ module.exports.declare = (type, options) ->
 			return "#{type.declaration} (#{options.scale ? 7})"
 		else
 			return type.declaration
+
+module.exports.cast = (value, type, options) ->
+	unless value? then return null
+	
+	switch typeof value
+		when 'string'
+			return "N'#{value.replace(/'/g, '\'\'')}'"
+		
+		when 'number'
+			return value
+			
+		when 'boolean'
+			return if value then 1 else 0
+		
+		when 'object'
+			if value instanceof Date
+				ns = value.getUTCMilliseconds() / 1000
+				if value.nanosecondDelta? then ns += value.nanosecondDelta
+				scale = options.scale ? 7
+				
+				if scale > 0
+					ns = String(ns).substr(1, scale + 1)
+				else
+					ns = ""
+				
+				return "N'#{value.getUTCFullYear()}-#{zero(value.getUTCMonth() + 1)}-#{zero(value.getUTCDate())} #{zero(value.getUTCHours())}:#{zero(value.getUTCMinutes())}:#{zero(value.getUTCSeconds())}#{ns}'"
+			
+			else if Buffer.isBuffer value
+				return "0x#{value.toString 'hex'}"
+			
+			else
+				return null
+
+		else
+			return null
+
+zero = (value, length = 2) ->
+	value = String(value)
+	if value.length < length
+		for i in [1..length - value.length]
+			value = "0#{value}"
+
+	value

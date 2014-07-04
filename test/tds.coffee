@@ -15,6 +15,10 @@ describe 'node-tds test suite', ->
 			req = new sql.Request
 			req.query 'delete from tran_test', done
 	
+	beforeEach (done) ->
+		global.MODE = 'query'
+		done()
+	
 	it 'stored procedure', (done) ->
 		TESTS['stored procedure'] done, false
 	

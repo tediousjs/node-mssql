@@ -18,7 +18,7 @@ global.TESTS =
 		
 		complete = (err, recordsets, returnValue) ->
 			unless err
-				assert.equal returnValue, 11
+				unless MODE is 'batch' then assert.equal returnValue, 11
 				assert.equal recordsets.length, 3
 				assert.equal recordsets[0].length, 2
 				assert.equal recordsets[0][0].a, 1
@@ -46,8 +46,13 @@ global.TESTS =
 				assert.equal request.parameters.out5.value, 'anystring '
 			
 			done err
-
-		request.execute '__test', complete
+		
+		if MODE is 'batch'
+			request.multiple = true
+			request.batch 'exec __test @in=@in, @in2=@in2, @in3=@in3, @in4=@in4, @in5=@in5, @out=@out output, @out2=@out2 output, @out3=@out3 output, @out4=@out4 output, @out5=@out5 output', complete
+		
+		else
+			request.execute '__test', complete
 		
 		rsts = []
 		errs = []
@@ -69,7 +74,7 @@ global.TESTS =
 
 	'user defined types': (done) ->
 		request = new sql.Request
-		request.query "declare @g geography = geography::[Null];select geography::STGeomFromText('LINESTRING(-122.360 47.656, -122.343 47.656 )', 4326) as geography, geometry::STGeomFromText('LINESTRING (100 100 10.3 12, 20 180, 180 180)', 0) geometry, @g as nullgeography", (err, rst) ->
+		request[MODE] "declare @g geography = geography::[Null];select geography::STGeomFromText('LINESTRING(-122.360 47.656, -122.343 47.656 )', 4326) as geography, geometry::STGeomFromText('LINESTRING (100 100 10.3 12, 20 180, 180 180)', 0) geometry, @g as nullgeography", (err, rst) ->
 			if err then return done err
 			
 			#console.dir rst[0].geography
@@ -151,7 +156,7 @@ global.TESTS =
 	
 	'empty query': (done) ->
 		r = new sql.Request
-		r.query '', (err, recordset) ->
+		r[MODE] '', (err, recordset) ->
 			unless err
 				assert.equal recordset, null
 
@@ -159,7 +164,7 @@ global.TESTS =
 	
 	'query with no recordset': (done) ->
 		r = new sql.Request
-		r.query 'select * from sys.tables where name = \'______\'', (err, recordset) ->
+		r[MODE] 'select * from sys.tables where name = \'______\'', (err, recordset) ->
 			unless err
 				assert.equal recordset.length, 0
 
@@ -167,7 +172,7 @@ global.TESTS =
 	
 	'query with one recordset': (done) ->
 		r = new sql.Request
-		r.query 'select \'asdf\' as text', (err, recordset) ->
+		r[MODE] 'select \'asdf\' as text', (err, recordset) ->
 			unless err
 				assert.equal recordset.length, 1
 				assert.equal recordset[0].text, 'asdf'
@@ -195,7 +200,7 @@ global.TESTS =
 
 			done err
 		
-		r.query 'select 41 as test, 5 as num, 6 as num;select 999 as second', complete
+		r[MODE] 'select 41 as test, 5 as num, 6 as num;select 999 as second', complete
 		
 		rsts = []
 		errs = []
@@ -216,19 +221,38 @@ global.TESTS =
 				complete errs.pop(), rsts, returnValue
 	
 	'query with input parameters': (done) ->
-		r = new sql.Request
-		r.input 'id', 12
-		r.query 'select @id as id', (err, recordset) ->
-			unless err
-				assert.equal recordset.length, 1
-				assert.equal recordset[0].id, 12
-
-			done err
+		buff = new Buffer([0x00, 0x01, 0xe2, 0x40])
+		
+		if global.DRIVER is 'tds'
+			r = new sql.Request
+			r.input 'id', 12
+			r[MODE] 'select @id as id', (err, recordset) ->
+				unless err
+					assert.equal recordset.length, 1
+					assert.equal recordset[0].id, 12
+	
+				done err
+		
+		else
+			r = new sql.Request
+			r.input 'id', 12
+			r.input 'vch', sql.VarChar(300), 'asdf'
+			r.input 'vchm', sql.VarChar(sql.MAX), 'fdsa'
+			r.input 'vbin', buff
+			r[MODE] 'select @id as id, @vch as vch, @vchm as vchm, @vbin as vbin', (err, recordset) ->
+				unless err
+					assert.equal recordset.length, 1
+					assert.equal recordset[0].id, 12
+					assert.equal recordset[0].vch, 'asdf'
+					assert.equal recordset[0].vchm, 'fdsa'
+					assert.deepEqual recordset[0].vbin, buff
+	
+				done err
 	
 	'query with output parameters': (done) ->
 		r = new sql.Request
 		r.output 'out', sql.VarChar
-		r.query 'select @out = \'test\'', (err, recordset) ->
+		r[MODE] 'select @out = \'test\'', (err, recordset) ->
 			unless err
 				assert.equal recordset, null
 				assert.equal r.parameters.out.value, 'test'
@@ -244,7 +268,7 @@ global.TESTS =
 
 			done()
 		
-		r.query 'select * from notexistingtable', complete
+		r[MODE] 'select * from notexistingtable', complete
 		
 		if stream
 			error = null
@@ -268,7 +292,7 @@ global.TESTS =
 
 			done()
 		
-		r.query 'select a;select b;', complete
+		r[MODE] 'select a;select b;', complete
 		
 		if stream
 			errors = []
@@ -439,13 +463,13 @@ global.TESTS =
 			if err then return done err
 
 			req = tran.request()
-			req.query 'insert into tran_test values (\'test data\')', (err, recordset) ->
+			req[MODE] 'insert into tran_test values (\'test data\')', (err, recordset) ->
 				if err then return done err
 				
 				locked = true
 
 				req = new sql.Request
-				req.query 'select * from tran_test with (nolock)', (err, recordset) ->
+				req[MODE] 'select * from tran_test with (nolock)', (err, recordset) ->
 					assert.equal recordset.length, 1
 					assert.equal recordset[0].data, 'test data'
 					
@@ -458,7 +482,7 @@ global.TESTS =
 					, 500
 
 				req = new sql.Request
-				req.query 'select * from tran_test', (err, recordset) ->
+				req[MODE] 'select * from tran_test', (err, recordset) ->
 					assert.equal recordset.length, 0
 					
 					assert.equal tbegin, true
@@ -484,14 +508,14 @@ global.TESTS =
 			if err then return done err
 
 			req = tran.request()
-			req.query 'insert into tran_test values (\'test data\')', (err, recordset) ->
+			req[MODE] 'insert into tran_test values (\'test data\')', (err, recordset) ->
 				if err then return done err
 
 				# In this case, table tran_test is locked until we call commit
 				locked = true
 				
 				req = new sql.Request
-				req.query 'select * from tran_test', (err, recordset) ->
+				req[MODE] 'select * from tran_test', (err, recordset) ->
 					assert.equal recordset.length, 1
 					assert.equal recordset[0].data, 'test data'
 					
@@ -528,39 +552,39 @@ global.TESTS =
 			countdown = 5
 			complete = ->
 				req = new sql.Request
-				req.query 'select * from tran_test with (nolock)', (err, recordset) ->
+				req[MODE] 'select * from tran_test with (nolock)', (err, recordset) ->
 					assert.equal recordset.length, 6
 					
 					tran.rollback done
 
 			req = tran.request()
-			req.query 'insert into tran_test values (\'test data1\')', (err, recordset) ->
+			req[MODE] 'insert into tran_test values (\'test data1\')', (err, recordset) ->
 				if err then return done err
 				if --countdown is 0 then complete()
 
 			req = tran.request()
-			req.query 'insert into tran_test values (\'test data2\')', (err, recordset) ->
+			req[MODE] 'insert into tran_test values (\'test data2\')', (err, recordset) ->
 				if err then return done err
 				if --countdown is 0 then complete()
 
 			req = tran.request()
-			req.query 'insert into tran_test values (\'test data3\')', (err, recordset) ->
+			req[MODE] 'insert into tran_test values (\'test data3\')', (err, recordset) ->
 				if err then return done err
 				if --countdown is 0 then complete()
 
 			req = tran.request()
-			req.query 'insert into tran_test values (\'test data4\')', (err, recordset) ->
+			req[MODE] 'insert into tran_test values (\'test data4\')', (err, recordset) ->
 				if err then return done err
 				if --countdown is 0 then complete()
 
 			req = tran.request()
-			req.query 'insert into tran_test values (\'test data5\')', (err, recordset) ->
+			req[MODE] 'insert into tran_test values (\'test data5\')', (err, recordset) ->
 				if err then return done err
 				if --countdown is 0 then complete()
 	
 	'cancel request': (done, message) ->
 		r = new sql.Request
-		r.query 'waitfor delay \'00:00:05\';select 1', (err, recordset) ->
+		r[MODE] 'waitfor delay \'00:00:05\';select 1', (err, recordset) ->
 			assert.equal (if message then message.exec(err.message)? else (err instanceof sql.RequestError)), true
 
 			done null
@@ -569,19 +593,19 @@ global.TESTS =
 	
 	'connection 1': (done, connection) ->
 		request = connection.request()
-		request.query 'select SYSTEM_USER as u', (err, recordset) ->
+		request[MODE] 'select SYSTEM_USER as u', (err, recordset) ->
 			assert.equal recordset[0].u, 'xsp_test2'
 			done err
 			
 	'connection 2': (done, connection) ->
 		request = new sql.Request connection
-		request.query 'select SYSTEM_USER as u', (err, recordset) ->
+		request[MODE] 'select SYSTEM_USER as u', (err, recordset) ->
 			assert.equal recordset[0].u, 'xsp_test3'
 			done err
 			
 	'global connection': (done) ->
 		request = new sql.Request()
-		request.query 'select SYSTEM_USER as u', (err, recordset) ->
+		request[MODE] 'select SYSTEM_USER as u', (err, recordset) ->
 			assert.equal recordset[0].u, 'xsp_test'
 			done err
 	
@@ -630,19 +654,19 @@ global.TESTS =
 			, 100
 		
 		r1 = new sql.Request connection
-		r1.query 'select 1 as id', (err, recordset) ->
+		r1[MODE] 'select 1 as id', (err, recordset) ->
 			assert.equal recordset[0].id, 1
 			
 			if --countdown is 0 then complete()
 			
 		r2 = new sql.Request connection
-		r2.query 'select 2 as id', (err, recordset) ->
+		r2[MODE] 'select 2 as id', (err, recordset) ->
 			assert.equal recordset[0].id, 2
 			
 			if --countdown is 0 then complete()
 			
 		r3 = new sql.Request connection
-		r3.query 'select 3 as id', (err, recordset) ->
+		r3[MODE] 'select 3 as id', (err, recordset) ->
 			assert.equal recordset[0].id, 3
 			
 			if --countdown is 0 then complete()
@@ -651,19 +675,19 @@ global.TESTS =
 		countdown = 3
 		
 		r1 = new sql.Request connection
-		r1.query 'select 1 as id', (err, recordset) ->
+		r1[MODE] 'select 1 as id', (err, recordset) ->
 			assert.equal recordset[0].id, 1
 			
 			if --countdown is 0 then done()
 			
 		r2 = new sql.Request connection
-		r2.query 'select 2 as id', (err, recordset) ->
+		r2[MODE] 'select 2 as id', (err, recordset) ->
 			assert.equal recordset[0].id, 2
 			
 			if --countdown is 0 then done()
 			
 		r3 = new sql.Request connection
-		r3.query 'select 3 as id', (err, recordset) ->
+		r3[MODE] 'select 3 as id', (err, recordset) ->
 			assert.equal recordset[0].id, 3
 			
 			if --countdown is 0 then done()
@@ -750,7 +774,7 @@ global.TESTS =
 			
 			for i in [1..peak]
 				r = new sql.Request conn
-				r.query "select 123456 as num, 'asdfasdfasdfasdfasdfasdfasdfasdfasdf' as str", completed
+				r[MODE] "select 123456 as num, 'asdfasdfasdfasdfasdfasdfasdfasdfasdf' as str", completed
 				requests.push r
 
 	'streaming off': (done, driver) ->
@@ -760,7 +784,7 @@ global.TESTS =
 			if err then return done err
 			
 			r = new sql.Request
-			r.query 'select * from streaming', (err, recordset) ->
+			r[MODE] 'select * from streaming', (err, recordset) ->
 				if err then return done err
 				
 				console.log "Got #{recordset.length} rows."
@@ -777,7 +801,7 @@ global.TESTS =
 			
 			r = new sql.Request
 			r.stream = true
-			r.query 'select * from streaming'
+			r[MODE] 'select * from streaming'
 			r.on 'error', (err) ->
 				console.error err
 			

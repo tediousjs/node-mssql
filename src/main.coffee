@@ -328,6 +328,9 @@ class PreparedStatement extends EventEmitter
 	###
 
 	input: (name, type) ->
+		if (/(--| |\/\*|\*\/|')/).test name
+			throw new PreparedStatementError "SQL injection warning for param '#{name}'", 'EINJECT'
+			
 		if arguments.length < 2
 			throw new PreparedStatementError "Invalid number of arguments. 2 arguments expected.", 'EARGS'
 
@@ -359,6 +362,9 @@ class PreparedStatement extends EventEmitter
 	###
 	
 	output: (name, type) ->
+		if (/(--| |\/\*|\*\/|')/).test name
+			throw new PreparedStatementError "SQL injection warning for param '#{name}'", 'EINJECT'
+			
 		if arguments.length < 2
 			throw new PreparedStatementError "Invalid number of arguments. 2 arguments expected.", 'EARGS'
 
@@ -787,6 +793,9 @@ class Request extends EventEmitter
 	###
 
 	input: (name, type, value) ->
+		if (/(--| |\/\*|\*\/|')/).test name
+			throw new RequestError "SQL injection warning for param '#{name}'", 'EINJECT'
+			
 		if arguments.length is 1
 			throw new RequestError "Invalid number of arguments. At least 2 arguments expected.", 'EARGS'
 			
@@ -834,6 +843,9 @@ class Request extends EventEmitter
 	
 	output: (name, type, value) ->
 		unless type then type = TYPES.NVarChar
+		
+		if (/(--| |\/\*|\*\/|')/).test name
+			throw new RequestError "SQL injection warning for param '#{name}'", 'EINJECT'
 		
 		if type is TYPES.Text or type is TYPES.NText or type is TYPES.Image
 			throw new RequestError "Deprecated types (Text, NText, Image) are not supported as OUTPUT parameters.", 'EDEPRECATED'

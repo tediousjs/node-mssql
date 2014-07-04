@@ -439,8 +439,9 @@ You can also overwrite the default type map.
 sql.map.register(Number, sql.BigInt);
 ```
 
-__Errors__
+__Errors__ (synchronous)
 - EARGS (`RequestError`) - Invalid number of arguments.
+- EINJECT (`RequestError`) - SQL injection warning.
 
 ---------------------------------------
 
@@ -462,12 +463,16 @@ request.output('output_parameter', sql.Int);
 request.output('output_parameter', sql.VarChar(50), 'abc');
 ```
 
+__Errors__ (synchronous)
+- EARGS (`RequestError`) - Invalid number of arguments.
+- EINJECT (`RequestError`) - SQL injection warning.
+
 ---------------------------------------
 
 <a name="query" />
 ### query(command, [callback])
 
-Execute the SQL command. To execute commands like `create procedure` use [batch](#batch) instead.
+Execute the SQL command. To execute commands like `create procedure` or if you plan to work with local temporary tables, use [batch](#batch) instead.
 
 __Arguments__
 
@@ -514,7 +519,9 @@ request.query('select 1 as number; select 2 as number', function(err, recordsets
 <a name="batch" />
 ### batch(batch, [callback])
 
-Execute the SQL command. There is no param support, and unlike [query](#query), it doesn't use `sp_executesql`, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like `create procedure` which can't be executed with [query](#query).
+Execute the SQL command. Unlike [query](#query), it doesn't use `sp_executesql`, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like `create procedure` which can't be executed with [query](#query). Also you should use this if you're plan to work with local temporary tables ([more information here](http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx)).
+
+NOTE: Table-Valued Parameter (TVP) is not supported in batch.
 
 __Arguments__
 
@@ -525,7 +532,7 @@ __Example__
 
 ```javascript
 var request = new sql.Request();
-request.batch('create procedure #temporary', function(err, recordset) {
+request.batch('create procedure #temporary as select * from table', function(err, recordset) {
     // ... error checks
 });
 ```
@@ -735,8 +742,9 @@ ps.input('input_parameter', sql.Int);
 ps.input('input_parameter', sql.VarChar(50));
 ```
 
-__Errors__
+__Errors__ (synchronous)
 - EARGS (`PreparedStatementError`) - Invalid number of arguments.
+- EINJECT (`PreparedStatementError`) - SQL injection warning.
 
 ---------------------------------------
 
@@ -757,8 +765,9 @@ ps.output('output_parameter', sql.Int);
 ps.output('output_parameter', sql.VarChar(50));
 ```
 
-__Errors__
+__Errors__ (synchronous)
 - EARGS (`PreparedStatementError`) - Invalid number of arguments.
+- EINJECT (`PreparedStatementError`) - SQL injection warning.
 
 ---------------------------------------
 
@@ -1003,8 +1012,10 @@ Type | Code | Description
 `RequestError` | ECANCEL | Canceled.
 `RequestError` | ETIMEOUT | Request timeout.
 `RequestError` | EARGS | Invalid number of arguments.
+`RequestError` | EINJECT | SQL injection warning.
 `RequestError` | ENOCONN | No connection is specified for that request.
 `PreparedStatementError` | EARGS | Invalid number of arguments.
+`PreparedStatementError` | EINJECT | SQL injection warning.
 `PreparedStatementError` | EALREADYPREPARED | Statement is already prepared.
 `PreparedStatementError` | ENOTPREPARED | Statement is not prepared.
 

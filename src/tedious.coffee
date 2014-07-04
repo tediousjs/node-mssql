@@ -2,7 +2,7 @@
 tds = require 'tedious'
 util = require 'util'
 
-TYPES = require('./datatypes').TYPES
+{TYPES, declare, cast} = require './datatypes'
 DECLARATIONS = require('./datatypes').DECLARATIONS
 UDT = require('./udt').PARSERS
 Table = require('./table')
@@ -277,6 +277,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			recordsets = []
 			started = Date.now()
 			errors = []
+			batchLastRow = null
+			batchHasOutput = false
 			handleError = (err) =>
 				e = new RequestError err.message, 'EREQUEST'
 				
@@ -312,6 +314,20 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							
 							errors.push err
 						
+						# process batch outputs
+						if batchHasOutput
+							unless @stream
+								batchLastRow = recordsets.pop()[0]
+							
+							for name, value of batchLastRow when name isnt '___return___'
+								if @verbose
+									if value is tds.TYPES.Null
+										@_log "   output: @#{name}, null"
+									else
+										@_log "   output: @#{name}, #{@parameters[name].type.declaration.toLowerCase()}, #{value}"
+								
+								@parameters[name].value = if value is tds.TYPES.Null then null else value
+						
 						if @verbose 
 							if errors.length
 								@_log "    error: #{error}" for error in errors
@@ -342,7 +358,13 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						columns = createColumns(columns)
 						
 						if @stream
-							@emit 'recordset', columns
+							if @_batch
+								# don't stream recordset with output values in batches
+								unless columns["___return___"]?
+									@emit 'recordset', columns
+							
+							else
+								@emit 'recordset', columns
 
 					doneHandler = (rowCount, more, rows) =>
 						# this function is called even when select only set variables so we should skip adding a new recordset
@@ -399,23 +421,41 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							@_log "---------- --------------------"
 						
 						if @stream
-							@emit 'row', row
+							if @_batch
+								# dont stream recordset with output values in batches
+								if row["___return___"]?
+									batchLastRow = row
+								
+								else
+									@emit 'row', row
+							
+							else
+								@emit 'row', row
 							
 						else
 							recordset.push row
 					
-					unless @_batch
-						for name, param of @parameters when param.io is 1
+					if @_batch
+						if Object.keys(@parameters).length
+							declarations = ("@#{name} #{declare(param.type, param)}" for name, param of @parameters)
+							assigns = ("@#{name} = #{cast(param.value, param.type, param)}" for name, param of @parameters)
+							selects = ("@#{name} as [#{name}]" for name, param of @parameters when param.io is 2)
+							batchHasOutput = selects.length > 0
+							
+							req.sqlTextOrProcedure = "declare #{declarations.join(', ')};select #{assigns.join(', ')};#{req.sqlTextOrProcedure};#{if batchHasOutput then ('select 1 as [___return___], '+ selects.join(', ')) else ''}"
+					
+					else
+						for name, param of @parameters
 							if @verbose
 								if param.value is tds.TYPES.Null
-									@_log "    input: @#{param.name}, null"
+									@_log "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, null"
 								else
-									@_log "    input: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
+									@_log "   #{if param.io is 1 then " input" else "output"}: @#{param.name}, #{param.type.declaration.toLowerCase()}, #{param.value}"
 							
-							req.addParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
-						
-						for name, param of @parameters when param.io is 2
-							req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
+							if param.io is 1
+								req.addParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
+							else
+								req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 					
 					if @verbose then @_log "---------- response -----------"
 					connection[if @_batch then 'execSqlBatch' else 'execSql'] req

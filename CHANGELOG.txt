@@ -1,3 +1,8 @@
+v1.0.2 (2014-07-04)
+-------------------
+[new] Added support for input and output parameters in batch method.
+[new] Added checks for SQL injection in parameter names
+
 v1.0.1 (2014-07-04)
 -------------------
 [new] Added support for Streaming in Prepared Statements

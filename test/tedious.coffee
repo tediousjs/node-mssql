@@ -14,10 +14,22 @@ describe 'tedious test suite', ->
 			req = new sql.Request
 			req.query 'delete from tran_test', done
 	
+	beforeEach (done) ->
+		global.MODE = 'query'
+		done()
+	
 	it 'stored procedure', (done) ->
 		TESTS['stored procedure'] done, true
 	
+	it 'stored procedure (batch)', (done) ->
+		global.MODE = 'batch'
+		TESTS['stored procedure'] done, true
+	
 	it 'stored procedure (stream)', (done) ->
+		TESTS['stored procedure'] done, true, true
+	
+	it 'stored procedure (batch, stream)', (done) ->
+		global.MODE = 'batch'
 		TESTS['stored procedure'] done, true, true
 	
 	it 'user defined types', (done) ->
@@ -47,7 +59,15 @@ describe 'tedious test suite', ->
 	it 'query with input parameters', (done) ->
 		TESTS['query with input parameters'] done
 	
+	it 'query with input parameters (batch)', (done) ->
+		global.MODE = 'batch'
+		TESTS['query with input parameters'] done
+	
 	it 'query with output parameters', (done) ->
+		TESTS['query with output parameters'] done
+	
+	it 'query with output parameters (batch)', (done) ->
+		global.MODE = 'batch'
 		TESTS['query with output parameters'] done
 	
 	it 'query with error', (done) ->
