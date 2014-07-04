@@ -22,6 +22,7 @@ At the moment it support three TDS modules:
 
 - Updated to latest Tedious 1.0.0
 - Added support for [Streaming](#streaming)
+- Added [batch](#batch) command to execute special command like `create procedure`
 - Added option to set request timeout (`config.requestTimeout = 15000`)
 
 ## Installation
@@ -178,6 +179,7 @@ sql.connect(config, function(err) {
 * [input](#input)
 * [output](#output)
 * [query](#query)
+* [batch](#batch)
 * [cancel](#cancel)
 
 ### Transactions
@@ -465,7 +467,7 @@ request.output('output_parameter', sql.VarChar(50), 'abc');
 <a name="query" />
 ### query(command, [callback])
 
-Execute the SQL command.
+Execute the SQL command. To execute commands like `create procedure` use [batch](#batch) instead.
 
 __Arguments__
 
@@ -506,6 +508,37 @@ request.query('select 1 as number; select 2 as number', function(err, recordsets
     console.log(recordsets[1][0].number); // return 2
 });
 ```
+
+---------------------------------------
+
+<a name="batch" />
+### batch(batch, [callback])
+
+Execute the SQL command. There is no param support, and unlike [query](#query), it doesn't use `sp_executesql`, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like `create procedure` which can't be executed with [query](#query).
+
+__Arguments__
+
+- **batch** - T-SQL command to be executed.
+- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred.
+
+__Example__
+
+```javascript
+var request = new sql.Request();
+request.batch('create procedure #temporary', function(err, recordset) {
+    // ... error checks
+});
+```
+
+__Errors__
+- ETIMEOUT (`RequestError`) - Request timeout.
+- EREQUEST (`RequestError`) - *Message from SQL Server*
+- ECANCEL (`RequestError`) - Canceled.
+- ENOCONN (`RequestError`) - No connection is specified for that request.
+- ENOTOPEN (`ConnectionError`) - Connection not yet open.
+- ENOTBEGUN (`TransactionError`) - Transaction has not begun.
+
+You can enable multiple recordsets in queries with the `request.multiple = true` command.
 
 ---------------------------------------
 
@@ -751,7 +784,7 @@ ps.prepare('select @param as value', function(err) {
 __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - EALREADYPREPARED (`PreparedStatementError`) - Statement is already prepared.
-- ENOTBEGUN (`TransactionError`) - Transaction has not started.
+- ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 
 ---------------------------------------
 
@@ -800,6 +833,9 @@ ps.prepare('select @param as value', function(err) {
 
 __Errors__
 - ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
+- ETIMEOUT (`RequestError`) - Request timeout.
+- EREQUEST (`RequestError`) - *Message from SQL Server*
+- ECANCEL (`RequestError`) - Canceled.
 
 ---------------------------------------
 

@@ -1,3 +1,9 @@
+v0.6.2 (2014-07-04)
+-------------------
+[new] Added batch() method to execute sql commands like "create procedure"
+[new] Cancel request in node-tds driver
+[fix] Fixed VarChar/NVarChar/VarBinary MAX in prepared statements
+
 v0.6.1 (2014-07-04)
 -------------------
 [change] TDS debugging simplified
