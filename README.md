@@ -18,7 +18,7 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 0.6.x (stable, npm)
+## What's new in 1.0.x (stable, npm)
 
 - Updated to latest Tedious 1.0.0
 - Added support for [Streaming](#streaming)
@@ -545,7 +545,7 @@ You can enable multiple recordsets in queries with the `request.multiple = true`
 <a name="cancel" />
 ### cancel()
 
-Cancel currently executing request. Return `true` if cancellation packet was send successfully. Not available in `msnodesql` and `tds` drivers.
+Cancel currently executing request. Return `true` if cancellation packet was send successfully.
 
 __Example__
 
@@ -1111,6 +1111,7 @@ Output for the example above could look similar to this.
 - msnodesql 0.2.1 contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
 - msnodesql 0.2.1 doesn't support TVP data type.
 - msnodesql 0.2.1 doesn't support request timeout.
+- msnodesql 0.2.1 doesn't support request cancellation.
 
 ### node-tds
 

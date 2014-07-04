@@ -17,7 +17,7 @@
 		"node-sqlserver",
 		"sqlserver"
 	],
-	"version": "0.6.2",
+	"version": "1.0.0",
 	"main": "index.js",
 	"repository": {
 		"type": "git",
