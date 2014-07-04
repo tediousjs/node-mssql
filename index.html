@@ -938,7 +938,7 @@
         <span class="c1">// ... error checks</span>
 
         <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordset</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">value</span><span class="p">);</span> <span class="c1">// return 12345</span>
-    <span class="p">})</span>
+    <span class="p">});</span>
 <span class="p">});</span>
 </pre></div>
 
@@ -954,7 +954,35 @@
         <span class="c1">// ... error checks</span>
 
         <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordsets</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">].</span><span class="nx">value</span><span class="p">);</span> <span class="c1">// return 12345</span>
-    <span class="p">})</span>
+    <span class="p">});</span>
+<span class="p">});</span>
+</pre></div>
+
+<p>You can also stream executed request.</p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">ps</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">PreparedStatement</span><span class="p">();</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'param'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span>
+<span class="nx">ps</span><span class="p">.</span><span class="nx">prepare</span><span class="p">(</span><span class="s1">'select @param as value'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+
+    <span class="nx">ps</span><span class="p">.</span><span class="nx">stream</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="nx">request</span> <span class="o">=</span> <span class="nx">ps</span><span class="p">.</span><span class="nx">execute</span><span class="p">({</span><span class="nx">param</span><span class="o">:</span> <span class="mi">12345</span><span class="p">});</span>
+
+    <span class="nx">request</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'recordset'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">columns</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Emitted once for each recordset in a query</span>
+    <span class="p">});</span>
+
+    <span class="nx">request</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'row'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">row</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Emitted for each row in a recordset</span>
+    <span class="p">});</span>
+
+    <span class="nx">request</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'error'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// May be emitted multiple times</span>
+    <span class="p">});</span>
+
+    <span class="nx">request</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'done'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">returnValue</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// Always emitted as the last one</span>
+    <span class="p">});</span>
 <span class="p">});</span>
 </pre></div>
 
