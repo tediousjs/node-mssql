@@ -160,6 +160,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				password: config.password
 				server: config.server
 				options: config.options
+				domain: config.domain
 			
 			cfg.options.database ?= config.database
 			cfg.options.port ?= config.port

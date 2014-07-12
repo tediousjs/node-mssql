@@ -1,3 +1,8 @@
+v1.1.0 (2014-07-13)
+-------------------
+[change] Updated to latest Tedious 1.1.0
+[new] Added support for domain logins (NTLM)
+
 v1.0.2 (2014-07-04)
 -------------------
 [new] Added support for input and output parameters in batch method.

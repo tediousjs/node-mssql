@@ -20,8 +20,9 @@ At the moment it support three TDS modules:
 
 ## What's new in 1.0.x (stable, npm)
 
-- Updated to latest Tedious 1.0.0
+- Updated to latest Tedious 1.1.0
 - Added support for [Streaming](#streaming)
+- Added support for domain logins (NTLM)
 - Added [batch](#batch) command to execute special command like `create procedure`
 - Added option to set request timeout (`config.requestTimeout = 15000`)
 
@@ -126,6 +127,7 @@ var config = {
     password: '...',
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
     database: '...',
+    stream: true, // You can enable streaming globally
     
     options: {
         encrypt: true // Use this if you're on Windows Azure
@@ -232,6 +234,7 @@ var config = {
 - **password** - Password to use for authentication.
 - **server** - Server to connect to. You can use 'localhost\\instance' to connect to named instance.
 - **port** - Port to connect to (default: `1433`). Don't set when connecting to named instance.
+- **domain** - Once you set domain, driver will connect to SQL Server using domain login.
 - **database** - Database to connect to (default: dependent on server configuration).
 - **connectionTimeout** - Connection timeout in ms (default: `15000`).
 - **requestTimeout** - Request timeout in ms (default: `15000`).

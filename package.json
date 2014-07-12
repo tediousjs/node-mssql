@@ -17,7 +17,7 @@
 		"node-sqlserver",
 		"sqlserver"
 	],
-	"version": "1.0.2",
+	"version": "1.1.0",
 	"main": "index.js",
 	"repository": {
 		"type": "git",
@@ -30,7 +30,7 @@
 		}
 	],
 	"dependencies": {
-		"tedious": "^1.0.0",
+		"tedious": "^1.1.0",
 		"generic-pool": "^2.0.4"
 	},
 	"devDependencies": {
