@@ -1,34 +1,34 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
-    <meta charset="utf-8">
+    <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>node-mssql by patriksimek</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
 
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
+
+    <title>node-mssql by patriksimek</title>
   </head>
+
   <body>
-    <div class="wrapper">
-      <header>
+    <header>
+      <div class="inner">
         <h1>node-mssql</h1>
-        <p>An easy-to-use MSSQL database connector for Node.js.</p>
+        <h2>An easy-to-use MSSQL database connector for Node.js.</h2>
+        <a href="https://github.com/patriksimek/node-mssql" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
 
-        <p class="view"><a href="https://github.com/patriksimek/node-mssql">View the Project on GitHub <small>patriksimek/node-mssql</small></a></p>
-
-
-        <ul>
-          <li><a href="https://github.com/patriksimek/node-mssql/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/patriksimek/node-mssql/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/patriksimek/node-mssql">View On <strong>GitHub</strong></a></li>
-        </ul>
-      </header>
-      <section>
-        <h1>
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
 <a name="node-mssql--" class="anchor" href="#node-mssql--"><span class="octicon octicon-link"></span></a>node-mssql <a href="https://david-dm.org/patriksimek/node-mssql"><img src="https://david-dm.org/patriksimek/node-mssql.png" alt="Dependency Status"></a> <a href="http://badge.fury.io/js/mssql"><img src="https://badge.fury.io/js/mssql.png" alt="NPM version"></a>
 </h1>
 
@@ -57,12 +57,13 @@
 <li>
 <a href="https://github.com/cretz/node-tds">node-tds</a> by Chad Retz (pure javascript - windows/osx/linux)</li>
 </ul><h2>
-<a name="whats-new-in-10x-stable-npm" class="anchor" href="#whats-new-in-10x-stable-npm"><span class="octicon octicon-link"></span></a>What's new in 1.0.x (stable, npm)</h2>
+<a name="whats-new-in-11x-stable-npm" class="anchor" href="#whats-new-in-11x-stable-npm"><span class="octicon octicon-link"></span></a>What's new in 1.1.x (stable, npm)</h2>
 
 <ul>
-<li>Updated to latest Tedious 1.0.0</li>
+<li>Updated to latest Tedious 1.2.x</li>
 <li>Added support for <a href="#streaming">Streaming</a>
 </li>
+<li>Added support for domain logins (NTLM)</li>
 <li>Added <a href="#batch">batch</a> command to execute special command like <code>create procedure</code>
 </li>
 <li>Added option to set request timeout (<code>config.requestTimeout = 15000</code>)</li>
@@ -170,6 +171,7 @@
     <span class="nx">password</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
     <span class="nx">server</span><span class="o">:</span> <span class="s1">'localhost'</span><span class="p">,</span> <span class="c1">// You can use 'localhost\\instance' to connect to named instance</span>
     <span class="nx">database</span><span class="o">:</span> <span class="s1">'...'</span><span class="p">,</span>
+    <span class="nx">stream</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span> <span class="c1">// You can enable streaming globally</span>
 
     <span class="nx">options</span><span class="o">:</span> <span class="p">{</span>
         <span class="nx">encrypt</span><span class="o">:</span> <span class="kc">true</span> <span class="c1">// Use this if you're on Windows Azure</span>
@@ -257,6 +259,7 @@
 <li><a href="#errors">Errors</a></li>
 <li><a href="#meta">Metadata</a></li>
 <li><a href="#data-types">Data Types</a></li>
+<li><a href="#injection">SQL injection</a></li>
 <li><a href="#verbose">Verbose Mode</a></li>
 <li><a href="#issues">Known Issues</a></li>
 </ul><h2>
@@ -291,6 +294,8 @@
 <strong>server</strong> - Server to connect to. You can use 'localhost\instance' to connect to named instance.</li>
 <li>
 <strong>port</strong> - Port to connect to (default: <code>1433</code>). Don't set when connecting to named instance.</li>
+<li>
+<strong>domain</strong> - Once you set domain, driver will connect to SQL Server using domain login.</li>
 <li>
 <strong>database</strong> - Database to connect to (default: dependent on server configuration).</li>
 <li>
@@ -378,6 +383,8 @@
 <strong>connect</strong> - Dispatched after connection has established.</li>
 <li>
 <strong>close</strong> - Dispatched after connection has closed a pool (by calling <code>close</code>).</li>
+<li>
+<strong>error(err)</strong> - Dispatched on error.</li>
 </ul><hr><p><a name="connect"></a></p>
 
 <h3>
@@ -1251,18 +1258,18 @@
 <p>Recordset metadata are accessible through the <code>recordset.columns</code> property.</p>
 
 <div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
-<span class="nx">request</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">'select 1 as first, \'asdf\' as second'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">'select convert(decimal(18, 4), 1) as first, \'asdf\' as second'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
     <span class="nx">console</span><span class="p">.</span><span class="nx">dir</span><span class="p">(</span><span class="nx">recordset</span><span class="p">.</span><span class="nx">columns</span><span class="p">);</span>
 
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordset</span><span class="p">.</span><span class="nx">columns</span><span class="p">.</span><span class="nx">first</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">);</span> <span class="c1">// true</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordset</span><span class="p">.</span><span class="nx">columns</span><span class="p">.</span><span class="nx">first</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Decimal</span><span class="p">);</span> <span class="c1">// true</span>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">recordset</span><span class="p">.</span><span class="nx">columns</span><span class="p">.</span><span class="nx">second</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">);</span> <span class="c1">// true</span>
 <span class="p">});</span>
 </pre></div>
 
 <p>Columns structure for example above:</p>
 
-<div class="highlight highlight-javascript"><pre><span class="p">{</span> <span class="nx">first</span><span class="o">:</span> <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">'first'</span><span class="p">,</span> <span class="nx">length</span><span class="o">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nx">type</span><span class="o">:</span> <span class="p">[</span><span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">]</span> <span class="p">},</span>
-  <span class="nx">second</span><span class="o">:</span> <span class="p">{</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">'second'</span><span class="p">,</span> <span class="nx">length</span><span class="o">:</span> <span class="mi">4</span><span class="p">,</span> <span class="nx">type</span><span class="o">:</span> <span class="p">[</span><span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">]</span> <span class="p">}</span> <span class="p">}</span>
+<div class="highlight highlight-javascript"><pre><span class="p">{</span> <span class="nx">first</span><span class="o">:</span> <span class="p">{</span> <span class="nx">index</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">'first'</span><span class="p">,</span> <span class="nx">length</span><span class="o">:</span> <span class="mi">17</span><span class="p">,</span> <span class="nx">type</span><span class="o">:</span> <span class="p">[</span><span class="nx">sql</span><span class="p">.</span><span class="nx">Decimal</span><span class="p">],</span> <span class="nx">scale</span><span class="o">:</span> <span class="mi">4</span><span class="p">,</span> <span class="nx">precision</span><span class="o">:</span> <span class="mi">18</span> <span class="p">},</span>
+  <span class="nx">second</span><span class="o">:</span> <span class="p">{</span> <span class="nx">index</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">name</span><span class="o">:</span> <span class="s1">'second'</span><span class="p">,</span> <span class="nx">length</span><span class="o">:</span> <span class="mi">4</span><span class="p">,</span> <span class="nx">type</span><span class="o">:</span> <span class="p">[</span><span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">]</span> <span class="p">}</span> <span class="p">}</span>
 </pre></div>
 
 <p><a name="data-types"></a></p>
@@ -1327,6 +1334,20 @@ sql.Geometry
 </code></pre>
 
 <p>To setup MAX length for <code>VarChar</code>, <code>NVarChar</code> and <code>VarBinary</code> use <code>sql.MAX</code> length.</p>
+
+<p><a name="injection"></a></p>
+
+<h2>
+<a name="sql-injection" class="anchor" href="#sql-injection"><span class="octicon octicon-link"></span></a>SQL injection</h2>
+
+<p>This module has built-in SQL injection protection. Always use parameters to pass sanitized values to your queries.</p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">input</span><span class="p">(</span><span class="s1">'myval'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">,</span> <span class="s1">'-- commented'</span><span class="p">);</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">'select @myval as myval'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">recordset</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">dir</span><span class="p">(</span><span class="nx">recordset</span><span class="p">);</span>
+<span class="p">});</span>
+</pre></div>
 
 <p><a name="verbose"></a></p>
 
@@ -1409,13 +1430,25 @@ sql.Geometry
 <p>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.</p>
 
 <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
-      </section>
-      <footer>
-        <p>This project is maintained by <a href="https://github.com/patriksimek">patriksimek</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
-      </footer>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/patriksimek/node-mssql/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/patriksimek/node-mssql/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/patriksimek/node-mssql"></a> is maintained by <a href="https://github.com/patriksimek">patriksimek</a>.</p>
+
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
     </div>
-    <script src="javascripts/scale.fix.js"></script>
-    
+
+  
   </body>
 </html>
