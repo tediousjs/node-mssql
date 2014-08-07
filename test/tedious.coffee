@@ -166,6 +166,10 @@ describe 'tedious multiple connections test suite', ->
 			connection2 = new sql.Connection config.user3(), ->
 				sql.connect config(), done
 	
+	beforeEach (done) ->
+		global.MODE = 'query'
+		done()
+	
 	it 'connection 1', (done) ->
 		TESTS['connection 1'] done, connection1
 	

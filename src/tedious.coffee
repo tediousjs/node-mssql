@@ -196,6 +196,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						if err then return callback err, null # there must be a second argument null
 						callback null, c
 					
+					c.on 'error', (err) =>
+						@emit 'error', err
+					
 					if config.debug
 						c.on 'debug', (msg) => @_debug msg
 

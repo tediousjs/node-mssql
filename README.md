@@ -295,6 +295,7 @@ __Errors__
 
 - **connect** - Dispatched after connection has established.
 - **close** - Dispatched after connection has closed a pool (by calling `close`).
+- **error(err)** - Dispatched on error.
 
 ---------------------------------------
 
