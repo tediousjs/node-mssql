@@ -18,9 +18,9 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 1.0.x (stable, npm)
+## What's new in 1.1.x (stable, npm)
 
-- Updated to latest Tedious 1.1.0
+- Updated to latest Tedious 1.2.x
 - Added support for [Streaming](#streaming)
 - Added support for domain logins (NTLM)
 - Added [batch](#batch) command to execute special command like `create procedure`
@@ -207,6 +207,7 @@ sql.connect(config, function(err) {
 * [Errors](#errors)
 * [Metadata](#meta)
 * [Data Types](#data-types)
+* [SQL injection](#injection)
 * [Verbose Mode](#verbose)
 * [Known Issues](#issues)
 
@@ -1107,6 +1108,19 @@ sql.Geometry
 ```
 
 To setup MAX length for `VarChar`, `NVarChar` and `VarBinary` use `sql.MAX` length.
+
+<a name="injection" />
+## SQL injection
+
+This module has built-in SQL injection protection. Always use parameters to pass sanitized values to your queries.
+
+```javascript
+var request = new sql.Request();
+request.input('myval', sql.VarChar, '-- commented');
+request.query('select @myval as myval', function(err, recordset) {
+    console.dir(recordset);
+});
+```
 
 <a name="verbose" />
 ## Verbose Mode
