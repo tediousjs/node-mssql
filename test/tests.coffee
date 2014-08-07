@@ -44,6 +44,9 @@ global.TESTS =
 				assert.equal request.parameters.out3.value, 'D916DD31-5CB3-44A7-83D4-2DD83E40279F'
 				assert.equal request.parameters.out4.value.getTime(), +new Date(1860, 0, 24, 1, 52)
 				assert.equal request.parameters.out5.value, 'anystring '
+				
+				assert.equal recordsets[0].columns.a.index, 0
+				assert.equal recordsets[0].columns.b.index, 1
 			
 			done err
 		

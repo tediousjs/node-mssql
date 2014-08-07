@@ -89,8 +89,7 @@ getMssqlType = (type) ->
 createColumns = (metadata) ->
 	out = {}
 	for column, index in metadata
-		name = column.colName
-		out[name] =
+		out[column.colName] =
 			index: index
 			name: column.colName
 			length: column.dataLength
@@ -99,14 +98,14 @@ createColumns = (metadata) ->
 			precision: column.precision
 		
 		if column.udtInfo?
-			out[name].udt =
+			out[column.colName].udt =
 				name: column.udtInfo.typeName
 				database: column.udtInfo.dbname
 				schema: column.udtInfo.owningSchema
 				assembly: column.udtInfo.assemblyName
 			
 			if DECLARATIONS[column.udtInfo.typeName]
-				out[name].type = DECLARATIONS[column.udtInfo.typeName]
+				out[column.colName].type = DECLARATIONS[column.udtInfo.typeName]
 	
 	out
 
@@ -355,7 +354,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							callback? error, if @multiple then recordsets else recordsets[0]
 					
 					req.on 'columnMetadata', (metadata) =>
-						columns = createColumns(metadata)
+						columns = createColumns metadata
 						
 						if @stream
 							if @_batch
@@ -536,7 +535,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							callback? error, recordsets, returnValue
 					
 					req.on 'columnMetadata', (metadata) =>
-						columns = createColumns(columns)
+						columns = createColumns metadata
 						
 						if @stream
 							@emit 'recordset', columns

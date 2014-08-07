@@ -63,13 +63,14 @@ createParameterHeader = (param) ->
 @ignore
 ###
 
-createColumns = (meta) ->
+createColumns = (metadata) ->
 	out = {}
-	for key, value of meta
-		out[key] =
-			name: value.name
-			length: value.length
-			type: TYPES[value.type.sqlType]
+	for column, index in metadata
+		out[column.name] =
+			index: index
+			name: column.name
+			length: column.length
+			type: TYPES[column.type.sqlType]
 	
 	out
 
@@ -321,7 +322,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						
 						Object.defineProperty recordset, 'columns', 
 							enumerable: false
-							value: createColumns(metadata.columnsByName)
+							value: createColumns(metadata.columns)
 							@nested
 						
 						if @stream

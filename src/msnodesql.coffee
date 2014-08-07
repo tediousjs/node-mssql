@@ -56,20 +56,21 @@ castParameter = (value, type) ->
 @ignore
 ###
 
-createColumns = (meta) ->
+createColumns = (metadata) ->
 	out = {}
-	for value in meta
-		out[value.name] =
-			name: value.name
-			length: value.size
-			type: DECLARATIONS[value.sqlType]
+	for column, index in metadata
+		out[column.name] =
+			index: index
+			name: column.name
+			length: column.size
+			type: DECLARATIONS[column.sqlType]
 		
-		if value.udtType?
-			out[value.name].udt =
-				name: value.udtType
+		if column.udtType?
+			out[column.name].udt =
+				name: column.udtType
 			
-			if DECLARATIONS[value.udtType]
-				out[value.name].type = DECLARATIONS[value.udtType]
+			if DECLARATIONS[column.udtType]
+				out[column.name].type = DECLARATIONS[column.udtType]
 			
 	out
 

@@ -1029,10 +1029,10 @@ Recordset metadata are accessible through the `recordset.columns` property.
 
 ```javascript
 var request = new sql.Request();
-request.query('select 1 as first, \'asdf\' as second', function(err, recordset) {
+request.query('select convert(decimal(18, 4), 1) as first, \'asdf\' as second', function(err, recordset) {
     console.dir(recordset.columns);
 	
-    console.log(recordset.columns.first.type === sql.Int); // true
+    console.log(recordset.columns.first.type === sql.Decimal); // true
     console.log(recordset.columns.second.type === sql.VarChar); // true
 });
 ```
@@ -1040,8 +1040,8 @@ request.query('select 1 as first, \'asdf\' as second', function(err, recordset) 
 Columns structure for example above:
 
 ```javascript
-{ first: { name: 'first', length: 10, type: [sql.Int] },
-  second: { name: 'second', length: 4, type: [sql.VarChar] } }
+{ first: { index: 0, name: 'first', length: 17, type: [sql.Decimal], scale: 4, precision: 18 },
+  second: { index: 1, name: 'second', length: 4, type: [sql.VarChar] } }
 ```
 
 <a name="data-types" />
