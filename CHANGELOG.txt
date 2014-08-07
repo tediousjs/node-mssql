@@ -1,3 +1,8 @@
+v1.1.1 (2014-08-07)
+-------------------
+[new] Added column index to recordset metadata.
+[fix] Minor fixes in Tedious driver
+
 v1.1.0 (2014-07-13)
 -------------------
 [change] Updated to latest Tedious 1.1.0
