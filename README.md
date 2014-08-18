@@ -524,7 +524,7 @@ request.query('select 1 as number; select 2 as number', function(err, recordsets
 <a name="batch" />
 ### batch(batch, [callback])
 
-Execute the SQL command. Unlike [query](#query), it doesn't use `sp_executesql`, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like `create procedure` which can't be executed with [query](#query). Also you should use this if you're plan to work with local temporary tables ([more information here](http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx)).
+Execute the SQL command. Unlike [query](#query), it doesn't use `sp_executesql`, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like `create procedure` which can't be executed with [query](#query) or if you're executing statements longer than 4000 chars on SQL Server 2000. Also you should use this if you're plan to work with local temporary tables ([more information here](http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx)).
 
 NOTE: Table-Valued Parameter (TVP) is not supported in batch.
 
@@ -1163,6 +1163,7 @@ Output for the example above could look similar to this.
 ### Tedious
 
 - If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/patriksimek/node-mssql/issues/36))
+- If you're executing a statement longer than 4000 chars on SQL Server 2000, alway use [batch](#batch) instead of [query](#query) ([issue](https://github.com/patriksimek/node-mssql/issues/68))
 
 ### msnodesql
 
