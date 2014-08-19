@@ -99,6 +99,9 @@ describe 'node-tds test suite', ->
 	it 'cancel request', (done) ->
 		TESTS['cancel request'] done
 	
+	it.skip 'request timeout (not supported by node-tds)', (done) ->
+		TESTS['request timeout'] done, 'tds'
+	
 	after ->
 		sql.close()
 

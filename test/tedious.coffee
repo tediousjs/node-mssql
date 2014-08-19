@@ -112,6 +112,9 @@ describe 'tedious test suite', ->
 	it 'cancel request', (done) ->
 		TESTS['cancel request'] done, /Canceled./
 	
+	it 'request timeout', (done) ->
+		TESTS['request timeout'] done, 'tedious', /Timeout: Request failed to complete in 500ms/
+	
 	after ->
 		sql.close()
 

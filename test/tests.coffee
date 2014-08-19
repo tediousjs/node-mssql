@@ -594,6 +594,16 @@ global.TESTS =
 		
 		r.cancel()
 	
+	'request timeout': (done, driver, message) ->
+		conn = new sql.Connection require('./_connection')(driver)(requestTimeout: 500)
+			
+		, (err) ->
+			r = new sql.Request conn
+			r[MODE] 'waitfor delay \'00:00:05\';select 1', (err, recordset) ->
+				assert.equal (if message then message.exec(err.message)? else (err instanceof sql.RequestError)), true
+	
+				done null
+	
 	'connection 1': (done, connection) ->
 		request = connection.request()
 		request[MODE] 'select SYSTEM_USER as u', (err, recordset) ->

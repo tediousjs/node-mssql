@@ -95,6 +95,9 @@ if process.platform.match(/^win/)
 	
 		it.skip 'cancel request (not supported by msnodesql)', (done) ->
 			TESTS['cancel request'] done
+	
+		it.skip 'request timeout (not supported by node-tds)', (done) ->
+			TESTS['request timeout'] done, 'msnodesql'
 		
 		after ->
 			sql.close()
