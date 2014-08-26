@@ -57,16 +57,11 @@
 <li>
 <a href="https://github.com/cretz/node-tds">node-tds</a> by Chad Retz (pure javascript - windows/osx/linux)</li>
 </ul><h2>
-<a name="whats-new-in-11x-stable-npm" class="anchor" href="#whats-new-in-11x-stable-npm"><span class="octicon octicon-link"></span></a>What's new in 1.1.x (stable, npm)</h2>
+<a name="whats-new-in-12x-stable-npm" class="anchor" href="#whats-new-in-12x-stable-npm"><span class="octicon octicon-link"></span></a>What's new in 1.2.x (stable, npm)</h2>
 
 <ul>
-<li>Updated to latest Tedious 1.2.x</li>
-<li>Added support for <a href="#streaming">Streaming</a>
-</li>
-<li>Added support for domain logins (NTLM)</li>
-<li>Added <a href="#batch">batch</a> command to execute special command like <code>create procedure</code>
-</li>
-<li>Added option to set request timeout (<code>config.requestTimeout = 15000</code>)</li>
+<li>Updated to latest Tedious 1.4.x</li>
+<li>Added support bulk insert (<a href="#bulk">#bulk</a>)</li>
 </ul><h2>
 <a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
 
@@ -231,6 +226,7 @@
 <li><a href="#output">output</a></li>
 <li><a href="#query">query</a></li>
 <li><a href="#batch">batch</a></li>
+<li><a href="#bulk">bulk</a></li>
 <li><a href="#cancel">cancel</a></li>
 </ul><h3>
 <a name="transactions" class="anchor" href="#transactions"><span class="octicon octicon-link"></span></a>Transactions</h3>
@@ -638,7 +634,7 @@
 <h3>
 <a name="batchbatch-callback" class="anchor" href="#batchbatch-callback"><span class="octicon octicon-link"></span></a>batch(batch, [callback])</h3>
 
-<p>Execute the SQL command. Unlike <a href="#query">query</a>, it doesn't use <code>sp_executesql</code>, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like <code>create procedure</code> which can't be executed with <a href="#query">query</a>. Also you should use this if you're plan to work with local temporary tables (<a href="http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx">more information here</a>).</p>
+<p>Execute the SQL command. Unlike <a href="#query">query</a>, it doesn't use <code>sp_executesql</code>, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like <code>create procedure</code> which can't be executed with <a href="#query">query</a> or if you're executing statements longer than 4000 chars on SQL Server 2000. Also you should use this if you're plan to work with local temporary tables (<a href="http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx">more information here</a>).</p>
 
 <p>NOTE: Table-Valued Parameter (TVP) is not supported in batch.</p>
 
@@ -669,7 +665,52 @@
 <li>ENOTBEGUN (<code>TransactionError</code>) - Transaction has not begun.</li>
 </ul><p>You can enable multiple recordsets in queries with the <code>request.multiple = true</code> command.</p>
 
-<hr><p><a name="cancel"></a></p>
+<hr><p><a name="bulk"></a></p>
+
+<h3>
+<a name="bulktable-callback" class="anchor" href="#bulktable-callback"><span class="octicon octicon-link"></span></a>bulk(table, [callback])</h3>
+
+<p>Perform a bulk insert.</p>
+
+<p><strong>Arguments</strong></p>
+
+<ul>
+<li>
+<strong>table</strong> - <code>sql.Table</code> instance.</li>
+<li>
+<strong>callback(err, rowCount)</strong> - A callback which is called after bulk insert has completed, or an error has occurred.</li>
+</ul><p><strong>Example</strong></p>
+
+<div class="highlight highlight-javascript"><pre><span class="kd">var</span> <span class="nx">table</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Table</span><span class="p">(</span><span class="s1">'table_name'</span><span class="p">);</span> <span class="c1">// or temporary table, e.g. #temptable</span>
+<span class="nx">table</span><span class="p">.</span><span class="nx">create</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+<span class="nx">table</span><span class="p">.</span><span class="nx">columns</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">'a'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Int</span><span class="p">,</span> <span class="p">{</span><span class="nx">nullable</span><span class="o">:</span> <span class="kc">true</span><span class="p">});</span>
+<span class="nx">table</span><span class="p">.</span><span class="nx">columns</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">'b'</span><span class="p">,</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">VarChar</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span> <span class="p">{</span><span class="nx">nullable</span><span class="o">:</span> <span class="kc">false</span><span class="p">});</span>
+<span class="nx">table</span><span class="p">.</span><span class="nx">rows</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="mi">777</span><span class="p">,</span> <span class="s1">'test'</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">sql</span><span class="p">.</span><span class="nx">Request</span><span class="p">();</span>
+<span class="nx">request</span><span class="p">.</span><span class="nx">bulk</span><span class="p">(</span><span class="nx">table</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">rowCount</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// ... error checks</span>
+<span class="p">});</span>
+</pre></div>
+
+<p><strong>IMPORTANT</strong>: Always indicate whether the column is nullable or not!</p>
+
+<p><strong>TIP</strong>: If you set <code>table.create</code> to <code>true</code>, module will check if the table exists before it start sending data. If it doesn't, it will automatically create it.</p>
+
+<p><strong>TIP</strong>: You can also create Table variable from any recordset with <code>recordset.toTable()</code>.</p>
+
+<p><strong>Errors</strong></p>
+
+<ul>
+<li>ENAME (<code>RequestError</code>) - Table name must be specified for bulk insert.</li>
+<li>ETIMEOUT (<code>RequestError</code>) - Request timeout.</li>
+<li>EREQUEST (<code>RequestError</code>) - <em>Message from SQL Server</em>
+</li>
+<li>ECANCEL (<code>RequestError</code>) - Canceled.</li>
+<li>ENOCONN (<code>RequestError</code>) - No connection is specified for that request.</li>
+<li>ENOTOPEN (<code>ConnectionError</code>) - Connection not yet open.</li>
+<li>ENOTBEGUN (<code>TransactionError</code>) - Transaction has not begun.</li>
+</ul><hr><p><a name="cancel"></a></p>
 
 <h3>
 <a name="cancel" class="anchor" href="#cancel"><span class="octicon octicon-link"></span></a>cancel()</h3>
@@ -1394,6 +1435,7 @@ sql.Geometry
 
 <ul>
 <li>If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with <code>config.options.tdsVersion = '7_1'</code> (<a href="https://github.com/patriksimek/node-mssql/issues/36">issue</a>)</li>
+<li>If you're executing a statement longer than 4000 chars on SQL Server 2000, alway use <a href="#batch">batch</a> instead of <a href="#query">query</a> (<a href="https://github.com/patriksimek/node-mssql/issues/68">issue</a>)</li>
 </ul><h3>
 <a name="msnodesql" class="anchor" href="#msnodesql"><span class="octicon octicon-link"></span></a>msnodesql</h3>
 
