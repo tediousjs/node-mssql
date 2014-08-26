@@ -21,7 +21,7 @@ At the moment it support three TDS modules:
 ## What's new in 1.2.x (stable, npm)
 
 - Updated to latest Tedious 1.4.x
-- Added support bulk insert (#bulk)
+- Added support bulk insert ([#bulk](#bulk))
 
 ## Installation
 
@@ -565,7 +565,7 @@ __Arguments__
 __Example__
 
 ```javascript
-var table = new sql.Table('table_name'); // or temporary tables: #temptable
+var table = new sql.Table('table_name'); // or temporary table, e.g. #temptable
 table.create = true;
 table.columns.add('a', sql.Int, {nullable: true});
 table.columns.add('b', sql.VarChar(50), {nullable: false});
@@ -584,7 +584,7 @@ request.bulk(table, function(err, rowCount) {
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
 
 __Errors__
-- ENAME ('RequestError`) - Table name must be specified for bulk insert.
+- ENAME (`RequestError`) - Table name must be specified for bulk insert.
 - ETIMEOUT (`RequestError`) - Request timeout.
 - EREQUEST (`RequestError`) - *Message from SQL Server*
 - ECANCEL (`RequestError`) - Canceled.
