@@ -21,7 +21,7 @@ At the moment it support three TDS modules:
 ## What's new in 1.2.x (stable, npm)
 
 - Updated to latest Tedious 1.4.x
-- Added support bulk insert ([#bulk](#bulk))
+- Added support for bulk insert ([#bulk](#bulk))
 
 ## Installation
 
