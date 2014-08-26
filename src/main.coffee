@@ -910,6 +910,41 @@ class Request extends EventEmitter
 		@
 			
 	###
+	Bulk load.
+
+	@param {Table} table SQL table.
+	@callback [callback] A callback which is called after bulk load has completed, or an error has occurred.
+		@param {Error} err Error on error, otherwise null.
+	
+	@returns {Request}
+	###
+
+	bulk: (table, callback) ->
+		unless @connection
+			return process.nextTick =>
+				e = new RequestError "No connection is specified for that request.", 'ENOCONN'
+				
+				if @stream
+					@emit 'error', e
+					@emit 'done'
+					
+				else
+					callback? e
+		
+		@canceled = false
+		@stream ?= @connection.config.stream
+		
+		@connection.driver.Request::bulk.call @, table, (err, rowCount) =>
+			if @stream
+				if err then @emit 'error', err
+				@emit 'done'
+			
+			else
+				callback? err, rowCount
+			
+		@
+			
+	###
 	Execute the SQL command.
 	
 	**Example:**

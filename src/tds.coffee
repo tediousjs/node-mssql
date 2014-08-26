@@ -233,6 +233,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 	class TDSRequest extends Request
 		batch: (batch, callback) ->
 			TDSRequest::query.call @, batch, callback
+			
+		bulk: (table, callback) ->
+			process.nextTick -> callback RequestError("Bulk insert is not supported in 'msnodesql' driver.", 'ENOTSUPP')
 
 		query: (command, callback) ->
 			if @verbose and not @nested then @_log "---------- sql query ----------\n    query: #{command}"

@@ -96,6 +96,7 @@ createColumns = (metadata) ->
 			type: getMssqlType(column.type)
 			scale: column.scale
 			precision: column.precision
+			nullable: !!(column.flags & 0x01)
 		
 		if column.udtInfo?
 			out[column.colName].udt =
@@ -207,6 +208,11 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				
 				destroy: (c) ->
 					c?.close()
+					
+					# there might be some unemitted events
+					setTimeout ->
+						c?.removeAllListeners()
+					, 500
 			
 			if config.pool
 				for key, value of config.pool
@@ -272,6 +278,107 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			@_batch = true
 			TediousRequest::query.call @, batch, callback
 		
+		###
+		Bulk load.
+		###
+		
+		bulk: (table, callback) ->
+			table._makeBulk()
+			
+			unless table.name
+				process.nextTick -> callback RequestError("Table name must be specified for bulk insert.", "ENAME")
+				
+			if table.name.charAt(0) is '@'
+				process.nextTick -> callback RequestError("You can't use table variables for bulk insert.", "ENAME")
+
+			started = Date.now()
+			errors = []
+			handleError = (err) =>
+				e = new RequestError err.message, 'EREQUEST'
+
+				if @stream
+					@emit 'error', e
+				
+				# we must collect errors even in stream mode
+				errors.push e
+
+			@_acquire (err, connection) =>
+				unless err
+					if @verbose then @_log "-------- sql bulk load --------\n    table: #{table.name}"
+
+					if @canceled
+						if @verbose then @_log "---------- canceling ----------"
+						@_release connection
+						return callback? new RequestError "Canceled.", 'ECANCEL'
+					
+					@_cancel = =>
+						if @verbose then @_log "---------- canceling ----------"
+						connection.cancel()
+					
+					# attach handler to handle multiple error messages
+					connection.on 'errorMessage', handleError
+					
+					done = (err, rowCount) =>
+						# to make sure we handle no-sql errors as well
+						if err and err.message isnt errors[errors.length - 1]?.message
+							err = RequestError err
+							
+							if @stream
+								@emit 'error', err
+							
+							errors.push err
+						
+						# TODO ----
+						
+						if @verbose 
+							if errors.length
+								@_log "    error: #{error}" for error in errors
+							
+							elapsed = Date.now() - started
+							@_log " duration: #{elapsed}ms"
+							@_log "---------- completed ----------"
+			
+						@_cancel = null
+						
+						if errors.length and not @stream
+							error = errors.pop()
+							error.precedingErrors = errors
+						
+						connection.removeListener 'errorMessage', handleError
+						@_release connection
+						
+						if @stream
+							callback null, null
+						
+						else
+							callback? error, rowCount
+					
+					bulk = connection.newBulkLoad table.name, done
+
+					for col in table.columns
+						bulk.addColumn col.name, getTediousType(col.type), {nullable: col.nullable, length: col.length, scale: col.scale, precision: col.precision}
+					
+					for row in table.rows
+						bulk.addRow row
+					
+					if @verbose then @_log "---------- response -----------"
+					
+					if table.create
+						if table.temporary
+							objectid = "tempdb..[#{table.name}]"
+						else
+							objectid = table.path
+						
+						req = new tds.Request "if object_id('#{objectid.replace(/'/g, '\'\'')}') is null #{table.declare()}", (err) =>
+							if err then return done err
+							
+							connection.execBulkLoad bulk
+						
+						connection.execSqlBatch req
+							
+					else
+						connection.execBulkLoad bulk
+
 		###
 		Execute specified sql command.
 		###

@@ -366,6 +366,33 @@ global.TESTS =
 			
 						done()
 	
+	'bulk load': (name, done) ->
+		t = new sql.Table name
+		t.create = true
+		t.columns.add 'a', sql.Int, nullable: false
+		t.columns.add 'b', sql.VarChar(50), nullable: true
+		t.rows.add 777, 'asdf'
+		t.rows.add 453
+		t.rows.add 4535434
+		t.rows.add 12, 'XCXCDCDSCDSC'
+		t.rows.add 1
+		t.rows.add 7278, '4524254'
+		
+		r = new sql.Request
+		r.bulk t, (err, rowCount) ->
+			if err then return done err
+			
+			assert.equal rowCount, 6
+			
+			r = new sql.Request
+			r.batch "select * from #{name}", (err, recordset) ->
+				if err then return done err
+				
+				assert.equal recordset[0].a, 777
+				assert.equal recordset[0].b, 'asdf'
+			
+				done()
+	
 	'prepared statement': (decimal, done, stream = false) ->
 		if decimal
 			ps = new sql.PreparedStatement

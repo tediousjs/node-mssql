@@ -18,13 +18,10 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 1.1.x (stable, npm)
+## What's new in 1.2.x (stable, npm)
 
-- Updated to latest Tedious 1.2.x
-- Added support for [Streaming](#streaming)
-- Added support for domain logins (NTLM)
-- Added [batch](#batch) command to execute special command like `create procedure`
-- Added option to set request timeout (`config.requestTimeout = 15000`)
+- Updated to latest Tedious 1.4.x
+- Added support bulk insert (#bulk)
 
 ## Installation
 
@@ -182,6 +179,7 @@ sql.connect(config, function(err) {
 * [output](#output)
 * [query](#query)
 * [batch](#batch)
+* [bulk](#bulk)
 * [cancel](#cancel)
 
 ### Transactions
@@ -551,6 +549,48 @@ __Errors__
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 
 You can enable multiple recordsets in queries with the `request.multiple = true` command.
+
+---------------------------------------
+
+<a name="bulk" />
+### bulk(table, [callback])
+
+Perform a bulk insert.
+
+__Arguments__
+
+- **table** - `sql.Table` instance.
+- **callback(err, rowCount)** - A callback which is called after bulk insert has completed, or an error has occurred.
+
+__Example__
+
+```javascript
+var table = new sql.Table('table_name'); // or temporary tables: #temptable
+table.create = true;
+table.columns.add('a', sql.Int, {nullable: true});
+table.columns.add('b', sql.VarChar(50), {nullable: false});
+table.rows.add(777, 'test');
+
+var request = new sql.Request();
+request.bulk(table, function(err, rowCount) {
+    // ... error checks
+});
+```
+
+**IMPORTANT**: Always indicate whether the column is nullable or not!
+
+**TIP**: If you set `table.create` to `true`, module will check if the table exists before it start sending data. If it doesn't, it will automatically create it.
+
+**TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
+
+__Errors__
+- ENAME ('RequestError`) - Table name must be specified for bulk insert.
+- ETIMEOUT (`RequestError`) - Request timeout.
+- EREQUEST (`RequestError`) - *Message from SQL Server*
+- ECANCEL (`RequestError`) - Canceled.
+- ENOCONN (`RequestError`) - No connection is specified for that request.
+- ENOTOPEN (`ConnectionError`) - Connection not yet open.
+- ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 
 ---------------------------------------
 

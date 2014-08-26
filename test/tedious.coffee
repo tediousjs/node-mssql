@@ -118,6 +118,26 @@ describe 'tedious test suite', ->
 	after ->
 		sql.close()
 
+describe 'tedious bulk load', ->
+	before (done) ->
+		global.DRIVER = 'tedious'
+		
+		sql.connect config(), (err) ->
+			if err then return done err
+			
+			req = new sql.Request
+			req.query 'delete from bulk_table', done
+		
+	it 'bulk load (table)', (done) ->
+		TESTS['bulk load'] 'bulk_table', done
+		
+	it 'bulk load (temporary table)', (done) ->
+		TESTS['bulk load'] '#anohter_bulk_table', done
+	
+	after ->
+		sql.close()
+	
+
 describe 'tedious dates and times', ->
 	before (done) ->
 		global.DRIVER = 'tedious'
