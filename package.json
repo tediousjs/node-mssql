@@ -30,7 +30,7 @@
 		}
 	],
 	"dependencies": {
-		"tedious": "^1.4.0",
+		"tedious": "^1.5.3",
 		"generic-pool": "^2.0.4"
 	},
 	"devDependencies": {
