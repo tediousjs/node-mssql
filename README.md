@@ -20,8 +20,7 @@ At the moment it support three TDS modules:
 
 ## What's new in 1.2.x (stable, npm)
 
-- Updated to latest Tedious 1.4.x
-- Added support for bulk insert ([#bulk](#bulk))
+- Updated to latest Tedious 1.5.x
 
 ## Installation
 
@@ -1206,6 +1205,8 @@ Output for the example above could look similar to this.
 - If you're executing a statement longer than 4000 chars on SQL Server 2000, alway use [batch](#batch) instead of [query](#query) ([issue](https://github.com/patriksimek/node-mssql/issues/68))
 
 ### msnodesql
+
+- There is a serious problem with errors during transactions - [reported here](https://github.com/patriksimek/node-mssql/issues/77).
 
 - msnodesql 0.2.1 contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
 - msnodesql 0.2.1 doesn't support TVP data type.
