@@ -16,6 +16,7 @@ class Table
 		
 		Object.defineProperty @columns, "add",
 			value: (name, column, options = {}) ->
+				unless column? then throw new Error "Column data type is not defined."
 				if column instanceof Function then column = column()
 				column.name = name
 				column.nullable = options.nullable
