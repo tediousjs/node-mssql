@@ -19,9 +19,10 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 1.2.x (stable, npm)
+## What's new in 1.3.x (stable, npm)
 
-- Updated to latest Tedious 1.5.x
+- Updated to latest Tedious 1.7.x
+- Tedious: Char and NChar types are now available as input parameters
 
 ## Installation
 
@@ -1208,7 +1209,6 @@ Output for the example above could look similar to this.
 ### msnodesql
 
 - There is a serious problem with errors during transactions - [reported here](https://github.com/patriksimek/node-mssql/issues/77).
-
 - msnodesql 0.2.1 contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
 - msnodesql 0.2.1 doesn't support TVP data type.
 - msnodesql 0.2.1 doesn't support request timeout.
