@@ -126,7 +126,7 @@ class Connection extends EventEmitter
 			err = new ConnectionError "Unknown driver #{@config.driver}!", 'EDRIVER'
 			
 			if callback
-				callback err
+				return callback err
 			else
 				throw err
 
