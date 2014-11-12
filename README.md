@@ -279,7 +279,7 @@ Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database=
 
 This driver is not part of the default package and must be installed separately by `npm install tds`.
 
-_This module update node-tds driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`._
+_This module updates the node-tds driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`._
 
 <a name="connection" />
 ## Connections
