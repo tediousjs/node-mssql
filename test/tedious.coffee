@@ -106,6 +106,9 @@ describe 'tedious test suite', ->
 	it 'transaction with commit', (done) ->
 		TESTS['transaction with commit'] done
 	
+	it.skip 'transaction with error (todo)', (done) ->
+		TESTS['transaction with error'] done
+	
 	it 'transaction queue', (done) ->
 		TESTS['transaction queue'] done
 	
@@ -136,7 +139,6 @@ describe 'tedious bulk load', ->
 	
 	after ->
 		sql.close()
-	
 
 describe 'tedious dates and times', ->
 	before (done) ->

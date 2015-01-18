@@ -52,10 +52,10 @@ global.TESTS =
 		
 		if MODE is 'batch'
 			request.multiple = true
-			request.batch 'exec __test @in=@in, @in2=@in2, @in3=@in3, @in4=@in4, @in5=@in5, @out=@out output, @out2=@out2 output, @out3=@out3 output, @out4=@out4 output, @out5=@out5 output', complete
+			p = request.batch 'exec __test @in=@in, @in2=@in2, @in3=@in3, @in4=@in4, @in5=@in5, @out=@out output, @out2=@out2 output, @out3=@out3 output, @out4=@out4 output, @out5=@out5 output'
 		
 		else
-			request.execute '__test', complete
+			p = request.execute '__test'
 		
 		rsts = []
 		errs = []
@@ -74,6 +74,11 @@ global.TESTS =
 
 			request.on 'done', (returnValue) ->
 				complete errs.pop(), rsts, returnValue
+		
+		else
+			p.then (recordsets, returnValue) ->
+				complete null, recordsets, recordsets.returnValue
+			, complete
 
 	'user defined types': (done) ->
 		request = new sql.Request
@@ -255,12 +260,15 @@ global.TESTS =
 	'query with output parameters': (done) ->
 		r = new sql.Request
 		r.output 'out', sql.VarChar
-		r[MODE] 'select @out = \'test\'', (err, recordset) ->
-			unless err
-				assert.equal recordset, null
-				assert.equal r.parameters.out.value, 'test'
+		p = r[MODE] 'select @out = \'test\''
+		
+		p.then (recordset) ->
+			assert.equal recordset, null
+			assert.equal r.parameters.out.value, 'test'
+			
+			done()
 
-			done err
+		, done
 	
 	'query with error': (done, stream = false) ->
 		r = new sql.Request
@@ -271,7 +279,7 @@ global.TESTS =
 
 			done()
 		
-		r[MODE] 'select * from notexistingtable', complete
+		p = r[MODE] 'select * from notexistingtable'
 		
 		if stream
 			error = null
@@ -281,6 +289,11 @@ global.TESTS =
 			
 			r.on 'done', ->
 				complete error
+		
+		else
+			p.then (recordset) ->
+				complete null, recordset
+			, complete
 	
 	'query with multiple errors': (done, stream = false) ->
 		r = new sql.Request
@@ -573,6 +586,18 @@ global.TESTS =
 		
 		trollback = false
 		tran.on 'rollback', -> trollback = true
+
+	'transaction with error': (done) ->
+		tran = new sql.Transaction
+		tran.begin (err) ->
+			if err then return done err
+
+			req = tran.request()
+			req[MODE] 'insert into tran_test values (\'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasd\')', (err, recordset) ->
+				assert.ok err
+				assert.equal err.message, 'String or binary data would be truncated.'
+
+				tran.rollback done
 			
 	'transaction queue': (done) ->
 		tran = new sql.Transaction

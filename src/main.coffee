@@ -154,28 +154,27 @@ class Connection extends EventEmitter
 	###
 	Create connection to the server.
 	
-	@callback [callback] A callback which is called after connection has established, or an error has occurred.
+	@callback [callback] A callback which is called after connection has established, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
 	
-	@returns {Connection}
+	@returns {Connection|Promise}
 	###
 	
 	connect: (callback) ->
+		if callback?
+			return @_connect callback
+		
+		new module.exports.Promise (resolve, reject) =>
+			@_connect (err) ->
+				if err then return reject err
+				resolve()
+	
+	_connect: (callback) ->
 		if @connected
-			err = new ConnectionError "Database is already connected! Call close before connecting to different database.", 'EALREADYCONNECTED'
-			
-			if callback
-				callback err
-			else
-				throw err
+			return callback new ConnectionError "Database is already connected! Call close before connecting to different database.", 'EALREADYCONNECTED'
 		
 		if @connecting
-			err = new ConnectionError "Already connecting to database! Call close before connecting to different database.", 'EALREADYCONNECTING'
-			
-			if callback
-				callback err
-			else
-				throw err
+			return callback new ConnectionError "Already connecting to database! Call close before connecting to different database.", 'EALREADYCONNECTING'
 				
 		go = =>
 			@connecting = true
@@ -193,7 +192,7 @@ class Connection extends EventEmitter
 					@connected = true
 					@emit 'connect'
 					
-				callback? err
+				callback err
 
 		if @config.debug
 			@_debugStream = fs.createWriteStream "./mssql_debug_#{Date.now()}.log"
@@ -206,7 +205,7 @@ class Connection extends EventEmitter
 				else
 					@_debugStream.removeListener 'open', go
 					
-					callback? new ConnectionError("Failed to open debug stream. #{err.message}", 'EDEBUG')
+					callback new ConnectionError("Failed to open debug stream. #{err.message}", 'EDEBUG')
 		
 		else
 			go()
@@ -216,13 +215,22 @@ class Connection extends EventEmitter
 	###
 	Close connection to the server.
 	
-	@callback [callback] A callback which is called after connection has closed, or an error has occurred.
+	@callback [callback] A callback which is called after connection has closed, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
 	
-	@returns {Connection}
+	@returns {Connection|Promise}
 	###
 	
 	close: (callback) ->
+		if callback?
+			return @_close callback
+		
+		new module.exports.Promise (resolve, reject) =>
+			@_close (err) ->
+				if err then return reject err
+				resolve()
+	
+	_close: (callback) ->
 		if @_debugStream
 			@_debugStream.removeAllListeners()
 			@_debugStream.end()
@@ -232,7 +240,7 @@ class Connection extends EventEmitter
 			@connecting = false
 			
 			@driver.Connection::close.call @, (err) =>
-				callback? err
+				callback err
 			
 			@driver = null
 			
@@ -244,7 +252,7 @@ class Connection extends EventEmitter
 					@connected = false
 					@emit 'close'
 				
-				callback? err
+				callback err
 
 			@driver = null
 		
@@ -385,14 +393,23 @@ class PreparedStatement extends EventEmitter
 	Prepare a statement.
 	
 	@property {String} [statement] SQL statement to prepare.
-	@callback [callback] A callback which is called after preparation has completed, or an error has occurred.
+	@callback [callback] A callback which is called after preparation has completed, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
-	@returns {PreparedStatement}
+	@returns {PreparedStatement|Promise}
 	###
 	
 	prepare: (statement, callback) ->
+		if callback?
+			return @_prepare statement, callback
+		
+		new module.exports.Promise (resolve, reject) =>
+			@_prepare statement, (err) ->
+				if err then return reject err
+				resolve()
+	
+	_prepare: (statement, callback) ->
 		if @_pooledConnection
-			callback? new PreparedStatementError "Statement is already prepared.", 'EALREADYPREPARED'
+			callback new PreparedStatementError "Statement is already prepared.", 'EALREADYPREPARED'
 			return @
 		
 		if typeof statement is 'function'
@@ -402,7 +419,7 @@ class PreparedStatement extends EventEmitter
 		@statement = statement if statement?
 		
 		done = (err, connection) =>
-			if err then return callback? err
+			if err then return callback err
 				
 			@_pooledConnection = connection
 				
@@ -419,15 +436,15 @@ class PreparedStatement extends EventEmitter
 						@connection.pool.release @_pooledConnection
 						@_pooledConnection = null
 					
-					return callback? err
+					return callback err
 				
 				@_handle = req.parameters.handle.value
 			
-				callback? null
+				callback null
 		
 		if @transaction
 			unless @transaction._pooledConnection
-				callback? new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
+				callback new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
 				return @
 			
 			@transaction.queue done
@@ -481,12 +498,21 @@ class PreparedStatement extends EventEmitter
 	Execute a prepared statement.
 	
 	@property {String} values An object whose names correspond to the names of parameters that were added to the prepared statement before it was prepared.
-	@callback [callback] A callback which is called after execution has completed, or an error has occurred.
+	@callback [callback] A callback which is called after execution has completed, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
-	@returns {Request}
+	@returns {Request|Promise}
 	###
 	
 	execute: (values, callback) ->
+		if callback?
+			return @_execute values, callback
+		
+		new module.exports.Promise (resolve, reject) =>
+			@_execute values, (err) ->
+				if err then return reject err
+				resolve()
+	
+	_execute: (values, callback) ->
 		req = new Request @
 		req.stream = @stream if @stream?
 		req.input 'handle', TYPES.Int, @_handle
@@ -512,18 +538,27 @@ class PreparedStatement extends EventEmitter
 	###
 	Unprepare a prepared statement.
 	
-	@callback [callback] A callback which is called after unpreparation has completed, or an error has occurred.
+	@callback [callback] A callback which is called after unpreparation has completed, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
-	@returns {PreparedStatement}
+	@returns {PreparedStatement|Promise}
 	###
-		
+	
 	unprepare: (callback) ->
+		if callback?
+			return @_unprepare callback
+		
+		new module.exports.Promise (resolve, reject) =>
+			@_unprepare (err) ->
+				if err then return reject err
+				resolve()
+		
+	_unprepare: (callback) ->
 		unless @_pooledConnection
-			callback? new PreparedStatementError "Statement is not prepared. Call prepare() first.", 'ENOTPREPARED'
+			callback new PreparedStatementError "Statement is not prepared. Call prepare() first.", 'ENOTPREPARED'
 			return @
 		
 		done = (err) =>
-			if err then return callback? err
+			if err then return callback err
 			
 			if @transaction
 				@transaction.next()
@@ -533,7 +568,7 @@ class PreparedStatement extends EventEmitter
 			
 			@_handle = 0
 			
-			callback? null
+			callback null
 
 		req = new Request @
 		req.stream = false
@@ -577,48 +612,66 @@ class Transaction extends EventEmitter
 	Begin a transaction.
 	
 	@param {Number} [isolationLevel] Controls the locking and row versioning behavior of TSQL statements issued by a connection.
-	@callback [callback] A callback which is called after transaction has began, or an error has occurred.
+	@callback [callback] A callback which is called after transaction has began, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
-	@returns {Transaction}
+	@returns {Transaction|Promise}
 	###
 	
 	begin: (isolationLevel, callback) ->
 		if isolationLevel instanceof Function
 			callback = isolationLevel
 			isolationLevel = undefined
+			
+		if callback?
+			return @_begin isolationLevel, callback
 		
+		new module.exports.Promise (resolve, reject) =>
+			@_begin isolationLevel, (err) ->
+				if err then return reject err
+				resolve()
+	
+	_begin: (isolationLevel, callback) ->
 		@isolationLevel = isolationLevel if isolationLevel?
 		
 		if @_pooledConnection
-			callback? new TransactionError "Transaction has already begun.", 'EALREADYBEGUN'
+			callback new TransactionError "Transaction has already begun.", 'EALREADYBEGUN'
 			return @
 			
 		@connection.driver.Transaction::begin.call @, (err) =>
 			unless err then @emit 'begin'
-			callback? err
+			callback err
 		
 		@
 		
 	###
 	Commit a transaction.
 	
-	@callback [callback] A callback which is called after transaction has commited, or an error has occurred.
+	@callback [callback] A callback which is called after transaction has commited, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
-	@returns {Transaction}
+	@returns {Transaction|Promise}
 	###
 	
 	commit: (callback) ->
+		if callback?
+			return @_commit callback
+		
+		new module.exports.Promise (resolve, reject) =>
+			@_commit (err) ->
+				if err then return reject err
+				resolve()
+	
+	_commit: (callback) ->
 		unless @_pooledConnection
-			callback? new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
+			callback new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
 			return @
 			
 		if @_working
-			callback? new TransactionError "Can't commit transaction. There is a request in progress.", 'EREQINPROG'
+			callback new TransactionError "Can't commit transaction. There is a request in progress.", 'EREQINPROG'
 			return @
 
 		@connection.driver.Transaction::commit.call @, (err) =>
 			unless err then @emit 'commit'
-			callback? err
+			callback err
 			
 		@
 	
@@ -674,23 +727,32 @@ class Transaction extends EventEmitter
 	###
 	Rollback a transaction.
 	
-	@callback [callback] A callback which is called after transaction has rolled back, or an error has occurred.
+	@callback [callback] A callback which is called after transaction has rolled back, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
-	@returns {Transaction}
+	@returns {Transaction|Promise}
 	###
-		
+	
 	rollback: (callback) ->
+		if callback?
+			return @_rollback callback
+		
+		new module.exports.Promise (resolve, reject) =>
+			@_rollback (err) ->
+				if err then return reject err
+				resolve()
+		
+	_rollback: (callback) ->
 		unless @_pooledConnection
-			callback? new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
+			callback new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
 			return @
 			
 		if @_working
-			callback? new TransactionError "Can't rollback transaction. There is a request in progress.", 'EREQINPROG'
+			callback new TransactionError "Can't rollback transaction. There is a request in progress.", 'EREQINPROG'
 			return @
 
 		@connection.driver.Transaction::rollback.call @, (err) =>
 			unless err then @emit 'rollback'
-			callback? err
+			callback err
 			
 		@
 
@@ -877,14 +939,25 @@ class Request extends EventEmitter
 	Execute the SQL batch.
 
 	@param {String} batch T-SQL batch to be executed.
-	@callback [callback] A callback which is called after execution has completed, or an error has occurred.
+	@callback [callback] A callback which is called after execution has completed, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
 		@param {*} recordset Recordset.
 	
-	@returns {Request}
+	@returns {Request|Promise}
 	###
-
+	
 	batch: (batch, callback) ->
+		@stream ?= @connection.config.stream
+		
+		if @stream or callback?
+			return @_batch batch, callback
+		
+		new module.exports.Promise (resolve, reject) =>
+			@_batch batch, (err, recordset) ->
+				if err then return reject err
+				resolve recordset
+
+	_batch: (batch, callback) ->
 		unless @connection
 			return process.nextTick =>
 				e = new RequestError "No connection is specified for that request.", 'ENOCONN'
@@ -894,10 +967,9 @@ class Request extends EventEmitter
 					@emit 'done'
 					
 				else
-					callback? e
+					callback e
 		
 		@canceled = false
-		@stream ?= @connection.config.stream
 		
 		@connection.driver.Request::batch.call @, batch, (err, recordset) =>
 			if @stream
@@ -905,7 +977,7 @@ class Request extends EventEmitter
 				@emit 'done'
 			
 			else
-				callback? err, recordset
+				callback err, recordset
 			
 		@
 			
@@ -913,13 +985,24 @@ class Request extends EventEmitter
 	Bulk load.
 
 	@param {Table} table SQL table.
-	@callback [callback] A callback which is called after bulk load has completed, or an error has occurred.
+	@callback [callback] A callback which is called after bulk load has completed, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
 	
-	@returns {Request}
+	@returns {Request|Promise}
 	###
-
+	
 	bulk: (table, callback) ->
+		@stream ?= @connection.config.stream
+		
+		if @stream or callback?
+			return @_bulk table, callback
+		
+		new module.exports.Promise (resolve, reject) =>
+			@_bulk table, (err) ->
+				if err then return reject err
+				resolve()
+
+	_bulk: (table, callback) ->
 		unless @connection
 			return process.nextTick =>
 				e = new RequestError "No connection is specified for that request.", 'ENOCONN'
@@ -929,10 +1012,9 @@ class Request extends EventEmitter
 					@emit 'done'
 					
 				else
-					callback? e
+					callback e
 		
 		@canceled = false
-		@stream ?= @connection.config.stream
 		
 		@connection.driver.Request::bulk.call @, table, (err, rowCount) =>
 			if @stream
@@ -940,7 +1022,7 @@ class Request extends EventEmitter
 				@emit 'done'
 			
 			else
-				callback? err, rowCount
+				callback err, rowCount
 			
 		@
 			
@@ -972,14 +1054,25 @@ class Request extends EventEmitter
 	```
 	
 	@param {String} command T-SQL command to be executed.
-	@callback [callback] A callback which is called after execution has completed, or an error has occurred.
+	@callback [callback] A callback which is called after execution has completed, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
 		@param {*} recordset Recordset.
 	
-	@returns {Request}
+	@returns {Request|Promise}
 	###
-
+	
 	query: (command, callback) ->
+		@stream ?= @connection.config.stream
+		
+		if @stream or callback?
+			return @_query command, callback
+		
+		new module.exports.Promise (resolve, reject) =>
+			@_query command, (err, recordset) ->
+				if err then return reject err
+				resolve recordset
+
+	_query: (command, callback) ->
 		unless @connection
 			return process.nextTick =>
 				e = new RequestError "No connection is specified for that request.", 'ENOCONN'
@@ -989,10 +1082,9 @@ class Request extends EventEmitter
 					@emit 'done'
 					
 				else
-					callback? e
+					callback e
 		
 		@canceled = false
-		@stream ?= @connection.config.stream
 		
 		@connection.driver.Request::query.call @, command, (err, recordset) =>
 			if @stream
@@ -1000,7 +1092,7 @@ class Request extends EventEmitter
 				@emit 'done'
 			
 			else
-				callback? err, recordset
+				callback err, recordset
 			
 		@
 	
@@ -1025,15 +1117,26 @@ class Request extends EventEmitter
 	```
 	
 	@param {String} procedure Name of the stored procedure to be executed.
-	@callback [callback] A callback which is called after execution has completed, or an error has occurred.
+	@callback [callback] A callback which is called after execution has completed, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
 		@param {Array} recordsets Recordsets.
 		@param {Number} returnValue Procedure return value.
 	
-	@returns {Request}
+	@returns {Request|Promise}
 	###
 	
-	execute: (procedure, callback) ->
+	execute: (command, callback) ->
+		@stream ?= @connection.config.stream
+		
+		if @stream or callback?
+			return @_execute command, callback
+		
+		new module.exports.Promise (resolve, reject) =>
+			@_execute command, (err, recordset) ->
+				if err then return reject err
+				resolve recordset
+	
+	_execute: (procedure, callback) ->
 		unless @connection
 			return process.nextTick ->
 				e = new RequestError "No connection is specified for that request.", 'ENOCONN'
@@ -1043,10 +1146,9 @@ class Request extends EventEmitter
 					@emit 'done'
 					
 				else
-					callback? e
+					callback e
 		
 		@canceled = false
-		@stream ?= @connection.config.stream
 		
 		@connection.driver.Request::execute.call @, procedure, (err, recordsets, returnValue) =>
 			if @stream
@@ -1054,7 +1156,7 @@ class Request extends EventEmitter
 				@emit 'done', returnValue
 			
 			else
-				callback? err, recordsets, returnValue
+				callback err, recordsets, returnValue
 			
 		@
 	
@@ -1194,6 +1296,7 @@ module.exports.TYPES = TYPES
 module.exports.MAX = 65535 # (1 << 16) - 1
 module.exports.map = map
 module.exports.fix = true
+module.exports.Promise = global.Promise ? require('promise')
 
 # append datatypes to this modules export
 

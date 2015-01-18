@@ -24,6 +24,10 @@ At the moment it support three TDS modules:
 - Updated to latest Tedious 1.7.x
 - Tedious: Char and NChar types are now available as input parameters
 
+## Coming soon in 2.0 (unstable, git)
+
+- Promises
+
 ## Installation
 
     npm install mssql
