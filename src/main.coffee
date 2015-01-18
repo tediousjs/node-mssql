@@ -969,6 +969,17 @@ class Request extends EventEmitter
 				else
 					callback e
 		
+		unless @connection.connected
+			return process.nextTick =>
+				e = new ConnectionError "Connection is closed.", 'ECONNCLOSED'
+				
+				if @stream
+					@emit 'error', e
+					@emit 'done'
+					
+				else
+					callback e
+		
 		@canceled = false
 		
 		@connection.driver.Request::batch.call @, batch, (err, recordset) =>
@@ -1006,6 +1017,17 @@ class Request extends EventEmitter
 		unless @connection
 			return process.nextTick =>
 				e = new RequestError "No connection is specified for that request.", 'ENOCONN'
+				
+				if @stream
+					@emit 'error', e
+					@emit 'done'
+					
+				else
+					callback e
+		
+		unless @connection.connected
+			return process.nextTick =>
+				e = new ConnectionError "Connection is closed.", 'ECONNCLOSED'
 				
 				if @stream
 					@emit 'error', e
@@ -1084,6 +1106,17 @@ class Request extends EventEmitter
 				else
 					callback e
 		
+		unless @connection.connected
+			return process.nextTick =>
+				e = new ConnectionError "Connection is closed.", 'ECONNCLOSED'
+				
+				if @stream
+					@emit 'error', e
+					@emit 'done'
+					
+				else
+					callback e
+		
 		@canceled = false
 		
 		@connection.driver.Request::query.call @, command, (err, recordset) =>
@@ -1140,6 +1173,17 @@ class Request extends EventEmitter
 		unless @connection
 			return process.nextTick ->
 				e = new RequestError "No connection is specified for that request.", 'ENOCONN'
+				
+				if @stream
+					@emit 'error', e
+					@emit 'done'
+					
+				else
+					callback e
+		
+		unless @connection.connected
+			return process.nextTick =>
+				e = new ConnectionError "Connection is closed.", 'ECONNCLOSED'
 				
 				if @stream
 					@emit 'error', e

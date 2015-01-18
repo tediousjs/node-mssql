@@ -402,6 +402,7 @@ __Errors__
 - ETIMEOUT (`RequestError`) - Request timeout.
 - ENOCONN (`RequestError`) - No connection is specified for that request.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
+- ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 
 ---------------------------------------
@@ -506,6 +507,7 @@ __Errors__
 - ECANCEL (`RequestError`) - Canceled.
 - ENOCONN (`RequestError`) - No connection is specified for that request.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
+- ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 
 You can enable multiple recordsets in queries with the `request.multiple = true` command.
@@ -551,6 +553,7 @@ __Errors__
 - ECANCEL (`RequestError`) - Canceled.
 - ENOCONN (`RequestError`) - No connection is specified for that request.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
+- ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 
 You can enable multiple recordsets in queries with the `request.multiple = true` command.
@@ -595,6 +598,7 @@ __Errors__
 - ECANCEL (`RequestError`) - Canceled.
 - ENOCONN (`RequestError`) - No connection is specified for that request.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
+- ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 
 ---------------------------------------
@@ -1055,6 +1059,7 @@ Type | Code | Description
 `ConnectionError` | ENOTOPEN | Connection not yet open.
 `ConnectionError` | EINSTLOOKUP | Instance lookup failed.
 `ConnectionError` | ESOCKET | Scoket error.
+`ConnectionError` | ECONNCLOSED | Connection is closed.
 `TransactionError` | ENOTBEGUN | Transaction has not begun.
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
 `TransactionError` | EREQINPROG | Can't commit/rollback transaction. There is a request in progress.
