@@ -1,5 +1,19 @@
 sql = require '../'
 assert = require "assert"
+stream = require 'stream'
+
+class WritableStream extends stream.Writable
+	cache: null
+	
+	constructor: ->
+		@cache = []
+		
+		super
+			objectMode: true
+		
+	_write: (chunk, encoding, callback) ->
+		@cache.push chunk
+		setImmediate -> callback null
 
 global.TESTS =
 	'stored procedure': (done, checkmulti = true, stream = false) ->
@@ -59,8 +73,21 @@ global.TESTS =
 		
 		rsts = []
 		errs = []
+		next = null
 		
 		if stream
+			ws = new WritableStream
+			request.pipe ws
+			ws.on 'finish', ->
+				unless next then done new Error "Stream finished before request:done."
+				
+				assert.equal ws.cache.length, 3
+				assert.strictEqual rsts[0][0], ws.cache[0]
+				assert.strictEqual rsts[0][1], ws.cache[1]
+				assert.strictEqual rsts[1][0], ws.cache[2]
+				
+				next()
+				
 			request.on 'recordset', (columns) ->
 				rst = []
 				rst.columns = columns
@@ -73,7 +100,7 @@ global.TESTS =
 				errs.push err
 
 			request.on 'done', (returnValue) ->
-				complete errs.pop(), rsts, returnValue
+				next = -> complete errs.pop(), rsts, returnValue
 		
 		else
 			p.then (recordsets, returnValue) ->

@@ -27,6 +27,7 @@ At the moment it support three TDS modules:
 ## Coming soon in 2.0 (unstable, git)
 
 - Promises
+- Pipe request to object stream
 
 ## Installation
 

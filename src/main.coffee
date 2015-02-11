@@ -1049,7 +1049,22 @@ class Request extends EventEmitter
 				callback err, rowCount
 			
 		@
-			
+	
+	###
+	Sets request to stream mode and pipes all the rows to the given stream.
+	
+	@param {Stream} stream Stream to pipe data into.
+	@returns {Stream}
+	###
+	
+	pipe: (stream) ->
+		@stream = true
+		@on 'row', stream.write.bind stream
+		@on 'error', stream.emit.bind stream, 'error'
+		@on 'done', -> stream.end()
+		stream.emit 'pipe', @
+		stream
+	
 	###
 	Execute the SQL command.
 	
@@ -1324,6 +1339,9 @@ Close global connection.
 
 module.exports.close = (callback) ->
 	global_connection?.close callback
+
+module.exports.on = (event, handler) ->
+	global_connection?.on event, handler
 
 module.exports.Connection = Connection
 module.exports.Transaction = Transaction
