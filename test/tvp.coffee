@@ -4,7 +4,7 @@ config = require('./_connection') 'tedious'
 
 class MSSQLTestType extends sql.Table
 	constructor: ->
-		super()
+		super 'dbo.MSSQLTestType'
 		
 		@columns.add 'a', sql.VarChar(50)
 		@columns.add 'b', sql.Int
@@ -45,6 +45,40 @@ describe 'tedious tvp', ->
 				assert.equal recordsets[0][0].b, 15
 				
 				done err
+	
+	it.skip 'query', (done) ->
+		tvp = new MSSQLTestType
+		tvp.rows.add 'asdf', 15
+		
+		r = new sql.Request
+		r.input 'tvp', tvp
+		r.verbose = true
+		r.query 'select * from @tvp', (err, recordsets) ->
+			if err then return done err
+			
+			assert.equal recordsets[0].length, 1
+			assert.equal recordsets[0][0].a, 'asdf'
+			assert.equal recordsets[0][0].b, 15
+			
+			done()
+	
+	it.skip 'prepared statement', (done) ->
+		tvp = new MSSQLTestType
+		tvp.rows.add 'asdf', 15
+		
+		ps = new sql.PreparedStatement
+		ps.input 'tvp', sql.TVP('MSSQLTestType')
+		ps.prepare 'select * from @tvp', (err) ->
+			if err then return done err
+
+			ps.execute {tvp: tvp}, (err, recordset) ->
+				if err then return done err
+				
+				assert.equal recordsets[0].length, 1
+				assert.equal recordsets[0][0].a, 'asdf'
+				assert.equal recordsets[0][0].b, 15
+				
+				ps.unprepare done
 	
 	after ->
 		sql.close()

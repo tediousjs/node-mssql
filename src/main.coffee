@@ -352,6 +352,7 @@ class PreparedStatement extends EventEmitter
 			length: type.length
 			scale: type.scale
 			precision: type.precision
+			tvpType: type.tvpType
 		
 		@
 			
@@ -885,6 +886,7 @@ class Request extends EventEmitter
 			length: type.length
 			scale: type.scale
 			precision: type.precision
+			tvpType: type.tvpType
 		
 		@
 			

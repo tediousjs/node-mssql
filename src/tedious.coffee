@@ -132,6 +132,8 @@ valueCorrection = (value, metadata) ->
 parameterCorrection = (value) ->
 	if value instanceof Table
 		tvp =
+			name: value.name
+			schema: value.schema
 			columns: []
 			rows: value.rows
 			
@@ -275,7 +277,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 		###
 		
 		batch: (batch, callback) ->
-			@_batch = true
+			@_isBatch = true
 			TediousRequest::query.call @, batch, callback
 		
 		###
@@ -402,7 +404,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			
 			@_acquire (err, connection) =>
 				unless err
-					if @verbose then @_log "---------- sql #{if @_batch then 'batch' else 'query'} ----------\n    #{if @_batch then 'batch' else 'query'}: #{command}"
+					if @verbose then @_log "---------- sql #{if @_isBatch then 'batch' else 'query'} ----------\n    #{if @_isBatch then 'batch' else 'query'}: #{command}"
 
 					if @canceled
 						if @verbose then @_log "---------- canceling ----------"
@@ -467,7 +469,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						columns = createColumns metadata
 						
 						if @stream
-							if @_batch
+							if @_isBatch
 								# don't stream recordset with output values in batches
 								unless columns["___return___"]?
 									@emit 'recordset', columns
@@ -530,7 +532,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							@_log "---------- --------------------"
 						
 						if @stream
-							if @_batch
+							if @_isBatch
 								# dont stream recordset with output values in batches
 								if row["___return___"]?
 									batchLastRow = row
@@ -544,7 +546,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						else
 							recordset.push row
 					
-					if @_batch
+					if @_isBatch
 						if Object.keys(@parameters).length
 							declarations = ("@#{name} #{declare(param.type, param)}" for name, param of @parameters)
 							assigns = ("@#{name} = #{cast(param.value, param.type, param)}" for name, param of @parameters)
@@ -567,7 +569,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 								req.addOutputParameter param.name, getTediousType(param.type), parameterCorrection(param.value), {length: param.length, scale: param.scale, precision: param.precision}
 					
 					if @verbose then @_log "---------- response -----------"
-					connection[if @_batch then 'execSqlBatch' else 'execSql'] req
+					connection[if @_isBatch then 'execSqlBatch' else 'execSql'] req
 				
 				else
 					if connection then @_release connection

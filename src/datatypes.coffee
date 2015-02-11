@@ -27,7 +27,7 @@ TYPES =
 	Char: (length) -> type: TYPES.Char, length: length
 	NChar: (length) -> type: TYPES.NChar, length: length
 	NText: -> type: TYPES.NText
-	TVP: -> type: TYPES.TVP
+	TVP: (tvpType) -> type: TYPES.TVP, tvpType: tvpType
 	UDT: -> type: TYPES.UDT
 	Geography: -> type: TYPES.Geography
 	Geometry: -> type: TYPES.Geometry
@@ -51,9 +51,11 @@ module.exports.declare = (type, options) ->
 		when TYPES.Char, TYPES.NChar, TYPES.Binary
 			return "#{type.declaration} (#{options.length ? 1})"
 		when TYPES.Decimal, TYPES.Numeric
-			return "#{type.declaration} (#{type.precision ? 18}, #{options.scale ? 0})"
+			return "#{type.declaration} (#{options.precision ? 18}, #{options.scale ? 0})"
 		when TYPES.Time, TYPES.DateTime2, TYPES.DateTimeOffset
 			return "#{type.declaration} (#{options.scale ? 7})"
+		when TYPES.TVP
+			return "#{options.tvpType} readonly"
 		else
 			return type.declaration
 
