@@ -186,13 +186,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			@pool.acquire (err, connection) =>
 				if err and err not instanceof Error then err = new Error err
 				
-				# and release it immediately
-				@pool.release connection
-				
 				if err
-					@pool.destroyAllNow()
-					@pool = null
-					
+					@pool.drain => #prevent the pool from creating additional connections. we're done with it
+						@pool.destroyAllNow()
+						@pool = null
+
+				else
+					# and release it immediately
+					@pool.release connection
+				
 				callback err
 
 		close: (callback) ->

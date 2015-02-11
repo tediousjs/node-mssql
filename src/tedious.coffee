@@ -224,13 +224,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			
 			#create one testing connection to check if everything is ok
 			@pool.acquire (err, connection) =>
-				# and release it immediately
-				@pool.release connection
-				
 				if err
-					@pool.destroyAllNow()
-					@pool = null
+					@pool.drain => #prevent the pool from creating additional connections. we're done with it
+						@pool.destroyAllNow()
+						@pool = null
 
+				else
+					# and release it immediately
+					@pool.release connection
+				
 				callback err
 		
 		close: (callback) ->
