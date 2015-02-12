@@ -26,8 +26,14 @@ At the moment it support three TDS modules:
 
 ## Coming soon in 2.0 (unstable, git)
 
-- Promises
-- Pipe request to object stream
+- Updated to latest Tedious 1.10 (not released yet)
+- [Promises](#promise)
+- [Pipe request to object stream](#pipe)
+- Transaction Abort Handling
+
+## 1.x to 2.x changes
+
+- Methods with optional callback now returns `Promise` insted of itself when callback argument is omited.
 
 ## Installation
 
@@ -183,6 +189,7 @@ sql.connect(config, function(err) {
 * [execute](#execute)
 * [input](#input)
 * [output](#output)
+* [pipe](#pipe)
 * [query](#query)
 * [batch](#batch)
 * [bulk](#bulk)
@@ -209,6 +216,7 @@ sql.connect(config, function(err) {
 * [Geography and Geometry](#geography)
 * [Table-Valued Parameter](#tvp)
 * [Errors](#errors)
+* [Promises](#promises)
 * [Metadata](#meta)
 * [Data Types](#data-types)
 * [SQL injection](#injection)
@@ -256,6 +264,7 @@ var config = {
 - **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`) Encryption support is experimental.
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_1`, `7_2`, `7_3_A`, `7_3_B`, `7_4`).
 - **options.appName** - Application name used for SQL server logging.
+- **options.abortTransactionOnError** - A boolean determining whether to rollback a transaction automatically if any error is encountered during the given transaction's execution. This sets the value for `XACT_ABORT` during the initial SQL phase of a connection.
 
 More information about Tedious specific options: http://pekim.github.io/tedious/api-connection.html
 
@@ -311,7 +320,7 @@ Create connection to the server.
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after connection has established, or an error has occurred. Optional.
+- **callback(err)** - A callback which is called after connection has established, or an error has occurred. Optional. If omited, returns [Promise](#promise).
 
 __Example__
 
@@ -375,7 +384,7 @@ Call a stored procedure.
 __Arguments__
 
 - **procedure** - Name of the stored procedure to be executed.
-- **callback(err, recordsets, returnValue)** - A callback which is called after execution has completed, or an error has occurred. `returnValue` is also accessible as property of recordsets.
+- **callback(err, recordsets, returnValue)** - A callback which is called after execution has completed, or an error has occurred. `returnValue` is also accessible as property of recordsets. Optional. If omited, returns [Promise](#promise).
 
 __Example__
 
@@ -479,6 +488,35 @@ __Errors__ (synchronous)
 
 ---------------------------------------
 
+<a name="pipe" />
+### pipe(stream)
+
+Sets request to `stream` mode and pulls all rows from all recordsets to a given stream.
+
+__Arguments__
+
+- **stream** - Writable stream in object mode.
+
+__Example__
+
+```javascript
+var request = new sql.Request();
+request.pipe(stream);
+request.query('select * from mytable');
+stream.on('error', function(err) {
+    // ...
+});
+stream.on('finish', function() {
+    // ...
+});
+```
+
+__Version__
+
+2.0
+
+---------------------------------------
+
 <a name="query" />
 ### query(command, [callback])
 
@@ -487,7 +525,7 @@ Execute the SQL command. To execute commands like `create procedure` or if you p
 __Arguments__
 
 - **command** - T-SQL command to be executed.
-- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred.
+- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
 
 __Example__
 
@@ -537,7 +575,7 @@ NOTE: Table-Valued Parameter (TVP) is not supported in batch.
 __Arguments__
 
 - **batch** - T-SQL command to be executed.
-- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred.
+- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
 
 __Example__
 
@@ -569,7 +607,7 @@ Perform a bulk insert.
 __Arguments__
 
 - **table** - `sql.Table` instance.
-- **callback(err, rowCount)** - A callback which is called after bulk insert has completed, or an error has occurred.
+- **callback(err, rowCount)** - A callback which is called after bulk insert has completed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
 
 __Example__
 
@@ -627,7 +665,7 @@ request.cancel();
 <a name="transaction" />
 ## Transactions
 
-**Important:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is acquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. Transaction also contains a queue to make sure your requests are executed in series. After you call `commit` or `rollback`, connection is then released back to the connection pool.
+**IMPORTANT:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is acquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. Transaction also contains a queue to make sure your requests are executed in series. After you call `commit` or `rollback`, connection is then released back to the connection pool.
 
 ```javascript
 var transaction = new sql.Transaction(/* [connection] */);
@@ -657,11 +695,35 @@ transaction.begin(function(err) {
 
 Transaction can also be created by `var transaction = connection.transaction();`. Requests can also be created by `var request = transaction.request();`.
 
+__Aborted transactions__
+
+This example shows how you should correctly handle transaction errors when `abortTransactionOnError` (`XACT_ABORT`) is enabled. Added in 2.0.
+
+```javascript
+var transaction = new sql.Transaction(/* [connection] */);
+transaction.begin(function(err) {
+    // ... error checks
+    
+    transaction.on('rollback', function(aborted) {
+	    // emited with aborted === true
+    });
+
+    var request = new sql.Request(transaction);
+    request.query('insert into mytable (bitcolumn) values (2)', function(err, recordset) {
+        // insert should fail because of invalid value
+
+        transaction.rollback(function(err, recordset) {
+            // rollback fails because transaction was already rolled back
+        });
+    });
+});
+```
+
 ### Events
 
 - **begin** - Dispatched when transaction begin.
 - **commit** - Dispatched on successful commit.
-- **rollback** - Dispatched on successful rollback.
+- **rollback(aborted)** - Dispatched on successful rollback with an argument determining if the transaction was rolled back because of an error.
 
 ---------------------------------------
 
@@ -673,7 +735,7 @@ Begin a transaction.
 __Arguments__
 
 - **isolationLevel** - Controls the locking and row versioning behavior of TSQL statements issued by a connection. Optional. `READ_COMMITTED` by default. For possible values see `sql.ISOLATION_LEVEL`.
-- **callback(err)** - A callback which is called after transaction has began, or an error has occurred. Optional.
+- **callback(err)** - A callback which is called after transaction has began, or an error has occurred. Optional. If omited, returns [Promise](#promise).
 
 __Example__
 
@@ -697,7 +759,7 @@ Commit a transaction.
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after transaction has committed, or an error has occurred. Optional.
+- **callback(err)** - A callback which is called after transaction has committed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
 
 __Example__
 
@@ -725,7 +787,7 @@ Rollback a transaction.
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after transaction has rolled back, or an error has occurred. Optional.
+- **callback(err)** - A callback which is called after transaction has rolled back, or an error has occurred. Optional. If omited, returns [Promise](#promise).
 
 __Example__
 
@@ -747,7 +809,7 @@ __Errors__
 <a name="prepared-statement" />
 ## PreparedStatement
 
-**Important:** always use `PreparedStatement` class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call `prepare`, a single connection is aquired from the connection pool and all subsequent executions are executed exclusively on this connection. Prepared Statement also contains a queue to make sure your executions are executed in series. After you call `unprepare`, the connection is then released back to the connection pool.
+**IMPORTANT:** always use `PreparedStatement` class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call `prepare`, a single connection is aquired from the connection pool and all subsequent executions are executed exclusively on this connection. Prepared Statement also contains a queue to make sure your executions are executed in series. After you call `unprepare`, the connection is then released back to the connection pool.
 
 ```javascript
 var ps = new sql.PreparedStatement(/* [connection] */);
@@ -834,7 +896,7 @@ Prepare a statement.
 __Arguments__
 
 - **statement** - T-SQL statement to prepare.
-- **callback(err)** - A callback which is called after preparation has completed, or an error has occurred. Optional.
+- **callback(err)** - A callback which is called after preparation has completed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
 
 __Example__
 
@@ -860,7 +922,7 @@ Execute a prepared statement.
 __Arguments__
 
 - **values** - An object whose names correspond to the names of parameters that were added to the prepared statement before it was prepared.
-- **callback(err)** - A callback which is called after execution has completed, or an error has occurred. Optional.
+- **callback(err)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
 
 __Example__
 
@@ -939,7 +1001,7 @@ Unprepare a prepared statement.
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after unpreparation has completed, or an error has occurred. Optional.
+- **callback(err)** - A callback which is called after unpreparation has completed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
 
 __Example__
 
@@ -1032,6 +1094,31 @@ request.execute('MyCustomStoredProcedure', function(err, recordsets, returnValue
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
 
+<a name="promises" />
+## Promises
+
+You can retrieve a Promise when you omit a callback argument.
+
+```javascript
+var connection = new sql.Connection(config);
+connection.connect().then(function() {
+	var request = new sql.Request(connection);
+	request.query('select * from mytable').then(function(recordset) {
+		// ...
+	}).catch(function(err) {
+		// ...
+	});
+}).catch(function(err) {
+	// ...
+});
+```
+
+__Version__
+
+2.0
+
+Native Promise is returned by default. You can easily change this with `sql.Promise = require('myownpromisepackage')`.
+
 <a name="errors" />
 ## Errors
 
@@ -1064,6 +1151,7 @@ Type | Code | Description
 `TransactionError` | ENOTBEGUN | Transaction has not begun.
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
 `TransactionError` | EREQINPROG | Can't commit/rollback transaction. There is a request in progress.
+`TransactionError` | EABORT | Transaction has been aborted (because of XACT_ABORT set to ON).
 `RequestError` | EREQUEST | *Message from SQL Server*
 `RequestError` | ECANCEL | Canceled.
 `RequestError` | ETIMEOUT | Request timeout.
@@ -1240,7 +1328,7 @@ Output for the example above could look similar to this.
 <a name="license" />
 ## License
 
-Copyright (c) 2013-2014 Patrik Simek
+Copyright (c) 2013-2015 Patrik Simek
 
 The MIT License
 

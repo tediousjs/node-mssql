@@ -30,12 +30,12 @@
 		}
 	],
 	"dependencies": {
-		"tedious": "^1.8.1",
+		"tedious": "^1.10.0",
 		"generic-pool": "^2.1.1",
 		"promise": "^6.1.0"
 	},
 	"devDependencies": {
-		"coffee-script": "^1.8.0",
+		"coffee-script": "^1.9.0",
 		"mocha": "^2.1.0"
 	},
 	"engines": {
