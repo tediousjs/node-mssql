@@ -161,7 +161,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				
 				if err
 					@pool.drain => #prevent the pool from creating additional connections. we're done with it
-						@pool.destroyAllNow()
+						@pool?.destroyAllNow()
 						@pool = null
 
 				else
@@ -174,7 +174,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			unless @pool then return callback null
 			
 			@pool.drain =>
-				@pool.destroyAllNow()
+				@pool?.destroyAllNow()
 				@pool = null
 				callback null
 	

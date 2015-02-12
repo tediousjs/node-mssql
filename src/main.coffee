@@ -170,6 +170,9 @@ class Connection extends EventEmitter
 				resolve()
 	
 	_connect: (callback) ->
+		if not @driver
+			return callback new ConnectionError "Connection was closed. Create a new instance."
+			
 		if @connected
 			return callback new ConnectionError "Database is already connected! Call close before connecting to different database.", 'EALREADYCONNECTED'
 		
@@ -464,7 +467,9 @@ class PreparedStatement extends EventEmitter
 	
 	next: ->
 		if @_queue.length
-			@_queue.shift() null, @_pooledConnection
+			# defer processing of next request
+			process.nextTick =>
+				@_queue.shift() null, @_pooledConnection
 		
 		else
 			@_working = false
@@ -593,6 +598,7 @@ Class Transaction.
 class Transaction extends EventEmitter
 	_pooledConnection: null
 	_queue: null
+	_aborted: false
 	_working: false # if true, there is a request running at the moment
 
 	name: ""
@@ -608,7 +614,14 @@ class Transaction extends EventEmitter
 	constructor: (connection) ->
 		@connection = connection ? global_connection
 		@_queue = []
-		
+	
+	###
+	@private
+	###
+	
+	_abort: =>
+		@connection.driver.Transaction::_abort.call @
+	
 	###
 	Begin a transaction.
 	
@@ -684,12 +697,23 @@ class Transaction extends EventEmitter
 	###
 	
 	next: ->
+		if @_aborted
+			toAbort = @_queue
+			@_queue = []
+			
+			# this must be async to ensure it is not processed earlier than the request that caused abortion of this transaction
+			process.nextTick =>
+				while toAbort.length
+					toAbort.shift() new TransactionError "Transaction aborted.", "EABORT"
+				
 		if @_queue.length
-			@_queue.shift() null, @_pooledConnection
+			process.nextTick =>
+				@_queue.shift() null, @_pooledConnection
 		
 		else
+			# this must be synchronous so we can commit transaction in last request's callback
 			@_working = false
-		
+			
 		@
 	
 	###
@@ -743,6 +767,10 @@ class Transaction extends EventEmitter
 				resolve()
 		
 	_rollback: (callback) ->
+		if @_aborted
+			callback new TransactionError "Transaction has been aborted.", 'EABORT'
+			return @
+			
 		unless @_pooledConnection
 			callback new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
 			return @
@@ -752,7 +780,7 @@ class Transaction extends EventEmitter
 			return @
 
 		@connection.driver.Transaction::rollback.call @, (err) =>
-			unless err then @emit 'rollback'
+			unless err then @emit 'rollback', false
 			callback err
 			
 		@
@@ -1051,7 +1079,7 @@ class Request extends EventEmitter
 		@
 	
 	###
-	Sets request to stream mode and pipes all the rows to the given stream.
+	Sets request to `stream` mode and pulls all rows from all recordsets to a given stream.
 	
 	@param {Stream} stream Stream to pipe data into.
 	@returns {Stream}

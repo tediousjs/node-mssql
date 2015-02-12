@@ -560,8 +560,11 @@ global.TESTS =
 					assert.equal trollback, true
 					
 					locked = false
-
-					done()
+					
+					setTimeout ->
+						done()
+						
+					, 200
 		
 		tbegin = false
 		tran.on 'begin', -> tbegin = true
@@ -570,7 +573,9 @@ global.TESTS =
 		tran.on 'commit', -> tcommit = true
 		
 		trollback = false
-		tran.on 'rollback', -> trollback = true
+		tran.on 'rollback', (aborted) ->
+			assert.strictEqual aborted, false
+			trollback = true
 
 	'transaction with commit': (done) ->
 		tran = new sql.Transaction
@@ -601,9 +606,14 @@ global.TESTS =
 						assert.equal tcommit, true
 						assert.equal trollback, false
 						
-						done()
+						setTimeout ->
+							if locked then return done new Error "Still locked after commit."
+							
+							done()
+							
+						, 200
 						
-				, 500
+				, 200
 		
 		tbegin = false
 		tran.on 'begin', -> tbegin = true
@@ -618,13 +628,36 @@ global.TESTS =
 		tran = new sql.Transaction
 		tran.begin (err) ->
 			if err then return done err
+			
+			rollbackHandled = false
+			errorHandled = false
 
 			req = tran.request()
 			req[MODE] 'insert into tran_test values (\'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasd\')', (err, recordset) ->
 				assert.ok err
 				assert.equal err.message, 'String or binary data would be truncated.'
-
-				tran.rollback done
+				
+				tran.rollback (err) ->
+					assert.ok err
+					assert.equal err.message, 'Transaction has been aborted.'
+					
+					errorHandled = true
+			
+			# queue one more request that should not be processed because of error in previous one
+			req = tran.request()
+			req[MODE] 'insert into tran_test values (\'asdf\')', (err, recordset) ->
+				assert.ok err
+				assert.equal err.message, "Transaction aborted."
+				
+				unless rollbackHandled then return done new Error "Rollback event didn't fire."
+				unless errorHandled then return done new Error "Error event didn't fire."
+				
+				done()
+			
+			tran.on 'rollback', (aborted) ->
+				assert.strictEqual aborted, true
+				
+				rollbackHandled = true
 			
 	'transaction queue': (done) ->
 		tran = new sql.Transaction

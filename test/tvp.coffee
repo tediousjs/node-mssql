@@ -46,7 +46,7 @@ describe 'tedious tvp', ->
 				
 				done err
 	
-	it.skip 'query', (done) ->
+	it.skip 'query (todo)', (done) ->
 		tvp = new MSSQLTestType
 		tvp.rows.add 'asdf', 15
 		
@@ -62,7 +62,7 @@ describe 'tedious tvp', ->
 			
 			done()
 	
-	it.skip 'prepared statement', (done) ->
+	it.skip 'prepared statement (todo)', (done) ->
 		tvp = new MSSQLTestType
 		tvp.rows.add 'asdf', 15
 		

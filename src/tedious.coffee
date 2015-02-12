@@ -226,7 +226,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			@pool.acquire (err, connection) =>
 				if err
 					@pool.drain => #prevent the pool from creating additional connections. we're done with it
-						@pool.destroyAllNow()
+						@pool?.destroyAllNow()
 						@pool = null
 
 				else
@@ -237,18 +237,33 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 		
 		close: (callback) ->
 			unless @pool then return callback null
-			
+
 			@pool.drain =>
-				@pool.destroyAllNow()
+				@pool?.destroyAllNow()
 				@pool = null
 				callback null
 	
 	class TediousTransaction extends Transaction
+		_abort: ->
+			if not @_rollbackRequested
+				# transaction interrupted because of XACT_ABORT
+				@_pooledConnection.removeListener 'rollbackTransaction', @_abort
+				@connection.pool.release @_pooledConnection
+				@_pooledConnection = null
+				@_aborted = true
+				
+				@emit 'rollback', true
+			
 		begin: (callback) ->
+			@_aborted = false
+			@_rollbackRequested = false
+			
 			@connection.pool.acquire (err, connection) =>
 				if err then return callback err
 				
 				@_pooledConnection = connection
+				@_pooledConnection.on 'rollbackTransaction', @_abort
+					
 				connection.beginTransaction (err) =>
 					if err then err = TransactionError err
 					callback err
@@ -259,15 +274,18 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			@_pooledConnection.commitTransaction (err) =>
 				if err then err = TransactionError err
 				
+				@_pooledConnection.removeListener 'rollbackTransaction', @_abort
 				@connection.pool.release @_pooledConnection
 				@_pooledConnection = null
 				
 				callback err
 
 		rollback: (callback) ->
+			@_rollbackRequested = true
 			@_pooledConnection.rollbackTransaction (err) =>
 				if err then err = TransactionError err
 				
+				@_pooledConnection.removeListener 'rollbackTransaction', @_abort
 				@connection.pool.release @_pooledConnection
 				@_pooledConnection = null
 				

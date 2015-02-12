@@ -106,7 +106,7 @@ describe 'tedious test suite', ->
 	it 'transaction with commit', (done) ->
 		TESTS['transaction with commit'] done
 	
-	it.skip 'transaction with error (todo)', (done) ->
+	it 'transaction with error (XACT_ABORT set to ON)', (done) ->
 		TESTS['transaction with error'] done
 	
 	it 'transaction queue', (done) ->
@@ -118,8 +118,8 @@ describe 'tedious test suite', ->
 	it 'request timeout', (done) ->
 		TESTS['request timeout'] done, 'tedious', /Timeout: Request failed to complete in 500ms/
 	
-	after ->
-		sql.close()
+	after (done) ->
+		sql.close done
 
 describe 'tedious bulk load', ->
 	before (done) ->
@@ -137,8 +137,8 @@ describe 'tedious bulk load', ->
 	it 'bulk load (temporary table)', (done) ->
 		TESTS['bulk load'] '#anohter_bulk_table', done
 	
-	after ->
-		sql.close()
+	after (done) ->
+		sql.close done
 
 describe 'tedious dates and times', ->
 	before (done) ->
@@ -182,8 +182,8 @@ describe 'tedious dates and times', ->
 	it 'smalldatetime as parameter', (done) ->
 		TIMES['smalldatetime as parameter'] done
 	
-	after ->
-		sql.close()
+	after (done) ->
+		sql.close done
 
 describe 'tedious multiple connections test suite', ->
 	before (done) ->
@@ -204,10 +204,10 @@ describe 'tedious multiple connections test suite', ->
 	it 'global connection', (done) ->
 		TESTS['global connection'] done
 
-	after ->
+	after (done) ->
 		connection1.close()
 		connection2.close()
-		sql.close()
+		sql.close done
 
 describe 'tedious connection errors', ->
 	it 'login failed', (done) ->
