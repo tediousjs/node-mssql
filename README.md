@@ -704,17 +704,29 @@ var transaction = new sql.Transaction(/* [connection] */);
 transaction.begin(function(err) {
     // ... error checks
     
+    var rolledBack = false;
+    
     transaction.on('rollback', function(aborted) {
 	    // emited with aborted === true
+	    
+	    rolledBack = true;
     });
 
     var request = new sql.Request(transaction);
     request.query('insert into mytable (bitcolumn) values (2)', function(err, recordset) {
         // insert should fail because of invalid value
 
-        transaction.rollback(function(err, recordset) {
-            // rollback fails because transaction was already rolled back
-        });
+		if (err) {
+			if (!rolledBack) {
+		        transaction.rollback(function(err) {
+		            // ... error checks
+		        });
+		    }
+		} else {
+			transaction.commit(function(err) {
+	            // ... error checks
+	        });
+		}
     });
 });
 ```
