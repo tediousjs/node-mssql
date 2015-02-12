@@ -568,6 +568,20 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					
 					if @_isBatch
 						if Object.keys(@parameters).length
+							for name, param of @parameters
+								value = getTediousType(param.type).validate param.value
+								if value instanceof TypeError
+									value = new RequestError "Validation failed for parameter \'#{name}\'. #{value.message}", 'EPARAM'
+									
+									if @verbose
+										@_log "    error: #{value}"
+										@_log "---------- completed ----------"
+										
+									@_release connection
+									return callback? value
+									
+								param.value = value
+							
 							declarations = ("@#{name} #{declare(param.type, param)}" for name, param of @parameters)
 							assigns = ("@#{name} = #{cast(param.value, param.type, param)}" for name, param of @parameters)
 							selects = ("@#{name} as [#{name}]" for name, param of @parameters when param.io is 2)

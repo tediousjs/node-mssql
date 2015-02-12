@@ -1,6 +1,6 @@
 # node-mssql [![Dependency Status](https://david-dm.org/patriksimek/node-mssql.png)](https://david-dm.org/patriksimek/node-mssql) [![NPM version](https://badge.fury.io/js/mssql.png)](http://badge.fury.io/js/mssql)
 
-An easy-to-use MSSQL database connector for Node.js.
+An easy-to-use MSSQL database connector for Node.js / io.js.
 
 There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without losing any important functionality. node-mssql uses other TDS modules as drivers and offer easy to use unified interface. It also add extra features and bug fixes.
 
@@ -29,11 +29,12 @@ At the moment it support three TDS modules:
 - Updated to latest Tedious 1.10 (not released yet)
 - [Promises](#promise)
 - [Pipe request to object stream](#pipe)
-- Transaction Abort Handling
+- Transaction abort handling
+- Integrated type checks
 
 ## 1.x to 2.x changes
 
-- Methods with optional callback now returns `Promise` insted of itself when callback argument is omited.
+- Methods with optional callback now returns `Promise` instead of itself when callback argument is omited.
 
 ## Installation
 

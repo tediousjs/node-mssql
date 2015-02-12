@@ -716,6 +716,22 @@ global.TESTS =
 	
 				done null
 	
+	'type validation': (done) ->
+		r = new sql.Request
+		r.input 'image', sql.VarBinary, 'asdf'
+		p = r[MODE] 'select * from @image'
+		
+		p.then (recordset) ->
+			done new Error "Statement should fail."
+
+		p.catch (err) ->
+			try
+				assert.equal err.message, "Validation failed for parameter 'image'. Invalid buffer."
+			catch ex
+				return done ex
+				
+			done()
+	
 	'connection 1': (done, connection) ->
 		request = connection.request()
 		request[MODE] 'select SYSTEM_USER as u', (err, recordset) ->

@@ -118,6 +118,13 @@ describe 'tedious test suite', ->
 	it 'request timeout', (done) ->
 		TESTS['request timeout'] done, 'tedious', /Timeout: Request failed to complete in 500ms/
 	
+	it 'type validation', (done) ->
+		TESTS['type validation'] done
+	
+	it 'type validation (batch)', (done) ->
+		global.MODE = 'batch'
+		TESTS['type validation'] done
+	
 	after (done) ->
 		sql.close done
 
