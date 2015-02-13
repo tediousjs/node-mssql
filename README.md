@@ -31,6 +31,7 @@ At the moment it support three TDS modules:
 - [Pipe request to object stream](#pipe)
 - Transaction abort handling
 - Integrated type checks
+- [CLI](#cli)
 
 ## 1.x to 2.x changes
 
@@ -214,6 +215,7 @@ sql.connect(config, function(err) {
 
 ### Other
 
+* [CLI](#cli)
 * [Geography and Geometry](#geography)
 * [Table-Valued Parameter](#tvp)
 * [Errors](#errors)
@@ -1033,6 +1035,44 @@ ps.prepare('select @param as value', function(err, recordsets) {
 
 __Errors__
 - ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
+
+<a name="cli" />
+## CLI
+
+Before you can start using CLI, you must install `mssql` globally with `npm install mssql -g`. Once you do that you will be able to execute `mssql` command.
+
+### Setup
+
+Create a `.mssql.json` configuration file (anywhere). Structure of the file is the same as the standard configuration object.
+
+```json
+{
+    "user": "...",
+    "password": "...",
+    "server": "localhost",
+    "database": "..."
+}
+```
+
+### Example
+
+```shell
+echo "select * from mytable" | mssql
+```
+Results in:
+```json
+[[{"username":"patriksimek","password":"tooeasy"}]]
+```
+
+You can also query for multiple recordsets.
+
+```shell
+echo "select * from mytable; slect * from myothertable" | mssql
+```
+Results in:
+```json
+[[{"username":"patriksimek","password":"tooeasy"}],[{"id":15,"name":"Product name"}]]
+```
 
 <a name="geography" />
 ## Geography and Geometry

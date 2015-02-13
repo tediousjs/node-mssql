@@ -44,5 +44,8 @@
 	"scripts": {
 		"test": "mocha",
 		"prepublish": "coffee --compile --output ./lib ./src"
+	},
+	"bin": {
+		"mssql": "./bin/mssql"
 	}
 }

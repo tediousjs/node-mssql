@@ -977,7 +977,7 @@ class Request extends EventEmitter
 	###
 	
 	batch: (batch, callback) ->
-		@stream ?= @connection.config.stream
+		@stream ?= @connection?.config.stream
 		
 		if @stream or callback?
 			return @_batch batch, callback
@@ -1033,7 +1033,7 @@ class Request extends EventEmitter
 	###
 	
 	bulk: (table, callback) ->
-		@stream ?= @connection.config.stream
+		@stream ?= @connection?.config.stream
 		
 		if @stream or callback?
 			return @_bulk table, callback
@@ -1129,7 +1129,7 @@ class Request extends EventEmitter
 	###
 	
 	query: (command, callback) ->
-		@stream ?= @connection.config.stream
+		@stream ?= @connection?.config.stream
 		
 		if @stream or callback?
 			return @_query command, callback
@@ -1204,7 +1204,7 @@ class Request extends EventEmitter
 	###
 	
 	execute: (command, callback) ->
-		@stream ?= @connection.config.stream
+		@stream ?= @connection?.config.stream
 		
 		if @stream or callback?
 			return @_execute command, callback
