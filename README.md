@@ -8,11 +8,12 @@ There is also [co](https://github.com/visionmedia/co) wrapper available - [co-ms
 If you're looking for session store for connect/express, visit [connect-mssql](https://github.com/patriksimek/connect-mssql).
 
 **Extra features:**
-- Unified interface for multiple MSSQL modules
+- Unified interface for multiple MSSQL drivers
 - Connection pooling with Transactions and Prepared statements
-- Parametrized Stored Procedures in [node-tds](https://github.com/cretz/node-tds) and [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver)
+- Parametrized Stored Procedures for all drivers
 - Serialization of Geography and Geometry CLR types
 - Injects original TDS modules with enhancements and bug fixes
+- Support both Promises and standard callbacks
 
 At the moment it support three TDS modules:
 - [Tedious](https://github.com/pekim/tedious) by Mike D Pilsbury (pure javascript - windows/osx/linux)
@@ -1041,7 +1042,7 @@ __Errors__
 
 Before you can start using CLI, you must install `mssql` globally with `npm install mssql -g`. Once you do that you will be able to execute `mssql` command.
 
-### Setup
+__Setup__
 
 Create a `.mssql.json` configuration file (anywhere). Structure of the file is the same as the standard configuration object.
 
@@ -1054,7 +1055,7 @@ Create a `.mssql.json` configuration file (anywhere). Structure of the file is t
 }
 ```
 
-### Example
+__Example__
 
 ```shell
 echo "select * from mytable" | mssql
