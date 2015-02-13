@@ -1074,6 +1074,10 @@ Results in:
 [[{"username":"patriksimek","password":"tooeasy"}],[{"id":15,"name":"Product name"}]]
 ```
 
+__Version__
+
+2.0
+
 <a name="geography" />
 ## Geography and Geometry
 
@@ -1166,11 +1170,11 @@ connection.connect().then(function() {
 });
 ```
 
+Native Promise is returned by default. You can easily change this with `sql.Promise = require('myownpromisepackage')`.
+
 __Version__
 
 2.0
-
-Native Promise is returned by default. You can easily change this with `sql.Promise = require('myownpromisepackage')`.
 
 <a name="errors" />
 ## Errors
