@@ -137,7 +137,7 @@ describe 'tedious bulk load', ->
 			
 			req = new sql.Request
 			req.query 'delete from bulk_table', done
-		
+	
 	it 'bulk load (table)', (done) ->
 		TESTS['bulk load'] 'bulk_table', done
 		
@@ -147,47 +147,100 @@ describe 'tedious bulk load', ->
 	after (done) ->
 		sql.close done
 
-describe 'tedious dates and times', ->
+describe 'tedious dates and times (local)', ->
 	before (done) ->
 		global.DRIVER = 'tedious'
 		
-		sql.connect config(), done
-			
+		sql.connect config(options: useUTC: false), done
+
+	beforeEach (done) ->
+		global.MODE = 'query'
+		done()
+
 	it 'time', (done) ->
-		TIMES['time'] done
+		TIMES['time'] false, done
 		
 	it 'time as parameter', (done) ->
-		TIMES['time as parameter'] done
+		TIMES['time as parameter'] false, done
 		
 	it 'date', (done) ->
-		TIMES['date'] done
+		TIMES['date'] false, done
 		
 	it 'date as parameter', (done) ->
-		TIMES['date as parameter'] done
+		TIMES['date as parameter'] false, done
 		
 	it 'datetime', (done) ->
-		TIMES['datetime'] done
+		TIMES['datetime'] false, done
 		
 	it 'datetime as parameter', (done) ->
-		TIMES['datetime as parameter'] done
+		TIMES['datetime as parameter'] false, done
 		
 	it 'datetime2', (done) ->
-		TIMES['datetime2'] done
+		TIMES['datetime2'] false, done
 		
 	it 'datetime2 as parameter', (done) ->
-		TIMES['datetime2 as parameter'] done
+		TIMES['datetime2 as parameter'] false, done
 		
 	it 'datetimeoffset', (done) ->
-		TIMES['datetimeoffset'] done
+		TIMES['datetimeoffset'] false, done
 		
 	it 'datetimeoffset as parameter', (done) ->
-		TIMES['datetimeoffset as parameter'] done
+		TIMES['datetimeoffset as parameter'] false, done
 			
 	it 'smalldatetime', (done) ->
-		TIMES['smalldatetime'] done
+		TIMES['smalldatetime'] false, done
 		
 	it 'smalldatetime as parameter', (done) ->
-		TIMES['smalldatetime as parameter'] done
+		TIMES['smalldatetime as parameter'] false, done
+	
+	after (done) ->
+		sql.close done
+
+describe 'tedious dates and times (utc)', ->
+	before (done) ->
+		global.DRIVER = 'tedious'
+		
+		sql.connect config(options: useUTC: true), done
+
+	beforeEach (done) ->
+		global.MODE = 'query'
+		done()
+
+	it 'time', (done) ->
+		TIMES['time'] true, done
+		
+	it 'time as parameter', (done) ->
+		TIMES['time as parameter'] true, done
+		
+	it 'date', (done) ->
+		TIMES['date'] true, done
+		
+	it 'date as parameter', (done) ->
+		TIMES['date as parameter'] true, done
+		
+	it 'datetime', (done) ->
+		TIMES['datetime'] true, done
+		
+	it 'datetime as parameter', (done) ->
+		TIMES['datetime as parameter'] true, done
+		
+	it 'datetime2', (done) ->
+		TIMES['datetime2'] true, done
+		
+	it 'datetime2 as parameter', (done) ->
+		TIMES['datetime2 as parameter'] true, done
+		
+	it 'datetimeoffset', (done) ->
+		TIMES['datetimeoffset'] true, done
+		
+	it 'datetimeoffset as parameter', (done) ->
+		TIMES['datetimeoffset as parameter'] true, done
+			
+	it 'smalldatetime', (done) ->
+		TIMES['smalldatetime'] true, done
+		
+	it 'smalldatetime as parameter', (done) ->
+		TIMES['smalldatetime as parameter'] true, done
 	
 	after (done) ->
 		sql.close done

@@ -109,42 +109,42 @@ if process.platform.match(/^win/)
 			sql.connect config(), done
 				
 		it 'time', (done) ->
-			TIMES['time'] done
+			TIMES['time'] true, done
 			
 		it 'time as parameter', (done) ->
-			TIMES['time as parameter'] done
+			TIMES['time as parameter'] true, done
 			
 		it 'date', (done) ->
-			TIMES['date'] done
+			TIMES['date'] true, done
 			
 		it 'date as parameter', (done) ->
-			TIMES['date as parameter'] done
+			TIMES['date as parameter'] true, done
 			
 		it 'datetime', (done) ->
-			TIMES['datetime'] done
+			TIMES['datetime'] true, done
 			
 		it 'datetime as parameter', (done) ->
-			TIMES['datetime as parameter'] done
+			TIMES['datetime as parameter'] true, done
 			
 		it 'datetime2', (done) ->
-			TIMES['datetime2'] done
+			TIMES['datetime2'] true, done
 			
 		it 'datetime2 as parameter', (done) ->
-			TIMES['datetime2 as parameter'] done
+			TIMES['datetime2 as parameter'] true, done
 		
 		# https://github.com/WindowsAzure/node-sqlserver/issues/160	
 		it.skip 'datetimeoffset (buggy in msnodesql)', (done) ->
-			TIMES['datetimeoffset'] done
+			TIMES['datetimeoffset'] true, done
 		
 		# https://github.com/WindowsAzure/node-sqlserver/issues/160	
 		it.skip 'datetimeoffset as parameter (buggy in msnodesql)', (done) ->
-			TIMES['datetimeoffset as parameter'] done
+			TIMES['datetimeoffset as parameter'] true, done
 			
 		it 'smalldatetime', (done) ->
-			TIMES['smalldatetime'] done
+			TIMES['smalldatetime'] true, done
 			
 		it 'smalldatetime as parameter', (done) ->
-			TIMES['smalldatetime as parameter'] done
+			TIMES['smalldatetime as parameter'] true, done
 		
 		after ->
 			sql.close()
