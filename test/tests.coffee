@@ -439,19 +439,29 @@ global.TESTS =
 			ps.input 'num', sql.Int
 			ps.input 'num2', sql.Decimal(5, 2)
 			ps.input 'chr', sql.VarChar(sql.MAX)
-			ps.prepare 'select @num as number, @num2 as number2, @chr as chars', (err) ->
+			ps.input 'chr2', sql.VarChar(sql.MAX)
+			ps.input 'chr3', sql.VarChar(5)
+			ps.input 'chr4', sql.VarChar(sql.MAX)
+			ps.prepare 'select @num as number, @num2 as number2, @chr as chars, @chr2 as chars2, @chr3 as chars3, @chr3 as chars4', (err) ->
 				if err then return done err
 
 				complete = (err, recordset) ->
+					if err
+						return ps.unprepare ->
+							done err
+					
 					assert.equal recordset.length, 1
 					assert.equal recordset[0].number, 555
 					assert.equal recordset[0].number2, 666.77
 					assert.equal recordset[0].chars, 'asdf'
+					assert.equal recordset[0].chars2, null
+					assert.equal recordset[0].chars3, ''
+					assert.equal recordset[0].chars4, ''
 					
 					ps.unprepare done
 				
 				ps.stream = stream
-				r = ps.execute {num: 555, num2: 666.77, chr: 'asdf'}, complete
+				r = ps.execute {num: 555, num2: 666.77, chr: 'asdf', chr2: null, chr3: '', chr4: ''}, complete
 			
 				rsts = []
 				errs = []

@@ -1058,7 +1058,7 @@ Create a `.mssql.json` configuration file (anywhere). Structure of the file is t
 __Example__
 
 ```shell
-echo "select * from mytable" | mssql
+echo "select * from mytable" | mssql /path/to/config
 ```
 Results in:
 ```json
@@ -1074,6 +1074,8 @@ Results in:
 ```json
 [[{"username":"patriksimek","password":"tooeasy"}],[{"id":15,"name":"Product name"}]]
 ```
+
+If you omit config path argument, mssql will try to load it from current working directory.
 
 __Version__
 
