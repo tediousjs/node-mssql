@@ -20,19 +20,15 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 1.3.x (stable, npm)
+## What's new in 2.0 (stable, npm)
 
-- Updated to latest Tedious 1.7.x
-- Tedious: Char and NChar types are now available as input parameters
-
-## Coming soon in 2.0 (unstable, git)
-
-- Updated to latest Tedious 1.10 (not released yet)
+- Updated to latest Tedious 1.10
 - [Promises](#promise)
 - [Pipe request to object stream](#pipe)
 - Transaction abort handling
 - Integrated type checks
 - [CLI](#cli)
+- Minor fixes
 
 ## 1.x to 2.x changes
 

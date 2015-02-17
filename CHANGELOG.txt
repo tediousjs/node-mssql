@@ -1,3 +1,15 @@
+v2.0.0 (2015-02-17)
+-------------------
+[change] Updated to latest Tedious 1.10.0
+[new] Promises
+[new] Pipe request to object stream
+[new] Integrated type checks
+[new] CLI
+[fix] Transaction Abort Handling
+[fix] Allow rollback on transaction with queued requests
+[fix] Connection pool fixes
+[fix] Minor fixes
+
 v1.3.0 (2014-10-27)
 -------------------
 [change] Updated to latest Tedious 1.7.0
