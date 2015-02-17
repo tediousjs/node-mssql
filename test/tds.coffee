@@ -90,6 +90,9 @@ describe 'node-tds test suite', ->
 	it 'transaction with rollback', (done) ->
 		TESTS['transaction with rollback'] done
 	
+	it 'transaction with rollback (manually interrupted)', (done) ->
+		TESTS['transaction with rollback (manually interrupted)'] done
+	
 	it 'transaction with commit', (done) ->
 		TESTS['transaction with commit'] done
 	

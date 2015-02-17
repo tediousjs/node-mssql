@@ -586,6 +586,42 @@ global.TESTS =
 		tran.on 'rollback', (aborted) ->
 			assert.strictEqual aborted, false
 			trollback = true
+	
+	'transaction with rollback (manually interrupted)': (done) ->
+		aborted = false
+		first = false
+		
+		tran = new sql.Transaction
+		tran.begin (err) ->
+			if err then return done err
+
+			req1 = tran.request()
+			req1[MODE] 'select 1', (err, recordset) ->
+				if err then return done err
+				
+				first = true
+				
+				# manually interrupt transaction
+				tran.rollback (err) ->
+					if err then return done err
+					
+					assert.strictEqual trollback, true
+					done()
+
+			req2 = tran.request()
+			req2[MODE] 'select 1', (err, recordset) ->
+				assert.ok err instanceof sql.TransactionError
+				assert.equal err.message, 'Transaction aborted.'
+				
+				assert.strictEqual first, true
+				
+				aborted = true
+		
+		trollback = false
+		tran.on 'rollback', (x) ->
+			assert.strictEqual first, true
+			assert.strictEqual aborted, true
+			trollback = true
 
 	'transaction with commit': (done) ->
 		tran = new sql.Transaction

@@ -682,6 +682,10 @@ class Transaction extends EventEmitter
 		if @_working
 			callback new TransactionError "Can't commit transaction. There is a request in progress.", 'EREQINPROG'
 			return @
+			
+		if @_queue.length
+			callback new TransactionError "Can't commit transaction. There are request in queue.", 'EREQINPROG'
+			return @
 
 		@connection.driver.Transaction::commit.call @, (err) =>
 			unless err then @emit 'commit'
@@ -705,15 +709,17 @@ class Transaction extends EventEmitter
 			process.nextTick =>
 				while toAbort.length
 					toAbort.shift() new TransactionError "Transaction aborted.", "EABORT"
-				
+		
+		# this must be synchronous so we can rollback a transaction or commit transaction in last request's callback
+		@_working = false
+		
 		if @_queue.length
 			process.nextTick =>
+				if @_aborted then return @next() # transaction aborted manually
+				
+				@_working = true
 				@_queue.shift() null, @_pooledConnection
-		
-		else
-			# this must be synchronous so we can commit transaction in last request's callback
-			@_working = false
-			
+
 		@
 	
 	###
@@ -731,7 +737,7 @@ class Transaction extends EventEmitter
 			callback new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
 			return @
 			
-		if @_working
+		if @_working or @_queue.length
 			@_queue.push callback
 		
 		else
@@ -778,9 +784,12 @@ class Transaction extends EventEmitter
 		if @_working
 			callback new TransactionError "Can't rollback transaction. There is a request in progress.", 'EREQINPROG'
 			return @
+		
+		if @_queue.length
+			@_aborted = true
 
 		@connection.driver.Transaction::rollback.call @, (err) =>
-			unless err then @emit 'rollback', false
+			unless err then @emit 'rollback', @_aborted
 			callback err
 			
 		@
