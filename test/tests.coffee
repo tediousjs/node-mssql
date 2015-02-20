@@ -785,8 +785,6 @@ global.TESTS =
 			unless err
 				if err then return done err
 				
-				console.log recordset.columns
-				
 				assert.strictEqual recordset.columns.x.type, sql.Int
 				assert.strictEqual recordset.columns.c1.type, sql.BigInt
 				assert.strictEqual recordset.columns.c2.type, sql.Int
