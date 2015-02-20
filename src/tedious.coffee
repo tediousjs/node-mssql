@@ -49,7 +49,7 @@ getTediousType = (type) ->
 @ignore
 ###
 
-getMssqlType = (type) ->
+getMssqlType = (type, length) ->
 	switch type
 		when tds.TYPES.Char then return TYPES.Char
 		when tds.TYPES.NChar then return TYPES.NChar
@@ -57,18 +57,36 @@ getMssqlType = (type) ->
 		when tds.TYPES.NVarChar then return TYPES.NVarChar
 		when tds.TYPES.Text then return TYPES.Text
 		when tds.TYPES.NText then return TYPES.NText
-		when tds.TYPES.Int, tds.TYPES.IntN then return TYPES.Int
+		when tds.TYPES.Int then return TYPES.Int
+		when tds.TYPES.IntN
+			if length is 8 then return TYPES.BigInt
+			if length is 4 then return TYPES.Int
+			if length is 2 then return TYPES.SmallInt
+			return TYPES.TinyInt
+			
 		when tds.TYPES.BigInt then return TYPES.BigInt
 		when tds.TYPES.TinyInt then return TYPES.TinyInt
 		when tds.TYPES.SmallInt then return TYPES.SmallInt
 		when tds.TYPES.Bit, tds.TYPES.BitN then return TYPES.Bit
-		when tds.TYPES.Float, tds.TYPES.FloatN then return TYPES.Float
+		when tds.TYPES.Float then return TYPES.Float
+		when tds.TYPES.FloatN
+			if length is 8 then return TYPES.FloatN
+			return TYPES.Real
+		
 		when tds.TYPES.Real then return TYPES.Real
-		when tds.TYPES.Money, tds.TYPES.MoneyN then return TYPES.Money
+		when tds.TYPES.Money then return TYPES.Money
+		when tds.TYPES.MoneyN
+			if length is 8 then return TYPES.Money
+			return TYPES.SmallMoney
+			
 		when tds.TYPES.SmallMoney then return TYPES.SmallMoney
 		when tds.TYPES.Numeric, tds.TYPES.NumericN then return TYPES.Numeric
 		when tds.TYPES.Decimal, tds.TYPES.DecimalN then return TYPES.Decimal
-		when tds.TYPES.DateTime, tds.TYPES.DateTimeN then return TYPES.DateTime
+		when tds.TYPES.DateTime then return TYPES.DateTime
+		when tds.TYPES.DateTimeN
+			if length is 8 then return TYPES.DateTime
+			return TYPES.SmallDateTime
+		
 		when tds.TYPES.TimeN then return TYPES.Time
 		when tds.TYPES.DateN then return TYPES.Date
 		when tds.TYPES.DateTime2N then return TYPES.DateTime2
@@ -93,7 +111,7 @@ createColumns = (metadata) ->
 			index: index
 			name: column.colName
 			length: column.dataLength
-			type: getMssqlType(column.type)
+			type: getMssqlType(column.type, column.dataLength)
 			scale: column.scale
 			precision: column.precision
 			nullable: !!(column.flags & 0x01)

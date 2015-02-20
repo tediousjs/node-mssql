@@ -101,6 +101,9 @@ if process.platform.match(/^win/)
 	
 		it.skip 'request timeout (not supported by node-tds)', (done) ->
 			TESTS['request timeout'] done, 'msnodesql'
+	
+		it 'dataLength type correction', (done) ->
+			TESTS['dataLength type correction'] done
 		
 		after ->
 			sql.close()

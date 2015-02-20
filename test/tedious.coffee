@@ -124,6 +124,9 @@ describe 'tedious test suite', ->
 	it 'type validation', (done) ->
 		TESTS['type validation'] done
 	
+	it 'dataLength type correction', (done) ->
+		TESTS['dataLength type correction'] done
+	
 	it 'type validation (batch)', (done) ->
 		global.MODE = 'batch'
 		TESTS['type validation'] done
@@ -298,6 +301,10 @@ describe 'tedious connection pooling', ->
 		connection2.close()
 
 describe 'tedious stress', ->
+	beforeEach (done) ->
+		global.MODE = 'query'
+		done()
+		
 	it.skip 'concurrent connections', (done) ->
 		TESTS['concurrent connections'] done, 'tedious'
 	
@@ -305,7 +312,11 @@ describe 'tedious stress', ->
 		TESTS['concurrent requests'] done, 'tedious'
 
 	it.skip 'streaming off', (done) ->
+		@timeout 600000
+		
 		TESTS['streaming off'] done, 'tedious'
 	
 	it.skip 'streaming on', (done) ->
+		@timeout 600000
+		
 		TESTS['streaming on'] done, 'tedious'

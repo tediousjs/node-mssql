@@ -105,6 +105,9 @@ describe 'node-tds test suite', ->
 	it.skip 'request timeout (not supported by node-tds)', (done) ->
 		TESTS['request timeout'] done, 'tds'
 	
+	it 'dataLength type correction', (done) ->
+		TESTS['dataLength type correction'] done
+	
 	after ->
 		sql.close()
 

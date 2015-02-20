@@ -778,6 +778,21 @@ global.TESTS =
 				
 			done()
 	
+	'dataLength type correction': (done) ->
+		sql.on 'error', (err) -> console.error err
+		r = new sql.Request
+		r.query 'declare @t1 table (c1 bigint, c2 int);insert into @t1 (c1, c2) values (1, 2);with tt1 as ( select * from @t1 ), tt2 as (select count(c1) as x from tt1) select * from tt2 left outer join tt1 on 1=1', (err, recordset) ->
+			unless err
+				if err then return done err
+				
+				console.log recordset.columns
+				
+				assert.strictEqual recordset.columns.x.type, sql.Int
+				assert.strictEqual recordset.columns.c1.type, sql.BigInt
+				assert.strictEqual recordset.columns.c2.type, sql.Int
+
+			done err
+	
 	'connection 1': (done, connection) ->
 		request = connection.request()
 		request[MODE] 'select SYSTEM_USER as u', (err, recordset) ->
@@ -965,8 +980,6 @@ global.TESTS =
 				requests.push r
 
 	'streaming off': (done, driver) ->
-		@timeout 60000
-		
 		sql.connect require('./_connection')(driver)(requestTimeout: 60000), (err) ->
 			if err then return done err
 			
@@ -979,8 +992,6 @@ global.TESTS =
 				done()
 
 	'streaming on': (done, driver) ->
-		@timeout 60000
-		
 		rows = 0
 		
 		sql.connect require('./_connection')(driver)(requestTimeout: 60000), (err) ->
