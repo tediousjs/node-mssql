@@ -333,8 +333,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 
 			started = Date.now()
 			errors = []
-			handleError = (err) =>
-				e = new RequestError err.message, 'EREQUEST'
+			handleError = (info) =>
+				err = new Error info.message
+				err.info = info
+				e = RequestError err, 'EREQUEST'
 
 				if @stream
 					@emit 'error', e
@@ -361,7 +363,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					done = (err, rowCount) =>
 						# to make sure we handle no-sql errors as well
 						if err and err.message isnt errors[errors.length - 1]?.message
-							err = RequestError err
+							err = RequestError err, 'EREQUEST'
 							
 							if @stream
 								@emit 'error', err
@@ -431,8 +433,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			errors = []
 			batchLastRow = null
 			batchHasOutput = false
-			handleError = (err) =>
-				e = new RequestError err.message, 'EREQUEST'
+			handleError = (info) =>
+				err = new Error info.message
+				err.info = info
+				e = RequestError err, 'EREQUEST'
 				
 				if @stream
 					@emit 'error', e
@@ -459,7 +463,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req = new tds.Request command, (err) =>
 						# to make sure we handle no-sql errors as well
 						if err and err.message isnt errors[errors.length - 1]?.message
-							err = RequestError err
+							err = RequestError err, 'EREQUEST'
 							
 							if @stream
 								@emit 'error', err
@@ -638,8 +642,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			returnValue = 0
 			started = Date.now()
 			errors = []
-			handleError = (err) =>
-				e = new RequestError err.message, 'EREQUEST'
+			handleError = (info) =>
+				err = new Error info.message
+				err.info = info
+				e = RequestError err, 'EREQUEST'
 				
 				if @stream
 					@emit 'error', e
@@ -666,7 +672,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req = new tds.Request procedure, (err) =>
 						# to make sure we handle no-sql errors as well
 						if err and err.message isnt errors[errors.length - 1]?.message
-							err = RequestError err
+							err = RequestError err, 'EREQUEST'
 							
 							if @stream
 								@emit 'error', err

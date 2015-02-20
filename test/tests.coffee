@@ -303,6 +303,15 @@ global.TESTS =
 		
 		complete = (err, recordset) ->
 			assert.equal err instanceof sql.RequestError, true
+			
+			assert.strictEqual err.message, 'Invalid object name \'notexistingtable\'.'
+			assert.strictEqual err.code, 'EREQUEST'
+			assert.strictEqual err.number, 208
+			
+			if global.DRIVER isnt 'msnodesql'
+				assert.strictEqual err.lineNumber, 1
+				assert.strictEqual err.state, 1
+				assert.strictEqual err.class, 16
 
 			done()
 		

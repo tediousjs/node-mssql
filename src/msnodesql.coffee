@@ -296,13 +296,20 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							row[columns[idx].name] = data
 			
 					req.once 'error', (err) =>
+						e = RequestError err
+						if (/^\[Microsoft\]\[SQL Server Native Client 11\.0\]\[SQL Server\](.*)$/).exec err.message
+							e.message = RegExp.$1
+						
+						e.number = err.code
+						e.code = 'EREQUEST'
+						
 						if @verbose and not @nested
 							elapsed = Date.now() - started
 							@_log "    error: #{err}"
 							@_log " duration: #{elapsed}ms"
 							@_log "---------- completed ----------"
-							
-						callback? RequestError err
+						
+						callback? e
 					
 					req.once 'done', =>
 						unless @nested

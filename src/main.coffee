@@ -1315,7 +1315,14 @@ class RequestError extends Error
 	constructor: (message, code) ->
 		unless @ instanceof RequestError
 			if message instanceof Error
-				err = new RequestError message.message, message.code
+				err = new RequestError message.message, message.code ? code
+				
+				err.number = message.info?.number ? message.code # err.code is returned by msnodesql driver
+				err.lineNumber = message.info?.lineNumber
+				err.state = message.info?.state ? message.sqlstate # err.sqlstate is returned by msnodesql driver
+				err.class = message.info?.class ? message.info?.severity # err.severity is returned by tds
+				err.serverName = message.info?.serverName
+				err.procName = message.info?.procName
 				
 				Object.defineProperty err, 'originalError', value: message
 				Error.captureStackTrace err, arguments.callee

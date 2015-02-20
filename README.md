@@ -12,7 +12,7 @@ If you're looking for session store for connect/express, visit [connect-mssql](h
 - Connection pooling with Transactions and Prepared statements
 - Parametrized Stored Procedures for all drivers
 - Serialization of Geography and Geometry CLR types
-- Injects original TDS modules with enhancements and bug fixes
+- Smart JS data type to SQL data type mapper
 - Support both Promises and standard callbacks
 
 At the moment it support three TDS modules:
@@ -20,11 +20,12 @@ At the moment it support three TDS modules:
 - [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
 - [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 2.0 (stable, npm)
+## What's new in 2.x (stable, npm)
 
 - Updated to latest Tedious 1.10
 - [Promises](#promise)
 - [Pipe request to object stream](#pipe)
+- [Detailed SQL errors](#errors)
 - Transaction abort handling
 - Integrated type checks
 - [CLI](#cli)
@@ -414,6 +415,7 @@ __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
+- EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
 
 ---------------------------------------
 
@@ -548,6 +550,7 @@ __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
+- EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
 
 You can enable multiple recordsets in queries with the `request.multiple = true` command.
 
@@ -594,6 +597,7 @@ __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
+- EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
 
 You can enable multiple recordsets in queries with the `request.multiple = true` command.
 
@@ -639,6 +643,7 @@ __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
+- EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
 
 ---------------------------------------
 
@@ -735,7 +740,7 @@ transaction.begin(function(err) {
 
 - **begin** - Dispatched when transaction begin.
 - **commit** - Dispatched on successful commit.
-- **rollback(aborted)** - Dispatched on successful rollback with an argument determining if the transaction was rolled back because of an error.
+- **rollback(aborted)** - Dispatched on successful rollback with an argument determining if the transaction was aborted (by user or because of an error).
 
 ---------------------------------------
 
@@ -795,7 +800,7 @@ __Errors__
 <a name="rollback" />
 ### rollback([callback])
 
-Rollback a transaction.
+Rollback a transaction. If the queue isn't empty, all queued requests will be canceled and the transaction will be marked as aborted.
 
 __Arguments__
 
@@ -1185,7 +1190,7 @@ There are three type of errors you can handle:
 - **RequestError** - Errors related to queries and stored procedures execution.
 - **PreparedStatementError** - Errors related to prepared statements.
 
-Those errors are initialized in node-mssql module and its original stack can be cropped. You can always access original error with `err.originalError`.
+Those errors are initialized in node-mssql module and its original stack may be cropped. You can always access original error with `err.originalError`.
 
 SQL Server may generate more than one error for one request so you can access preceding errors with `err.precedingErrors`.
 
@@ -1207,8 +1212,8 @@ Type | Code | Description
 `TransactionError` | ENOTBEGUN | Transaction has not begun.
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
 `TransactionError` | EREQINPROG | Can't commit/rollback transaction. There is a request in progress.
-`TransactionError` | EABORT | Transaction has been aborted (because of XACT_ABORT set to ON).
-`RequestError` | EREQUEST | *Message from SQL Server*
+`TransactionError` | EABORT | Transaction has been aborted.
+`RequestError` | EREQUEST | Message from SQL Server. Error object contains additional details.
 `RequestError` | ECANCEL | Canceled.
 `RequestError` | ETIMEOUT | Request timeout.
 `RequestError` | EARGS | Invalid number of arguments.
@@ -1218,6 +1223,17 @@ Type | Code | Description
 `PreparedStatementError` | EINJECT | SQL injection warning.
 `PreparedStatementError` | EALREADYPREPARED | Statement is already prepared.
 `PreparedStatementError` | ENOTPREPARED | Statement is not prepared.
+
+### Detailed SQL Errors
+
+SQL errors (`RequestError` with `err.code` equal to `EREQUEST`) contains additional details.
+
+- **err.number** - The error number.
+- **err.state** - The error state, used as a modifier to the error number.
+- **err.class** - The class (severity) of the error. A class of less than 10 indicates an informational message. Detailed explanation can be found [here](https://msdn.microsoft.com/en-us/library/dd304156.aspx).
+- **err.lineNumber** - The line number in the SQL batch or stored procedure that caused the error. Line numbers begin at 1; therefore, if the line number is not applicable to the message, the value of LineNumber will be 0.
+- **err.serverName** - The server name.
+- **err.procName** - The stored procedure name.
 
 <a name="meta" />
 ## Metadata
