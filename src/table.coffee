@@ -7,7 +7,7 @@ class Table
 			path = name.match /^(\[?([^\]]*)\]?\.)?(\[?([^\]]*)\]?\.)?\[?([^\]]*)\]?$/
 			@name = path[5]
 			@schema = if path[4]? then path[4] else if path[2] then path[2] else null
-			@database = path[2] ? null
+			@database = if path[4]? then path[2] ? null else null
 			@path = "#{if @database then "[#{@database}]." else ""}#{if @schema then "[#{@schema}]." else ""}[#{@name}]"
 			@temporary = @name.charAt(0) is '#'
 		
