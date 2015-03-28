@@ -395,7 +395,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						else
 							callback? error, rowCount
 					
-					bulk = connection.newBulkLoad table.name, done
+					bulk = connection.newBulkLoad table.path, done
 
 					for col in table.columns
 						bulk.addColumn col.name, getTediousType(col.type), {nullable: col.nullable, length: col.length, scale: col.scale, precision: col.precision}
