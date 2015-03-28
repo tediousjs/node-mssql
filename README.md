@@ -1069,7 +1069,7 @@ Results in:
 You can also query for multiple recordsets.
 
 ```shell
-echo "select * from mytable; slect * from myothertable" | mssql
+echo "select * from mytable; select * from myothertable" | mssql
 ```
 Results in:
 ```json
