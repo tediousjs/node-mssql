@@ -1,3 +1,7 @@
+v2.1.2 (2015-03-28)
+-------------------
+[fix] Fix name parsing in Table constructor (David Mercer)
+
 v2.1.1 (2015-02-25)
 -------------------
 [fix] Fix Promise in Prepared Statement
