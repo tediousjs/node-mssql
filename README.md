@@ -1183,7 +1183,7 @@ __Version__
 <a name="errors" />
 ## Errors
 
-There are three type of errors you can handle:
+There are 4 types of errors you can handle:
 
 - **ConnectionError** - Errors related to connections and connection pool.
 - **TransactionError** - Errors related to creating, commiting and rolling back transactions.

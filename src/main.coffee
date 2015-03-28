@@ -514,9 +514,9 @@ class PreparedStatement extends EventEmitter
 			return @_execute values, callback
 		
 		new module.exports.Promise (resolve, reject) =>
-			@_execute values, (err) ->
+			@_execute values, (err, recordset) ->
 				if err then return reject err
-				resolve()
+				resolve recordset
 	
 	_execute: (values, callback) ->
 		req = new Request @
