@@ -309,6 +309,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							@_log " duration: #{elapsed}ms"
 							@_log "---------- completed ----------"
 						
+						@_release connection
+
 						callback? e
 					
 					req.once 'done', =>
