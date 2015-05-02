@@ -197,6 +197,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			# tedious always connect via tcp when port is specified
 			if cfg.options.instanceName then delete cfg.options.port
 			
+			if isNaN cfg.options.requestTimeout then cfg.options.requestTimeout = 15000
+			if cfg.options.requestTimeout is Infinity then cfg.options.requestTimeout = 0
+			if cfg.options.requestTimeout < 0 then cfg.options.requestTimeout = 0
+			
 			if config.debug
 				cfg.options.debug =
 					packet: true
