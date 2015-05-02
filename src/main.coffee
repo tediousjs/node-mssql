@@ -4,7 +4,7 @@ fs = require 'fs'
 
 {TYPES, declare} = require('./datatypes')
 ISOLATION_LEVEL = require('./isolationlevel')
-DRIVERS = ['msnodesql', 'tedious', 'tds']
+DRIVERS = ['msnodesql', 'tedious', 'tds', 'node-sqlserver-unofficial']
 Table = require('./table')
 
 global_connection = null
