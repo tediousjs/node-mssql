@@ -23,7 +23,7 @@ At the moment it support three TDS modules:
 ## What's new in 2.x (stable, npm)
 
 - Updated to latest Tedious 1.10
-- [Promises](#promise)
+- [Promises](#promises)
 - [Pipe request to object stream](#pipe)
 - [Detailed SQL errors](#errors)
 - Transaction abort handling
