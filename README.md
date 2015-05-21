@@ -321,7 +321,7 @@ Create connection to the server.
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after connection has established, or an error has occurred. Optional. If omited, returns [Promise](#promise).
+- **callback(err)** - A callback which is called after connection has established, or an error has occurred. Optional. If omited, returns [Promise](#promises).
 
 __Example__
 
@@ -385,7 +385,7 @@ Call a stored procedure.
 __Arguments__
 
 - **procedure** - Name of the stored procedure to be executed.
-- **callback(err, recordsets, returnValue)** - A callback which is called after execution has completed, or an error has occurred. `returnValue` is also accessible as property of recordsets. Optional. If omited, returns [Promise](#promise).
+- **callback(err, recordsets, returnValue)** - A callback which is called after execution has completed, or an error has occurred. `returnValue` is also accessible as property of recordsets. Optional. If omited, returns [Promise](#promises).
 
 __Example__
 
@@ -527,7 +527,7 @@ Execute the SQL command. To execute commands like `create procedure` or if you p
 __Arguments__
 
 - **command** - T-SQL command to be executed.
-- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
+- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
 
 __Example__
 
@@ -578,7 +578,7 @@ NOTE: Table-Valued Parameter (TVP) is not supported in batch.
 __Arguments__
 
 - **batch** - T-SQL command to be executed.
-- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
+- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
 
 __Example__
 
@@ -611,7 +611,7 @@ Perform a bulk insert.
 __Arguments__
 
 - **table** - `sql.Table` instance.
-- **callback(err, rowCount)** - A callback which is called after bulk insert has completed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
+- **callback(err, rowCount)** - A callback which is called after bulk insert has completed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
 
 __Example__
 
@@ -752,7 +752,7 @@ Begin a transaction.
 __Arguments__
 
 - **isolationLevel** - Controls the locking and row versioning behavior of TSQL statements issued by a connection. Optional. `READ_COMMITTED` by default. For possible values see `sql.ISOLATION_LEVEL`.
-- **callback(err)** - A callback which is called after transaction has began, or an error has occurred. Optional. If omited, returns [Promise](#promise).
+- **callback(err)** - A callback which is called after transaction has began, or an error has occurred. Optional. If omited, returns [Promise](#promises).
 
 __Example__
 
@@ -776,7 +776,7 @@ Commit a transaction.
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after transaction has committed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
+- **callback(err)** - A callback which is called after transaction has committed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
 
 __Example__
 
@@ -804,7 +804,7 @@ Rollback a transaction. If the queue isn't empty, all queued requests will be ca
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after transaction has rolled back, or an error has occurred. Optional. If omited, returns [Promise](#promise).
+- **callback(err)** - A callback which is called after transaction has rolled back, or an error has occurred. Optional. If omited, returns [Promise](#promises).
 
 __Example__
 
@@ -913,7 +913,7 @@ Prepare a statement.
 __Arguments__
 
 - **statement** - T-SQL statement to prepare.
-- **callback(err)** - A callback which is called after preparation has completed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
+- **callback(err)** - A callback which is called after preparation has completed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
 
 __Example__
 
@@ -939,7 +939,7 @@ Execute a prepared statement.
 __Arguments__
 
 - **values** - An object whose names correspond to the names of parameters that were added to the prepared statement before it was prepared.
-- **callback(err)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
+- **callback(err)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
 
 __Example__
 
@@ -1018,7 +1018,7 @@ Unprepare a prepared statement.
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after unpreparation has completed, or an error has occurred. Optional. If omited, returns [Promise](#promise).
+- **callback(err)** - A callback which is called after unpreparation has completed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
 
 __Example__
 
