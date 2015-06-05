@@ -8,13 +8,13 @@ global.TIMES =
 			if err then return done err
 			
 			if utc
-				assert.equal +rst[0].t1, 86399000
-				assert.equal +rst[0].t2, 86399999
-				assert.equal +rst[0].t3, 86399999
+				assert.equal +rst[0].t1, new Date(Date.UTC(1970, 0, 1, 23, 59, 59)).getTime()
+				assert.equal +rst[0].t2, new Date(Date.UTC(1970, 0, 1, 23, 59, 59, 999)).getTime()
+				assert.equal +rst[0].t3, new Date(Date.UTC(1970, 0, 1, 23, 59, 59, 999)).getTime()
 			else
-				assert.equal +rst[0].t1, 82799000
-				assert.equal +rst[0].t2, 82799999
-				assert.equal +rst[0].t3, 82799999
+				assert.equal +rst[0].t1, new Date(1970, 0, 1, 23, 59, 59).getTime()
+				assert.equal +rst[0].t2, new Date(1970, 0, 1, 23, 59, 59, 999).getTime()
+				assert.equal +rst[0].t3, new Date(1970, 0, 1, 23, 59, 59, 999).getTime()
 				
 			assert.equal rst[0].t4, null
 			assert.equal rst[0].t1.nanosecondsDelta, 0
@@ -44,9 +44,9 @@ global.TIMES =
 			if err then return done err
 			
 			if utc
-				assert.equal +rst[0].t1, 86399999
+				assert.equal +rst[0].t1, new Date(Date.UTC(1970, 0, 1, 23, 59, 59, 999)).getTime()
 			else
-				assert.equal +rst[0].t1, 82799999
+				assert.equal +rst[0].t1, new Date(1970, 0, 1, 23, 59, 59, 999).getTime()
 				
 			assert.equal rst[0].t2, null
 			
