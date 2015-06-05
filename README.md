@@ -1,39 +1,29 @@
-# node-mssql [![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url]
+# node-mssql
 
 An easy-to-use MSSQL database connector for Node.js / io.js.
 
-There are some TDS modules which offer functionality to communicate with MSSQL databases but none of them does offer enough comfort - implementation takes a lot of lines of code. So I decided to create this module, that make work as easy as it could without losing any important functionality. node-mssql uses other TDS modules as drivers and offer easy to use unified interface. It also add extra features and bug fixes.
+[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url]
+
+**Why do you want to use node-mssql?**
+- It has unified interface for multiple TDS drivers.
+- It has built-in connection pooling.
+- It supports Stored Procedures, Transactions, Prepared Statements, Bulk Load and TVP.
+- It supports serialization of Geography and Geometry CLR types.
+- It has smart JS data type to SQL data type mapper.
+- It supports Promises, Streams and standard callbacks.
+- It is stable and has no breaking change since 2013.
+- It is tested in production environment.
+- It is well documented.
 
 There is also [co](https://github.com/visionmedia/co) wrapper available - [co-mssql](https://github.com/patriksimek/co-mssql).             
 If you're looking for session store for connect/express, visit [connect-mssql](https://github.com/patriksimek/connect-mssql).
 
-**Extra features:**
-- Unified interface for multiple MSSQL drivers
-- Connection pooling with Transactions and Prepared statements
-- Parametrized Stored Procedures for all drivers
-- Serialization of Geography and Geometry CLR types
-- Smart JS data type to SQL data type mapper
-- Support both Promises and standard callbacks
-
-At the moment it support three TDS modules:
+Supported TDS drivers:
 - [![Github Stars][tedious-image] Tedious][tedious-url] by Mike D Pilsbury (pure javascript - windows/osx/linux)
 - [![Github Stars][msnodesql-image] Microsoft Driver for Node.js for SQL Server][msnodesql-url] by Microsoft Corporation (native - windows only)
 - [![Github Stars][tds-image] node-tds][tds-url] by Chad Retz (pure javascript - windows/osx/linux)
 
-## What's new in 2.x (stable, npm)
-
-- Updated to latest Tedious 1.10
-- [Promises](#promises)
-- [Pipe request to object stream](#pipe)
-- [Detailed SQL errors](#errors)
-- Transaction abort handling
-- Integrated type checks
-- [CLI](#cli)
-- Minor fixes
-
-## 1.x to 2.x changes
-
-- Methods with optional callback now returns `Promise` instead of itself when callback argument is omited.
+node-mssql uses Tedious as the default driver.
 
 ## Installation
 
