@@ -1,4 +1,4 @@
-# node-mssql [![Dependency Status](https://david-dm.org/patriksimek/node-mssql.png)](https://david-dm.org/patriksimek/node-mssql) [![NPM version](https://badge.fury.io/js/mssql.png)](http://badge.fury.io/js/mssql)
+# node-mssql [![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url]
 
 An easy-to-use MSSQL database connector for Node.js / io.js.
 
@@ -16,9 +16,9 @@ If you're looking for session store for connect/express, visit [connect-mssql](h
 - Support both Promises and standard callbacks
 
 At the moment it support three TDS modules:
-- [Tedious](https://github.com/pekim/tedious) by Mike D Pilsbury (pure javascript - windows/osx/linux)
-- [Microsoft Driver for Node.js for SQL Server](https://github.com/WindowsAzure/node-sqlserver) by Microsoft Corporation (native - windows only)
-- [node-tds](https://github.com/cretz/node-tds) by Chad Retz (pure javascript - windows/osx/linux)
+- [![Github Stars][tedious-image] Tedious][tedious-url] by Mike D Pilsbury (pure javascript - windows/osx/linux)
+- [![Github Stars][msnodesql-image] Microsoft Driver for Node.js for SQL Server][msnodesql-url] by Microsoft Corporation (native - windows only)
+- [![Github Stars][tds-image] node-tds][tds-url] by Chad Retz (pure javascript - windows/osx/linux)
 
 ## What's new in 2.x (stable, npm)
 
@@ -1409,3 +1409,17 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+[npm-image]: https://img.shields.io/npm/v/mssql.svg?style=flat-square
+[npm-url]: https://www.npmjs.com/package/mssql
+[downloads-image]: https://img.shields.io/npm/dm/mssql.svg?style=flat-square
+[downloads-url]: https://www.npmjs.com/package/mssql
+[david-image]: https://img.shields.io/david/patriksimek/node-mssql.svg?style=flat-square
+[david-url]: https://david-dm.org/patriksimek/node-mssql
+
+[tedious-url]: https://www.npmjs.com/package/tedious
+[tedious-image]: https://img.shields.io/github/stars/pekim/tedious.svg?style=flat-square&label=%E2%98%85
+[msnodesql-url]: https://www.npmjs.com/package/msnodesql
+[msnodesql-image]: https://img.shields.io/github/stars/Azure/node-sqlserver.svg?style=flat-square&label=%E2%98%85
+[tds-url]: https://www.npmjs.com/package/tds
+[tds-image]: https://img.shields.io/github/stars/cretz/node-tds.svg?style=flat-square&label=%E2%98%85

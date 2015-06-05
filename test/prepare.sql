@@ -1,4 +1,4 @@
-create procedure [dbo].[__test]
+exec('create procedure [dbo].[__test]
 	@in int,
 	@in2 int,
 	@in3 varchar (10),
@@ -11,32 +11,30 @@ create procedure [dbo].[__test]
 	@out5 char(10) = null output
 as
 begin
+		
+	set nocount on;
 	
-	set nocount on
-
 	declare @table table (a int, b int)
 	insert into @table values (1, 2)
 	insert into @table values (3, 4)
-
+	
 	select * from @table
-
-	select 5 as 'c', 6 as 'd', @in2 as 'e', 111 as 'e', 'asdf' as 'e', null as 'f', @in3 as 'g'
-
+	
+	select 5 as ''c'', 6 as ''d'', @in2 as ''e'', 111 as ''e'', ''asdf'' as ''e'', null as ''f'', @in3 as ''g''
+	
 	select * from @table where a = 11
-
+	
 	set @out = 99
 	set @out2 = @in
 	set @out3 = @in4
 	set @out4 = @in5
 	set @out5 = @in3
-
+	
 	return 11
+	
+end')
 
-end
-
-go
-
-create procedure [dbo].[__test2]
+exec('create procedure [dbo].[__test2]
 as
 begin
 	
@@ -45,15 +43,13 @@ begin
 	declare @table table (a int, b int)
 	select * from @table
 
-	select 'asdf' as string
+	select ''asdf'' as string
 
 	return 11
 
-end
+end')
 
-go
-
-create procedure [dbo].[__test5]
+exec('create procedure [dbo].[__test5]
 	@in BINARY(4),
 	@in2 BINARY(4) = NULL,
 	@in3 VARBINARY(MAX),
@@ -67,46 +63,43 @@ begin
 	
 	set nocount on
 
-	select CAST( 123456 AS BINARY(4) ) as 'bin', @in as 'in', @in2 as 'in2', @in3 as 'in3', @in4 as 'in4', @in5 as 'in5', @in6 as 'in6'
+	select CAST( 123456 AS BINARY(4) ) as ''bin'', @in as ''in'', @in2 as ''in2'', @in3 as ''in3'', @in4 as ''in4'', @in5 as ''in5'', @in6 as ''in6''
 
 	set @out = @in
 	set @out2 = @in3
 
 	return 0
 
-end
+end')
 
-go
-
-create type [dbo].[MSSQLTestType] as table(
+exec('create type [dbo].[MSSQLTestType] as table(
 	[a] [varchar](50) null,
 	[b] [integer] null
-)
+)')
 
-go
-
-create procedure [dbo].[__test7]
+exec('create procedure [dbo].[__test7]
 	@tvp MSSQLTestType readonly
 as
 begin
 
 	select * from @tvp
 
-end
+end')
 
-go
-
-create table [dbo].[tran_test] (
+exec('create table [dbo].[tran_test] (
 	data varchar(50) not null
-)
+)')
 
-go
+exec('create table [dbo].[bulk_table] (
+	a int not null,
+	b varchar (50) null,
+	c image null
+)')
 
-create table [dbo].[streaming] (
+/*
+exec('create table [dbo].[streaming] (
 	text varchar(4000)
-)
-
-go
+)')
 
 ;with nums as
 (
@@ -117,3 +110,4 @@ go
 insert into streaming(text)
 select 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras commodo lacinia turpis, et volutpat magna euismod at. Sed eget interdum enim, sed sagittis augue. Donec aliquet lacinia commodo. Nunc ultricies felis ut ante lobortis consectetur. Etiam dictum elit quis eros fermentum, sed venenatis libero elementum. Cras sed luctus eros. Donec ultrices mauris a velit gravida lobortis. Sed at nulla sit amet eros semper viverra. Pellentesque aliquam accumsan ligula, sed euismod est suscipit ut. Etiam facilisis dapibus viverra. In hac habitasse platea dictumst. Quisque lacinia mattis quam, sit amet lacinia felis convallis id. Interdum et malesuada fames ac ante ipsum primis in faucibus. Proin dapibus auctor lacinia. Nam dictum orci at neque adipiscing sollicitudin. Quisque id enim rutrum, tempor arcu ut, tempor mi. Vivamus fringilla velit vel massa fringilla, a interdum felis pellentesque. Etiam faucibus felis nec elit sodales molestie. Quisque sit amet porta nisi. Nunc tellus diam, sagittis eu porta vel, sagittis eu urna. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur quis scelerisque nisl. Nulla egestas blandit felis id condimentum. Sed eleifend neque sit amet nisl vehicula molestie. Nulla ut mi dignissim, faucibus nulla quis, hendrerit neque. Maecenas luctus urna urna, eget placerat metus tempor nec. Aenean accumsan nunc at leo tempus vehicula. In hac habitasse platea dictumst. Vestibulum faucibus scelerisque nisi, et adipiscing justo. Praesent posuere placerat nibh aliquet suscipit. Morbi eget consectetur sem. Nulla erat ipsum, dapibus sit amet nulla in, dictum malesuada felis. Sed eu blandit est. Etiam suscipit lacus elit, quis pretium diam ultricies ac. Sed tincidunt mollis accumsan. Donec scelerisque sapien ac tincidunt eleifend. Quisque nec sem dolor. Suspendisse imperdiet facilisis velit, non faucibus justo consequat elementum. Sed id purus mauris. Nunc id tortor rutrum, ornare leo at, ultrices urna. Nam dolor augue, fermentum sed condimentum et, pulvinar interdum augue. Sed arcu nibh, tincidunt id bibendum ut, placerat eu odio. Phasellus viverra nisi sagittis auctor tristique. Phasellus ullamcorper mauris eget ipsum faucibus accumsan. Mauris non quam orci.' from nums
 option (maxrecursion 32767);
+*/

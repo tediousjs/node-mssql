@@ -188,14 +188,18 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				@request().query "set transaction isolation level #{isolationLevelDeclaration(@isolationLevel)};begin tran;", callback
 			
 		commit: (callback) ->
+			@_dedicatedConnection = @_pooledConnection
 			@request().query 'commit tran', (err) =>
 				@connection.pool.release @_pooledConnection
+				@_dedicateConnection = null
 				@_pooledConnection = null
 				callback err
 
 		rollback: (callback) ->
+			@_dedicatedConnection = @_pooledConnection
 			@request().query 'rollback tran', (err) =>
 				@connection.pool.release @_pooledConnection
+				@_dedicateConnection = null
 				@_pooledConnection = null
 				callback err
 

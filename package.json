@@ -30,15 +30,19 @@
 		"promise": "^7.0.1"
 	},
 	"devDependencies": {
-		"coffee-script": "^1.9.0",
+		"coffee-script": "^1.9.3",
 		"mocha": "^2.1.0"
 	},
 	"engines": {
-		"node": ">=0.6"
+		"node": ">=0.10"
 	},
 	"scripts": {
-		"test": "mocha",
-		"prepublish": "coffee --compile --output ./lib ./src"
+		"prepublish": "node_modules/.bin/coffee --compile --output ./lib ./src",
+		"test": "node_modules/.bin/mocha test/unit",
+		"test-tedious": "node_modules/.bin/mocha test/integration -g tedious",
+		"test-msnodesql": "node_modules/.bin/mocha test/integration -g msnodesql",
+		"test-tds": "node_modules/.bin/mocha test/integration -g tds",
+		"test-cli": "node_modules/.bin/mocha test/integration -g cli"
 	},
 	"bin": {
 		"mssql": "./bin/mssql"

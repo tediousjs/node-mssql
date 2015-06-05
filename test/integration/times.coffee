@@ -1,5 +1,5 @@
 assert = require 'assert'
-sql = require '../'
+sql = require '../../'
 
 global.TIMES =
 	'time': (utc, done) ->

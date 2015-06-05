@@ -1,4 +1,4 @@
-sql = require '../'
+sql = require '../../'
 assert = require "assert"
 stream = require 'stream'
 
@@ -86,7 +86,7 @@ global.TESTS =
 				assert.strictEqual rsts[0][1], ws.cache[1]
 				assert.strictEqual rsts[1][0], ws.cache[2]
 				
-				next()
+				next?()
 				
 			request.on 'recordset', (columns) ->
 				rst = []
@@ -100,7 +100,8 @@ global.TESTS =
 				errs.push err
 
 			request.on 'done', (returnValue) ->
-				next = -> complete errs.pop(), rsts, returnValue
+				next = ->
+					complete errs.pop(), rsts, returnValue
 		
 		else
 			p.then (recordsets, returnValue) ->
@@ -609,7 +610,7 @@ global.TESTS =
 				if err then return done err
 				
 				first = true
-				
+
 				# manually interrupt transaction
 				tran.rollback (err) ->
 					if err then return done err
@@ -762,9 +763,13 @@ global.TESTS =
 		r.cancel()
 	
 	'request timeout': (done, driver, message) ->
-		conn = new sql.Connection require('./_connection')(driver)(requestTimeout: 500)
+		config = JSON.parse require('fs').readFileSync "#{__dirname}/../.mssql.json"
+		config.driver = driver
+		config.requestTimeout = 500
+		
+		conn = new sql.Connection config, (err) ->
+			if err then return done err
 			
-		, (err) ->
 			r = new sql.Request conn
 			r[MODE] 'waitfor delay \'00:00:05\';select 1', (err, recordset) ->
 				assert.equal (if message then message.exec(err.message)? else (err instanceof sql.RequestError)), true
@@ -802,24 +807,30 @@ global.TESTS =
 	
 	'connection 1': (done, connection) ->
 		request = connection.request()
-		request[MODE] 'select SYSTEM_USER as u', (err, recordset) ->
-			assert.equal recordset[0].u, 'xsp_test2'
+		request[MODE] 'select @@SPID as id', (err, recordset) ->
+			if global.SPIDS[recordset[0].id] then return new Error "Existing SPID found."
+			global.SPIDS[recordset[0].id] = true
 			done err
 			
 	'connection 2': (done, connection) ->
 		request = new sql.Request connection
-		request[MODE] 'select SYSTEM_USER as u', (err, recordset) ->
-			assert.equal recordset[0].u, 'xsp_test3'
+		request[MODE] 'select @@SPID as id', (err, recordset) ->
+			if global.SPIDS[recordset[0].id] then return new Error "Existing SPID found."
+			global.SPIDS[recordset[0].id] = true
 			done err
 			
 	'global connection': (done) ->
 		request = new sql.Request()
-		request[MODE] 'select SYSTEM_USER as u', (err, recordset) ->
-			assert.equal recordset[0].u, 'xsp_test'
+		request[MODE] 'select @@SPID as id', (err, recordset) ->
+			if global.SPIDS[recordset[0].id] then return new Error "Existing SPID found."
+			global.SPIDS[recordset[0].id] = true
 			done err
 	
 	'login failed': (done, driver, message) ->
-		conn = new sql.Connection require('./_connection')(driver).bad()
+		config = JSON.parse require('fs').readFileSync "#{__dirname}/../.mssql.json"
+		config.driver = driver
+		config.user = '__notexistinguser__'
+		conn = new sql.Connection config
 		
 		, (err) ->
 			assert.equal (if message then message.exec(err.message)? else (err instanceof sql.ConnectionError)), true
@@ -944,7 +955,7 @@ global.TESTS =
 					done()
 		
 		for i in [1..peak]
-			c = new sql.Connection require('./_connection')(driver)()
+			c = new sql.Connection JSON.parse require('fs').readFileSync "#{__dirname}/../.mssql.json"
 
 			c.connect connected
 			conns.push c
@@ -952,7 +963,11 @@ global.TESTS =
 	'concurrent requests': (done, driver) ->
 		console.log ""
 		
-		conn = new sql.Connection require('./_connection')(driver)(pool: {min: 0, max: 50})
+		config = JSON.parse require('fs').readFileSync "#{__dirname}/../.mssql.json"
+		config.driver = driver
+		config.pool = min: 0, max: 50
+		
+		conn = new sql.Connection config
 		
 		conn.connect (err) ->
 			if err then return done err
@@ -987,7 +1002,11 @@ global.TESTS =
 				requests.push r
 
 	'streaming off': (done, driver) ->
-		sql.connect require('./_connection')(driver)(requestTimeout: 60000), (err) ->
+		config = JSON.parse require('fs').readFileSync "#{__dirname}/../.mssql.json"
+		config.driver = driver
+		config.requestTimeout = 60000
+		
+		sql.connect config, (err) ->
 			if err then return done err
 			
 			r = new sql.Request
@@ -999,9 +1018,13 @@ global.TESTS =
 				done()
 
 	'streaming on': (done, driver) ->
+		config = JSON.parse require('fs').readFileSync "#{__dirname}/../.mssql.json"
+		config.driver = driver
+		config.requestTimeout = 60000
+
 		rows = 0
 		
-		sql.connect require('./_connection')(driver)(requestTimeout: 60000), (err) ->
+		sql.connect config, (err) ->
 			if err then return done err
 			
 			r = new sql.Request

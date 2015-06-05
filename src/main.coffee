@@ -733,6 +733,10 @@ class Transaction extends EventEmitter
 	###
 	
 	queue: (callback) ->
+		if @_dedicatedConnection
+			callback null, @_dedicatedConnection
+			return @
+		
 		unless @_pooledConnection
 			callback new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
 			return @
@@ -1098,7 +1102,7 @@ class Request extends EventEmitter
 		@stream = true
 		@on 'row', stream.write.bind stream
 		@on 'error', stream.emit.bind stream, 'error'
-		@on 'done', -> stream.end()
+		@on 'done', -> setImmediate -> stream.end()
 		stream.emit 'pipe', @
 		stream
 	

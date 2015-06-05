@@ -4,10 +4,58 @@ MAX = 65535 # (1 << 16) - 1
 class Table
 	constructor: (name) ->
 		if name
-			path = name.match /^(\[?([^\]]*)\]?\.)?(\[?([^\]]*)\]?\.)?\[?([^\]]*)\]?$/
-			@name = path[5]
-			@schema = if path[4]? then path[4] else if path[2] then path[2] else null
-			@database = if path[4]? then path[2] ? null else null
+			length = name.length
+			cursor = -1
+			buffer = ''
+			escaped = false
+			path = []
+			
+			while ++cursor < length
+				char = name.charAt cursor
+				if char is '['
+					if escaped
+						buffer += char
+					
+					else
+						escaped = true
+				
+				else if char is ']'
+					if escaped
+						escaped = false
+					
+					else
+						throw new Error "Invalid table name."
+				
+				else if char is '.'
+					if escaped
+						buffer += char
+					
+					else
+						path.push buffer
+						buffer = ''
+				
+				else
+					buffer += char
+			
+			if buffer
+				path.push buffer
+			
+			switch path.length
+				when 1
+					@name = path[0]
+					@schema = null
+					@database = null
+				
+				when 2
+					@name = path[1]
+					@schema = path[0]
+					@database = null
+				
+				when 3
+					@name = path[2]
+					@schema = path[1]
+					@database = path[0]
+
 			@path = "#{if @database then "[#{@database}]." else ""}#{if @schema then "[#{@schema}]." else ""}[#{@name}]"
 			@temporary = @name.charAt(0) is '#'
 		

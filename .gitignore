@@ -4,5 +4,4 @@ node_modules
 .coffeemaker
 .idea
 /lib/*.js
-/test/_connection.coffee
 /test/.mssql.json
