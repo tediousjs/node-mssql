@@ -213,6 +213,7 @@ sql.connect(config, function(err) {
 * [SQL injection](#injection)
 * [Verbose Mode](#verbose)
 * [Known Issues](#issues)
+* [Contributing](https://github.com/patriksimek/node-mssql/wiki/Contributing)
 
 ## Configuration
 

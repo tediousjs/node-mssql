@@ -1,3 +1,7 @@
+v2.1.5 (2015-06-05)
+-------------------
+[fix] Correctly resolve database and schema name from table path.
+
 v2.1.4 (2015-06-05)
 -------------------
 [new] Better test coverage, automated integration tests.

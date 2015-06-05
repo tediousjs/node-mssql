@@ -17,7 +17,7 @@
 		"node-sqlserver",
 		"sqlserver"
 	],
-	"version": "2.1.4",
+	"version": "2.1.5",
 	"main": "index.js",
 	"repository": {
 		"type": "git",
@@ -38,6 +38,7 @@
 	},
 	"scripts": {
 		"prepublish": "node_modules/.bin/coffee --compile --output ./lib ./src",
+		"compile": "node_modules/.bin/coffee --compile --output ./lib ./src",
 		"test": "node_modules/.bin/mocha test/unit",
 		"test-tedious": "node_modules/.bin/mocha test/integration -g tedious",
 		"test-msnodesql": "node_modules/.bin/mocha test/integration -g msnodesql",
