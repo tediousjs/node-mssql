@@ -4,8 +4,8 @@ environment:
   matrix:
     - nodejs_version: "0.10"
     - nodejs_version: "0.12"
-    - nodejs_version: "1.0"
-    - nodejs_version: "2.0"
+    - nodejs_version: "1.8"
+    - nodejs_version: "2.2"
 
 install:
   - ps: Install-Product node $env:nodejs_version
@@ -24,7 +24,6 @@ test_script:
 
   - cmd: |
       SET EXITVAL=0
-      npm run-script test || SET EXITVAL=1
       powershell %cd%\test\scripts\appveyor.ps1 SQL2008R2SP2
       npm run-script test-tedious || SET EXITVAL=1
       powershell %cd%\test\scripts\appveyor.ps1 SQL2012SP1

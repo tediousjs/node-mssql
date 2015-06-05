@@ -15,13 +15,13 @@ $ipall = $wmi.GetSmoObject("ManagedComputer[@Name='${env:computername}']/ServerI
 $port = $ipall.IPAddressProperties.Item("TcpDynamicPorts").Value;
 
 $config = @{
-	user: "sa";
-	password: "Password12!";
-	server: "localhost";
-	port: $port;
-	database: "master";
-	options: @{
-		abortTransactionOnError: $true
+	user = "sa";
+	password = "Password12!";
+	server = "localhost";
+	port = $port;
+	database = "master";
+	options = @{
+		abortTransactionOnError = $true
 	}
 } | ConvertTo-Json -Depth 3;
 
