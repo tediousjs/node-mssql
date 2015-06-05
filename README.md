@@ -1,4 +1,4 @@
-# node-mssql [![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url]
+# node-mssql [![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url]
 
 An easy-to-use MSSQL database connector for Node.js / io.js.
 
@@ -1416,6 +1416,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [downloads-url]: https://www.npmjs.com/package/mssql
 [david-image]: https://img.shields.io/david/patriksimek/node-mssql.svg?style=flat-square
 [david-url]: https://david-dm.org/patriksimek/node-mssql
+[travis-image]: https://img.shields.io/travis/patriksimek/node-mssql/master.svg?label=unit
+[travis-url]: https://travis-ci.org/patriksimek/node-mssql
+[appveyor-image]: https://img.shields.io/appveyor/ci/patriksimek/node-mssql/master.svg?label=integration
+[appveyor-url]: https://ci.appveyor.com/project/patriksimek/node-mssql
 
 [tedious-url]: https://www.npmjs.com/package/tedious
 [tedious-image]: https://img.shields.io/github/stars/pekim/tedious.svg?style=flat-square&label=%E2%98%85
