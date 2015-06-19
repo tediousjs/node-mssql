@@ -84,6 +84,8 @@ getTypeByValue = (value) ->
 ###
 Class Connection.
 
+Internally, each `Connection` instance is a separate pool of TDS connections. Once you create a new `Request`/`Transaction`/`Prepared Statement`, a new TDS connection is acquired from the pool and reserved for desired action. Once the action is complete, connection is released back to the pool.
+
 @property {Boolean} connected If true, connection is established.
 @property {Boolean} connecting If true, connection is being established.
 @property {*} driver Reference to configured Driver.
@@ -152,7 +154,7 @@ class Connection extends EventEmitter
 		driver Connection, Transaction, Request, ConnectionError, TransactionError, RequestError
 	
 	###
-	Create connection to the server.
+	Creates a new connection pool with one active connection. This one initial connection serves as a probe to find out whether the configuration is valid.
 	
 	@callback [callback] A callback which is called after connection has established, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.
@@ -216,7 +218,7 @@ class Connection extends EventEmitter
 		@
 
 	###
-	Close connection to the server.
+	Close all active connections in the pool.
 	
 	@callback [callback] A callback which is called after connection has closed, or an error has occurred. If omited, method returns Promise.
 		@param {Error} err Error on error, otherwise null.

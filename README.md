@@ -290,6 +290,8 @@ _This module updates the node-tds driver with extra features and bug fixes by ov
 <a name="connection" />
 ## Connections
 
+Internally, each `Connection` instance is a separate pool of TDS connections. Once you create a new `Request`/`Transaction`/`Prepared Statement`, a new TDS connection is acquired from the pool and reserved for desired action. Once the action is complete, connection is released back to the pool.
+
 ```javascript
 var connection = new sql.Connection({ /* config */ });
 ```
@@ -308,7 +310,7 @@ __Errors__
 <a name="connect" />
 ### connect([callback])
 
-Create connection to the server.
+Create a new connection pool with one active connection. This one initial connection serves as a probe to find out whether the configuration is valid.
 
 __Arguments__
 
@@ -342,7 +344,7 @@ __Errors__
 <a name="close" />
 ### close()
 
-Close connection to the server.
+Close all active connections in the pool.
 
 __Example__
 
