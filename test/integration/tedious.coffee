@@ -35,7 +35,9 @@ describe 'tedious', ->
 		before (done) ->
 			global.DRIVER = 'tedious'
 			
-			sql.connect config(), done
+			cfg = config()
+			cfg.options.abortTransactionOnError = true
+			sql.connect cfg, done
 		
 		beforeEach (done) ->
 			global.MODE = 'query'
