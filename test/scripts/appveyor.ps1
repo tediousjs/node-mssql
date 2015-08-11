@@ -20,6 +20,7 @@ $config = @{
 	server = "localhost";
 	port = $port;
 	database = "master";
+	requestTimeout = 30000;
 	options = @{
 		abortTransactionOnError = $true
 	}

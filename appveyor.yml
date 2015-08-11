@@ -24,13 +24,20 @@ test_script:
 
   - cmd: |
       SET EXITVAL=0
+      
       powershell %cd%\test\scripts\appveyor.ps1 SQL2008R2SP2
       npm run-script test-tedious || SET EXITVAL=1
       npm run-script test-tds || SET EXITVAL=1
+      net stop MSSQL$SQL2008R2SP2
+      
       powershell %cd%\test\scripts\appveyor.ps1 SQL2012SP1
       npm run-script test-tedious || SET EXITVAL=1
       npm run-script test-tds || SET EXITVAL=1
+      net stop MSSQL$SQL2012SP1
+      
       powershell %cd%\test\scripts\appveyor.ps1 SQL2014
       npm run-script test-tedious || SET EXITVAL=1
       npm run-script test-tds || SET EXITVAL=1
+      net stop MSSQL$SQL2014
+      
       EXIT /B %EXITVAL%
