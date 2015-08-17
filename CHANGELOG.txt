@@ -1,3 +1,7 @@
+v2.2.0 (2015-08-17)
+-------------------
+[new] Added column metadata identity, caseSensitive and readOnly (nino-porcino)
+
 v2.1.8 (2015-08-11)
 -------------------
 [change] Updated to latest Tedious 1.12.2
