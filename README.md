@@ -67,7 +67,10 @@ var connection = new sql.Connection(config, function(err) {
         
         console.dir(recordsets);
     });
-	
+});
+
+connection.on('error', function(err) {
+	// ... error handler
 });
 ```
 
@@ -109,7 +112,10 @@ sql.connect(config, function(err) {
 
         console.dir(recordsets);
     });
-	
+});
+
+connection.on('error', function(err) {
+	// ... error handler
 });
 ```
 
@@ -155,6 +161,10 @@ sql.connect(config, function(err) {
     request.on('done', function(returnValue) {
     	// Always emitted as the last one
     });
+});
+
+connection.on('error', function(err) {
+	// ... error handler
 });
 ```
 
@@ -290,7 +300,9 @@ _This module updates the node-tds driver with extra features and bug fixes by ov
 <a name="connection" />
 ## Connections
 
-Internally, each `Connection` instance is a separate pool of TDS connections. Once you create a new `Request`/`Transaction`/`Prepared Statement`, a new TDS connection is acquired from the pool and reserved for desired action. Once the action is complete, connection is released back to the pool.
+Internally, each `Connection` instance is a separate pool of TDS connections. Once you create a new `Request`/`Transaction`/`Prepared Statement`, a new TDS connection is acquired from the pool and reserved for desired action. Once the action is complete, connection is released back to the pool. Connection health check is built-in so once the dead connection is discovered, it is immediately replaced with a new one.
+
+**IMPORTANT**: Always attach an `error` listener to created connection. Whenever something goes wrong with the connection it will emit an error and if there is no listener (and no domain listener as a backup) it will crash the application as an uncaught error.
 
 ```javascript
 var connection = new sql.Connection({ /* config */ });
@@ -303,7 +315,7 @@ __Errors__
 
 - **connect** - Dispatched after connection has established.
 - **close** - Dispatched after connection has closed a pool (by calling `close`).
-- **error(err)** - Dispatched on error.
+- **error(err)** - Dispatched on connection error.
 
 ---------------------------------------
 
@@ -1246,8 +1258,30 @@ request.query('select convert(decimal(18, 4), 1) as first, \'asdf\' as second', 
 Columns structure for example above:
 
 ```javascript
-{ first: { index: 0, name: 'first', length: 17, type: [sql.Decimal], scale: 4, precision: 18 },
-  second: { index: 1, name: 'second', length: 4, type: [sql.VarChar] } }
+{
+	first: {
+		index: 0,
+		name: 'first',
+		length: 17,
+		type: [sql.Decimal],
+		scale: 4,
+		precision: 18,
+		nullable: true,
+		caseSensitive: false
+		identity: false
+		readOnly: true
+	},
+	second: {
+		index: 1,
+		name: 'second',
+		length: 4,
+		type: [sql.VarChar],
+		nullable: false,
+		caseSensitive: false
+		identity: false
+		readOnly: true
+	}
+}
 ```
 
 <a name="data-types" />
