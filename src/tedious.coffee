@@ -115,7 +115,10 @@ createColumns = (metadata) ->
 			scale: column.scale
 			precision: column.precision
 			nullable: !!(column.flags & 0x01)
-		
+			isCaseSensitive: !!(column.flags & 0x02)
+			isIdentity: !!(column.flags & 0x10)
+			isWriteable: !!(column.flags & 0x0C)
+	  		
 		if column.udtInfo?
 			out[column.colName].udt =
 				name: column.udtInfo.typeName
