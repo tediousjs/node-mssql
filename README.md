@@ -114,7 +114,7 @@ sql.connect(config, function(err) {
     });
 });
 
-connection.on('error', function(err) {
+sql.on('error', function(err) {
 	// ... error handler
 });
 ```
@@ -163,7 +163,7 @@ sql.connect(config, function(err) {
     });
 });
 
-connection.on('error', function(err) {
+sql.on('error', function(err) {
 	// ... error handler
 });
 ```
