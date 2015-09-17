@@ -1054,9 +1054,9 @@ class Request extends EventEmitter
 			return @_bulk table, callback
 		
 		new module.exports.Promise (resolve, reject) =>
-			@_bulk table, (err) ->
+			@_bulk table, (err, rowCount) ->
 				if err then return reject err
-				resolve()
+				resolve rowCount
 
 	_bulk: (table, callback) ->
 		unless @connection
