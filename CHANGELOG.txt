@@ -1,3 +1,8 @@
+v2.2.1 (2015-09-19)
+-------------------
+[change] Updated to latest Tedious 1.12.3
+[fix] Promise not returns rowCount in bulk load (Ben Farr)
+
 v2.2.0 (2015-08-17)
 -------------------
 [new] Added column metadata identity, caseSensitive and readOnly (nino-porcino)

@@ -1345,7 +1345,7 @@ sql.Geography
 sql.Geometry
 ```
 
-To setup MAX length for `VarChar`, `NVarChar` and `VarBinary` use `sql.MAX` length.
+To setup MAX length for `VarChar`, `NVarChar` and `VarBinary` use `sql.MAX` length. Type `sql.XML` is not supported as input parameter.
 
 <a name="injection" />
 ## SQL injection
@@ -1423,6 +1423,7 @@ Output for the example above could look similar to this.
 - node-tds 0.1.0 has serious problems with MAX types.
 - node-tds 0.1.0 doesn't support TVP data type.
 - node-tds 0.1.0 doesn't support request timeout.
+- node-tds 0.1.0 doesn't support built-in JSON serialization introduced in SQL Server 2016.
 
 <a name="license" />
 ## License
