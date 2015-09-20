@@ -1,3 +1,7 @@
+v2.3.0 (2015-09-20)
+-------------------
+[new] Experimental JSON support
+
 v2.2.1 (2015-09-19)
 -------------------
 [change] Updated to latest Tedious 1.12.3
