@@ -1184,7 +1184,7 @@ Results in:
 recordset = [ { 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"a":{"b":{"c":1,"d":2},"x":3,"y":4}}' } ]
 ```
 
-You can enabled built-in JSON parser with `config.parseJSON = true`. Once you enable this the recordset will contain records with parsed JS objects. Given the same example the result will look like this:
+You can enable built-in JSON parser with `config.parseJSON = true`. Once you enable this, recordset will contain rows of parsed JS objects. Given the same example, result will look like this:
 ```javascript
 recordset = [ { a: { b: { c: 1, d: 2 }, x: 3, y: 4 } } ]
 ```
