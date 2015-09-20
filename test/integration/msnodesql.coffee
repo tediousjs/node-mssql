@@ -29,8 +29,10 @@ if process.platform.match(/^win/)
 		describe 'basic test suite', ->
 			before (done) ->
 				global.DRIVER = 'msnodesql'
-			
-				sql.connect config(), done
+				
+				cfg = config()
+				cfg.parseJSON = true
+				sql.connect cfg, done
 			
 			beforeEach (done) ->
 				global.MODE = 'query'
@@ -119,6 +121,9 @@ if process.platform.match(/^win/)
 		
 			it 'dataLength type correction', (done) ->
 				TESTS['dataLength type correction'] done
+		
+			it.skip 'json support (experimental, requires SQL Server 2016)', (done) ->
+				TESTS['json support'] done
 			
 			after ->
 				sql.close()

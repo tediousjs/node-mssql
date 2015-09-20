@@ -1,5 +1,6 @@
 {TYPES, declare} = require './datatypes'
 MAX = 65535 # (1 << 16) - 1
+JSON_COLUMN_ID = 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B'
 
 class Table
 	constructor: (name) ->
@@ -100,9 +101,14 @@ class Table
 				precision: col.precision
 			,
 				nullable: col.nullable
-		
-		for row in recordset
-			t.rows.add (row[col.name] for col in t.columns)...
+
+		if t.columns.length is 1 and t.columns[0].name is JSON_COLUMN_ID
+			for row in recordset
+				t.rows.add JSON.stringify row
+			
+		else
+			for row in recordset
+				t.rows.add (row[col.name] for col in t.columns)...
 		
 		t
 

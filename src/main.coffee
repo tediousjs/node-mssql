@@ -113,6 +113,7 @@ class Connection extends EventEmitter
 		@config.port ?= 1433
 		@config.options ?= {}
 		@config.stream ?= false
+		@config.parseJSON ?= false
 		
 		if /^(.*)\\(.*)$/.exec @config.server
 			@config.server = RegExp.$1

@@ -792,6 +792,22 @@ global.TESTS =
 				
 			done()
 	
+	'json support': (done) ->
+		r = new sql.Request
+		r.multiple = true
+		p = r[MODE] "select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for json path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for json path"
+		
+		p.then (recordset) ->
+			try
+				assert.deepEqual recordset[0][0], {"a":{"b":{"c":1,"d":2},"x":3,"y":4}}
+				assert.deepEqual recordset[1][0], {"a":{"b":{"c":5,"d":6},"x":7,"y":8}}
+			catch ex
+				return done ex
+
+			done()
+
+		p.catch done
+	
 	'dataLength type correction': (done) ->
 		sql.on 'error', (err) -> console.error err
 		r = new sql.Request

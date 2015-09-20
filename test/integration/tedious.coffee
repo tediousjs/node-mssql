@@ -36,6 +36,7 @@ describe 'tedious', ->
 			global.DRIVER = 'tedious'
 			
 			cfg = config()
+			cfg.parseJSON = true
 			cfg.options.abortTransactionOnError = true
 			sql.connect cfg, done
 		
@@ -155,6 +156,9 @@ describe 'tedious', ->
 		it 'type validation (batch)', (done) ->
 			global.MODE = 'batch'
 			TESTS['type validation'] done
+		
+		it.skip 'json support (experimental, requires SQL Server 2016)', (done) ->
+			TESTS['json support'] done
 		
 		after (done) ->
 			sql.close done

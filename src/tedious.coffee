@@ -6,6 +6,7 @@ util = require 'util'
 DECLARATIONS = require('./datatypes').DECLARATIONS
 UDT = require('./udt').PARSERS
 Table = require('./table')
+JSON_COLUMN_ID = 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B'
 
 ###
 @ignore
@@ -440,6 +441,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			errors = []
 			batchLastRow = null
 			batchHasOutput = false
+			isJSONRecordset = false
 			handleError = (info) =>
 				err = new Error info.message
 				err.info = info
@@ -517,6 +519,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req.on 'columnMetadata', (metadata) =>
 						columns = createColumns metadata
 						
+						isJSONRecordset = false
+						if @connection.config.parseJSON is true and metadata.length is 1 and metadata[0].colName is JSON_COLUMN_ID
+							isJSONRecordset = true
+						
 						if @stream
 							if @_isBatch
 								# don't stream recordset with output values in batches
@@ -560,21 +566,25 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req.on 'row', (columns) =>
 						unless recordset
 							recordset = []
-							
-						row = {}
-						for col in columns
-							col.value = valueCorrection col.value, col.metadata
-							
-							exi = row[col.metadata.colName]
-							if exi?
-								if exi instanceof Array
-									exi.push col.value
-									
+						
+						if isJSONRecordset
+							row = JSON.parse columns[0].value
+						
+						else
+							row = {}
+							for col in columns
+								col.value = valueCorrection col.value, col.metadata
+								
+								exi = row[col.metadata.colName]
+								if exi?
+									if exi instanceof Array
+										exi.push col.value
+										
+									else
+										row[col.metadata.colName] = [exi, col.value]
+								
 								else
-									row[col.metadata.colName] = [exi, col.value]
-							
-							else
-								row[col.metadata.colName] = col.value
+									row[col.metadata.colName] = col.value
 						
 						if @verbose
 							@_log util.inspect(row)
@@ -649,6 +659,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			returnValue = 0
 			started = Date.now()
 			errors = []
+			isJSONRecordset = false
 			handleError = (info) =>
 				err = new Error info.message
 				err.info = info
@@ -714,27 +725,35 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req.on 'columnMetadata', (metadata) =>
 						columns = createColumns metadata
 						
+						isJSONRecordset = false
+						if @connection.config.parseJSON is true and metadata.length is 1 and metadata[0].colName is JSON_COLUMN_ID
+							isJSONRecordset = true
+						
 						if @stream
 							@emit 'recordset', columns
 					
 					req.on 'row', (columns) =>
 						unless recordset
 							recordset = []
-							
-						row = {}
-						for col in columns
-							col.value = valueCorrection col.value, col.metadata
-							
-							exi = row[col.metadata.colName]
-							if exi?
-								if exi instanceof Array
-									exi.push col.value
-									
+						
+						if isJSONRecordset
+							row = JSON.parse columns[0].value
+						
+						else
+							row = {}
+							for col in columns
+								col.value = valueCorrection col.value, col.metadata
+								
+								exi = row[col.metadata.colName]
+								if exi?
+									if exi instanceof Array
+										exi.push col.value
+										
+									else
+										row[col.metadata.colName] = [exi, col.value]
+								
 								else
-									row[col.metadata.colName] = [exi, col.value]
-							
-							else
-								row[col.metadata.colName] = col.value
+									row[col.metadata.colName] = col.value
 						
 						if @verbose
 							@_log util.inspect(row)

@@ -4,16 +4,17 @@ An easy-to-use MSSQL database connector for Node.js / io.js.
 
 [![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**Why do you want to use node-mssql?**
-- It has unified interface for multiple TDS drivers.
-- It has built-in connection pooling.
-- It supports Stored Procedures, Transactions, Prepared Statements, Bulk Load and TVP.
-- It supports serialization of Geography and Geometry CLR types.
-- It has smart JS data type to SQL data type mapper.
-- It supports Promises, Streams and standard callbacks.
-- It is stable and has no breaking change since 2013.
-- It is tested in production environment.
-- It is well documented.
+**node-mssql**
+- Has unified interface for multiple TDS drivers.
+- Has built-in connection pooling.
+- Supports built-in JSON serialization instroduced in SQL Server 2016.
+- Supports Stored Procedures, Transactions, Prepared Statements, Bulk Load and TVP.
+- Supports serialization of Geography and Geometry CLR types.
+- Has smart JS data type to SQL data type mapper.
+- Supports Promises, Streams and standard callbacks.
+- Is stable and has no breaking change since 2013.
+- Is tested in production environment.
+- Is well documented.
 
 There is also [co](https://github.com/visionmedia/co) wrapper available - [co-mssql](https://github.com/patriksimek/co-mssql).             
 If you're looking for session store for connect/express, visit [connect-mssql](https://github.com/patriksimek/connect-mssql).
@@ -216,6 +217,7 @@ sql.on('error', function(err) {
 * [CLI](#cli)
 * [Geography and Geometry](#geography)
 * [Table-Valued Parameter](#tvp)
+* [JSON support](#json)
 * [Errors](#errors)
 * [Promises](#promises)
 * [Metadata](#meta)
@@ -254,6 +256,7 @@ var config = {
 - **connectionTimeout** - Connection timeout in ms (default: `15000`).
 - **requestTimeout** - Request timeout in ms (default: `15000`).
 - **stream** - Stream recordsets/rows instead of returning them all at once as an argument of callback (default: `false`). You can also enable streaming for each request independently (`request.stream = true`). Always set to `true` if you plan to work with large amount of rows.
+- **parseJSON** - Parse JSON recordsets to JS objects (default: `false`). For more information please see section [JSON support](#json).
 - **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
 - **pool.min** - The minimun of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
@@ -275,8 +278,9 @@ More information about Tedious specific options: http://pekim.github.io/tedious/
 
 This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
 
-- **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **connectionString** - Connection string (default: see below).
+- **parseJSON** - Parse JSON recordsets to JS objects (default: `false`). For more information please see section [JSON support](#json).
+- **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **options.trustedConnection** - Use Windows Authentication (default: `false`).
 - **options.useUTC** - A boolean determining whether or not to use UTC time for values without time zone offset (default: `true`).
 
@@ -1159,6 +1163,39 @@ request.execute('MyCustomStoredProcedure', function(err, recordsets, returnValue
 ```
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
+
+<a name="json" />
+## JSON support (experimental)
+
+SQL Server 2016 introduced built-in JSON serialization. By default, JSON is returned as a plain text in a special column named `JSON_F52E2B61-18A1-11d1-B105-00805F49916B`.
+
+Example
+```sql
+SELECT
+    1 AS 'a.b.c',
+    2 AS 'a.b.d',
+    3 AS 'a.x',
+    4 AS 'a.y'
+FOR JSON PATH
+```
+
+Results in:
+```javascript
+recordset = [ { 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': '{"a":{"b":{"c":1,"d":2},"x":3,"y":4}}' } ]
+```
+
+You can enabled built-in JSON parser with `config.parseJSON = true`. Once you enable this the recordset will contain records with parsed JS objects. Given the same example the result will look like this:
+```javascript
+recordset = [ { a: { b: { c: 1, d: 2 }, x: 3, y: 4 } } ]
+```
+
+**IMPORTANT**: In order for this to work, there must be exactly one column named `JSON_F52E2B61-18A1-11d1-B105-00805F49916B` in the recordset.
+
+More information about JSON support can be found in [official documentation](https://msdn.microsoft.com/en-us/library/dn921882.aspx).
+
+__Version__
+
+2.3
 
 <a name="promises" />
 ## Promises

@@ -54,4 +54,17 @@ describe 'Unit', ->
 		assert.strictEqual t.path, '[#temporary]'
 		assert.strictEqual t.temporary, true
 		
+		rs = [
+			{"a":{"b":{"c":1,"d":2},"x":3,"y":4}}
+		]
+		rs.columns =
+			'JSON_F52E2B61-18A1-11d1-B105-00805F49916B':
+				name: 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B'
+		
+		t = sql.Table.fromRecordset rs
+		
+		assert.strictEqual t.columns.length, 1
+		assert.strictEqual t.rows.length, 1
+		assert.deepEqual t.rows[0], ['{"a":{"b":{"c":1,"d":2},"x":3,"y":4}}']
+		
 		done()
