@@ -1,3 +1,7 @@
+v2.3.1 (2015-09-21)
+-------------------
+[fix] JSON fixes
+
 v2.3.0 (2015-09-20)
 -------------------
 [new] Experimental JSON support
