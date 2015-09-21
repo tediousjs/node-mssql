@@ -442,6 +442,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			batchLastRow = null
 			batchHasOutput = false
 			isJSONRecordset = false
+			jsonBuffer = null
 			handleError = (info) =>
 				err = new Error info.message
 				err.info = info
@@ -522,6 +523,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						isJSONRecordset = false
 						if @connection.config.parseJSON is true and metadata.length is 1 and metadata[0].colName is JSON_COLUMN_ID
 							isJSONRecordset = true
+							jsonBuffer = []
 						
 						if @stream
 							if @_isBatch
@@ -535,6 +537,31 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					doneHandler = (rowCount, more, rows) =>
 						# this function is called even when select only set variables so we should skip adding a new recordset
 						if Object.keys(columns).length is 0 then return
+						
+						if isJSONRecordset
+							try
+								parsedJSON = JSON.parse jsonBuffer.join ''
+							catch ex
+								parsedJSON = null
+								ex = RequestError new Error("Failed to parse incoming JSON. #{ex.message}"), 'EJSON'
+								
+								if @stream
+									@emit 'error', ex
+								
+								# we must collect errors even in stream mode
+								errors.push ex
+							
+							jsonBuffer = null
+							
+							if @verbose
+								@_log util.inspect parsedJSON
+								@_log "---------- --------------------"
+							
+							if @stream
+								@emit 'row', parsedJSON
+								
+							else
+								recordset.push parsedJSON
 
 						unless @stream
 							# all rows of current recordset loaded
@@ -568,7 +595,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							recordset = []
 						
 						if isJSONRecordset
-							row = JSON.parse columns[0].value
+							jsonBuffer.push columns[0].value
 						
 						else
 							row = {}
@@ -586,24 +613,24 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 								else
 									row[col.metadata.colName] = col.value
 						
-						if @verbose
-							@_log util.inspect(row)
-							@_log "---------- --------------------"
-						
-						if @stream
-							if @_isBatch
-								# dont stream recordset with output values in batches
-								if row["___return___"]?
-									batchLastRow = row
+							if @verbose
+								@_log util.inspect(row)
+								@_log "---------- --------------------"
+							
+							if @stream
+								if @_isBatch
+									# dont stream recordset with output values in batches
+									if row["___return___"]?
+										batchLastRow = row
+									
+									else
+										@emit 'row', row
 								
 								else
 									@emit 'row', row
-							
+								
 							else
-								@emit 'row', row
-							
-						else
-							recordset.push row
+								recordset.push row
 					
 					if @_isBatch
 						if Object.keys(@parameters).length
@@ -660,6 +687,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			started = Date.now()
 			errors = []
 			isJSONRecordset = false
+			jsonBuffer = null
 			handleError = (info) =>
 				err = new Error info.message
 				err.info = info
@@ -728,6 +756,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						isJSONRecordset = false
 						if @connection.config.parseJSON is true and metadata.length is 1 and metadata[0].colName is JSON_COLUMN_ID
 							isJSONRecordset = true
+							jsonBuffer = []
 						
 						if @stream
 							@emit 'recordset', columns
@@ -737,7 +766,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							recordset = []
 						
 						if isJSONRecordset
-							row = JSON.parse columns[0].value
+							jsonBuffer.push columns[0].value
 						
 						else
 							row = {}
@@ -755,19 +784,44 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 								else
 									row[col.metadata.colName] = col.value
 						
-						if @verbose
-							@_log util.inspect(row)
-							@_log "---------- --------------------"
-						
-						if @stream
-							@emit 'row', row
-						
-						else
-							recordset.push row
+							if @verbose
+								@_log util.inspect(row)
+								@_log "---------- --------------------"
+							
+							if @stream
+								@emit 'row', row
+							
+							else
+								recordset.push row
 					
 					req.on 'doneInProc', (rowCount, more, rows) =>
 						# filter empty recordsets when NOCOUNT is OFF
 						if Object.keys(columns).length is 0 then return
+						
+						if isJSONRecordset
+							try
+								parsedJSON = JSON.parse jsonBuffer.join ''
+							catch ex
+								parsedJSON = null
+								ex = RequestError new Error("Failed to parse incoming JSON. #{ex.message}"), 'EJSON'
+								
+								if @stream
+									@emit 'error', ex
+								
+								# we must collect errors even in stream mode
+								errors.push ex
+							
+							jsonBuffer = null
+							
+							if @verbose
+								@_log util.inspect parsedJSON
+								@_log "---------- --------------------"
+							
+							if @stream
+								@emit 'row', parsedJSON
+								
+							else
+								recordset.push parsedJSON
 						
 						unless @stream
 							# all rows of current recordset loaded

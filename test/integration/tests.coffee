@@ -795,12 +795,13 @@ global.TESTS =
 	'json support': (done) ->
 		r = new sql.Request
 		r.multiple = true
-		p = r[MODE] "select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for json path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for json path"
+		p = r[MODE] "select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for json path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for json path;with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for json auto;"
 		
 		p.then (recordset) ->
 			try
 				assert.deepEqual recordset[0][0], {"a":{"b":{"c":1,"d":2},"x":3,"y":4}}
 				assert.deepEqual recordset[1][0], {"a":{"b":{"c":5,"d":6},"x":7,"y":8}}
+				assert.strictEqual recordset[2][0].length, 1000
 			catch ex
 				return done ex
 

@@ -8,7 +8,6 @@ ISOLATION_LEVEL = require('./isolationlevel')
 DECLARATIONS = require('./datatypes').DECLARATIONS
 EMPTY_BUFFER = new Buffer(0)
 
-JSON_COLUMN_ID = 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B'
 CONNECTION_STRING_PORT = 'Driver={SQL Server Native Client 11.0};Server={#{server},#{port}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};'
 CONNECTION_STRING_NAMED_INSTANCE = 'Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};'
 
@@ -230,7 +229,6 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			recordsets = []
 			started = Date.now()
 			handleOutput = false
-			isJSONRecordset = false
 			
 			# nested = function is called by this.execute
 			
@@ -265,18 +263,12 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							enumerable: false
 							value: createColumns(metadata)
 						
-						isJSONRecordset = false
-						if @connection.config.parseJSON is true and metadata.length is 1 and metadata[0].name is JSON_COLUMN_ID
-							isJSONRecordset = true
-						
 						if @stream
 							unless recordset.columns["___return___"]?
 								@emit 'recordset', recordset.columns
 						
 						else
 							recordsets.push recordset
-						
-						null
 						
 					req.on 'row', (rownumber) =>
 						if row
@@ -293,17 +285,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						unless @stream
 							recordset.push row
 						
-						null
-						
 					req.on 'column', (idx, data, more) =>
-						if isJSONRecordset
-							data = JSON.parse data
-							for key, value of data
-								row[key] = value
-							
-							return
-						
-						data = valueCorrection data, columns[idx]
+						data = valueCorrection(data, columns[idx])
 
 						exi = row[columns[idx].name]
 						if exi?
@@ -315,8 +298,6 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						
 						else
 							row[columns[idx].name] = data
-						
-						null
 			
 					req.once 'error', (err) =>
 						e = RequestError err
@@ -335,8 +316,6 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						@_release connection
 
 						callback? e
-						
-						null
 					
 					req.once 'done', =>
 						unless @nested
@@ -371,8 +350,6 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						
 						else
 							callback? null, if @multiple or @nested then recordsets else recordsets[0]
-						
-						null
 				
 				else
 					if connection then @_release connection
@@ -457,5 +434,5 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 		Connection: MsnodesqlConnection
 		Transaction: MsnodesqlTransaction
 		Request: MsnodesqlRequest
-		fix: -> # there is nothing to fix in this driver
+		fix: -> # there is nothing to fix in this driver
 	}

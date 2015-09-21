@@ -279,7 +279,6 @@ More information about Tedious specific options: http://pekim.github.io/tedious/
 This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
 
 - **connectionString** - Connection string (default: see below).
-- **parseJSON** - Parse JSON recordsets to JS objects (default: `false`). For more information please see section [JSON support](#json).
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **options.trustedConnection** - Use Windows Authentication (default: `false`).
 - **options.useUTC** - A boolean determining whether or not to use UTC time for values without time zone offset (default: `true`).

@@ -121,9 +121,6 @@ if process.platform.match(/^win/)
 		
 			it 'dataLength type correction', (done) ->
 				TESTS['dataLength type correction'] done
-		
-			it.skip 'json support (experimental, requires SQL Server 2016)', (done) ->
-				TESTS['json support'] done
 			
 			after ->
 				sql.close()
