@@ -16,7 +16,7 @@ An easy-to-use MSSQL database connector for Node.js / io.js.
 - Is tested in production environment.
 - Is well documented.
 
-There is also [co](https://github.com/visionmedia/co) wrapper available - [co-mssql](https://github.com/patriksimek/co-mssql).             
+There is also [co](https://github.com/visionmedia/co) wrapper available - [co-mssql](https://github.com/patriksimek/co-mssql).
 If you're looking for session store for connect/express, visit [connect-mssql](https://github.com/patriksimek/connect-mssql).
 
 Supported TDS drivers:
@@ -33,14 +33,14 @@ node-mssql uses Tedious as the default driver.
 ## Quick Example
 
 ```javascript
-var sql = require('mssql'); 
+var sql = require('mssql');
 
 var config = {
     user: '...',
     password: '...',
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
     database: '...',
-    
+
     options: {
         encrypt: true // Use this if you're on Windows Azure
     }
@@ -48,24 +48,24 @@ var config = {
 
 var connection = new sql.Connection(config, function(err) {
     // ... error checks
-    
+
     // Query
-	
+
     var request = new sql.Request(connection); // or: var request = connection.request();
     request.query('select 1 as number', function(err, recordset) {
         // ... error checks
-        
+
         console.dir(recordset);
     });
-	
+
     // Stored Procedure
-	
+
     var request = new sql.Request(connection);
     request.input('input_parameter', sql.Int, 10);
     request.output('output_parameter', sql.VarChar(50));
     request.execute('procedure_name', function(err, recordsets, returnValue) {
         // ... error checks
-        
+
         console.dir(recordsets);
     });
 });
@@ -78,14 +78,14 @@ connection.on('error', function(err) {
 ### Quick Example with one global connection
 
 ```javascript
-var sql = require('mssql'); 
+var sql = require('mssql');
 
 var config = {
     user: '...',
     password: '...',
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
     database: '...',
-    
+
     options: {
         encrypt: true // Use this if you're on Windows Azure
     }
@@ -93,18 +93,18 @@ var config = {
 
 sql.connect(config, function(err) {
     // ... error checks
-	
+
     // Query
-	
+
     var request = new sql.Request();
     request.query('select 1 as number', function(err, recordset) {
         // ... error checks
 
         console.dir(recordset);
     });
-	
+
     // Stored Procedure
-	
+
     var request = new sql.Request();
     request.input('input_parameter', sql.Int, value);
     request.output('output_parameter', sql.VarChar(50));
@@ -126,7 +126,7 @@ sql.on('error', function(err) {
 If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.
 
 ```javascript
-var sql = require('mssql'); 
+var sql = require('mssql');
 
 var config = {
     user: '...',
@@ -134,7 +134,7 @@ var config = {
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
     database: '...',
     stream: true, // You can enable streaming globally
-    
+
     options: {
         encrypt: true // Use this if you're on Windows Azure
     }
@@ -142,23 +142,23 @@ var config = {
 
 sql.connect(config, function(err) {
     // ... error checks
-	
+
     var request = new sql.Request();
     request.stream = true; // You can set streaming differently for each request
     request.query('select * from verylargetable'); // or request.execute(procedure);
-    
+
     request.on('recordset', function(columns) {
     	// Emitted once for each recordset in a query
     });
-    
+
     request.on('row', function(row) {
     	// Emitted for each row in a recordset
     });
-    
+
     request.on('error', function(err) {
     	// May be emitted multiple times
     });
-    
+
     request.on('done', function(returnValue) {
     	// Always emitted as the last one
     });
@@ -403,14 +403,14 @@ request.input('input_parameter', sql.Int, value);
 request.output('output_parameter', sql.Int);
 request.execute('procedure_name', function(err, recordsets, returnValue) {
     // ... error checks
-    
+
     console.log(recordsets.length); // count of recordsets returned by the procedure
     console.log(recordsets[0].length); // count of rows contained in first recordset
     console.log(returnValue); // procedure return value
     console.log(recordsets.returnValue); // same as previous line
-	
+
     console.log(request.parameters.output_parameter.value); // output value
-	
+
     // ...
 });
 ```
@@ -543,9 +543,9 @@ __Example__
 var request = new sql.Request();
 request.query('select 1 as number', function(err, recordset) {
     // ... error checks
-    
+
     console.log(recordset[0].number); // return 1
-	
+
     // ...
 });
 ```
@@ -568,7 +568,7 @@ request.multiple = true;
 
 request.query('select 1 as number; select 2 as number', function(err, recordsets) {
     // ... error checks
-    
+
     console.log(recordsets[0][0].number); // return 1
     console.log(recordsets[1][0].number); // return 2
 });
@@ -668,7 +668,7 @@ request.query('waitfor delay \'00:00:05\'; select 1 as number', function(err, re
     console.log(err instanceof sql.RequestError);  // true
     console.log(err.message);                      // Canceled.
     console.log(err.code);                         // ECANCEL
-	
+
     // ...
 });
 
@@ -699,7 +699,7 @@ transaction.begin(function(err) {
 
         transaction.commit(function(err, recordset) {
             // ... error checks
-            
+
             console.log("Transaction commited.");
         });
     });
@@ -716,12 +716,12 @@ This example shows how you should correctly handle transaction errors when `abor
 var transaction = new sql.Transaction(/* [connection] */);
 transaction.begin(function(err) {
     // ... error checks
-    
+
     var rolledBack = false;
-    
+
     transaction.on('rollback', function(aborted) {
 	    // emited with aborted === true
-	    
+
 	    rolledBack = true;
     });
 
@@ -792,7 +792,7 @@ __Example__
 var transaction = new sql.Transaction();
 transaction.begin(function(err) {
     // ... error checks
-    
+
     transaction.commit(function(err) {
         // ... error checks
     })
@@ -820,7 +820,7 @@ __Example__
 var transaction = new sql.Transaction();
 transaction.begin(function(err) {
     // ... error checks
-    
+
     transaction.rollback(function(err) {
         // ... error checks
     })
@@ -855,7 +855,7 @@ ps.prepare('select @param as value', function(err) {
 
         ps.unprepare(function(err) {
             // ... error checks
-            
+
         });
     });
 });
@@ -956,10 +956,10 @@ var ps = new sql.PreparedStatement();
 ps.input('param', sql.Int);
 ps.prepare('select @param as value', function(err) {
     // ... error checks
-    
+
     ps.execute({param: 12345}, function(err, recordset) {
         // ... error checks
-        
+
         console.log(recordset[0].value); // return 12345
     });
 });
@@ -972,11 +972,11 @@ var ps = new sql.PreparedStatement();
 ps.input('param', sql.Int);
 ps.prepare('select @param as value', function(err) {
     // ... error checks
-    
+
     ps.multiple = true;
     ps.execute({param: 12345}, function(err, recordsets) {
         // ... error checks
-        
+
         console.log(recordsets[0][0].value); // return 12345
     });
 });
@@ -989,22 +989,22 @@ var ps = new sql.PreparedStatement();
 ps.input('param', sql.Int);
 ps.prepare('select @param as value', function(err) {
     // ... error checks
-    
+
     ps.stream = true;
     request = ps.execute({param: 12345});
-    
+
     request.on('recordset', function(columns) {
     	// Emitted once for each recordset in a query
     });
-    
+
     request.on('row', function(row) {
     	// Emitted for each row in a recordset
     });
-    
+
     request.on('error', function(err) {
     	// May be emitted multiple times
     });
-    
+
     request.on('done', function(returnValue) {
     	// Always emitted as the last one
     });
@@ -1038,7 +1038,7 @@ ps.prepare('select @param as value', function(err, recordsets) {
 
     ps.unprepare(function(err) {
         // ... error checks
-        
+
     });
 });
 ```
@@ -1109,10 +1109,10 @@ Results in:
   figures: [ { attribute: 1, pointOffset: 0 } ],
   shapes: [ { parentOffset: -1, figureOffset: 0, type: 2 } ],
   segments: [] }
-  
+
 { srid: 0,
   version: 1,
-  points: 
+  points:
    [ { x: 100, y: 100, z: 10.3, m: 12 },
      { x: 20, y: 180, z: NaN, m: NaN },
      { x: 180, y: 180, z: NaN, m: NaN } ],
@@ -1156,7 +1156,7 @@ var request = new sql.Request();
 request.input('tvp', tvp);
 request.execute('MyCustomStoredProcedure', function(err, recordsets, returnValue) {
     // ... error checks
-    
+
     console.dir(recordsets[0][0]); // {a: 'hello tvp', b: 777}
 });
 ```
@@ -1237,9 +1237,9 @@ SQL Server may generate more than one error for one request so you can access pr
 
 ### Error Codes
 
-Each known error has `code` property.
+Each known error has `name`, `code` and `message` properties.
 
-Type | Code | Description
+Name | Code | Message
 :--- | :--- | :---
 `ConnectionError` | ELOGIN | Login failed.
 `ConnectionError` | ETIMEOUT | Connection timeout.
@@ -1248,7 +1248,7 @@ Type | Code | Description
 `ConnectionError` | EALREADYCONNECTING | Already connecting to database!
 `ConnectionError` | ENOTOPEN | Connection not yet open.
 `ConnectionError` | EINSTLOOKUP | Instance lookup failed.
-`ConnectionError` | ESOCKET | Scoket error.
+`ConnectionError` | ESOCKET | Socket error.
 `ConnectionError` | ECONNCLOSED | Connection is closed.
 `TransactionError` | ENOTBEGUN | Transaction has not begun.
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
@@ -1285,7 +1285,7 @@ Recordset metadata are accessible through the `recordset.columns` property.
 var request = new sql.Request();
 request.query('select convert(decimal(18, 4), 1) as first, \'asdf\' as second', function(err, recordset) {
     console.dir(recordset.columns);
-	
+
     console.log(recordset.columns.first.type === sql.Decimal); // true
     console.log(recordset.columns.second.type === sql.VarChar); // true
 });
