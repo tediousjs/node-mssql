@@ -348,7 +348,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 
 				if @stream
 					@emit 'error', e
-				
+				else
+					callback?(e)
+					
 				# we must collect errors even in stream mode
 				errors.push e
 
@@ -367,6 +369,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					
 					# attach handler to handle multiple error messages
 					connection.on 'errorMessage', handleError
+					connection.on 'error', handleError
 					
 					done = (err, rowCount) =>
 						# to make sure we handle no-sql errors as well
@@ -395,6 +398,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							error.precedingErrors = errors
 						
 						connection.removeListener 'errorMessage', handleError
+						connection.removeListener 'error', handleError
 						@_release connection
 						
 						if @stream
@@ -450,7 +454,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				
 				if @stream
 					@emit 'error', e
-				
+				else
+					callback?(e)
 				# we must collect errors even in stream mode
 				errors.push e
 			
@@ -469,6 +474,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					
 					# attach handler to handle multiple error messages
 					connection.on 'errorMessage', handleError
+					connection.on 'error', handleError
 					
 					req = new tds.Request command, (err) =>
 						# to make sure we handle no-sql errors as well
@@ -509,6 +515,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							error.precedingErrors = errors
 						
 						connection.removeListener 'errorMessage', handleError
+						connection.removeListener 'error', handleError
 						@_release connection
 						
 						if @stream
@@ -580,7 +587,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					
 					req.on 'doneInProc', doneHandler # doneInProc handlers are used in both queries and batches
 					req.on 'done', doneHandler # done handlers are used in batches
-					
+					req.on 'error', handleError
 					req.on 'returnValue', (parameterName, value, metadata) =>
 						if @verbose
 							if value is tds.TYPES.Null
@@ -695,7 +702,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				
 				if @stream
 					@emit 'error', e
-				
+				else
+					callback?(e)
+					
 				# we must collect errors even in stream mode
 				errors.push e
 
@@ -714,6 +723,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					
 					# attach handler to handle multiple error messages
 					connection.on 'errorMessage', handleError
+					connection.on 'error', handleError
 					
 					req = new tds.Request procedure, (err) =>
 						# to make sure we handle no-sql errors as well
@@ -741,6 +751,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							error.precedingErrors = errors
 						
 						connection.removeListener 'errorMessage', handleError
+						connection.removeListener 'error', handleError
 						@_release connection
 						
 						if @stream
@@ -793,7 +804,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							
 							else
 								recordset.push row
-					
+					req.on 'error', handleError
 					req.on 'doneInProc', (rowCount, more, rows) =>
 						# filter empty recordsets when NOCOUNT is OFF
 						if Object.keys(columns).length is 0 then return
