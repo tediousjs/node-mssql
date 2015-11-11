@@ -7,7 +7,7 @@ An easy-to-use MSSQL database connector for Node.js / io.js.
 **node-mssql**
 - Has unified interface for multiple TDS drivers.
 - Has built-in connection pooling.
-- Supports built-in JSON serialization instroduced in SQL Server 2016.
+- Supports built-in JSON serialization introduced in SQL Server 2016.
 - Supports Stored Procedures, Transactions, Prepared Statements, Bulk Load and TVP.
 - Supports serialization of Geography and Geometry CLR types.
 - Has smart JS data type to SQL data type mapper.
@@ -16,13 +16,13 @@ An easy-to-use MSSQL database connector for Node.js / io.js.
 - Is tested in production environment.
 - Is well documented.
 
-There is also [co](https://github.com/visionmedia/co) wrapper available - [co-mssql](https://github.com/patriksimek/co-mssql).             
+There is also [co](https://github.com/visionmedia/co) wrapper available - [co-mssql](https://github.com/patriksimek/co-mssql).
 If you're looking for session store for connect/express, visit [connect-mssql](https://github.com/patriksimek/connect-mssql).
 
 Supported TDS drivers:
-- [![Github Stars][tedious-image] Tedious][tedious-url] by Mike D Pilsbury (pure javascript - windows/osx/linux)
-- [![Github Stars][msnodesql-image] Microsoft Driver for Node.js for SQL Server][msnodesql-url] by Microsoft Corporation (native - windows only)
-- [![Github Stars][tds-image] node-tds][tds-url] by Chad Retz (pure javascript - windows/osx/linux)
+- [![Github Stars][tedious-image] Tedious][tedious-url] by Mike D Pilsbury (pure JavaScript - Windows/OSX/Linux)
+- [![Github Stars][msnodesql-image] Microsoft Driver for Node.js for SQL Server][msnodesql-url] by Microsoft Corporation (native - Windows only)
+- [![Github Stars][tds-image] node-tds][tds-url] by Chad Retz (pure JavaScript - Windows/OSX/Linux)
 
 node-mssql uses Tedious as the default driver.
 
@@ -33,14 +33,14 @@ node-mssql uses Tedious as the default driver.
 ## Quick Example
 
 ```javascript
-var sql = require('mssql'); 
+var sql = require('mssql');
 
 var config = {
     user: '...',
     password: '...',
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
     database: '...',
-    
+
     options: {
         encrypt: true // Use this if you're on Windows Azure
     }
@@ -48,24 +48,24 @@ var config = {
 
 var connection = new sql.Connection(config, function(err) {
     // ... error checks
-    
+
     // Query
-	
+
     var request = new sql.Request(connection); // or: var request = connection.request();
     request.query('select 1 as number', function(err, recordset) {
         // ... error checks
-        
+
         console.dir(recordset);
     });
-	
+
     // Stored Procedure
-	
+
     var request = new sql.Request(connection);
     request.input('input_parameter', sql.Int, 10);
     request.output('output_parameter', sql.VarChar(50));
     request.execute('procedure_name', function(err, recordsets, returnValue) {
         // ... error checks
-        
+
         console.dir(recordsets);
     });
 });
@@ -78,14 +78,14 @@ connection.on('error', function(err) {
 ### Quick Example with one global connection
 
 ```javascript
-var sql = require('mssql'); 
+var sql = require('mssql');
 
 var config = {
     user: '...',
     password: '...',
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
     database: '...',
-    
+
     options: {
         encrypt: true // Use this if you're on Windows Azure
     }
@@ -93,18 +93,18 @@ var config = {
 
 sql.connect(config, function(err) {
     // ... error checks
-	
+
     // Query
-	
+
     var request = new sql.Request();
     request.query('select 1 as number', function(err, recordset) {
         // ... error checks
 
         console.dir(recordset);
     });
-	
+
     // Stored Procedure
-	
+
     var request = new sql.Request();
     request.input('input_parameter', sql.Int, value);
     request.output('output_parameter', sql.VarChar(50));
@@ -126,7 +126,7 @@ sql.on('error', function(err) {
 If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.
 
 ```javascript
-var sql = require('mssql'); 
+var sql = require('mssql');
 
 var config = {
     user: '...',
@@ -134,7 +134,7 @@ var config = {
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
     database: '...',
     stream: true, // You can enable streaming globally
-    
+
     options: {
         encrypt: true // Use this if you're on Windows Azure
     }
@@ -142,23 +142,23 @@ var config = {
 
 sql.connect(config, function(err) {
     // ... error checks
-	
+
     var request = new sql.Request();
     request.stream = true; // You can set streaming differently for each request
     request.query('select * from verylargetable'); // or request.execute(procedure);
-    
+
     request.on('recordset', function(columns) {
     	// Emitted once for each recordset in a query
     });
-    
+
     request.on('row', function(row) {
     	// Emitted for each row in a recordset
     });
-    
+
     request.on('error', function(err) {
     	// May be emitted multiple times
     });
-    
+
     request.on('done', function(returnValue) {
     	// Always emitted as the last one
     });
@@ -258,7 +258,7 @@ var config = {
 - **stream** - Stream recordsets/rows instead of returning them all at once as an argument of callback (default: `false`). You can also enable streaming for each request independently (`request.stream = true`). Always set to `true` if you plan to work with large amount of rows.
 - **parseJSON** - Parse JSON recordsets to JS objects (default: `false`). For more information please see section [JSON support](#json).
 - **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
-- **pool.min** - The minimun of connections there can be in the pool (default: `0`).
+- **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
 
 <a name="cfg-tedious" />
@@ -329,7 +329,7 @@ Create a new connection pool with one active connection. This one initial connec
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after connection has established, or an error has occurred. Optional. If omited, returns [Promise](#promises).
+- **callback(err)** - A callback which is called after connection has established, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
 
@@ -393,7 +393,7 @@ Call a stored procedure.
 __Arguments__
 
 - **procedure** - Name of the stored procedure to be executed.
-- **callback(err, recordsets, returnValue)** - A callback which is called after execution has completed, or an error has occurred. `returnValue` is also accessible as property of recordsets. Optional. If omited, returns [Promise](#promises).
+- **callback(err, recordsets, returnValue)** - A callback which is called after execution has completed, or an error has occurred. `returnValue` is also accessible as property of recordsets. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
 
@@ -403,21 +403,21 @@ request.input('input_parameter', sql.Int, value);
 request.output('output_parameter', sql.Int);
 request.execute('procedure_name', function(err, recordsets, returnValue) {
     // ... error checks
-    
+
     console.log(recordsets.length); // count of recordsets returned by the procedure
     console.log(recordsets[0].length); // count of rows contained in first recordset
     console.log(returnValue); // procedure return value
     console.log(recordsets.returnValue); // same as previous line
-	
+
     console.log(request.parameters.output_parameter.value); // output value
-	
+
     // ...
 });
 ```
 
 __Errors__
 - EREQUEST (`RequestError`) - *Message from SQL Server*
-- ECANCEL (`RequestError`) - Canceled.
+- ECANCEL (`RequestError`) - Cancelled.
 - ETIMEOUT (`RequestError`) - Request timeout.
 - ENOCONN (`RequestError`) - No connection is specified for that request.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
@@ -435,7 +435,7 @@ Add an input parameter to the request.
 __Arguments__
 
 - **name** - Name of the input parameter without @ char.
-- **type** - SQL data type of input parameter. If you omit type, module automaticaly decide which SQL data type should be used based on JS data type.
+- **type** - SQL data type of input parameter. If you omit type, module automatically decide which SQL data type should be used based on JS data type.
 - **value** - Input parameter value. `undefined` ans `NaN` values are automatically converted to `null` values.
 
 __Example__
@@ -535,7 +535,7 @@ Execute the SQL command. To execute commands like `create procedure` or if you p
 __Arguments__
 
 - **command** - T-SQL command to be executed.
-- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
+- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
 
@@ -543,9 +543,9 @@ __Example__
 var request = new sql.Request();
 request.query('select 1 as number', function(err, recordset) {
     // ... error checks
-    
+
     console.log(recordset[0].number); // return 1
-	
+
     // ...
 });
 ```
@@ -553,7 +553,7 @@ request.query('select 1 as number', function(err, recordset) {
 __Errors__
 - ETIMEOUT (`RequestError`) - Request timeout.
 - EREQUEST (`RequestError`) - *Message from SQL Server*
-- ECANCEL (`RequestError`) - Canceled.
+- ECANCEL (`RequestError`) - Cancelled.
 - ENOCONN (`RequestError`) - No connection is specified for that request.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
@@ -568,7 +568,7 @@ request.multiple = true;
 
 request.query('select 1 as number; select 2 as number', function(err, recordsets) {
     // ... error checks
-    
+
     console.log(recordsets[0][0].number); // return 1
     console.log(recordsets[1][0].number); // return 2
 });
@@ -586,7 +586,7 @@ NOTE: Table-Valued Parameter (TVP) is not supported in batch.
 __Arguments__
 
 - **batch** - T-SQL command to be executed.
-- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
+- **callback(err, recordset)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
 
@@ -600,7 +600,7 @@ request.batch('create procedure #temporary as select * from table', function(err
 __Errors__
 - ETIMEOUT (`RequestError`) - Request timeout.
 - EREQUEST (`RequestError`) - *Message from SQL Server*
-- ECANCEL (`RequestError`) - Canceled.
+- ECANCEL (`RequestError`) - Cancelled.
 - ENOCONN (`RequestError`) - No connection is specified for that request.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
@@ -619,7 +619,7 @@ Perform a bulk insert.
 __Arguments__
 
 - **table** - `sql.Table` instance.
-- **callback(err, rowCount)** - A callback which is called after bulk insert has completed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
+- **callback(err, rowCount)** - A callback which is called after bulk insert has completed, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
 
@@ -646,7 +646,7 @@ __Errors__
 - ENAME (`RequestError`) - Table name must be specified for bulk insert.
 - ETIMEOUT (`RequestError`) - Request timeout.
 - EREQUEST (`RequestError`) - *Message from SQL Server*
-- ECANCEL (`RequestError`) - Canceled.
+- ECANCEL (`RequestError`) - Cancelled.
 - ENOCONN (`RequestError`) - No connection is specified for that request.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
@@ -666,9 +666,9 @@ __Example__
 var request = new sql.Request();
 request.query('waitfor delay \'00:00:05\'; select 1 as number', function(err, recordset) {
     console.log(err instanceof sql.RequestError);  // true
-    console.log(err.message);                      // Canceled.
+    console.log(err.message);                      // Cancelled.
     console.log(err.code);                         // ECANCEL
-	
+
     // ...
 });
 
@@ -699,8 +699,8 @@ transaction.begin(function(err) {
 
         transaction.commit(function(err, recordset) {
             // ... error checks
-            
-            console.log("Transaction commited.");
+
+            console.log("Transaction committed.");
         });
     });
 });
@@ -716,12 +716,12 @@ This example shows how you should correctly handle transaction errors when `abor
 var transaction = new sql.Transaction(/* [connection] */);
 transaction.begin(function(err) {
     // ... error checks
-    
+
     var rolledBack = false;
-    
+
     transaction.on('rollback', function(aborted) {
 	    // emited with aborted === true
-	    
+
 	    rolledBack = true;
     });
 
@@ -760,7 +760,7 @@ Begin a transaction.
 __Arguments__
 
 - **isolationLevel** - Controls the locking and row versioning behavior of TSQL statements issued by a connection. Optional. `READ_COMMITTED` by default. For possible values see `sql.ISOLATION_LEVEL`.
-- **callback(err)** - A callback which is called after transaction has began, or an error has occurred. Optional. If omited, returns [Promise](#promises).
+- **callback(err)** - A callback which is called after transaction has began, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
 
@@ -784,7 +784,7 @@ Commit a transaction.
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after transaction has committed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
+- **callback(err)** - A callback which is called after transaction has committed, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
 
@@ -792,7 +792,7 @@ __Example__
 var transaction = new sql.Transaction();
 transaction.begin(function(err) {
     // ... error checks
-    
+
     transaction.commit(function(err) {
         // ... error checks
     })
@@ -808,11 +808,11 @@ __Errors__
 <a name="rollback" />
 ### rollback([callback])
 
-Rollback a transaction. If the queue isn't empty, all queued requests will be canceled and the transaction will be marked as aborted.
+Rollback a transaction. If the queue isn't empty, all queued requests will be Cancelled and the transaction will be marked as aborted.
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after transaction has rolled back, or an error has occurred. Optional. If omited, returns [Promise](#promises).
+- **callback(err)** - A callback which is called after transaction has rolled back, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
 
@@ -820,7 +820,7 @@ __Example__
 var transaction = new sql.Transaction();
 transaction.begin(function(err) {
     // ... error checks
-    
+
     transaction.rollback(function(err) {
         // ... error checks
     })
@@ -855,7 +855,7 @@ ps.prepare('select @param as value', function(err) {
 
         ps.unprepare(function(err) {
             // ... error checks
-            
+
         });
     });
 });
@@ -921,7 +921,7 @@ Prepare a statement.
 __Arguments__
 
 - **statement** - T-SQL statement to prepare.
-- **callback(err)** - A callback which is called after preparation has completed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
+- **callback(err)** - A callback which is called after preparation has completed, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
 
@@ -947,7 +947,7 @@ Execute a prepared statement.
 __Arguments__
 
 - **values** - An object whose names correspond to the names of parameters that were added to the prepared statement before it was prepared.
-- **callback(err)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
+- **callback(err)** - A callback which is called after execution has completed, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
 
@@ -956,10 +956,10 @@ var ps = new sql.PreparedStatement();
 ps.input('param', sql.Int);
 ps.prepare('select @param as value', function(err) {
     // ... error checks
-    
+
     ps.execute({param: 12345}, function(err, recordset) {
         // ... error checks
-        
+
         console.log(recordset[0].value); // return 12345
     });
 });
@@ -972,11 +972,11 @@ var ps = new sql.PreparedStatement();
 ps.input('param', sql.Int);
 ps.prepare('select @param as value', function(err) {
     // ... error checks
-    
+
     ps.multiple = true;
     ps.execute({param: 12345}, function(err, recordsets) {
         // ... error checks
-        
+
         console.log(recordsets[0][0].value); // return 12345
     });
 });
@@ -989,22 +989,22 @@ var ps = new sql.PreparedStatement();
 ps.input('param', sql.Int);
 ps.prepare('select @param as value', function(err) {
     // ... error checks
-    
+
     ps.stream = true;
     request = ps.execute({param: 12345});
-    
+
     request.on('recordset', function(columns) {
     	// Emitted once for each recordset in a query
     });
-    
+
     request.on('row', function(row) {
     	// Emitted for each row in a recordset
     });
-    
+
     request.on('error', function(err) {
     	// May be emitted multiple times
     });
-    
+
     request.on('done', function(returnValue) {
     	// Always emitted as the last one
     });
@@ -1015,7 +1015,7 @@ __Errors__
 - ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
 - ETIMEOUT (`RequestError`) - Request timeout.
 - EREQUEST (`RequestError`) - *Message from SQL Server*
-- ECANCEL (`RequestError`) - Canceled.
+- ECANCEL (`RequestError`) - Cancelled.
 
 ---------------------------------------
 
@@ -1026,7 +1026,7 @@ Unprepare a prepared statement.
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after unpreparation has completed, or an error has occurred. Optional. If omited, returns [Promise](#promises).
+- **callback(err)** - A callback which is called after unpreparation has completed, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
 
@@ -1038,7 +1038,7 @@ ps.prepare('select @param as value', function(err, recordsets) {
 
     ps.unprepare(function(err) {
         // ... error checks
-        
+
     });
 });
 ```
@@ -1109,10 +1109,10 @@ Results in:
   figures: [ { attribute: 1, pointOffset: 0 } ],
   shapes: [ { parentOffset: -1, figureOffset: 0, type: 2 } ],
   segments: [] }
-  
+
 { srid: 0,
   version: 1,
-  points: 
+  points:
    [ { x: 100, y: 100, z: 10.3, m: 12 },
      { x: 20, y: 180, z: NaN, m: NaN },
      { x: 180, y: 180, z: NaN, m: NaN } ],
@@ -1156,7 +1156,7 @@ var request = new sql.Request();
 request.input('tvp', tvp);
 request.execute('MyCustomStoredProcedure', function(err, recordsets, returnValue) {
     // ... error checks
-    
+
     console.dir(recordsets[0][0]); // {a: 'hello tvp', b: 777}
 });
 ```
@@ -1227,7 +1227,7 @@ __Version__
 There are 4 types of errors you can handle:
 
 - **ConnectionError** - Errors related to connections and connection pool.
-- **TransactionError** - Errors related to creating, commiting and rolling back transactions.
+- **TransactionError** - Errors related to creating, committing and rolling back transactions.
 - **RequestError** - Errors related to queries and stored procedures execution.
 - **PreparedStatementError** - Errors related to prepared statements.
 
@@ -1237,9 +1237,9 @@ SQL Server may generate more than one error for one request so you can access pr
 
 ### Error Codes
 
-Each known error has `code` property.
+Each known error has `name`, `code` and `message` properties.
 
-Type | Code | Description
+Name | Code | Message
 :--- | :--- | :---
 `ConnectionError` | ELOGIN | Login failed.
 `ConnectionError` | ETIMEOUT | Connection timeout.
@@ -1248,14 +1248,14 @@ Type | Code | Description
 `ConnectionError` | EALREADYCONNECTING | Already connecting to database!
 `ConnectionError` | ENOTOPEN | Connection not yet open.
 `ConnectionError` | EINSTLOOKUP | Instance lookup failed.
-`ConnectionError` | ESOCKET | Scoket error.
+`ConnectionError` | ESOCKET | Socket error.
 `ConnectionError` | ECONNCLOSED | Connection is closed.
 `TransactionError` | ENOTBEGUN | Transaction has not begun.
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
 `TransactionError` | EREQINPROG | Can't commit/rollback transaction. There is a request in progress.
 `TransactionError` | EABORT | Transaction has been aborted.
 `RequestError` | EREQUEST | Message from SQL Server. Error object contains additional details.
-`RequestError` | ECANCEL | Canceled.
+`RequestError` | ECANCEL | Cancelled.
 `RequestError` | ETIMEOUT | Request timeout.
 `RequestError` | EARGS | Invalid number of arguments.
 `RequestError` | EINJECT | SQL injection warning.
@@ -1285,7 +1285,7 @@ Recordset metadata are accessible through the `recordset.columns` property.
 var request = new sql.Request();
 request.query('select convert(decimal(18, 4), 1) as first, \'asdf\' as second', function(err, recordset) {
     console.dir(recordset.columns);
-	
+
     console.log(recordset.columns.first.type === sql.Decimal); // true
     console.log(recordset.columns.second.type === sql.VarChar); // true
 });
@@ -1437,7 +1437,7 @@ Output for the example above could look similar to this.
 ### Tedious
 
 - If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/patriksimek/node-mssql/issues/36))
-- If you're executing a statement longer than 4000 chars on SQL Server 2000, alway use [batch](#batch) instead of [query](#query) ([issue](https://github.com/patriksimek/node-mssql/issues/68))
+- If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch) instead of [query](#query) ([issue](https://github.com/patriksimek/node-mssql/issues/68))
 
 ### msnodesql
 
