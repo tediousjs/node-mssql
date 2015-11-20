@@ -342,6 +342,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			started = Date.now()
 			errors = []
 			errorHandlers = {}
+			hasReturned = false
 			handleError = (doReturn, connection, info) =>
 				err = new Error info.message
 				err.info = info
@@ -720,6 +721,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			errors = []
 			isJSONRecordset = false
 			jsonBuffer = null
+			hasReturned = false
 			errorHandlers = {}
 			handleError = (doReturn, connection, info) =>
 				err = new Error info.message
