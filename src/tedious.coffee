@@ -341,14 +341,24 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 
 			started = Date.now()
 			errors = []
-			handleError = (info) =>
+			errorHandlers = {}
+			hasReturned = false
+			handleError = (doReturn, connection, info) =>
 				err = new Error info.message
 				err.info = info
 				e = RequestError err, 'EREQUEST'
 
 				if @stream
 					@emit 'error', e
-				
+				else
+					if (doReturn && !hasReturned)
+						if connection?
+							for event, handler of errorHandlers
+								connection.removeListener event, handler
+							@_release connection
+						hasReturned = true
+						callback?(e)
+
 				# we must collect errors even in stream mode
 				errors.push e
 
@@ -366,7 +376,11 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						connection.cancel()
 					
 					# attach handler to handle multiple error messages
-					connection.on 'errorMessage', handleError
+					errorHandlers['errorMessage'] = handleError.bind(undefined, false, connection)
+					errorHandlers['error']        = handleError.bind(undefined, true, connection)
+					connection.on 'errorMessage', errorHandlers['errorMessage']
+					connection.on 'error',        errorHandlers['error']
+
 					
 					done = (err, rowCount) =>
 						# to make sure we handle no-sql errors as well
@@ -394,14 +408,17 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							error = errors.pop()
 							error.precedingErrors = errors
 						
-						connection.removeListener 'errorMessage', handleError
-						@_release connection
+						if (!hasReturned)
+							for event, handler of errorHandlers
+								connection.removeListener event, handler
+							@_release connection
+							hasReturned = true
 						
-						if @stream
-							callback null, null
+							if @stream
+								callback null, null
 						
-						else
-							callback? error, rowCount
+							else
+								callback? error, rowCount
 					
 					bulk = connection.newBulkLoad table.path, done
 
@@ -443,14 +460,24 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			batchHasOutput = false
 			isJSONRecordset = false
 			jsonBuffer = null
-			handleError = (info) =>
+			hasReturned = false
+			errorHandlers = {}
+			handleError = (doReturn, connection, info) =>
 				err = new Error info.message
 				err.info = info
 				e = RequestError err, 'EREQUEST'
 				
 				if @stream
 					@emit 'error', e
-				
+				else
+					if (doReturn && !hasReturned)
+						if connection?
+							for event, handler of errorHandlers
+								connection.removeListener event, handler
+							@_release connection
+						hasReturned = true
+						callback?(e)
+
 				# we must collect errors even in stream mode
 				errors.push e
 			
@@ -468,7 +495,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						connection.cancel()
 					
 					# attach handler to handle multiple error messages
-					connection.on 'errorMessage', handleError
+					errorHandlers['errorMessage'] = handleError.bind(undefined, false, connection)
+					errorHandlers['error']        = handleError.bind(undefined, true, connection)
+					connection.on 'errorMessage', errorHandlers['errorMessage']
+					connection.on 'error',        errorHandlers['error']
 					
 					req = new tds.Request command, (err) =>
 						# to make sure we handle no-sql errors as well
@@ -508,14 +538,17 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							error = errors.pop()
 							error.precedingErrors = errors
 						
-						connection.removeListener 'errorMessage', handleError
-						@_release connection
-						
-						if @stream
-							callback null, null
-						
-						else
-							callback? error, if @multiple then recordsets else recordsets[0]
+						if (!hasReturned)
+							for event, handler of errorHandlers
+								connection.removeListener event, handler
+							@_release connection
+							hasReturned = true
+
+							if @stream
+								callback null, null
+							
+							else
+								callback? error, if @multiple then recordsets else recordsets[0]
 					
 					req.on 'columnMetadata', (metadata) =>
 						columns = createColumns metadata
@@ -688,14 +721,24 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			errors = []
 			isJSONRecordset = false
 			jsonBuffer = null
-			handleError = (info) =>
+			hasReturned = false
+			errorHandlers = {}
+			handleError = (doReturn, connection, info) =>
 				err = new Error info.message
 				err.info = info
 				e = RequestError err, 'EREQUEST'
 				
 				if @stream
 					@emit 'error', e
-				
+				else
+					if (doReturn && !hasReturned)
+						if connection?
+							for event, handler of errorHandlers
+								connection.removeListener event, handler
+							@_release connection
+						hasReturned = true
+						callback?(e)
+					
 				# we must collect errors even in stream mode
 				errors.push e
 
@@ -713,7 +756,11 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						connection.cancel()
 					
 					# attach handler to handle multiple error messages
-					connection.on 'errorMessage', handleError
+					errorHandlers['errorMessage'] = handleError.bind(undefined, false, connection)
+					errorHandlers['error']        = handleError.bind(undefined, true, connection)
+					connection.on 'errorMessage', errorHandlers['errorMessage']
+					connection.on 'error',        errorHandlers['error']
+
 					
 					req = new tds.Request procedure, (err) =>
 						# to make sure we handle no-sql errors as well
@@ -740,15 +787,18 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							error = errors.pop()
 							error.precedingErrors = errors
 						
-						connection.removeListener 'errorMessage', handleError
-						@_release connection
-						
-						if @stream
-							callback null, null, returnValue
-						
-						else
-							recordsets.returnValue = returnValue
-							callback? error, recordsets, returnValue
+						if (!hasReturned)
+							for event, handler of errorHandlers
+								connection.removeListener event, handler
+							@_release connection
+
+							hasReturned = true
+
+							if @stream
+								callback null, null, returnValue
+							else
+								recordsets.returnValue = returnValue
+								callback? error, recordsets, returnValue
 					
 					req.on 'columnMetadata', (metadata) =>
 						columns = createColumns metadata
