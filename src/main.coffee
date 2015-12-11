@@ -168,9 +168,9 @@ class Connection extends EventEmitter
 			return @_connect callback
 		
 		new module.exports.Promise (resolve, reject) =>
-			@_connect (err) ->
+			@_connect (err) =>
 				if err then return reject err
-				resolve()
+				resolve @
 	
 	_connect: (callback) ->
 		if not @driver
@@ -410,9 +410,9 @@ class PreparedStatement extends EventEmitter
 			return @_prepare statement, callback
 		
 		new module.exports.Promise (resolve, reject) =>
-			@_prepare statement, (err) ->
+			@_prepare statement, (err) =>
 				if err then return reject err
-				resolve()
+				resolve @
 	
 	_prepare: (statement, callback) ->
 		if @_pooledConnection
@@ -643,9 +643,9 @@ class Transaction extends EventEmitter
 			return @_begin isolationLevel, callback
 		
 		new module.exports.Promise (resolve, reject) =>
-			@_begin isolationLevel, (err) ->
+			@_begin isolationLevel, (err) =>
 				if err then return reject err
-				resolve()
+				resolve @
 	
 	_begin: (isolationLevel, callback) ->
 		@isolationLevel = isolationLevel if isolationLevel?

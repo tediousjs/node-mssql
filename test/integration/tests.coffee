@@ -781,14 +781,14 @@ global.TESTS =
 		config.driver = driver
 		config.requestTimeout = 500
 		
-		conn = new sql.Connection config, (err) ->
-			if err then return done err
-			
+		new sql.Connection(config).connect().then (conn) ->
 			r = new sql.Request conn
 			r[MODE] 'waitfor delay \'00:00:05\';select 1', (err, recordset) ->
 				assert.equal (if message then message.exec(err.message)? else (err instanceof sql.RequestError)), true
 	
 				done null
+		
+		.catch done
 	
 	'type validation': (done) ->
 		r = new sql.Request
