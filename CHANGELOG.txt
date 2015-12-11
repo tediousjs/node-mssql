@@ -1,3 +1,8 @@
+v2.4.0 (2015-12-11)
+-------------------
+[new] Connection.connect, PreparedStatement.prepare and Transaction.begin now returns instance of itself as a first argument to Promise resolver.
+[fix] Correctly handle Socket Errors inside Requests (Jørgen Elgaard Larsen)
+
 v2.3.2 (2015-11-11)
 -------------------
 [change] Updated to latest Tedious 1.13.1
