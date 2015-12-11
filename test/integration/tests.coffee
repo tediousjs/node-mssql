@@ -714,6 +714,20 @@ global.TESTS =
 				assert.strictEqual aborted, true
 				
 				rollbackHandled = true
+	
+	'transaction with synchronous error': (done) ->
+		tran = new sql.Transaction
+		tran.begin (err) ->
+			if err then return done err
+
+			req = tran.request()
+			req.input 'date', sql.TinyInt, 1561651515615
+			
+			req.execute 'someStoreProc', (err) ->
+				if err
+					return tran.rollback done
+				
+				done new Error "Should throw an error."
 			
 	'transaction queue': (done) ->
 		tran = new sql.Transaction

@@ -138,6 +138,9 @@ describe 'tedious', ->
 		it 'transaction with error (XACT_ABORT set to ON)', (done) ->
 			TESTS['transaction with error'] done
 		
+		it 'transaction with synchronous error', (done) ->
+			TESTS['transaction with synchronous error'] done
+		
 		it 'transaction queue', (done) ->
 			TESTS['transaction queue'] done
 		
