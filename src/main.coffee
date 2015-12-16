@@ -2,10 +2,11 @@
 util = require 'util'
 fs = require 'fs'
 
-{TYPES, declare} = require('./datatypes')
-ISOLATION_LEVEL = require('./isolationlevel')
+{TYPES, declare} = require './datatypes'
+ISOLATION_LEVEL = require './isolationlevel'
 DRIVERS = ['msnodesql', 'tedious', 'tds']
-Table = require('./table')
+Table = require './table'
+ConnectionString = require './connectionstring'
 
 global_connection = null
 
@@ -81,6 +82,8 @@ getTypeByValue = (value) ->
 		else
 			return TYPES.NVarChar
 
+
+
 ###
 Class Connection.
 
@@ -102,12 +105,21 @@ class Connection extends EventEmitter
 	###
 	Create new Connection.
 	
-	@param {Object} config Connection configuration.
+	@param {Object|String} config Connection configuration object or connection string.
 	@callback [callback] A callback which is called after connection has established, or an error has occurred.
 		@param {Error} err Error on error, otherwise null.
 	###
 	
 	constructor: (@config, callback) ->
+		if 'string' is typeof @config
+			try
+				@config = ConnectionString.resolve @config
+			catch ex
+				if callback
+					return callback ex
+				else
+					throw ex
+		
 		# set defaults
 		@config.driver ?= 'tedious'
 		@config.port ?= 1433

@@ -1,7 +1,63 @@
 sql = require '../../'
 assert = require 'assert'
+cs = require '../../lib/connectionstring'
 
-describe 'Unit', ->
+describe 'Connection String', ->
+	it 'Connection String #1', (done) ->
+		cfg = cs.resolve "Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd"
+		
+		assert.strictEqual cfg.driver, undefined
+		assert.strictEqual cfg.user, 'testuser'
+		assert.strictEqual cfg.password, 'testpwd'
+		assert.strictEqual cfg.database, 'testdb'
+		assert.strictEqual cfg.server, '192.168.0.1'
+		assert.strictEqual cfg.port, undefined
+		
+		done()
+	
+	it 'Connection String #2', (done) ->
+		cfg = cs.resolve "Server=tcp:192.168.0.1,1433;Database=testdb;User Id=testuser;Password=testpwd"
+		
+		assert.strictEqual cfg.driver, undefined
+		assert.strictEqual cfg.user, 'testuser'
+		assert.strictEqual cfg.password, 'testpwd'
+		assert.strictEqual cfg.database, 'testdb'
+		assert.strictEqual cfg.server, '192.168.0.1'
+		assert.strictEqual cfg.port, 1433
+		
+		done()
+	
+	it 'Connection String #3', (done) ->
+		cfg = cs.resolve "Driver=msnodesql;Server=192.168.0.1;Database=testdb;User Id={testuser};Password='t;estpwd'"
+
+		assert.strictEqual cfg.driver, 'msnodesql'
+		assert.strictEqual cfg.connectionString, "Driver={SQL Server Native Client 11.0};Server=192.168.0.1;Database=testdb;User Id={testuser};Password='t;estpwd'"
+		
+		done()
+	
+	it 'Connection String #4', (done) ->
+		cfg = cs.resolve "mssql://username:password@localhost:1433/database?encrypt=true&stream=true&domain=mydomain"
+		
+		assert.strictEqual cfg.driver, undefined
+		assert.strictEqual cfg.user, 'username'
+		assert.strictEqual cfg.password, 'password'
+		assert.strictEqual cfg.database, 'database'
+		assert.strictEqual cfg.server, 'localhost'
+		assert.strictEqual cfg.domain, 'mydomain'
+		assert.strictEqual cfg.port, 1433
+		assert.strictEqual cfg.options.encrypt, true
+		
+		done()
+	
+	it 'Connection String #5', (done) ->
+		cfg = cs.resolve "mssql://username:password@localhost/INSTANCE/database?encrypt=true&stream=true&domain=mydomain&driver=msnodesql"
+		
+		assert.strictEqual cfg.driver, 'msnodesql'
+		assert.strictEqual cfg.connectionString, "server={localhost\\INSTANCE};uid={mydomain\\username};pwd={password};database={database};encrypt={true};driver={SQL Server Native Client 11.0}"
+		
+		done()
+
+describe 'Unit', ->	
 	it 'table', (done) ->
 		t = new sql.Table 'MyTable'
 		t.columns.add 'a', sql.Int, nullable: false
