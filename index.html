@@ -20,7 +20,7 @@
     <header>
       <div class="inner">
         <h1>node-mssql</h1>
-        <h2>An easy-to-use MSSQL database connector for Node.js / io.js.</h2>
+        <h2>An easy-to-use MSSQL database connector for Node.js.</h2>
         <a href="https://github.com/patriksimek/node-mssql" class="button"><small>View project on</small> GitHub</a>
       </div>
     </header>
@@ -31,36 +31,39 @@
           <h1>
 <a id="node-mssql" class="anchor" href="#node-mssql" aria-hidden="true"><span class="octicon octicon-link"></span></a>node-mssql</h1>
 
-<p>An easy-to-use MSSQL database connector for Node.js / io.js.</p>
+<p>An easy-to-use MSSQL database connector for Node.js.</p>
 
-<p><a href="https://www.npmjs.com/package/mssql"><img src="https://img.shields.io/npm/v/mssql.svg?style=flat-square" alt="NPM Version"></a> <a href="https://www.npmjs.com/package/mssql"><img src="https://img.shields.io/npm/dm/mssql.svg?style=flat-square" alt="NPM Downloads"></a> <a href="https://travis-ci.org/patriksimek/node-mssql"><img src="https://img.shields.io/travis/patriksimek/node-mssql/master.svg?style=flat-square&amp;label=unit" alt="Travis CI"></a> <a href="https://ci.appveyor.com/project/patriksimek/node-mssql"><img src="https://img.shields.io/appveyor/ci/patriksimek/node-mssql/master.svg?style=flat-square&amp;label=integration" alt="Appveyor CI"></a></p>
+<p><a href="https://www.npmjs.com/package/mssql"><img src="https://img.shields.io/npm/v/mssql.svg?style=flat-square" alt="NPM Version"></a> <a href="https://www.npmjs.com/package/mssql"><img src="https://img.shields.io/npm/dm/mssql.svg?style=flat-square" alt="NPM Downloads"></a> <a href="https://travis-ci.org/patriksimek/node-mssql"><img src="https://img.shields.io/travis/patriksimek/node-mssql/master.svg?style=flat-square&amp;label=unit" alt="Travis CI"></a> <a href="https://ci.appveyor.com/project/patriksimek/node-mssql"><img src="https://img.shields.io/appveyor/ci/patriksimek/node-mssql/master.svg?style=flat-square&amp;label=integration" alt="Appveyor CI"></a> <a href="https://gitter.im/patriksimek/node-mssql?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Join the chat at https://gitter.im/patriksimek/node-mssql"></a></p>
 
-<p><strong>Why do you want to use node-mssql?</strong></p>
+<p><strong>node-mssql</strong></p>
 
 <ul>
-<li>It has unified interface for multiple TDS drivers.</li>
-<li>It has built-in connection pooling.</li>
-<li>It supports Stored Procedures, Transactions, Prepared Statements, Bulk Load and TVP.</li>
-<li>It supports serialization of Geography and Geometry CLR types.</li>
-<li>It has smart JS data type to SQL data type mapper.</li>
-<li>It supports Promises, Streams and standard callbacks.</li>
-<li>It is stable and has no breaking change since 2013.</li>
-<li>It is tested in production environment.</li>
-<li>It is well documented.</li>
+<li>Has unified interface for multiple TDS drivers.</li>
+<li>Has built-in connection pooling.</li>
+<li>Supports built-in JSON serialization introduced in SQL Server 2016.</li>
+<li>Supports Stored Procedures, Transactions, Prepared Statements, Bulk Load and TVP.</li>
+<li>Supports serialization of Geography and Geometry CLR types.</li>
+<li>Has smart JS data type to SQL data type mapper.</li>
+<li>Supports Promises, Streams and standard callbacks.</li>
+<li>Is stable and has no breaking change since 2013.</li>
+<li>Is tested in production environment.</li>
+<li>Is well documented.</li>
 </ul>
 
-<p>There is also <a href="https://github.com/visionmedia/co">co</a> wrapper available - <a href="https://github.com/patriksimek/co-mssql">co-mssql</a>.<br>
+<p>There is also <a href="https://github.com/visionmedia/co">co</a> wrapper available - <a href="https://github.com/patriksimek/co-mssql">co-mssql</a>.
 If you're looking for session store for connect/express, visit <a href="https://github.com/patriksimek/connect-mssql">connect-mssql</a>.</p>
 
 <p>Supported TDS drivers:</p>
 
 <ul>
 <li>
-<a href="https://www.npmjs.com/package/tedious"><img src="https://img.shields.io/github/stars/pekim/tedious.svg?style=flat-square&amp;label=%E2%98%85" alt="Github Stars"> Tedious</a> by Mike D Pilsbury (pure javascript - windows/osx/linux)</li>
+<a href="https://www.npmjs.com/package/tedious"><img src="https://img.shields.io/github/stars/pekim/tedious.svg?style=flat-square&amp;label=%E2%98%85" alt="Github Stars"> Tedious</a> (pure JavaScript - Windows/OSX/Linux)</li>
 <li>
-<a href="https://www.npmjs.com/package/msnodesql"><img src="https://img.shields.io/github/stars/Azure/node-sqlserver.svg?style=flat-square&amp;label=%E2%98%85" alt="Github Stars"> Microsoft Driver for Node.js for SQL Server</a> by Microsoft Corporation (native - windows only)</li>
+<a href="https://www.npmjs.com/package/msnodesqlv8"><img src="https://img.shields.io/github/stars/TimelordUK/node-sqlserver-v8.svg?style=flat-square&amp;label=%E2%98%85" alt="Github Stars"> Microsoft / Contributors Node V8 Driver for Node.js for SQL Server</a> (native - Windows only)</li>
 <li>
-<a href="https://www.npmjs.com/package/tds"><img src="https://img.shields.io/github/stars/cretz/node-tds.svg?style=flat-square&amp;label=%E2%98%85" alt="Github Stars"> node-tds</a> by Chad Retz (pure javascript - windows/osx/linux)</li>
+<a href="https://www.npmjs.com/package/msnodesql"><img src="https://img.shields.io/github/stars/Azure/node-sqlserver.svg?style=flat-square&amp;label=%E2%98%85" alt="Github Stars"> Microsoft Driver for Node.js for SQL Server</a> (native - Windows only)</li>
+<li>
+<a href="https://www.npmjs.com/package/tds"><img src="https://img.shields.io/github/stars/cretz/node-tds.svg?style=flat-square&amp;label=%E2%98%85" alt="Github Stars"> node-tds</a> (pure JavaScript - Windows/OSX/Linux)</li>
 </ul>
 
 <p>node-mssql uses Tedious as the default driver.</p>
@@ -74,7 +77,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 <h2>
 <a id="quick-example" class="anchor" href="#quick-example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Example</h2>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>); 
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
 
 <span class="pl-k">var</span> config <span class="pl-k">=</span> {
     user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
@@ -93,7 +96,7 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-c">// Query</span>
 
     <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(connection); <span class="pl-c">// or: var request = connection.request();</span>
-    request.query(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
         <span class="pl-c">// ... error checks</span>
 
         <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
@@ -102,20 +105,23 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-c">// Stored Procedure</span>
 
     <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(connection);
-    request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, sql.Int, <span class="pl-c1">10</span>);
-    request.output(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, sql.VarChar(<span class="pl-c1">50</span>));
-    request.execute(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, <span class="pl-c1">10</span>);
+    <span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));
+    <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
         <span class="pl-c">// ... error checks</span>
 
         <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordsets);
     });
+});
 
+<span class="pl-smi">connection</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error handler</span>
 });</pre></div>
 
 <h3>
 <a id="quick-example-with-one-global-connection" class="anchor" href="#quick-example-with-one-global-connection" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Example with one global connection</h3>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>); 
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
 
 <span class="pl-k">var</span> config <span class="pl-k">=</span> {
     user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
@@ -128,13 +134,13 @@ If you're looking for session store for connect/express, visit <a href="https://
     }
 }
 
-sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<span class="pl-smi">sql</span>.<span class="pl-en">connect</span>(config, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 
     <span class="pl-c">// Query</span>
 
     <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-    request.query(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
         <span class="pl-c">// ... error checks</span>
 
         <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
@@ -143,14 +149,17 @@ sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err<
     <span class="pl-c">// Stored Procedure</span>
 
     <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-    request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, sql.Int, value);
-    request.output(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, sql.VarChar(<span class="pl-c1">50</span>));
-    request.execute(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value);
+    <span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));
+    <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
         <span class="pl-c">// ... error checks</span>
 
         <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordsets);
     });
+});
 
+<span class="pl-smi">sql</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error handler</span>
 });</pre></div>
 
 <p><a name="streaming"></a></p>
@@ -160,7 +169,7 @@ sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err<
 
 <p>If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>); 
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
 
 <span class="pl-k">var</span> config <span class="pl-k">=</span> {
     user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
@@ -174,28 +183,32 @@ sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err<
     }
 }
 
-sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<span class="pl-smi">sql</span>.<span class="pl-en">connect</span>(config, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 
     <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-    request.stream <span class="pl-k">=</span> <span class="pl-c1">true</span>; <span class="pl-c">// You can set streaming differently for each request</span>
-    request.query(<span class="pl-s"><span class="pl-pds">'</span>select * from verylargetable<span class="pl-pds">'</span></span>); <span class="pl-c">// or request.execute(procedure);</span>
+    <span class="pl-smi">request</span>.<span class="pl-smi">stream</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>; <span class="pl-c">// You can set streaming differently for each request</span>
+    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select * from verylargetable<span class="pl-pds">'</span></span>); <span class="pl-c">// or request.execute(procedure);</span>
 
-    request.on(<span class="pl-s"><span class="pl-pds">'</span>recordset<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">columns</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>recordset<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">columns</span>) {
         <span class="pl-c">// Emitted once for each recordset in a query</span>
     });
 
-    request.on(<span class="pl-s"><span class="pl-pds">'</span>row<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">row</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>row<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">row</span>) {
         <span class="pl-c">// Emitted for each row in a recordset</span>
     });
 
-    request.on(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// May be emitted multiple times</span>
     });
 
-    request.on(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">returnValue</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">returnValue</span>) {
         <span class="pl-c">// Always emitted as the last one</span>
     });
+});
+
+<span class="pl-smi">sql</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error handler</span>
 });</pre></div>
 
 <h2>
@@ -207,8 +220,10 @@ sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err<
 <ul>
 <li><a href="#cfg-basic">Basic</a></li>
 <li><a href="#cfg-tedious">Tedious</a></li>
+<li><a href="#cfg-msnodesqlv8">Microsoft / Contributors Node V8 Driver for Node.js for SQL Server</a></li>
 <li><a href="#cfg-msnodesql">Microsoft Driver for Node.js for SQL Server</a></li>
 <li><a href="#cfg-node-tds">node-tds</a></li>
+<li><a href="#cfg-formats">Formats</a></li>
 </ul>
 
 <h3>
@@ -264,6 +279,7 @@ sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err<
 <li><a href="#cli">CLI</a></li>
 <li><a href="#geography">Geography and Geometry</a></li>
 <li><a href="#tvp">Table-Valued Parameter</a></li>
+<li><a href="#json">JSON support</a></li>
 <li><a href="#errors">Errors</a></li>
 <li><a href="#promises">Promises</a></li>
 <li><a href="#meta">Metadata</a></li>
@@ -277,7 +293,7 @@ sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err<
 <h2>
 <a id="configuration-1" class="anchor" href="#configuration-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configuration</h2>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> config <span class="pl-k">=</span> {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> config <span class="pl-k">=</span> {
     user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
     password<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
     server<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>,
@@ -296,7 +312,7 @@ sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err<
 
 <ul>
 <li>
-<strong>driver</strong> - Driver to use (default: <code>tedious</code>). Possible values: <code>tedious</code>, <code>msnodesql</code> or <code>tds</code>.</li>
+<strong>driver</strong> - Driver to use (default: <code>tedious</code>). Possible values: <code>tedious</code>, <code>msnodesqlv8</code> or <code>msnodesql</code> or <code>tds</code>.</li>
 <li>
 <strong>user</strong> - User name to use for authentication.</li>
 <li>
@@ -316,9 +332,11 @@ sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err<
 <li>
 <strong>stream</strong> - Stream recordsets/rows instead of returning them all at once as an argument of callback (default: <code>false</code>). You can also enable streaming for each request independently (<code>request.stream = true</code>). Always set to <code>true</code> if you plan to work with large amount of rows.</li>
 <li>
+<strong>parseJSON</strong> - Parse JSON recordsets to JS objects (default: <code>false</code>). For more information please see section <a href="#json">JSON support</a>.</li>
+<li>
 <strong>pool.max</strong> - The maximum number of connections there can be in the pool (default: <code>10</code>).</li>
 <li>
-<strong>pool.min</strong> - The minimun of connections there can be in the pool (default: <code>0</code>).</li>
+<strong>pool.min</strong> - The minimum of connections there can be in the pool (default: <code>0</code>).</li>
 <li>
 <strong>pool.idleTimeoutMillis</strong> - The Number of milliseconds before closing an unused connection (default: <code>30000</code>).</li>
 </ul>
@@ -345,18 +363,46 @@ sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err<
 
 <p>More information about Tedious specific options: <a href="http://pekim.github.io/tedious/api-connection.html">http://pekim.github.io/tedious/api-connection.html</a></p>
 
+<p><a name="cfg-msnodesqlv8"></a></p>
+
+<h3>
+<a id="microsoft--contributors-node-v8-driver-for-nodejs-for-sql-server" class="anchor" href="#microsoft--contributors-node-v8-driver-for-nodejs-for-sql-server" aria-hidden="true"><span class="octicon octicon-link"></span></a>Microsoft / Contributors Node V8 Driver for Node.js for SQL Server</h3>
+
+<p><strong>Requires Node.js 0.12.x/4.2.0.</strong> This driver is not part of the default package and must be installed separately by <code>npm install msnodesqlv8</code>.</p>
+
+<ul>
+<li>
+<strong>connectionString</strong> - Connection string (default: see below).</li>
+<li>
+<strong>options.instanceName</strong> - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.</li>
+<li>
+<strong>options.trustedConnection</strong> - Use Windows Authentication (default: <code>false</code>).</li>
+<li>
+<strong>options.useUTC</strong> - A boolean determining whether or not to use UTC time for values without time zone offset (default: <code>true</code>).</li>
+</ul>
+
+<p>Default connection string when connecting to port:</p>
+
+<pre><code>Driver={SQL Server Native Client 11.0};Server={#{server},#{port}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
+</code></pre>
+
+<p>Default connection string when connecting to named instance:</p>
+
+<pre><code>Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
+</code></pre>
+
 <p><a name="cfg-msnodesql"></a></p>
 
 <h3>
 <a id="microsoft-driver-for-nodejs-for-sql-server" class="anchor" href="#microsoft-driver-for-nodejs-for-sql-server" aria-hidden="true"><span class="octicon octicon-link"></span></a>Microsoft Driver for Node.js for SQL Server</h3>
 
-<p>This driver is not part of the default package and must be installed separately by <code>npm install msnodesql</code>. If you are looking for compiled binaries, see <a href="https://github.com/jorgeazevedo/node-sqlserver-binary">node-sqlserver-binary</a>.</p>
+<p><strong>Requires Node.js 0.6.x/0.8.x/0.10.x.</strong> This driver is not part of the default package and must be installed separately by <code>npm install msnodesql</code>. If you are looking for compiled binaries, see <a href="https://github.com/jorgeazevedo/node-sqlserver-binary">node-sqlserver-binary</a>.</p>
 
 <ul>
 <li>
-<strong>options.instanceName</strong> - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.</li>
-<li>
 <strong>connectionString</strong> - Connection string (default: see below).</li>
+<li>
+<strong>options.instanceName</strong> - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.</li>
 <li>
 <strong>options.trustedConnection</strong> - Use Windows Authentication (default: <code>false</code>).</li>
 <li>
@@ -382,12 +428,45 @@ sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err<
 
 <p><em>This module updates the node-tds driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with <code>var sql = require('mssql/nofix')</code>.</em></p>
 
+<p><a name="cfg-formats"></a></p>
+
+<h3>
+<a id="configuration-formats" class="anchor" href="#configuration-formats" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configuration Formats</h3>
+
+<p>In addition to configuration object there is an option to pass config as a connection string. Two formats of connection string are supported.</p>
+
+<h4>
+<a id="classic-connection-string" class="anchor" href="#classic-connection-string" aria-hidden="true"><span class="octicon octicon-link"></span></a>Classic Connection String</h4>
+
+<p><strong>Examples</strong></p>
+
+<pre><code>Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
+Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
+</code></pre>
+
+<h4>
+<a id="connection-string-uri" class="anchor" href="#connection-string-uri" aria-hidden="true"><span class="octicon octicon-link"></span></a>Connection String URI</h4>
+
+<p><strong>Examples</strong></p>
+
+<pre><code>mssql://username:password@localhost:1433/database?encrypt=true
+mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DOMAIN&amp;driver=msnodesqlv8
+</code></pre>
+
+<p><strong>Version</strong></p>
+
+<p>2.5</p>
+
 <p><a name="connection"></a></p>
 
 <h2>
 <a id="connections-1" class="anchor" href="#connections-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Connections</h2>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> connection <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Connection</span>({ <span class="pl-c">/* config */</span> });</pre></div>
+<p>Internally, each <code>Connection</code> instance is a separate pool of TDS connections. Once you create a new <code>Request</code>/<code>Transaction</code>/<code>Prepared Statement</code>, a new TDS connection is acquired from the pool and reserved for desired action. Once the action is complete, connection is released back to the pool. Connection health check is built-in so once the dead connection is discovered, it is immediately replaced with a new one.</p>
+
+<p><strong>IMPORTANT</strong>: Always attach an <code>error</code> listener to created connection. Whenever something goes wrong with the connection it will emit an error and if there is no listener (and no domain listener as a backup) it will crash the application as an uncaught error.</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> connection <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Connection</span>({ <span class="pl-c">/* config */</span> });</pre></div>
 
 <p><strong>Errors</strong></p>
 
@@ -404,7 +483,7 @@ sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err<
 <li>
 <strong>close</strong> - Dispatched after connection has closed a pool (by calling <code>close</code>).</li>
 <li>
-<strong>error(err)</strong> - Dispatched on error.</li>
+<strong>error(err)</strong> - Dispatched on connection error.</li>
 </ul>
 
 <hr>
@@ -414,25 +493,25 @@ sql.connect(config, <span class="pl-k">function</span>(<span class="pl-smi">err<
 <h3>
 <a id="connectcallback" class="anchor" href="#connectcallback" aria-hidden="true"><span class="octicon octicon-link"></span></a>connect([callback])</h3>
 
-<p>Create connection to the server.</p>
+<p>Create a new connection pool with one active connection. This one initial connection serves as a probe to find out whether the configuration is valid.</p>
 
 <p><strong>Arguments</strong></p>
 
 <ul>
 <li>
-<strong>callback(err)</strong> - A callback which is called after connection has established, or an error has occurred. Optional. If omited, returns <a href="#promises">Promise</a>.</li>
+<strong>callback(err)</strong> - A callback which is called after connection has established, or an error has occurred. Optional. If omitted, returns <a href="#promises">Promise</a>.</li>
 </ul>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> connection <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Connection</span>({
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> connection <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Connection</span>({
     user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
     password<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
     server<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>,
     database<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>
 });
 
-connection.connect(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<span class="pl-smi">connection</span>.<span class="pl-en">connect</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ...</span>
 });</pre></div>
 
@@ -454,18 +533,18 @@ connection.connect(<span class="pl-k">function</span>(<span class="pl-smi">err</
 <h3>
 <a id="close" class="anchor" href="#close" aria-hidden="true"><span class="octicon octicon-link"></span></a>close()</h3>
 
-<p>Close connection to the server.</p>
+<p>Close all active connections in the pool.</p>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre>connection.<span class="pl-c1">close</span>();</pre></div>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">connection</span>.<span class="pl-c1">close</span>();</pre></div>
 
 <p><a name="request"></a></p>
 
 <h2>
 <a id="requests-1" class="anchor" href="#requests-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Requests</h2>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(<span class="pl-c">/* [connection] */</span>);</pre></div>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(<span class="pl-c">/* [connection] */</span>);</pre></div>
 
 <p>If you omit connection argument, global connection is used instead.</p>
 
@@ -498,23 +577,23 @@ connection.connect(<span class="pl-k">function</span>(<span class="pl-smi">err</
 <li>
 <strong>procedure</strong> - Name of the stored procedure to be executed.</li>
 <li>
-<strong>callback(err, recordsets, returnValue)</strong> - A callback which is called after execution has completed, or an error has occurred. <code>returnValue</code> is also accessible as property of recordsets. Optional. If omited, returns <a href="#promises">Promise</a>.</li>
+<strong>callback(err, recordsets, returnValue)</strong> - A callback which is called after execution has completed, or an error has occurred. <code>returnValue</code> is also accessible as property of recordsets. Optional. If omitted, returns <a href="#promises">Promise</a>.</li>
 </ul>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, sql.Int, value);
-request.output(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, sql.Int);
-request.execute(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value);
+<span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>);
+<span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
     <span class="pl-c">// ... error checks</span>
 
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(recordsets.<span class="pl-c1">length</span>); <span class="pl-c">// count of recordsets returned by the procedure</span>
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(recordsets[<span class="pl-c1">0</span>].<span class="pl-c1">length</span>); <span class="pl-c">// count of rows contained in first recordset</span>
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(returnValue); <span class="pl-c">// procedure return value</span>
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(recordsets.returnValue); <span class="pl-c">// same as previous line</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">recordsets</span>.<span class="pl-c1">length</span>); <span class="pl-c">// count of recordsets returned by the procedure</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordsets[<span class="pl-c1">0</span>].<span class="pl-c1">length</span>); <span class="pl-c">// count of rows contained in first recordset</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(returnValue); <span class="pl-c">// procedure return value</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">recordsets</span>.<span class="pl-smi">returnValue</span>); <span class="pl-c">// same as previous line</span>
 
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(request.parameters.output_parameter.<span class="pl-c1">value</span>); <span class="pl-c">// output value</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">request</span>.<span class="pl-smi">parameters</span>.<span class="pl-smi">output_parameter</span>.<span class="pl-c1">value</span>); <span class="pl-c">// output value</span>
 
     <span class="pl-c">// ...</span>
 });</pre></div>
@@ -524,7 +603,7 @@ request.execute(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<s
 <ul>
 <li>EREQUEST (<code>RequestError</code>) - <em>Message from SQL Server</em>
 </li>
-<li>ECANCEL (<code>RequestError</code>) - Canceled.</li>
+<li>ECANCEL (<code>RequestError</code>) - Cancelled.</li>
 <li>ETIMEOUT (<code>RequestError</code>) - Request timeout.</li>
 <li>ENOCONN (<code>RequestError</code>) - No connection is specified for that request.</li>
 <li>ENOTOPEN (<code>ConnectionError</code>) - Connection not yet open.</li>
@@ -548,15 +627,15 @@ request.execute(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<s
 <li>
 <strong>name</strong> - Name of the input parameter without @ char.</li>
 <li>
-<strong>type</strong> - SQL data type of input parameter. If you omit type, module automaticaly decide which SQL data type should be used based on JS data type.</li>
+<strong>type</strong> - SQL data type of input parameter. If you omit type, module automatically decide which SQL data type should be used based on JS data type.</li>
 <li>
 <strong>value</strong> - Input parameter value. <code>undefined</code> ans <code>NaN</code> values are automatically converted to <code>null</code> values.</li>
 </ul>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre>request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, value);
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, sql.Int, value);</pre></div>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, value);
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value);</pre></div>
 
 <p><strong>JS Data Type To SQL Data Type Map</strong></p>
 
@@ -585,11 +664,11 @@ request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds"
 
 <p>You can define your own type map.</p>
 
-<div class="highlight highlight-javascript"><pre>sql.map.register(MyClass, sql.<span class="pl-c1">Text</span>);</pre></div>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">sql</span>.<span class="pl-smi">map</span>.<span class="pl-en">register</span>(MyClass, <span class="pl-smi">sql</span>.<span class="pl-smi">Text</span>);</pre></div>
 
 <p>You can also overwrite the default type map.</p>
 
-<div class="highlight highlight-javascript"><pre>sql.map.register(<span class="pl-c1">Number</span>, sql.BigInt);</pre></div>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">sql</span>.<span class="pl-smi">map</span>.<span class="pl-en">register</span>(<span class="pl-c1">Number</span>, <span class="pl-smi">sql</span>.<span class="pl-smi">BigInt</span>);</pre></div>
 
 <p><strong>Errors</strong> (synchronous)</p>
 
@@ -620,8 +699,8 @@ request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds"
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre>request.output(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, sql.Int);
-request.output(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, sql.VarChar(<span class="pl-c1">50</span>), <span class="pl-s"><span class="pl-pds">'</span>abc<span class="pl-pds">'</span></span>);</pre></div>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>);
+<span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>), <span class="pl-s"><span class="pl-pds">'</span>abc<span class="pl-pds">'</span></span>);</pre></div>
 
 <p><strong>Errors</strong> (synchronous)</p>
 
@@ -648,13 +727,13 @@ request.output(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-request.pipe(stream);
-request.query(<span class="pl-s"><span class="pl-pds">'</span>select * from mytable<span class="pl-pds">'</span></span>);
-stream.on(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-en">pipe</span>(stream);
+<span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select * from mytable<span class="pl-pds">'</span></span>);
+<span class="pl-smi">stream</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ...</span>
 });
-stream.on(<span class="pl-s"><span class="pl-pds">'</span>finish<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>() {
+<span class="pl-smi">stream</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>finish<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>() {
     <span class="pl-c">// ...</span>
 });</pre></div>
 
@@ -677,16 +756,16 @@ stream.on(<span class="pl-s"><span class="pl-pds">'</span>finish<span class="pl-
 <li>
 <strong>command</strong> - T-SQL command to be executed.</li>
 <li>
-<strong>callback(err, recordset)</strong> - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns <a href="#promises">Promise</a>.</li>
+<strong>callback(err, recordset)</strong> - A callback which is called after execution has completed, or an error has occurred. Optional. If omitted, returns <a href="#promises">Promise</a>.</li>
 </ul>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-request.query(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
     <span class="pl-c">// ... error checks</span>
 
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(recordset[<span class="pl-c1">0</span>].number); <span class="pl-c">// return 1</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordset[<span class="pl-c1">0</span>].<span class="pl-smi">number</span>); <span class="pl-c">// return 1</span>
 
     <span class="pl-c">// ...</span>
 });</pre></div>
@@ -697,7 +776,7 @@ request.query(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number
 <li>ETIMEOUT (<code>RequestError</code>) - Request timeout.</li>
 <li>EREQUEST (<code>RequestError</code>) - <em>Message from SQL Server</em>
 </li>
-<li>ECANCEL (<code>RequestError</code>) - Canceled.</li>
+<li>ECANCEL (<code>RequestError</code>) - Cancelled.</li>
 <li>ENOCONN (<code>RequestError</code>) - No connection is specified for that request.</li>
 <li>ENOTOPEN (<code>ConnectionError</code>) - Connection not yet open.</li>
 <li>ECONNCLOSED (<code>ConnectionError</code>) - Connection is closed.</li>
@@ -707,14 +786,14 @@ request.query(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number
 
 <p>You can enable multiple recordsets in queries with the <code>request.multiple = true</code> command.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-request.<span class="pl-c1">multiple</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-c1">multiple</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
 
-request.query(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number; select 2 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>) {
+<span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number; select 2 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>) {
     <span class="pl-c">// ... error checks</span>
 
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(recordsets[<span class="pl-c1">0</span>][<span class="pl-c1">0</span>].number); <span class="pl-c">// return 1</span>
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(recordsets[<span class="pl-c1">1</span>][<span class="pl-c1">0</span>].number); <span class="pl-c">// return 2</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordsets[<span class="pl-c1">0</span>][<span class="pl-c1">0</span>].<span class="pl-smi">number</span>); <span class="pl-c">// return 1</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordsets[<span class="pl-c1">1</span>][<span class="pl-c1">0</span>].<span class="pl-smi">number</span>); <span class="pl-c">// return 2</span>
 });</pre></div>
 
 <hr>
@@ -734,13 +813,13 @@ request.query(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number
 <li>
 <strong>batch</strong> - T-SQL command to be executed.</li>
 <li>
-<strong>callback(err, recordset)</strong> - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns <a href="#promises">Promise</a>.</li>
+<strong>callback(err, recordset)</strong> - A callback which is called after execution has completed, or an error has occurred. Optional. If omitted, returns <a href="#promises">Promise</a>.</li>
 </ul>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-request.batch(<span class="pl-s"><span class="pl-pds">'</span>create procedure #temporary as select * from table<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-en">batch</span>(<span class="pl-s"><span class="pl-pds">'</span>create procedure #temporary as select * from table<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
     <span class="pl-c">// ... error checks</span>
 });</pre></div>
 
@@ -750,7 +829,7 @@ request.batch(<span class="pl-s"><span class="pl-pds">'</span>create procedure #
 <li>ETIMEOUT (<code>RequestError</code>) - Request timeout.</li>
 <li>EREQUEST (<code>RequestError</code>) - <em>Message from SQL Server</em>
 </li>
-<li>ECANCEL (<code>RequestError</code>) - Canceled.</li>
+<li>ECANCEL (<code>RequestError</code>) - Cancelled.</li>
 <li>ENOCONN (<code>RequestError</code>) - No connection is specified for that request.</li>
 <li>ENOTOPEN (<code>ConnectionError</code>) - Connection not yet open.</li>
 <li>ECONNCLOSED (<code>ConnectionError</code>) - Connection is closed.</li>
@@ -775,19 +854,19 @@ request.batch(<span class="pl-s"><span class="pl-pds">'</span>create procedure #
 <li>
 <strong>table</strong> - <code>sql.Table</code> instance.</li>
 <li>
-<strong>callback(err, rowCount)</strong> - A callback which is called after bulk insert has completed, or an error has occurred. Optional. If omited, returns <a href="#promises">Promise</a>.</li>
+<strong>callback(err, rowCount)</strong> - A callback which is called after bulk insert has completed, or an error has occurred. Optional. If omitted, returns <a href="#promises">Promise</a>.</li>
 </ul>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> table <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Table</span>(<span class="pl-s"><span class="pl-pds">'</span>table_name<span class="pl-pds">'</span></span>); <span class="pl-c">// or temporary table, e.g. #temptable</span>
-table.create <span class="pl-k">=</span> <span class="pl-c1">true</span>;
-table.columns.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>a<span class="pl-pds">'</span></span>, sql.Int, {nullable<span class="pl-k">:</span> <span class="pl-c1">true</span>});
-table.columns.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>, sql.VarChar(<span class="pl-c1">50</span>), {nullable<span class="pl-k">:</span> <span class="pl-c1">false</span>});
-table.<span class="pl-c1">rows</span>.<span class="pl-c1">add</span>(<span class="pl-c1">777</span>, <span class="pl-s"><span class="pl-pds">'</span>test<span class="pl-pds">'</span></span>);
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> table <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Table</span>(<span class="pl-s"><span class="pl-pds">'</span>table_name<span class="pl-pds">'</span></span>); <span class="pl-c">// or temporary table, e.g. #temptable</span>
+<span class="pl-smi">table</span>.<span class="pl-smi">create</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+<span class="pl-smi">table</span>.<span class="pl-smi">columns</span>.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>a<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, {nullable<span class="pl-k">:</span> <span class="pl-c1">true</span>});
+<span class="pl-smi">table</span>.<span class="pl-smi">columns</span>.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>), {nullable<span class="pl-k">:</span> <span class="pl-c1">false</span>});
+<span class="pl-smi">table</span>.<span class="pl-c1">rows</span>.<span class="pl-c1">add</span>(<span class="pl-c1">777</span>, <span class="pl-s"><span class="pl-pds">'</span>test<span class="pl-pds">'</span></span>);
 
 <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-request.bulk(table, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">rowCount</span>) {
+<span class="pl-smi">request</span>.<span class="pl-en">bulk</span>(table, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">rowCount</span>) {
     <span class="pl-c">// ... error checks</span>
 });</pre></div>
 
@@ -804,7 +883,7 @@ request.bulk(table, <span class="pl-k">function</span>(<span class="pl-smi">err<
 <li>ETIMEOUT (<code>RequestError</code>) - Request timeout.</li>
 <li>EREQUEST (<code>RequestError</code>) - <em>Message from SQL Server</em>
 </li>
-<li>ECANCEL (<code>RequestError</code>) - Canceled.</li>
+<li>ECANCEL (<code>RequestError</code>) - Cancelled.</li>
 <li>ENOCONN (<code>RequestError</code>) - No connection is specified for that request.</li>
 <li>ENOTOPEN (<code>ConnectionError</code>) - Connection not yet open.</li>
 <li>ECONNCLOSED (<code>ConnectionError</code>) - Connection is closed.</li>
@@ -823,16 +902,16 @@ request.bulk(table, <span class="pl-k">function</span>(<span class="pl-smi">err<
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-request.query(<span class="pl-s"><span class="pl-pds">'</span>waitfor delay <span class="pl-cce">\'</span>00:00:05<span class="pl-cce">\'</span>; select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(err <span class="pl-k">instanceof</span> sql.RequestError);  <span class="pl-c">// true</span>
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(err.message);                      <span class="pl-c">// Canceled.</span>
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(err.<span class="pl-c1">code</span>);                         <span class="pl-c">// ECANCEL</span>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>waitfor delay <span class="pl-cce">\'</span>00:00:05<span class="pl-cce">\'</span>; select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(err <span class="pl-k">instanceof</span> <span class="pl-smi">sql</span>.<span class="pl-smi">RequestError</span>);  <span class="pl-c">// true</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">err</span>.<span class="pl-smi">message</span>);                      <span class="pl-c">// Cancelled.</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">err</span>.<span class="pl-c1">code</span>);                         <span class="pl-c">// ECANCEL</span>
 
     <span class="pl-c">// ...</span>
 });
 
-request.cancel();</pre></div>
+<span class="pl-smi">request</span>.<span class="pl-en">cancel</span>();</pre></div>
 
 <p><a name="transaction"></a></p>
 
@@ -841,24 +920,24 @@ request.cancel();</pre></div>
 
 <p><strong>IMPORTANT:</strong> always use <code>Transaction</code> class to create transactions - it ensures that all your requests are executed on one connection. Once you call <code>begin</code>, a single connection is acquired from the connection pool and all subsequent requests (initialized with the <code>Transaction</code> object) are executed exclusively on this connection. Transaction also contains a queue to make sure your requests are executed in series. After you call <code>commit</code> or <code>rollback</code>, connection is then released back to the connection pool.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> transaction <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Transaction</span>(<span class="pl-c">/* [connection] */</span>);</pre></div>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> transaction <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Transaction</span>(<span class="pl-c">/* [connection] */</span>);</pre></div>
 
 <p>If you omit connection argument, global connection is used instead.</p>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> transaction <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Transaction</span>(<span class="pl-c">/* [connection] */</span>);
-transaction.begin(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> transaction <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Transaction</span>(<span class="pl-c">/* [connection] */</span>);
+<span class="pl-smi">transaction</span>.<span class="pl-en">begin</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 
     <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(transaction);
-    request.query(<span class="pl-s"><span class="pl-pds">'</span>insert into mytable (mycolumn) values (12345)<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>insert into mytable (mycolumn) values (12345)<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
         <span class="pl-c">// ... error checks</span>
 
-        transaction.commit(<span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+        <span class="pl-smi">transaction</span>.<span class="pl-en">commit</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
             <span class="pl-c">// ... error checks</span>
 
-            <span class="pl-en">console</span><span class="pl-c1">.log</span>(<span class="pl-s"><span class="pl-pds">"</span>Transaction commited.<span class="pl-pds">"</span></span>);
+            <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-s"><span class="pl-pds">"</span>Transaction committed.<span class="pl-pds">"</span></span>);
         });
     });
 });</pre></div>
@@ -869,30 +948,30 @@ transaction.begin(<span class="pl-k">function</span>(<span class="pl-smi">err</s
 
 <p>This example shows how you should correctly handle transaction errors when <code>abortTransactionOnError</code> (<code>XACT_ABORT</code>) is enabled. Added in 2.0.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> transaction <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Transaction</span>(<span class="pl-c">/* [connection] */</span>);
-transaction.begin(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> transaction <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Transaction</span>(<span class="pl-c">/* [connection] */</span>);
+<span class="pl-smi">transaction</span>.<span class="pl-en">begin</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 
     <span class="pl-k">var</span> rolledBack <span class="pl-k">=</span> <span class="pl-c1">false</span>;
 
-    transaction.on(<span class="pl-s"><span class="pl-pds">'</span>rollback<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">aborted</span>) {
+    <span class="pl-smi">transaction</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>rollback<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">aborted</span>) {
         <span class="pl-c">// emited with aborted === true</span>
 
         rolledBack <span class="pl-k">=</span> <span class="pl-c1">true</span>;
     });
 
     <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(transaction);
-    request.query(<span class="pl-s"><span class="pl-pds">'</span>insert into mytable (bitcolumn) values (2)<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>insert into mytable (bitcolumn) values (2)<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
         <span class="pl-c">// insert should fail because of invalid value</span>
 
         <span class="pl-k">if</span> (err) {
             <span class="pl-k">if</span> (<span class="pl-k">!</span>rolledBack) {
-                transaction.rollback(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+                <span class="pl-smi">transaction</span>.<span class="pl-en">rollback</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
                     <span class="pl-c">// ... error checks</span>
                 });
             }
         } <span class="pl-k">else</span> {
-            transaction.commit(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+            <span class="pl-smi">transaction</span>.<span class="pl-en">commit</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
                 <span class="pl-c">// ... error checks</span>
             });
         }
@@ -926,13 +1005,13 @@ transaction.begin(<span class="pl-k">function</span>(<span class="pl-smi">err</s
 <li>
 <strong>isolationLevel</strong> - Controls the locking and row versioning behavior of TSQL statements issued by a connection. Optional. <code>READ_COMMITTED</code> by default. For possible values see <code>sql.ISOLATION_LEVEL</code>.</li>
 <li>
-<strong>callback(err)</strong> - A callback which is called after transaction has began, or an error has occurred. Optional. If omited, returns <a href="#promises">Promise</a>.</li>
+<strong>callback(err)</strong> - A callback which is called after transaction has began, or an error has occurred. Optional. If omitted, returns <a href="#promises">Promise</a>.</li>
 </ul>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> transaction <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Transaction</span>();
-transaction.begin(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> transaction <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Transaction</span>();
+<span class="pl-smi">transaction</span>.<span class="pl-en">begin</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 });</pre></div>
 
@@ -956,16 +1035,16 @@ transaction.begin(<span class="pl-k">function</span>(<span class="pl-smi">err</s
 
 <ul>
 <li>
-<strong>callback(err)</strong> - A callback which is called after transaction has committed, or an error has occurred. Optional. If omited, returns <a href="#promises">Promise</a>.</li>
+<strong>callback(err)</strong> - A callback which is called after transaction has committed, or an error has occurred. Optional. If omitted, returns <a href="#promises">Promise</a>.</li>
 </ul>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> transaction <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Transaction</span>();
-transaction.begin(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> transaction <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Transaction</span>();
+<span class="pl-smi">transaction</span>.<span class="pl-en">begin</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 
-    transaction.commit(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-smi">transaction</span>.<span class="pl-en">commit</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// ... error checks</span>
     })
 });</pre></div>
@@ -984,22 +1063,22 @@ transaction.begin(<span class="pl-k">function</span>(<span class="pl-smi">err</s
 <h3>
 <a id="rollbackcallback" class="anchor" href="#rollbackcallback" aria-hidden="true"><span class="octicon octicon-link"></span></a>rollback([callback])</h3>
 
-<p>Rollback a transaction. If the queue isn't empty, all queued requests will be canceled and the transaction will be marked as aborted.</p>
+<p>Rollback a transaction. If the queue isn't empty, all queued requests will be Cancelled and the transaction will be marked as aborted.</p>
 
 <p><strong>Arguments</strong></p>
 
 <ul>
 <li>
-<strong>callback(err)</strong> - A callback which is called after transaction has rolled back, or an error has occurred. Optional. If omited, returns <a href="#promises">Promise</a>.</li>
+<strong>callback(err)</strong> - A callback which is called after transaction has rolled back, or an error has occurred. Optional. If omitted, returns <a href="#promises">Promise</a>.</li>
 </ul>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> transaction <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Transaction</span>();
-transaction.begin(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> transaction <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Transaction</span>();
+<span class="pl-smi">transaction</span>.<span class="pl-en">begin</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 
-    transaction.rollback(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-smi">transaction</span>.<span class="pl-en">rollback</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// ... error checks</span>
     })
 });</pre></div>
@@ -1016,23 +1095,23 @@ transaction.begin(<span class="pl-k">function</span>(<span class="pl-smi">err</s
 <h2>
 <a id="preparedstatement" class="anchor" href="#preparedstatement" aria-hidden="true"><span class="octicon octicon-link"></span></a>PreparedStatement</h2>
 
-<p><strong>IMPORTANT:</strong> always use <code>PreparedStatement</code> class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call <code>prepare</code>, a single connection is aquired from the connection pool and all subsequent executions are executed exclusively on this connection. Prepared Statement also contains a queue to make sure your executions are executed in series. After you call <code>unprepare</code>, the connection is then released back to the connection pool.</p>
+<p><strong>IMPORTANT:</strong> always use <code>PreparedStatement</code> class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call <code>prepare</code>, a single connection is acquired from the connection pool and all subsequent executions are executed exclusively on this connection. Prepared Statement also contains a queue to make sure your executions are executed in series. After you call <code>unprepare</code>, the connection is then released back to the connection pool.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>(<span class="pl-c">/* [connection] */</span>);</pre></div>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>(<span class="pl-c">/* [connection] */</span>);</pre></div>
 
 <p>If you omit the connection argument, the global connection is used instead.</p>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>(<span class="pl-c">/* [connection] */</span>);
-ps.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>param<span class="pl-pds">'</span></span>, sql.Int);
-ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>(<span class="pl-c">/* [connection] */</span>);
+<span class="pl-smi">ps</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>param<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>);
+<span class="pl-smi">ps</span>.<span class="pl-en">prepare</span>(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 
-    ps.execute({param<span class="pl-k">:</span> <span class="pl-c1">12345</span>}, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+    <span class="pl-smi">ps</span>.<span class="pl-en">execute</span>({param<span class="pl-k">:</span> <span class="pl-c1">12345</span>}, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
         <span class="pl-c">// ... error checks</span>
 
-        ps.unprepare(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+        <span class="pl-smi">ps</span>.<span class="pl-en">unprepare</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
             <span class="pl-c">// ... error checks</span>
 
         });
@@ -1063,8 +1142,8 @@ ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as valu
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre>ps.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, sql.Int);
-ps.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, sql.VarChar(<span class="pl-c1">50</span>));</pre></div>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">ps</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>);
+<span class="pl-smi">ps</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));</pre></div>
 
 <p><strong>Errors</strong> (synchronous)</p>
 
@@ -1093,8 +1172,8 @@ ps.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</s
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre>ps.output(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, sql.Int);
-ps.output(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, sql.VarChar(<span class="pl-c1">50</span>));</pre></div>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">ps</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>);
+<span class="pl-smi">ps</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));</pre></div>
 
 <p><strong>Errors</strong> (synchronous)</p>
 
@@ -1118,13 +1197,13 @@ ps.output(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span 
 <li>
 <strong>statement</strong> - T-SQL statement to prepare.</li>
 <li>
-<strong>callback(err)</strong> - A callback which is called after preparation has completed, or an error has occurred. Optional. If omited, returns <a href="#promises">Promise</a>.</li>
+<strong>callback(err)</strong> - A callback which is called after preparation has completed, or an error has occurred. Optional. If omitted, returns <a href="#promises">Promise</a>.</li>
 </ul>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>();
-ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>();
+<span class="pl-smi">ps</span>.<span class="pl-en">prepare</span>(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 });</pre></div>
 
@@ -1151,61 +1230,61 @@ ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as valu
 <li>
 <strong>values</strong> - An object whose names correspond to the names of parameters that were added to the prepared statement before it was prepared.</li>
 <li>
-<strong>callback(err)</strong> - A callback which is called after execution has completed, or an error has occurred. Optional. If omited, returns <a href="#promises">Promise</a>.</li>
+<strong>callback(err)</strong> - A callback which is called after execution has completed, or an error has occurred. Optional. If omitted, returns <a href="#promises">Promise</a>.</li>
 </ul>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>();
-ps.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>param<span class="pl-pds">'</span></span>, sql.Int);
-ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>();
+<span class="pl-smi">ps</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>param<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>);
+<span class="pl-smi">ps</span>.<span class="pl-en">prepare</span>(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 
-    ps.execute({param<span class="pl-k">:</span> <span class="pl-c1">12345</span>}, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+    <span class="pl-smi">ps</span>.<span class="pl-en">execute</span>({param<span class="pl-k">:</span> <span class="pl-c1">12345</span>}, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
         <span class="pl-c">// ... error checks</span>
 
-        <span class="pl-en">console</span><span class="pl-c1">.log</span>(recordset[<span class="pl-c1">0</span>].<span class="pl-c1">value</span>); <span class="pl-c">// return 12345</span>
+        <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordset[<span class="pl-c1">0</span>].<span class="pl-c1">value</span>); <span class="pl-c">// return 12345</span>
     });
 });</pre></div>
 
 <p>You can enable multiple recordsets by <code>ps.multiple = true</code> command.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>();
-ps.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>param<span class="pl-pds">'</span></span>, sql.Int);
-ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>();
+<span class="pl-smi">ps</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>param<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>);
+<span class="pl-smi">ps</span>.<span class="pl-en">prepare</span>(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 
-    ps.<span class="pl-c1">multiple</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
-    ps.execute({param<span class="pl-k">:</span> <span class="pl-c1">12345</span>}, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>) {
+    <span class="pl-smi">ps</span>.<span class="pl-c1">multiple</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+    <span class="pl-smi">ps</span>.<span class="pl-en">execute</span>({param<span class="pl-k">:</span> <span class="pl-c1">12345</span>}, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>) {
         <span class="pl-c">// ... error checks</span>
 
-        <span class="pl-en">console</span><span class="pl-c1">.log</span>(recordsets[<span class="pl-c1">0</span>][<span class="pl-c1">0</span>].<span class="pl-c1">value</span>); <span class="pl-c">// return 12345</span>
+        <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordsets[<span class="pl-c1">0</span>][<span class="pl-c1">0</span>].<span class="pl-c1">value</span>); <span class="pl-c">// return 12345</span>
     });
 });</pre></div>
 
 <p>You can also stream executed request.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>();
-ps.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>param<span class="pl-pds">'</span></span>, sql.Int);
-ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>();
+<span class="pl-smi">ps</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>param<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>);
+<span class="pl-smi">ps</span>.<span class="pl-en">prepare</span>(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 
-    ps.stream <span class="pl-k">=</span> <span class="pl-c1">true</span>;
-    request <span class="pl-k">=</span> ps.execute({param<span class="pl-k">:</span> <span class="pl-c1">12345</span>});
+    <span class="pl-smi">ps</span>.<span class="pl-smi">stream</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+    request <span class="pl-k">=</span> <span class="pl-smi">ps</span>.<span class="pl-en">execute</span>({param<span class="pl-k">:</span> <span class="pl-c1">12345</span>});
 
-    request.on(<span class="pl-s"><span class="pl-pds">'</span>recordset<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">columns</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>recordset<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">columns</span>) {
         <span class="pl-c">// Emitted once for each recordset in a query</span>
     });
 
-    request.on(<span class="pl-s"><span class="pl-pds">'</span>row<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">row</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>row<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">row</span>) {
         <span class="pl-c">// Emitted for each row in a recordset</span>
     });
 
-    request.on(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// May be emitted multiple times</span>
     });
 
-    request.on(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">returnValue</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">returnValue</span>) {
         <span class="pl-c">// Always emitted as the last one</span>
     });
 });</pre></div>
@@ -1217,7 +1296,7 @@ ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as valu
 <li>ETIMEOUT (<code>RequestError</code>) - Request timeout.</li>
 <li>EREQUEST (<code>RequestError</code>) - <em>Message from SQL Server</em>
 </li>
-<li>ECANCEL (<code>RequestError</code>) - Canceled.</li>
+<li>ECANCEL (<code>RequestError</code>) - Cancelled.</li>
 </ul>
 
 <hr>
@@ -1233,17 +1312,17 @@ ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as valu
 
 <ul>
 <li>
-<strong>callback(err)</strong> - A callback which is called after unpreparation has completed, or an error has occurred. Optional. If omited, returns <a href="#promises">Promise</a>.</li>
+<strong>callback(err)</strong> - A callback which is called after unpreparation has completed, or an error has occurred. Optional. If omitted, returns <a href="#promises">Promise</a>.</li>
 </ul>
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>();
-ps.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>param<span class="pl-pds">'</span></span>, sql.Int);
-ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> ps <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.PreparedStatement</span>();
+<span class="pl-smi">ps</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>param<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>);
+<span class="pl-smi">ps</span>.<span class="pl-en">prepare</span>(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>) {
     <span class="pl-c">// ... error checks</span>
 
-    ps.unprepare(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-smi">ps</span>.<span class="pl-en">unprepare</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// ... error checks</span>
 
     });
@@ -1266,7 +1345,7 @@ ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as valu
 
 <p>Create a <code>.mssql.json</code> configuration file (anywhere). Structure of the file is the same as the standard configuration object.</p>
 
-<div class="highlight highlight-json"><pre>{
+<div class="highlight highlight-source-json"><pre>{
     <span class="pl-s"><span class="pl-pds">"</span>user<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>...<span class="pl-pds">"</span></span>,
     <span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>...<span class="pl-pds">"</span></span>,
     <span class="pl-s"><span class="pl-pds">"</span>server<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>localhost<span class="pl-pds">"</span></span>,
@@ -1275,19 +1354,19 @@ ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as valu
 
 <p><strong>Example</strong></p>
 
-<div class="highlight highlight-shell"><pre><span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>select * from mytable<span class="pl-pds">"</span></span> <span class="pl-k">|</span> mssql /path/to/config</pre></div>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>select * from mytable<span class="pl-pds">"</span></span> <span class="pl-k">|</span> mssql /path/to/config</pre></div>
 
 <p>Results in:</p>
 
-<div class="highlight highlight-json"><pre>[[{<span class="pl-s"><span class="pl-pds">"</span>username<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>patriksimek<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>tooeasy<span class="pl-pds">"</span></span>}]]</pre></div>
+<div class="highlight highlight-source-json"><pre>[[{<span class="pl-s"><span class="pl-pds">"</span>username<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>patriksimek<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>tooeasy<span class="pl-pds">"</span></span>}]]</pre></div>
 
 <p>You can also query for multiple recordsets.</p>
 
-<div class="highlight highlight-shell"><pre><span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>select * from mytable; select * from myothertable<span class="pl-pds">"</span></span> <span class="pl-k">|</span> mssql</pre></div>
+<div class="highlight highlight-source-shell"><pre><span class="pl-c1">echo</span> <span class="pl-s"><span class="pl-pds">"</span>select * from mytable; select * from myothertable<span class="pl-pds">"</span></span> <span class="pl-k">|</span> mssql</pre></div>
 
 <p>Results in:</p>
 
-<div class="highlight highlight-json"><pre>[[{<span class="pl-s"><span class="pl-pds">"</span>username<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>patriksimek<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>tooeasy<span class="pl-pds">"</span></span>}],[{<span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>:<span class="pl-c1">15</span>,<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>Product name<span class="pl-pds">"</span></span>}]]</pre></div>
+<div class="highlight highlight-source-json"><pre>[[{<span class="pl-s"><span class="pl-pds">"</span>username<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>patriksimek<span class="pl-pds">"</span></span>,<span class="pl-s"><span class="pl-pds">"</span>password<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>tooeasy<span class="pl-pds">"</span></span>}],[{<span class="pl-s"><span class="pl-pds">"</span>id<span class="pl-pds">"</span></span>:<span class="pl-c1">15</span>,<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>:<span class="pl-s"><span class="pl-pds">"</span>Product name<span class="pl-pds">"</span></span>}]]</pre></div>
 
 <p>If you omit config path argument, mssql will try to load it from current working directory.</p>
 
@@ -1302,12 +1381,12 @@ ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as valu
 
 <p>node-mssql has built-in serializer for Geography and Geometry CLR data types.</p>
 
-<div class="highlight highlight-sql"><pre><span class="pl-k">select</span> geography::STGeomFromText(<span class="pl-s"><span class="pl-pds">'</span>LINESTRING(-122.360 47.656, -122.343 47.656 )<span class="pl-pds">'</span></span>, <span class="pl-c1">4326</span>)
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">select</span> geography::STGeomFromText(<span class="pl-s"><span class="pl-pds">'</span>LINESTRING(-122.360 47.656, -122.343 47.656 )<span class="pl-pds">'</span></span>, <span class="pl-c1">4326</span>)
 <span class="pl-k">select</span> geometry::STGeomFromText(<span class="pl-s"><span class="pl-pds">'</span>LINESTRING (100 100 10.3 12, 20 180, 180 180)<span class="pl-pds">'</span></span>, <span class="pl-c1">0</span>)</pre></div>
 
 <p>Results in:</p>
 
-<div class="highlight highlight-javascript"><pre>{ srid<span class="pl-k">:</span> <span class="pl-c1">4326</span>,
+<div class="highlight highlight-source-js"><pre>{ srid<span class="pl-k">:</span> <span class="pl-c1">4326</span>,
   version<span class="pl-k">:</span> <span class="pl-c1">1</span>,
   points<span class="pl-k">:</span> [ { x<span class="pl-k">:</span> <span class="pl-c1">47.656</span>, y<span class="pl-k">:</span> <span class="pl-k">-</span><span class="pl-c1">122.36</span> }, { x<span class="pl-k">:</span> <span class="pl-c1">47.656</span>, y<span class="pl-k">:</span> <span class="pl-k">-</span><span class="pl-c1">122.343</span> } ],
   figures<span class="pl-k">:</span> [ { attribute<span class="pl-k">:</span> <span class="pl-c1">1</span>, pointOffset<span class="pl-k">:</span> <span class="pl-c1">0</span> } ],
@@ -1316,7 +1395,7 @@ ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as valu
 
 { srid<span class="pl-k">:</span> <span class="pl-c1">0</span>,
   version<span class="pl-k">:</span> <span class="pl-c1">1</span>,
-  points<span class="pl-k">:</span> 
+  points<span class="pl-k">:</span>
    [ { x<span class="pl-k">:</span> <span class="pl-c1">100</span>, y<span class="pl-k">:</span> <span class="pl-c1">100</span>, z<span class="pl-k">:</span> <span class="pl-c1">10.3</span>, m<span class="pl-k">:</span> <span class="pl-c1">12</span> },
      { x<span class="pl-k">:</span> <span class="pl-c1">20</span>, y<span class="pl-k">:</span> <span class="pl-c1">180</span>, z<span class="pl-k">:</span> <span class="pl-c1">NaN</span>, m<span class="pl-k">:</span> <span class="pl-c1">NaN</span> },
      { x<span class="pl-k">:</span> <span class="pl-c1">180</span>, y<span class="pl-k">:</span> <span class="pl-c1">180</span>, z<span class="pl-k">:</span> <span class="pl-c1">NaN</span>, m<span class="pl-k">:</span> <span class="pl-c1">NaN</span> } ],
@@ -1331,34 +1410,66 @@ ps.prepare(<span class="pl-s"><span class="pl-pds">'</span>select @param as valu
 
 <p>Supported on SQL Server 2008 and later. You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.</p>
 
-<div class="highlight highlight-sql"><pre><span class="pl-k">CREATE</span> <span class="pl-k">TYPE</span> <span class="pl-en">TestType</span> <span class="pl-k">AS</span> TABLE ( a <span class="pl-k">VARCHAR</span>(<span class="pl-c1">50</span>), b <span class="pl-k">INT</span> );</pre></div>
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">CREATE</span> <span class="pl-k">TYPE</span> <span class="pl-en">TestType</span> <span class="pl-k">AS</span> TABLE ( a <span class="pl-k">VARCHAR</span>(<span class="pl-c1">50</span>), b <span class="pl-k">INT</span> );</pre></div>
 
 <p>Next we will need a stored procedure.</p>
 
-<div class="highlight highlight-sql"><pre>CREATE PROCEDURE MyCustomStoredProcedure (@tvp TestType readonly) <span class="pl-k">AS</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">FROM</span> @tvp</pre></div>
+<div class="highlight highlight-source-sql"><pre>CREATE PROCEDURE MyCustomStoredProcedure (@tvp TestType readonly) <span class="pl-k">AS</span> <span class="pl-k">SELECT</span> <span class="pl-k">*</span> <span class="pl-k">FROM</span> @tvp</pre></div>
 
 <p>Now let's go back to our Node.js app.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> tvp <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Table</span>()
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> tvp <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Table</span>()
 
 <span class="pl-c">// Columns must correspond with type we have created in database.</span>
-tvp.columns.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>a<span class="pl-pds">'</span></span>, sql.VarChar(<span class="pl-c1">50</span>));
-tvp.columns.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>, sql.Int);
+<span class="pl-smi">tvp</span>.<span class="pl-smi">columns</span>.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>a<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));
+<span class="pl-smi">tvp</span>.<span class="pl-smi">columns</span>.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>);
 
 <span class="pl-c">// Add rows</span>
-tvp.<span class="pl-c1">rows</span>.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>hello tvp<span class="pl-pds">'</span></span>, <span class="pl-c1">777</span>); <span class="pl-c">// Values are in same order as columns.</span></pre></div>
+<span class="pl-smi">tvp</span>.<span class="pl-c1">rows</span>.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>hello tvp<span class="pl-pds">'</span></span>, <span class="pl-c1">777</span>); <span class="pl-c">// Values are in same order as columns.</span></pre></div>
 
 <p>You can send table as a parameter to stored procedure.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>tvp<span class="pl-pds">'</span></span>, tvp);
-request.execute(<span class="pl-s"><span class="pl-pds">'</span>MyCustomStoredProcedure<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>tvp<span class="pl-pds">'</span></span>, tvp);
+<span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>MyCustomStoredProcedure<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
     <span class="pl-c">// ... error checks</span>
 
     <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordsets[<span class="pl-c1">0</span>][<span class="pl-c1">0</span>]); <span class="pl-c">// {a: 'hello tvp', b: 777}</span>
 });</pre></div>
 
 <p><strong>TIP</strong>: You can also create Table variable from any recordset with <code>recordset.toTable()</code>.</p>
+
+<p><a name="json"></a></p>
+
+<h2>
+<a id="json-support-experimental" class="anchor" href="#json-support-experimental" aria-hidden="true"><span class="octicon octicon-link"></span></a>JSON support (experimental)</h2>
+
+<p>SQL Server 2016 introduced built-in JSON serialization. By default, JSON is returned as a plain text in a special column named <code>JSON_F52E2B61-18A1-11d1-B105-00805F49916B</code>.</p>
+
+<p>Example</p>
+
+<div class="highlight highlight-source-sql"><pre><span class="pl-k">SELECT</span>
+    <span class="pl-c1">1</span> <span class="pl-k">AS</span> <span class="pl-s"><span class="pl-pds">'</span>a.b.c<span class="pl-pds">'</span></span>,
+    <span class="pl-c1">2</span> <span class="pl-k">AS</span> <span class="pl-s"><span class="pl-pds">'</span>a.b.d<span class="pl-pds">'</span></span>,
+    <span class="pl-c1">3</span> <span class="pl-k">AS</span> <span class="pl-s"><span class="pl-pds">'</span>a.x<span class="pl-pds">'</span></span>,
+    <span class="pl-c1">4</span> <span class="pl-k">AS</span> <span class="pl-s"><span class="pl-pds">'</span>a.y<span class="pl-pds">'</span></span>
+FOR JSON <span class="pl-k">PATH</span></pre></div>
+
+<p>Results in:</p>
+
+<div class="highlight highlight-source-js"><pre>recordset <span class="pl-k">=</span> [ { <span class="pl-s"><span class="pl-pds">'</span>JSON_F52E2B61-18A1-11d1-B105-00805F49916B<span class="pl-pds">'</span></span><span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>{"a":{"b":{"c":1,"d":2},"x":3,"y":4}}<span class="pl-pds">'</span></span> } ]</pre></div>
+
+<p>You can enable built-in JSON parser with <code>config.parseJSON = true</code>. Once you enable this, recordset will contain rows of parsed JS objects. Given the same example, result will look like this:</p>
+
+<div class="highlight highlight-source-js"><pre>recordset <span class="pl-k">=</span> [ { a<span class="pl-k">:</span> { b<span class="pl-k">:</span> { c<span class="pl-k">:</span> <span class="pl-c1">1</span>, d<span class="pl-k">:</span> <span class="pl-c1">2</span> }, x<span class="pl-k">:</span> <span class="pl-c1">3</span>, y<span class="pl-k">:</span> <span class="pl-c1">4</span> } } ]</pre></div>
+
+<p><strong>IMPORTANT</strong>: In order for this to work, there must be exactly one column named <code>JSON_F52E2B61-18A1-11d1-B105-00805F49916B</code> in the recordset.</p>
+
+<p>More information about JSON support can be found in <a href="https://msdn.microsoft.com/en-us/library/dn921882.aspx">official documentation</a>.</p>
+
+<p><strong>Version</strong></p>
+
+<p>2.3</p>
 
 <p><a name="promises"></a></p>
 
@@ -1367,15 +1478,15 @@ request.execute(<span class="pl-s"><span class="pl-pds">'</span>MyCustomStoredPr
 
 <p>You can retrieve a Promise when you omit a callback argument.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> connection <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Connection</span>(config);
-connection.connect().then(<span class="pl-k">function</span>() {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> connection <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Connection</span>(config);
+<span class="pl-smi">connection</span>.<span class="pl-en">connect</span>().<span class="pl-en">then</span>(<span class="pl-k">function</span>() {
     <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(connection);
-    request.query(<span class="pl-s"><span class="pl-pds">'</span>select * from mytable<span class="pl-pds">'</span></span>).then(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select * from mytable<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
         <span class="pl-c">// ...</span>
-    }).catch(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// ...</span>
     });
-}).catch(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+}).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ...</span>
 });</pre></div>
 
@@ -1396,7 +1507,7 @@ connection.connect().then(<span class="pl-k">function</span>() {
 <li>
 <strong>ConnectionError</strong> - Errors related to connections and connection pool.</li>
 <li>
-<strong>TransactionError</strong> - Errors related to creating, commiting and rolling back transactions.</li>
+<strong>TransactionError</strong> - Errors related to creating, committing and rolling back transactions.</li>
 <li>
 <strong>RequestError</strong> - Errors related to queries and stored procedures execution.</li>
 <li>
@@ -1410,14 +1521,14 @@ connection.connect().then(<span class="pl-k">function</span>() {
 <h3>
 <a id="error-codes" class="anchor" href="#error-codes" aria-hidden="true"><span class="octicon octicon-link"></span></a>Error Codes</h3>
 
-<p>Each known error has <code>code</code> property.</p>
+<p>Each known error has <code>name</code>, <code>code</code> and <code>message</code> properties.</p>
 
 <table>
 <thead>
 <tr>
-<th align="left">Type</th>
+<th align="left">Name</th>
 <th align="left">Code</th>
-<th align="left">Description</th>
+<th align="left">Message</th>
 </tr>
 </thead>
 <tbody>
@@ -1459,7 +1570,7 @@ connection.connect().then(<span class="pl-k">function</span>() {
 <tr>
 <td align="left"><code>ConnectionError</code></td>
 <td align="left">ESOCKET</td>
-<td align="left">Scoket error.</td>
+<td align="left">Socket error.</td>
 </tr>
 <tr>
 <td align="left"><code>ConnectionError</code></td>
@@ -1494,7 +1605,7 @@ connection.connect().then(<span class="pl-k">function</span>() {
 <tr>
 <td align="left"><code>RequestError</code></td>
 <td align="left">ECANCEL</td>
-<td align="left">Canceled.</td>
+<td align="left">Cancelled.</td>
 </tr>
 <tr>
 <td align="left"><code>RequestError</code></td>
@@ -1566,18 +1677,40 @@ connection.connect().then(<span class="pl-k">function</span>() {
 
 <p>Recordset metadata are accessible through the <code>recordset.columns</code> property.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-request.query(<span class="pl-s"><span class="pl-pds">'</span>select convert(decimal(18, 4), 1) as first, <span class="pl-cce">\'</span>asdf<span class="pl-cce">\'</span> as second<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
-    <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset.columns);
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select convert(decimal(18, 4), 1) as first, <span class="pl-cce">\'</span>asdf<span class="pl-cce">\'</span> as second<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+    <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(<span class="pl-smi">recordset</span>.<span class="pl-smi">columns</span>);
 
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(recordset.columns.first.<span class="pl-c1">type</span> <span class="pl-k">===</span> sql.Decimal); <span class="pl-c">// true</span>
-    <span class="pl-en">console</span><span class="pl-c1">.log</span>(recordset.columns.second.<span class="pl-c1">type</span> <span class="pl-k">===</span> sql.VarChar); <span class="pl-c">// true</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">recordset</span>.<span class="pl-smi">columns</span>.<span class="pl-smi">first</span>.<span class="pl-c1">type</span> <span class="pl-k">===</span> <span class="pl-smi">sql</span>.<span class="pl-smi">Decimal</span>); <span class="pl-c">// true</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">recordset</span>.<span class="pl-smi">columns</span>.<span class="pl-smi">second</span>.<span class="pl-c1">type</span> <span class="pl-k">===</span> <span class="pl-smi">sql</span>.<span class="pl-smi">VarChar</span>); <span class="pl-c">// true</span>
 });</pre></div>
 
 <p>Columns structure for example above:</p>
 
-<div class="highlight highlight-javascript"><pre>{ first<span class="pl-k">:</span> { index<span class="pl-k">:</span> <span class="pl-c1">0</span>, name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>first<span class="pl-pds">'</span></span>, length<span class="pl-k">:</span> <span class="pl-c1">17</span>, type<span class="pl-k">:</span> [sql.Decimal], scale<span class="pl-k">:</span> <span class="pl-c1">4</span>, precision<span class="pl-k">:</span> <span class="pl-c1">18</span> },
-  second<span class="pl-k">:</span> { index<span class="pl-k">:</span> <span class="pl-c1">1</span>, name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>second<span class="pl-pds">'</span></span>, length<span class="pl-k">:</span> <span class="pl-c1">4</span>, type<span class="pl-k">:</span> [sql.VarChar] } }</pre></div>
+<div class="highlight highlight-source-js"><pre>{
+    first<span class="pl-k">:</span> {
+        index<span class="pl-k">:</span> <span class="pl-c1">0</span>,
+        name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>first<span class="pl-pds">'</span></span>,
+        length<span class="pl-k">:</span> <span class="pl-c1">17</span>,
+        type<span class="pl-k">:</span> [<span class="pl-smi">sql</span>.<span class="pl-smi">Decimal</span>],
+        scale<span class="pl-k">:</span> <span class="pl-c1">4</span>,
+        precision<span class="pl-k">:</span> <span class="pl-c1">18</span>,
+        nullable<span class="pl-k">:</span> <span class="pl-c1">true</span>,
+        caseSensitive<span class="pl-k">:</span> <span class="pl-c1">false</span>
+        identity<span class="pl-k">:</span> <span class="pl-c1">false</span>
+        readOnly<span class="pl-k">:</span> <span class="pl-c1">true</span>
+    },
+    second<span class="pl-k">:</span> {
+        index<span class="pl-k">:</span> <span class="pl-c1">1</span>,
+        name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>second<span class="pl-pds">'</span></span>,
+        length<span class="pl-k">:</span> <span class="pl-c1">4</span>,
+        type<span class="pl-k">:</span> [<span class="pl-smi">sql</span>.<span class="pl-smi">VarChar</span>],
+        nullable<span class="pl-k">:</span> <span class="pl-c1">false</span>,
+        caseSensitive<span class="pl-k">:</span> <span class="pl-c1">false</span>
+        identity<span class="pl-k">:</span> <span class="pl-c1">false</span>
+        readOnly<span class="pl-k">:</span> <span class="pl-c1">true</span>
+    }
+}</pre></div>
 
 <p><a name="data-types"></a></p>
 
@@ -1586,18 +1719,18 @@ request.query(<span class="pl-s"><span class="pl-pds">'</span>select convert(dec
 
 <p>You can define data types with length/precision/scale:</p>
 
-<div class="highlight highlight-javascript"><pre>request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, sql.VarChar, <span class="pl-s"><span class="pl-pds">"</span>abc<span class="pl-pds">"</span></span>);               <span class="pl-c">// varchar(3)</span>
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, sql.VarChar(<span class="pl-c1">50</span>), <span class="pl-s"><span class="pl-pds">"</span>abc<span class="pl-pds">"</span></span>);           <span class="pl-c">// varchar(50)</span>
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, sql.VarChar(sql.MAX), <span class="pl-s"><span class="pl-pds">"</span>abc<span class="pl-pds">"</span></span>);      <span class="pl-c">// varchar(MAX)</span>
-request.output(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, sql.VarChar);                     <span class="pl-c">// varchar(8000)</span>
-request.output(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, sql.VarChar, <span class="pl-s"><span class="pl-pds">"</span>abc<span class="pl-pds">"</span></span>);              <span class="pl-c">// varchar(3)</span>
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">VarChar</span>, <span class="pl-s"><span class="pl-pds">"</span>abc<span class="pl-pds">"</span></span>);               <span class="pl-c">// varchar(3)</span>
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>), <span class="pl-s"><span class="pl-pds">"</span>abc<span class="pl-pds">"</span></span>);           <span class="pl-c">// varchar(50)</span>
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-smi">sql</span>.<span class="pl-c1">MAX</span>), <span class="pl-s"><span class="pl-pds">"</span>abc<span class="pl-pds">"</span></span>);      <span class="pl-c">// varchar(MAX)</span>
+<span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">VarChar</span>);                     <span class="pl-c">// varchar(8000)</span>
+<span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">VarChar</span>, <span class="pl-s"><span class="pl-pds">"</span>abc<span class="pl-pds">"</span></span>);              <span class="pl-c">// varchar(3)</span>
 
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, sql.Decimal, <span class="pl-c1">155.33</span>);              <span class="pl-c">// decimal(18, 0)</span>
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, sql.Decimal(<span class="pl-c1">10</span>), <span class="pl-c1">155.33</span>);          <span class="pl-c">// decimal(10, 0)</span>
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, sql.Decimal(<span class="pl-c1">10</span>, <span class="pl-c1">2</span>), <span class="pl-c1">155.33</span>);       <span class="pl-c">// decimal(10, 2)</span>
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Decimal</span>, <span class="pl-c1">155.33</span>);              <span class="pl-c">// decimal(18, 0)</span>
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">Decimal</span>(<span class="pl-c1">10</span>), <span class="pl-c1">155.33</span>);          <span class="pl-c">// decimal(10, 0)</span>
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">Decimal</span>(<span class="pl-c1">10</span>, <span class="pl-c1">2</span>), <span class="pl-c1">155.33</span>);       <span class="pl-c">// decimal(10, 2)</span>
 
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, sql.DateTime2, <span class="pl-k">new</span> <span class="pl-en">Date</span>());        <span class="pl-c">// datetime2(7)</span>
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, sql.DateTime2(<span class="pl-c1">5</span>), <span class="pl-k">new</span> <span class="pl-en">Date</span>());     <span class="pl-c">// datetime2(5)</span></pre></div>
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">DateTime2</span>, <span class="pl-k">new</span> <span class="pl-en">Date</span>());        <span class="pl-c">// datetime2(7)</span>
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">"</span>name<span class="pl-pds">"</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">DateTime2</span>(<span class="pl-c1">5</span>), <span class="pl-k">new</span> <span class="pl-en">Date</span>());     <span class="pl-c">// datetime2(5)</span></pre></div>
 
 <p>List of supported data types:</p>
 
@@ -1639,7 +1772,7 @@ sql.Geography
 sql.Geometry
 </code></pre>
 
-<p>To setup MAX length for <code>VarChar</code>, <code>NVarChar</code> and <code>VarBinary</code> use <code>sql.MAX</code> length.</p>
+<p>To setup MAX length for <code>VarChar</code>, <code>NVarChar</code> and <code>VarBinary</code> use <code>sql.MAX</code> length. Type <code>sql.XML</code> is not supported as input parameter.</p>
 
 <p><a name="injection"></a></p>
 
@@ -1648,9 +1781,9 @@ sql.Geometry
 
 <p>This module has built-in SQL injection protection. Always use parameters to pass sanitized values to your queries.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>myval<span class="pl-pds">'</span></span>, sql.VarChar, <span class="pl-s"><span class="pl-pds">'</span>-- commented<span class="pl-pds">'</span></span>);
-request.query(<span class="pl-s"><span class="pl-pds">'</span>select @myval as myval<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>myval<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">VarChar</span>, <span class="pl-s"><span class="pl-pds">'</span>-- commented<span class="pl-pds">'</span></span>);
+<span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select @myval as myval<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
     <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
 });</pre></div>
 
@@ -1661,12 +1794,12 @@ request.query(<span class="pl-s"><span class="pl-pds">'</span>select @myval as m
 
 <p>You can enable verbose mode by <code>request.verbose = true</code> command.</p>
 
-<div class="highlight highlight-javascript"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-request.verbose <span class="pl-k">=</span> <span class="pl-c1">true</span>;
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>username<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>patriksimek<span class="pl-pds">'</span></span>);
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>password<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>dontuseplaintextpassword<span class="pl-pds">'</span></span>);
-request.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>attempts<span class="pl-pds">'</span></span>, <span class="pl-c1">2</span>);
-request.execute(<span class="pl-s"><span class="pl-pds">'</span>my_stored_procedure<span class="pl-pds">'</span></span>);</pre></div>
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-smi">verbose</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>username<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>patriksimek<span class="pl-pds">'</span></span>);
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>password<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>dontuseplaintextpassword<span class="pl-pds">'</span></span>);
+<span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>attempts<span class="pl-pds">'</span></span>, <span class="pl-c1">2</span>);
+<span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>my_stored_procedure<span class="pl-pds">'</span></span>);</pre></div>
 
 <p>Output for the example above could look similar to this.</p>
 
@@ -1698,18 +1831,31 @@ request.execute(<span class="pl-s"><span class="pl-pds">'</span>my_stored_proced
 
 <ul>
 <li>If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with <code>config.options.tdsVersion = '7_1'</code> (<a href="https://github.com/patriksimek/node-mssql/issues/36">issue</a>)</li>
-<li>If you're executing a statement longer than 4000 chars on SQL Server 2000, alway use <a href="#batch">batch</a> instead of <a href="#query">query</a> (<a href="https://github.com/patriksimek/node-mssql/issues/68">issue</a>)</li>
+<li>If you're executing a statement longer than 4000 chars on SQL Server 2000, always use <a href="#batch">batch</a> instead of <a href="#query">query</a> (<a href="https://github.com/patriksimek/node-mssql/issues/68">issue</a>)</li>
+</ul>
+
+<h3>
+<a id="msnodesqlv8" class="anchor" href="#msnodesqlv8" aria-hidden="true"><span class="octicon octicon-link"></span></a>msnodesqlv8</h3>
+
+<ul>
+<li>msnodesqlv8 has problem with concurrent connections - <a href="https://github.com/TimelordUK/node-sqlserver-v8/issues/5">reported here</a>.</li>
+<li>msnodesqlv8 has problem with errors during transactions - <a href="https://github.com/patriksimek/node-mssql/issues/77">reported here</a>.</li>
+<li>msnodesqlv8 contains bug in DateTimeOffset (<a href="https://github.com/WindowsAzure/node-sqlserver/issues/160">reported</a>)</li>
+<li>msnodesqlv8 doesn't support TVP data type.</li>
+<li>msnodesqlv8 doesn't support request timeout.</li>
+<li>msnodesqlv8 doesn't support request cancellation.</li>
 </ul>
 
 <h3>
 <a id="msnodesql" class="anchor" href="#msnodesql" aria-hidden="true"><span class="octicon octicon-link"></span></a>msnodesql</h3>
 
 <ul>
-<li>There is a serious problem with errors during transactions - <a href="https://github.com/patriksimek/node-mssql/issues/77">reported here</a>.</li>
-<li>msnodesql 0.2.1 contains bug in DateTimeOffset (<a href="https://github.com/WindowsAzure/node-sqlserver/issues/160">reported</a>)</li>
-<li>msnodesql 0.2.1 doesn't support TVP data type.</li>
-<li>msnodesql 0.2.1 doesn't support request timeout.</li>
-<li>msnodesql 0.2.1 doesn't support request cancellation.</li>
+<li>msnodesql has problem with errors during transactions - <a href="https://github.com/patriksimek/node-mssql/issues/77">reported here</a>.</li>
+<li>msnodesql contains bug in DateTimeOffset (<a href="https://github.com/WindowsAzure/node-sqlserver/issues/160">reported</a>)</li>
+<li>msnodesql doesn't support Bulk load.</li>
+<li>msnodesql doesn't support TVP data type.</li>
+<li>msnodesql doesn't support request timeout.</li>
+<li>msnodesql doesn't support request cancellation.</li>
 </ul>
 
 <h3>
@@ -1717,15 +1863,16 @@ request.execute(<span class="pl-s"><span class="pl-pds">'</span>my_stored_proced
 
 <ul>
 <li>If you're facing problems with date, try changing your tsql language <code>set language 'English';</code>.</li>
-<li>node-tds 0.1.0 doesn't support connecting to named instances.</li>
-<li>node-tds 0.1.0 contains bug and return same value for columns with same name.</li>
-<li>node-tds 0.1.0 doesn't support codepage of input parameters.</li>
-<li>node-tds 0.1.0 contains bug in selects that doesn't return any values <em>(select <a href="https://github.com/param" class="user-mention">@param</a> = 'value')</em>.</li>
-<li>node-tds 0.1.0 doesn't support Binary, VarBinary and Image as parameters.</li>
-<li>node-tds 0.1.0 always return date/time values in local time.</li>
-<li>node-tds 0.1.0 has serious problems with MAX types.</li>
-<li>node-tds 0.1.0 doesn't support TVP data type.</li>
-<li>node-tds 0.1.0 doesn't support request timeout.</li>
+<li>node-tds doesn't support connecting to named instances.</li>
+<li>node-tds contains bug and return same value for columns with same name.</li>
+<li>node-tds doesn't support codepage of input parameters.</li>
+<li>node-tds contains bug in selects that doesn't return any values <em>(select <a href="https://github.com/param" class="user-mention">@param</a> = 'value')</em>.</li>
+<li>node-tds doesn't support Binary, VarBinary and Image as parameters.</li>
+<li>node-tds always return date/time values in local time.</li>
+<li>node-tds has serious problems with MAX types.</li>
+<li>node-tds doesn't support TVP data type.</li>
+<li>node-tds doesn't support request timeout.</li>
+<li>node-tds doesn't support built-in JSON serialization introduced in SQL Server 2016.</li>
 </ul>
 
 <p><a name="license"></a></p>
