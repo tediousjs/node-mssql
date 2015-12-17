@@ -145,7 +145,7 @@ global.TESTS =
 			assert.strictEqual rst[0].geometry.shapes[0].type, 0x02
 			assert.strictEqual rst[0].geometry.segments.length, 0
 			
-			if DRIVER in ['tedious', 'msnodesql']
+			if DRIVER in ['tedious', 'msnodesql', 'msnodesqlv8']
 				assert rst.columns.geography.type is sql.Geography
 				assert rst.columns.geometry.type is sql.Geometry
 				assert.equal rst.columns.geography.udt.name, 'geography'
@@ -309,7 +309,7 @@ global.TESTS =
 			assert.strictEqual err.code, 'EREQUEST'
 			assert.strictEqual err.number, 208
 			
-			if global.DRIVER isnt 'msnodesql'
+			if global.DRIVER not in ['msnodesql', 'msnodesqlv8']
 				assert.strictEqual err.lineNumber, 1
 				assert.strictEqual err.state, 1
 				assert.strictEqual err.class, 16
@@ -393,28 +393,28 @@ global.TESTS =
 				complete errs.pop(), rsts
 	
 	'create procedure batch': (done) ->
+		r = new sql.Request
+		r.batch 'create procedure #temporary as select 1 as num', (err, recordset) ->
+			if err then return done err
+			
+			assert.equal recordset, null
+			
 			r = new sql.Request
-			r.batch 'create procedure #temporary as select 1 as num', (err, recordset) ->
+			r.batch 'exec #temporary', (err, recordset) ->
 				if err then return done err
 				
-				assert.equal recordset, null
-				
+				assert.equal recordset[0].num, 1
+			
 				r = new sql.Request
-				r.batch 'exec #temporary', (err, recordset) ->
+				r.multiple = true
+				r.batch 'exec #temporary;exec #temporary;exec #temporary', (err, recordsets) ->
 					if err then return done err
 					
-					assert.equal recordset[0].num, 1
-				
-					r = new sql.Request
-					r.multiple = true
-					r.batch 'exec #temporary;exec #temporary;exec #temporary', (err, recordsets) ->
-						if err then return done err
-						
-						assert.equal recordsets[0][0].num, 1
-						assert.equal recordsets[1][0].num, 1
-						assert.equal recordsets[2][0].num, 1
-			
-						done()
+					assert.equal recordsets[0][0].num, 1
+					assert.equal recordsets[1][0].num, 1
+					assert.equal recordsets[2][0].num, 1
+		
+					done()
 	
 	'bulk load': (name, done) ->
 		t = new sql.Table name
@@ -839,21 +839,21 @@ global.TESTS =
 	'connection 1': (done, connection) ->
 		request = connection.request()
 		request[MODE] 'select @@SPID as id', (err, recordset) ->
-			if global.SPIDS[recordset[0].id] then return new Error "Existing SPID found."
+			if global.SPIDS[recordset[0].id] then return done new Error "Existing SPID found."
 			global.SPIDS[recordset[0].id] = true
 			done err
 			
 	'connection 2': (done, connection) ->
 		request = new sql.Request connection
 		request[MODE] 'select @@SPID as id', (err, recordset) ->
-			if global.SPIDS[recordset[0].id] then return new Error "Existing SPID found."
+			if global.SPIDS[recordset[0].id] then return done new Error "Existing SPID found."
 			global.SPIDS[recordset[0].id] = true
 			done err
 			
 	'global connection': (done) ->
 		request = new sql.Request()
 		request[MODE] 'select @@SPID as id', (err, recordset) ->
-			if global.SPIDS[recordset[0].id] then return new Error "Existing SPID found."
+			if global.SPIDS[recordset[0].id] then return done new Error "Existing SPID found."
 			global.SPIDS[recordset[0].id] = true
 			done err
 	

@@ -1,6 +1,6 @@
 # node-mssql
 
-An easy-to-use MSSQL database connector for Node.js / io.js.
+An easy-to-use MSSQL database connector for Node.js.
 
 [![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -20,9 +20,10 @@ There is also [co](https://github.com/visionmedia/co) wrapper available - [co-ms
 If you're looking for session store for connect/express, visit [connect-mssql](https://github.com/patriksimek/connect-mssql).
 
 Supported TDS drivers:
-- [![Github Stars][tedious-image] Tedious][tedious-url] by Mike D Pilsbury (pure JavaScript - Windows/OSX/Linux)
-- [![Github Stars][msnodesql-image] Microsoft Driver for Node.js for SQL Server][msnodesql-url] by Microsoft Corporation (native - Windows only)
-- [![Github Stars][tds-image] node-tds][tds-url] by Chad Retz (pure JavaScript - Windows/OSX/Linux)
+- [![Github Stars][tedious-image] Tedious][tedious-url] (pure JavaScript - Windows/OSX/Linux)
+- [![Github Stars][msnodesqlv8-image] Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (native - Windows only)
+- [![Github Stars][msnodesql-image] Microsoft Driver for Node.js for SQL Server][msnodesql-url] (native - Windows only)
+- [![Github Stars][tds-image] node-tds][tds-url] (pure JavaScript - Windows/OSX/Linux)
 
 node-mssql uses Tedious as the default driver.
 
@@ -175,6 +176,7 @@ sql.on('error', function(err) {
 
 * [Basic](#cfg-basic)
 * [Tedious](#cfg-tedious)
+* [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server](#cfg-msnodesqlv8)
 * [Microsoft Driver for Node.js for SQL Server](#cfg-msnodesql)
 * [node-tds](#cfg-node-tds)
 * [Formats](#cfg-formats)
@@ -247,7 +249,7 @@ var config = {
 <a name="cfg-basic" />
 ### Basic configuration is same for all drivers.
 
-- **driver** - Driver to use (default: `tedious`). Possible values: `tedious`, `msnodesql` or `tds`.
+- **driver** - Driver to use (default: `tedious`). Possible values: `tedious`, `msnodesqlv8` or `msnodesql` or `tds`.
 - **user** - User name to use for authentication.
 - **password** - Password to use for authentication.
 - **server** - Server to connect to. You can use 'localhost\\instance' to connect to named instance.
@@ -274,10 +276,30 @@ var config = {
 
 More information about Tedious specific options: http://pekim.github.io/tedious/api-connection.html
 
+<a name="cfg-msnodesqlv8" />
+### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
+
+**Requires Node.js 0.12.x/4.2.0.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8`.
+
+- **connectionString** - Connection string (default: see below).
+- **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
+- **options.trustedConnection** - Use Windows Authentication (default: `false`).
+- **options.useUTC** - A boolean determining whether or not to use UTC time for values without time zone offset (default: `true`).
+
+Default connection string when connecting to port:
+```
+Driver={SQL Server Native Client 11.0};Server={#{server},#{port}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
+```
+
+Default connection string when connecting to named instance:
+```
+Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
+```
+
 <a name="cfg-msnodesql" />
 ### Microsoft Driver for Node.js for SQL Server
 
-This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
+**Requires Node.js 0.6.x/0.8.x/0.10.x.** This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
 
 - **connectionString** - Connection string (default: see below).
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
@@ -312,7 +334,7 @@ __Examples__
 
 ```
 Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
-Driver=msnodesql;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
+Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
 ```
 
 #### Connection String URI
@@ -321,7 +343,7 @@ __Examples__
 
 ```
 mssql://username:password@localhost:1433/database?encrypt=true
-mssql://username:password@localhost/INSTANCE/database?encrypt=true&domain=DOMAIN&driver=msnodesql
+mssql://username:password@localhost/INSTANCE/database?encrypt=true&domain=DOMAIN&driver=msnodesqlv8
 ```
 
 __Version__
@@ -1467,27 +1489,37 @@ Output for the example above could look similar to this.
 - If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/patriksimek/node-mssql/issues/36))
 - If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch) instead of [query](#query) ([issue](https://github.com/patriksimek/node-mssql/issues/68))
 
+### msnodesqlv8
+
+- msnodesqlv8 has problem with concurrent connections - [reported here](https://github.com/TimelordUK/node-sqlserver-v8/issues/5).
+- msnodesqlv8 has problem with errors during transactions - [reported here](https://github.com/patriksimek/node-mssql/issues/77).
+- msnodesqlv8 contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
+- msnodesqlv8 doesn't support TVP data type.
+- msnodesqlv8 doesn't support request timeout.
+- msnodesqlv8 doesn't support request cancellation.
+
 ### msnodesql
 
-- There is a serious problem with errors during transactions - [reported here](https://github.com/patriksimek/node-mssql/issues/77).
-- msnodesql 0.2.1 contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
-- msnodesql 0.2.1 doesn't support TVP data type.
-- msnodesql 0.2.1 doesn't support request timeout.
-- msnodesql 0.2.1 doesn't support request cancellation.
+- msnodesql has problem with errors during transactions - [reported here](https://github.com/patriksimek/node-mssql/issues/77).
+- msnodesql contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
+- msnodesql doesn't support Bulk load.
+- msnodesql doesn't support TVP data type.
+- msnodesql doesn't support request timeout.
+- msnodesql doesn't support request cancellation.
 
 ### node-tds
 
 - If you're facing problems with date, try changing your tsql language `set language 'English';`.
-- node-tds 0.1.0 doesn't support connecting to named instances.
-- node-tds 0.1.0 contains bug and return same value for columns with same name.
-- node-tds 0.1.0 doesn't support codepage of input parameters.
-- node-tds 0.1.0 contains bug in selects that doesn't return any values *(select @param = 'value')*.
-- node-tds 0.1.0 doesn't support Binary, VarBinary and Image as parameters.
-- node-tds 0.1.0 always return date/time values in local time.
-- node-tds 0.1.0 has serious problems with MAX types.
-- node-tds 0.1.0 doesn't support TVP data type.
-- node-tds 0.1.0 doesn't support request timeout.
-- node-tds 0.1.0 doesn't support built-in JSON serialization introduced in SQL Server 2016.
+- node-tds doesn't support connecting to named instances.
+- node-tds contains bug and return same value for columns with same name.
+- node-tds doesn't support codepage of input parameters.
+- node-tds contains bug in selects that doesn't return any values *(select @param = 'value')*.
+- node-tds doesn't support Binary, VarBinary and Image as parameters.
+- node-tds always return date/time values in local time.
+- node-tds has serious problems with MAX types.
+- node-tds doesn't support TVP data type.
+- node-tds doesn't support request timeout.
+- node-tds doesn't support built-in JSON serialization introduced in SQL Server 2016.
 
 <a name="license" />
 ## License
@@ -1517,5 +1549,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [tedious-image]: https://img.shields.io/github/stars/pekim/tedious.svg?style=flat-square&label=%E2%98%85
 [msnodesql-url]: https://www.npmjs.com/package/msnodesql
 [msnodesql-image]: https://img.shields.io/github/stars/Azure/node-sqlserver.svg?style=flat-square&label=%E2%98%85
+[msnodesqlv8-url]: https://www.npmjs.com/package/msnodesqlv8
+[msnodesqlv8-image]: https://img.shields.io/github/stars/TimelordUK/node-sqlserver-v8.svg?style=flat-square&label=%E2%98%85
 [tds-url]: https://www.npmjs.com/package/tds
 [tds-image]: https://img.shields.io/github/stars/cretz/node-tds.svg?style=flat-square&label=%E2%98%85

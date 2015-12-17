@@ -4,7 +4,7 @@ fs = require 'fs'
 
 {TYPES, declare} = require './datatypes'
 ISOLATION_LEVEL = require './isolationlevel'
-DRIVERS = ['msnodesql', 'tedious', 'tds']
+DRIVERS = ['msnodesql', 'tedious', 'tds', 'msnodesqlv8']
 Table = require './table'
 ConnectionString = require './connectionstring'
 
