@@ -1,3 +1,8 @@
+v2.5.0 (2015-12-17)
+-------------------
+[new] Added support for new TDS driver msnodesqv8
+[new] Support for configs formated as Connection String, Connection String URI
+
 v2.4.0 (2015-12-11)
 -------------------
 [new] Connection.connect, PreparedStatement.prepare and Transaction.begin now returns instance of itself as a first argument to Promise resolver.

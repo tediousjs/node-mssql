@@ -15,9 +15,12 @@
 		"node-tds",
 		"tedious",
 		"node-sqlserver",
-		"sqlserver"
+		"sqlserver",
+		"msnodesqlv8",
+		"azure",
+		"node-mssql"
 	],
-	"version": "2.4.0",
+	"version": "2.5.0",
 	"main": "index.js",
 	"repository": {
 		"type": "git",
