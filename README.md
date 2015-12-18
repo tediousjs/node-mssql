@@ -60,6 +60,8 @@ sql.connect("mssql://username:password@localhost/database").then(function() {
 });
 ```
 
+If you're on Windows Azure, add `&encrypt=true` to you connection string. See [docs](#cfg) to learn more.
+
 ## Documentation
 
 ### Examples
@@ -325,6 +327,7 @@ connection2.on('error', function(err) {
 });
 ```
 
+<a name="cfg" />
 ## Configuration
 
 ```javascript
@@ -393,7 +396,7 @@ Default driver, actively maintained and production ready. Platform independent, 
 
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
-- **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`) Encryption support is experimental.
+- **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`).
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_1`, `7_2`, `7_3_A`, `7_3_B`, `7_4`).
 - **options.appName** - Application name used for SQL server logging.
 - **options.abortTransactionOnError** - A boolean determining whether to rollback a transaction automatically if any error is encountered during the given transaction's execution. This sets the value for `XACT_ABORT` during the initial SQL phase of a connection.
