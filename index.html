@@ -79,151 +79,58 @@ If you're looking for session store for connect/express, visit <a href="https://
 
 <div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
 
-<span class="pl-k">var</span> config <span class="pl-k">=</span> {
-    user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
-    password<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
-    server<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>, <span class="pl-c">// You can use 'localhost\\instance' to connect to named instance</span>
-    database<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
-
-    options<span class="pl-k">:</span> {
-        encrypt<span class="pl-k">:</span> <span class="pl-c1">true</span> <span class="pl-c">// Use this if you're on Windows Azure</span>
-    }
-}
-
-<span class="pl-k">var</span> connection <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Connection</span>(config, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
-    <span class="pl-c">// ... error checks</span>
-
+<span class="pl-smi">sql</span>.<span class="pl-en">connect</span>(<span class="pl-s"><span class="pl-pds">"</span>mssql://username:password@localhost/database<span class="pl-pds">"</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>() {
     <span class="pl-c">// Query</span>
 
-    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(connection); <span class="pl-c">// or: var request = connection.request();</span>
-    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
-        <span class="pl-c">// ... error checks</span>
-
+    <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>().<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select * from mytable<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
         <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+    }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+        <span class="pl-c">// ... query error checks</span>
     });
 
     <span class="pl-c">// Stored Procedure</span>
 
-    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(connection);
-    <span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, <span class="pl-c1">10</span>);
-    <span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));
-    <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
-        <span class="pl-c">// ... error checks</span>
-
-        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordsets);
-    });
-});
-
-<span class="pl-smi">connection</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
-    <span class="pl-c">// ... error handler</span>
-});</pre></div>
-
-<h3>
-<a id="quick-example-with-one-global-connection" class="anchor" href="#quick-example-with-one-global-connection" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Example with one global connection</h3>
-
-<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
-
-<span class="pl-k">var</span> config <span class="pl-k">=</span> {
-    user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
-    password<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
-    server<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>, <span class="pl-c">// You can use 'localhost\\instance' to connect to named instance</span>
-    database<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
-
-    options<span class="pl-k">:</span> {
-        encrypt<span class="pl-k">:</span> <span class="pl-c1">true</span> <span class="pl-c">// Use this if you're on Windows Azure</span>
-    }
-}
-
-<span class="pl-smi">sql</span>.<span class="pl-en">connect</span>(config, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
-    <span class="pl-c">// ... error checks</span>
-
-    <span class="pl-c">// Query</span>
-
-    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
-        <span class="pl-c">// ... error checks</span>
-
+    <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>()
+    .<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value)
+    .<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>))
+    .<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
         <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+    }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+        <span class="pl-c">// ... execute error checks</span>
     });
-
-    <span class="pl-c">// Stored Procedure</span>
-
-    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-    <span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value);
-    <span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));
-    <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
-        <span class="pl-c">// ... error checks</span>
-
-        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordsets);
-    });
-});
-
-<span class="pl-smi">sql</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
-    <span class="pl-c">// ... error handler</span>
-});</pre></div>
-
-<p><a name="streaming"></a></p>
-
-<h3>
-<a id="streaming-example-with-one-global-connection" class="anchor" href="#streaming-example-with-one-global-connection" aria-hidden="true"><span class="octicon octicon-link"></span></a>Streaming example with one global connection</h3>
-
-<p>If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.</p>
-
-<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
-
-<span class="pl-k">var</span> config <span class="pl-k">=</span> {
-    user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
-    password<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
-    server<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>, <span class="pl-c">// You can use 'localhost\\instance' to connect to named instance</span>
-    database<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
-    stream<span class="pl-k">:</span> <span class="pl-c1">true</span>, <span class="pl-c">// You can enable streaming globally</span>
-
-    options<span class="pl-k">:</span> {
-        encrypt<span class="pl-k">:</span> <span class="pl-c1">true</span> <span class="pl-c">// Use this if you're on Windows Azure</span>
-    }
-}
-
-<span class="pl-smi">sql</span>.<span class="pl-en">connect</span>(config, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
-    <span class="pl-c">// ... error checks</span>
-
-    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-    <span class="pl-smi">request</span>.<span class="pl-smi">stream</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>; <span class="pl-c">// You can set streaming differently for each request</span>
-    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select * from verylargetable<span class="pl-pds">'</span></span>); <span class="pl-c">// or request.execute(procedure);</span>
-
-    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>recordset<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">columns</span>) {
-        <span class="pl-c">// Emitted once for each recordset in a query</span>
-    });
-
-    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>row<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">row</span>) {
-        <span class="pl-c">// Emitted for each row in a recordset</span>
-    });
-
-    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
-        <span class="pl-c">// May be emitted multiple times</span>
-    });
-
-    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">returnValue</span>) {
-        <span class="pl-c">// Always emitted as the last one</span>
-    });
-});
-
-<span class="pl-smi">sql</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
-    <span class="pl-c">// ... error handler</span>
+}).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... connect error checks</span>
 });</pre></div>
 
 <h2>
 <a id="documentation" class="anchor" href="#documentation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Documentation</h2>
 
 <h3>
+<a id="examples" class="anchor" href="#examples" aria-hidden="true"><span class="octicon octicon-link"></span></a>Examples</h3>
+
+<ul>
+<li><a href="#promises">Promises</a></li>
+<li><a href="#callbacks">Nested callbacks</a></li>
+<li><a href="#streaming">Streaming</a></li>
+<li><a href="#multiple-connections">Multiple Connections</a></li>
+</ul>
+
+<h3>
 <a id="configuration" class="anchor" href="#configuration" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configuration</h3>
 
 <ul>
-<li><a href="#cfg-basic">Basic</a></li>
+<li><a href="#cfg-general">General</a></li>
+<li><a href="#cfg-formats">Formats</a></li>
+</ul>
+
+<h3>
+<a id="drivers" class="anchor" href="#drivers" aria-hidden="true"><span class="octicon octicon-link"></span></a>Drivers</h3>
+
+<ul>
 <li><a href="#cfg-tedious">Tedious</a></li>
 <li><a href="#cfg-msnodesqlv8">Microsoft / Contributors Node V8 Driver for Node.js for SQL Server</a></li>
 <li><a href="#cfg-msnodesql">Microsoft Driver for Node.js for SQL Server</a></li>
 <li><a href="#cfg-node-tds">node-tds</a></li>
-<li><a href="#cfg-formats">Formats</a></li>
 </ul>
 
 <h3>
@@ -281,7 +188,6 @@ If you're looking for session store for connect/express, visit <a href="https://
 <li><a href="#tvp">Table-Valued Parameter</a></li>
 <li><a href="#json">JSON support</a></li>
 <li><a href="#errors">Errors</a></li>
-<li><a href="#promises">Promises</a></li>
 <li><a href="#meta">Metadata</a></li>
 <li><a href="#data-types">Data Types</a></li>
 <li><a href="#injection">SQL injection</a></li>
@@ -289,6 +195,203 @@ If you're looking for session store for connect/express, visit <a href="https://
 <li><a href="#issues">Known Issues</a></li>
 <li><a href="https://github.com/patriksimek/node-mssql/wiki/Contributing">Contributing</a></li>
 </ul>
+
+<h2>
+<a id="examples-1" class="anchor" href="#examples-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Examples</h2>
+
+<p><a name="promises"></a></p>
+
+<h3>
+<a id="promises" class="anchor" href="#promises" aria-hidden="true"><span class="octicon octicon-link"></span></a>Promises</h3>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
+
+<span class="pl-k">var</span> config <span class="pl-k">=</span> {
+    user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
+    password<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
+    server<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>, <span class="pl-c">// You can use 'localhost\\instance' to connect to named instance</span>
+    database<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
+
+    options<span class="pl-k">:</span> {
+        encrypt<span class="pl-k">:</span> <span class="pl-c1">true</span> <span class="pl-c">// Use this if you're on Windows Azure</span>
+    }
+}
+
+<span class="pl-smi">sql</span>.<span class="pl-en">connect</span>(config).<span class="pl-en">then</span>(<span class="pl-k">function</span>() {
+    <span class="pl-c">// Query</span>
+
+    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select * from mytable<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
+        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+    }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+        <span class="pl-c">// ... error checks</span>
+    });
+
+    <span class="pl-c">// Stored Procedure</span>
+
+    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+    <span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value);
+    <span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));
+    <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
+        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+    }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+        <span class="pl-c">// ... error checks</span>
+    });
+}).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error checks</span>
+});</pre></div>
+
+<p>Native Promise is used by default. You can easily change this with <code>sql.Promise = require('myownpromisepackage')</code>.</p>
+
+<p><a name="callbacks"></a></p>
+
+<h3>
+<a id="nested-callbacks" class="anchor" href="#nested-callbacks" aria-hidden="true"><span class="octicon octicon-link"></span></a>Nested callbacks</h3>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
+
+<span class="pl-k">var</span> config <span class="pl-k">=</span> {
+    user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
+    password<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
+    server<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>, <span class="pl-c">// You can use 'localhost\\instance' to connect to named instance</span>
+    database<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
+
+    options<span class="pl-k">:</span> {
+        encrypt<span class="pl-k">:</span> <span class="pl-c1">true</span> <span class="pl-c">// Use this if you're on Windows Azure</span>
+    }
+}
+
+<span class="pl-smi">sql</span>.<span class="pl-en">connect</span>(config, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error checks</span>
+
+    <span class="pl-c">// Query</span>
+
+    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+        <span class="pl-c">// ... error checks</span>
+
+        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+    });
+
+    <span class="pl-c">// Stored Procedure</span>
+
+    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+    <span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value);
+    <span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));
+    <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
+        <span class="pl-c">// ... error checks</span>
+
+        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordsets);
+    });
+});
+
+<span class="pl-smi">sql</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error handler</span>
+});</pre></div>
+
+<p><a name="streaming"></a></p>
+
+<h3>
+<a id="streaming" class="anchor" href="#streaming" aria-hidden="true"><span class="octicon octicon-link"></span></a>Streaming</h3>
+
+<p>If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
+
+<span class="pl-k">var</span> config <span class="pl-k">=</span> {
+    user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
+    password<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
+    server<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>, <span class="pl-c">// You can use 'localhost\\instance' to connect to named instance</span>
+    database<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
+    stream<span class="pl-k">:</span> <span class="pl-c1">true</span>, <span class="pl-c">// You can enable streaming globally</span>
+
+    options<span class="pl-k">:</span> {
+        encrypt<span class="pl-k">:</span> <span class="pl-c1">true</span> <span class="pl-c">// Use this if you're on Windows Azure</span>
+    }
+}
+
+<span class="pl-smi">sql</span>.<span class="pl-en">connect</span>(config, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error checks</span>
+
+    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+    <span class="pl-smi">request</span>.<span class="pl-smi">stream</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>; <span class="pl-c">// You can set streaming differently for each request</span>
+    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select * from verylargetable<span class="pl-pds">'</span></span>); <span class="pl-c">// or request.execute(procedure);</span>
+
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>recordset<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">columns</span>) {
+        <span class="pl-c">// Emitted once for each recordset in a query</span>
+    });
+
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>row<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">row</span>) {
+        <span class="pl-c">// Emitted for each row in a recordset</span>
+    });
+
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+        <span class="pl-c">// May be emitted multiple times</span>
+    });
+
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">returnValue</span>) {
+        <span class="pl-c">// Always emitted as the last one</span>
+    });
+});
+
+<span class="pl-smi">sql</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error handler</span>
+});</pre></div>
+
+<p><a name="multiple-connections"></a></p>
+
+<h2>
+<a id="multiple-connections" class="anchor" href="#multiple-connections" aria-hidden="true"><span class="octicon octicon-link"></span></a>Multiple Connections</h2>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
+
+<span class="pl-k">var</span> config <span class="pl-k">=</span> {
+    user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
+    password<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
+    server<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>localhost<span class="pl-pds">'</span></span>, <span class="pl-c">// You can use 'localhost\\instance' to connect to named instance</span>
+    database<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
+
+    options<span class="pl-k">:</span> {
+        encrypt<span class="pl-k">:</span> <span class="pl-c1">true</span> <span class="pl-c">// Use this if you're on Windows Azure</span>
+    }
+}
+
+<span class="pl-k">var</span> connection1 <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Connection</span>(config, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error checks</span>
+
+    <span class="pl-c">// Query</span>
+
+    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(connection1); <span class="pl-c">// or: var request = connection1.request();</span>
+    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+        <span class="pl-c">// ... error checks</span>
+
+        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+    });
+
+});
+
+<span class="pl-smi">connection1</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error handler</span>
+});
+
+<span class="pl-k">var</span> connection2 <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Connection</span>(config, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error checks</span>
+
+    <span class="pl-c">// Stored Procedure</span>
+
+    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(connection2); <span class="pl-c">// or: var request = connection2.request();</span>
+    <span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, <span class="pl-c1">10</span>);
+    <span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));
+    <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
+        <span class="pl-c">// ... error checks</span>
+
+        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordsets);
+    });
+});
+
+<span class="pl-smi">connection2</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error handler</span>
+});</pre></div>
 
 <h2>
 <a id="configuration-1" class="anchor" href="#configuration-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configuration</h2>
@@ -305,10 +408,10 @@ If you're looking for session store for connect/express, visit <a href="https://
     }
 }</pre></div>
 
-<p><a name="cfg-basic"></a></p>
+<p><a name="cfg-general"></a></p>
 
 <h3>
-<a id="basic-configuration-is-same-for-all-drivers" class="anchor" href="#basic-configuration-is-same-for-all-drivers" aria-hidden="true"><span class="octicon octicon-link"></span></a>Basic configuration is same for all drivers.</h3>
+<a id="general-same-for-all-drivers" class="anchor" href="#general-same-for-all-drivers" aria-hidden="true"><span class="octicon octicon-link"></span></a>General (same for all drivers)</h3>
 
 <ul>
 <li>
@@ -341,10 +444,42 @@ If you're looking for session store for connect/express, visit <a href="https://
 <strong>pool.idleTimeoutMillis</strong> - The Number of milliseconds before closing an unused connection (default: <code>30000</code>).</li>
 </ul>
 
+<p><a name="cfg-formats"></a></p>
+
+<h3>
+<a id="formats" class="anchor" href="#formats" aria-hidden="true"><span class="octicon octicon-link"></span></a>Formats</h3>
+
+<p>In addition to configuration object there is an option to pass config as a connection string. Two formats of connection string are supported.</p>
+
+<h5>
+<a id="classic-connection-string" class="anchor" href="#classic-connection-string" aria-hidden="true"><span class="octicon octicon-link"></span></a>Classic Connection String</h5>
+
+<pre><code>Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
+Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
+</code></pre>
+
+<h5>
+<a id="connection-string-uri" class="anchor" href="#connection-string-uri" aria-hidden="true"><span class="octicon octicon-link"></span></a>Connection String URI</h5>
+
+<pre><code>mssql://username:password@localhost:1433/database?encrypt=true
+mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DOMAIN&amp;driver=msnodesqlv8
+</code></pre>
+
+<p><strong>Version</strong></p>
+
+<p>2.5</p>
+
+<h2>
+<a id="drivers-1" class="anchor" href="#drivers-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Drivers</h2>
+
 <p><a name="cfg-tedious"></a></p>
 
 <h3>
 <a id="tedious" class="anchor" href="#tedious" aria-hidden="true"><span class="octicon octicon-link"></span></a>Tedious</h3>
+
+<p>Default driver, actively maintained and production ready. Platform independent, runs everywhere Node.js runs.</p>
+
+<p><strong>Extra options:</strong></p>
 
 <ul>
 <li>
@@ -368,7 +503,9 @@ If you're looking for session store for connect/express, visit <a href="https://
 <h3>
 <a id="microsoft--contributors-node-v8-driver-for-nodejs-for-sql-server" class="anchor" href="#microsoft--contributors-node-v8-driver-for-nodejs-for-sql-server" aria-hidden="true"><span class="octicon octicon-link"></span></a>Microsoft / Contributors Node V8 Driver for Node.js for SQL Server</h3>
 
-<p><strong>Requires Node.js 0.12.x/4.2.0.</strong> This driver is not part of the default package and must be installed separately by <code>npm install msnodesqlv8</code>.</p>
+<p><strong>Requires Node.js 0.12.x/4.2.0. Windows only.</strong> This driver is not part of the default package and must be installed separately by <code>npm install msnodesqlv8</code>.</p>
+
+<p><strong>Extra options:</strong></p>
 
 <ul>
 <li>
@@ -396,7 +533,9 @@ If you're looking for session store for connect/express, visit <a href="https://
 <h3>
 <a id="microsoft-driver-for-nodejs-for-sql-server" class="anchor" href="#microsoft-driver-for-nodejs-for-sql-server" aria-hidden="true"><span class="octicon octicon-link"></span></a>Microsoft Driver for Node.js for SQL Server</h3>
 
-<p><strong>Requires Node.js 0.6.x/0.8.x/0.10.x.</strong> This driver is not part of the default package and must be installed separately by <code>npm install msnodesql</code>. If you are looking for compiled binaries, see <a href="https://github.com/jorgeazevedo/node-sqlserver-binary">node-sqlserver-binary</a>.</p>
+<p><strong>Requires Node.js 0.6.x/0.8.x/0.10.x. Windows only.</strong> This driver is not part of the default package and must be installed separately by <code>npm install msnodesql</code>. If you are looking for compiled binaries, see <a href="https://github.com/jorgeazevedo/node-sqlserver-binary">node-sqlserver-binary</a>.</p>
+
+<p><strong>Extra options:</strong></p>
 
 <ul>
 <li>
@@ -424,38 +563,9 @@ If you're looking for session store for connect/express, visit <a href="https://
 <h3>
 <a id="node-tds" class="anchor" href="#node-tds" aria-hidden="true"><span class="octicon octicon-link"></span></a>node-tds</h3>
 
-<p>This driver is not part of the default package and must be installed separately by <code>npm install tds</code>.</p>
+<p><strong>Legacy support, don't use this driver for new projects.</strong> This driver is not part of the default package and must be installed separately by <code>npm install tds</code>.</p>
 
-<p><em>This module updates the node-tds driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with <code>var sql = require('mssql/nofix')</code>.</em></p>
-
-<p><a name="cfg-formats"></a></p>
-
-<h3>
-<a id="configuration-formats" class="anchor" href="#configuration-formats" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configuration Formats</h3>
-
-<p>In addition to configuration object there is an option to pass config as a connection string. Two formats of connection string are supported.</p>
-
-<h4>
-<a id="classic-connection-string" class="anchor" href="#classic-connection-string" aria-hidden="true"><span class="octicon octicon-link"></span></a>Classic Connection String</h4>
-
-<p><strong>Examples</strong></p>
-
-<pre><code>Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
-Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
-</code></pre>
-
-<h4>
-<a id="connection-string-uri" class="anchor" href="#connection-string-uri" aria-hidden="true"><span class="octicon octicon-link"></span></a>Connection String URI</h4>
-
-<p><strong>Examples</strong></p>
-
-<pre><code>mssql://username:password@localhost:1433/database?encrypt=true
-mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DOMAIN&amp;driver=msnodesqlv8
-</code></pre>
-
-<p><strong>Version</strong></p>
-
-<p>2.5</p>
+<p><em>node-mssql updates this driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with <code>var sql = require('mssql/nofix')</code>.</em></p>
 
 <p><a name="connection"></a></p>
 
@@ -1471,31 +1581,6 @@ FOR JSON <span class="pl-k">PATH</span></pre></div>
 
 <p>2.3</p>
 
-<p><a name="promises"></a></p>
-
-<h2>
-<a id="promises" class="anchor" href="#promises" aria-hidden="true"><span class="octicon octicon-link"></span></a>Promises</h2>
-
-<p>You can retrieve a Promise when you omit a callback argument.</p>
-
-<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> connection <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Connection</span>(config);
-<span class="pl-smi">connection</span>.<span class="pl-en">connect</span>().<span class="pl-en">then</span>(<span class="pl-k">function</span>() {
-    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(connection);
-    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select * from mytable<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
-        <span class="pl-c">// ...</span>
-    }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
-        <span class="pl-c">// ...</span>
-    });
-}).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
-    <span class="pl-c">// ...</span>
-});</pre></div>
-
-<p>Native Promise is returned by default. You can easily change this with <code>sql.Promise = require('myownpromisepackage')</code>.</p>
-
-<p><strong>Version</strong></p>
-
-<p>2.0</p>
-
 <p><a name="errors"></a></p>
 
 <h2>
@@ -1838,12 +1923,12 @@ sql.Geometry
 <a id="msnodesqlv8" class="anchor" href="#msnodesqlv8" aria-hidden="true"><span class="octicon octicon-link"></span></a>msnodesqlv8</h3>
 
 <ul>
-<li>msnodesqlv8 has problem with concurrent connections - <a href="https://github.com/TimelordUK/node-sqlserver-v8/issues/5">reported here</a>.</li>
 <li>msnodesqlv8 has problem with errors during transactions - <a href="https://github.com/patriksimek/node-mssql/issues/77">reported here</a>.</li>
 <li>msnodesqlv8 contains bug in DateTimeOffset (<a href="https://github.com/WindowsAzure/node-sqlserver/issues/160">reported</a>)</li>
 <li>msnodesqlv8 doesn't support TVP data type.</li>
 <li>msnodesqlv8 doesn't support request timeout.</li>
 <li>msnodesqlv8 doesn't support request cancellation.</li>
+<li>msnodesqlv8 doesn't support detailed SQL errors.</li>
 </ul>
 
 <h3>
@@ -1856,6 +1941,7 @@ sql.Geometry
 <li>msnodesql doesn't support TVP data type.</li>
 <li>msnodesql doesn't support request timeout.</li>
 <li>msnodesql doesn't support request cancellation.</li>
+<li>msnodesql doesn't support detailed SQL errors.</li>
 </ul>
 
 <h3>
@@ -1873,6 +1959,7 @@ sql.Geometry
 <li>node-tds doesn't support TVP data type.</li>
 <li>node-tds doesn't support request timeout.</li>
 <li>node-tds doesn't support built-in JSON serialization introduced in SQL Server 2016.</li>
+<li>node-tds doesn't support detailed SQL errors.</li>
 </ul>
 
 <p><a name="license"></a></p>
