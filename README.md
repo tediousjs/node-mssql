@@ -366,16 +366,12 @@ In addition to configuration object there is an option to pass config as a conne
 
 ##### Classic Connection String
 
-__Examples__
-
 ```
 Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
 Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
 ```
 
 ##### Connection String URI
-
-__Examples__
 
 ```
 mssql://username:password@localhost:1433/database?encrypt=true
@@ -393,7 +389,7 @@ __Version__
 
 Default driver, actively maintained and production ready. Platform independent, runs everywhere Node.js runs.
 
-Extra options:
+**Extra options:**
 
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
@@ -407,9 +403,9 @@ More information about Tedious specific options: http://pekim.github.io/tedious/
 <a name="cfg-msnodesqlv8" />
 ### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
 
-**Requires Node.js 0.12.x/4.2.0.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8`.
+**Requires Node.js 0.12.x/4.2.0. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8`.
 
-Extra options:
+**Extra options:**
 
 - **connectionString** - Connection string (default: see below).
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
@@ -429,9 +425,9 @@ Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database=
 <a name="cfg-msnodesql" />
 ### Microsoft Driver for Node.js for SQL Server
 
-**Requires Node.js 0.6.x/0.8.x/0.10.x.** This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
+**Requires Node.js 0.6.x/0.8.x/0.10.x. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
 
-Extra options:
+**Extra options:**
 
 - **connectionString** - Connection string (default: see below).
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
@@ -451,9 +447,9 @@ Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database=
 <a name="cfg-node-tds" />
 ### node-tds
 
-**Legacy support, don't use this for new projects.** This driver is not part of the default package and must be installed separately by `npm install tds`.
+**Legacy support, don't use this driver for new projects.** This driver is not part of the default package and must be installed separately by `npm install tds`.
 
-_This module updates the node-tds driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`._
+_node-mssql updates this driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`._
 
 <a name="connection" />
 ## Connections
@@ -1576,6 +1572,7 @@ Output for the example above could look similar to this.
 - msnodesqlv8 doesn't support TVP data type.
 - msnodesqlv8 doesn't support request timeout.
 - msnodesqlv8 doesn't support request cancellation.
+- msnodesqlv8 doesn't support detailed SQL errors.
 
 ### msnodesql
 
@@ -1585,6 +1582,7 @@ Output for the example above could look similar to this.
 - msnodesql doesn't support TVP data type.
 - msnodesql doesn't support request timeout.
 - msnodesql doesn't support request cancellation.
+- msnodesql doesn't support detailed SQL errors.
 
 ### node-tds
 
@@ -1599,6 +1597,7 @@ Output for the example above could look similar to this.
 - node-tds doesn't support TVP data type.
 - node-tds doesn't support request timeout.
 - node-tds doesn't support built-in JSON serialization introduced in SQL Server 2016.
+- node-tds doesn't support detailed SQL errors.
 
 <a name="license" />
 ## License
