@@ -60,7 +60,7 @@ sql.connect("mssql://username:password@localhost/database").then(function() {
 });
 ```
 
-If you're on Windows Azure, add `&encrypt=true` to you connection string. See [docs](#cfg) to learn more.
+If you're on Windows Azure, add `?encrypt=true` to you connection string. See [docs](#cfg) to learn more.
 
 ## Documentation
 
