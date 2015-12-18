@@ -102,6 +102,8 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-c">// ... connect error checks</span>
 });</pre></div>
 
+<p>If you're on Windows Azure, add <code>&amp;encrypt=true</code> to you connection string. See <a href="#cfg">docs</a> to learn more.</p>
+
 <h2>
 <a id="documentation" class="anchor" href="#documentation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Documentation</h2>
 
@@ -393,6 +395,8 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-c">// ... error handler</span>
 });</pre></div>
 
+<p><a name="cfg"></a></p>
+
 <h2>
 <a id="configuration-1" class="anchor" href="#configuration-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configuration</h2>
 
@@ -487,7 +491,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <li>
 <strong>options.useUTC</strong> - A boolean determining whether or not use UTC time for values without time zone offset (default: <code>true</code>).</li>
 <li>
-<strong>options.encrypt</strong> - A boolean determining whether or not the connection will be encrypted (default: <code>false</code>) Encryption support is experimental.</li>
+<strong>options.encrypt</strong> - A boolean determining whether or not the connection will be encrypted (default: <code>false</code>).</li>
 <li>
 <strong>options.tdsVersion</strong> - The version of TDS to use (default: <code>7_4</code>, available: <code>7_1</code>, <code>7_2</code>, <code>7_3_A</code>, <code>7_3_B</code>, <code>7_4</code>).</li>
 <li>
