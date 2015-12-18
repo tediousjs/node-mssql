@@ -36,6 +36,107 @@ node-mssql uses Tedious as the default driver.
 ```javascript
 var sql = require('mssql');
 
+sql.connect("mssql://username:password@localhost/database").then(function() {
+    // Query
+    
+	new sql.Request().query('select * from mytable').then(function(recordset) {
+		console.dir(recordset);
+	}).catch(function(err) {
+		// ... query error checks
+	});
+
+    // Stored Procedure
+	
+	new sql.Request()
+	.input('input_parameter', sql.Int, value)
+    .output('output_parameter', sql.VarChar(50))
+	.execute('procedure_name').then(function(recordset) {
+		console.dir(recordset);
+	}).catch(function(err) {
+		// ... execute error checks
+	});
+}).catch(function(err) {
+	// ... connect error checks
+});
+```
+
+## Documentation
+
+### Examples
+
+* [Promises](#promises)
+* [Nested callbacks](#callbacks)
+* [Streaming](#streaming)
+* [Multiple Connections](#multiple-connections)
+
+### Configuration
+
+* [General](#cfg-general)
+* [Formats](#cfg-formats)
+
+### Drivers
+
+* [Tedious](#cfg-tedious)
+* [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server](#cfg-msnodesqlv8)
+* [Microsoft Driver for Node.js for SQL Server](#cfg-msnodesql)
+* [node-tds](#cfg-node-tds)
+
+### Connections
+
+* [Connection](#connection)
+* [connect](#connect)
+* [close](#close)
+
+### Requests
+
+* [Request](#request)
+* [execute](#execute)
+* [input](#input)
+* [output](#output)
+* [pipe](#pipe)
+* [query](#query)
+* [batch](#batch)
+* [bulk](#bulk)
+* [cancel](#cancel)
+
+### Transactions
+
+* [Transaction](#transaction)
+* [begin](#begin)
+* [commit](#commit)
+* [rollback](#rollback)
+
+### Prepared Statements
+
+* [PreparedStatement](#prepared-statement)
+* [input](#prepared-statement-input)
+* [output](#prepared-statement-output)
+* [prepare](#prepare)
+* [execute](#prepared-statement-execute)
+* [unprepare](#unprepare)
+
+### Other
+
+* [CLI](#cli)
+* [Geography and Geometry](#geography)
+* [Table-Valued Parameter](#tvp)
+* [JSON support](#json)
+* [Errors](#errors)
+* [Metadata](#meta)
+* [Data Types](#data-types)
+* [SQL injection](#injection)
+* [Verbose Mode](#verbose)
+* [Known Issues](#issues)
+* [Contributing](https://github.com/patriksimek/node-mssql/wiki/Contributing)
+
+## Examples
+
+<a name="promises" />
+### Promises
+
+```javascript
+var sql = require('mssql');
+
 var config = {
     user: '...',
     password: '...',
@@ -47,36 +148,35 @@ var config = {
     }
 }
 
-var connection = new sql.Connection(config, function(err) {
-    // ... error checks
-
-    // Query
-
-    var request = new sql.Request(connection); // or: var request = connection.request();
-    request.query('select 1 as number', function(err, recordset) {
-        // ... error checks
-
-        console.dir(recordset);
-    });
+sql.connect(config).then(function() {
+	// Query
+	
+	var request = new sql.Request();
+	request.query('select * from mytable').then(function(recordset) {
+		console.dir(recordset);
+	}).catch(function(err) {
+		// ... error checks
+	});
 
     // Stored Procedure
-
-    var request = new sql.Request(connection);
-    request.input('input_parameter', sql.Int, 10);
+	
+	var request = new sql.Request();
+	request.input('input_parameter', sql.Int, value);
     request.output('output_parameter', sql.VarChar(50));
-    request.execute('procedure_name', function(err, recordsets, returnValue) {
-        // ... error checks
-
-        console.dir(recordsets);
-    });
-});
-
-connection.on('error', function(err) {
-	// ... error handler
+	request.execute('procedure_name').then(function(recordset) {
+		console.dir(recordset);
+	}).catch(function(err) {
+		// ... error checks
+	});
+}).catch(function(err) {
+	// ... error checks
 });
 ```
 
-### Quick Example with one global connection
+Native Promise is used by default. You can easily change this with `sql.Promise = require('myownpromisepackage')`.
+
+<a name="callbacks" />
+### Nested callbacks
 
 ```javascript
 var sql = require('mssql');
@@ -122,7 +222,7 @@ sql.on('error', function(err) {
 ```
 
 <a name="streaming" />
-### Streaming example with one global connection
+### Streaming
 
 If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.
 
@@ -170,65 +270,60 @@ sql.on('error', function(err) {
 });
 ```
 
-## Documentation
+<a name="multiple-connections" />
+## Multiple Connections
 
-### Configuration
+```javascript
+var sql = require('mssql');
 
-* [Basic](#cfg-basic)
-* [Tedious](#cfg-tedious)
-* [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server](#cfg-msnodesqlv8)
-* [Microsoft Driver for Node.js for SQL Server](#cfg-msnodesql)
-* [node-tds](#cfg-node-tds)
-* [Formats](#cfg-formats)
+var config = {
+    user: '...',
+    password: '...',
+    server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
+    database: '...',
 
-### Connections
+    options: {
+        encrypt: true // Use this if you're on Windows Azure
+    }
+}
 
-* [Connection](#connection)
-* [connect](#connect)
-* [close](#close)
+var connection1 = new sql.Connection(config, function(err) {
+    // ... error checks
 
-### Requests
+    // Query
 
-* [Request](#request)
-* [execute](#execute)
-* [input](#input)
-* [output](#output)
-* [pipe](#pipe)
-* [query](#query)
-* [batch](#batch)
-* [bulk](#bulk)
-* [cancel](#cancel)
+    var request = new sql.Request(connection1); // or: var request = connection1.request();
+    request.query('select 1 as number', function(err, recordset) {
+        // ... error checks
 
-### Transactions
+        console.dir(recordset);
+    });
 
-* [Transaction](#transaction)
-* [begin](#begin)
-* [commit](#commit)
-* [rollback](#rollback)
+});
 
-### Prepared Statements
+connection1.on('error', function(err) {
+	// ... error handler
+});
 
-* [PreparedStatement](#prepared-statement)
-* [input](#prepared-statement-input)
-* [output](#prepared-statement-output)
-* [prepare](#prepare)
-* [execute](#prepared-statement-execute)
-* [unprepare](#unprepare)
+var connection2 = new sql.Connection(config, function(err) {
+    // ... error checks
 
-### Other
+    // Stored Procedure
 
-* [CLI](#cli)
-* [Geography and Geometry](#geography)
-* [Table-Valued Parameter](#tvp)
-* [JSON support](#json)
-* [Errors](#errors)
-* [Promises](#promises)
-* [Metadata](#meta)
-* [Data Types](#data-types)
-* [SQL injection](#injection)
-* [Verbose Mode](#verbose)
-* [Known Issues](#issues)
-* [Contributing](https://github.com/patriksimek/node-mssql/wiki/Contributing)
+    var request = new sql.Request(connection2); // or: var request = connection2.request();
+    request.input('input_parameter', sql.Int, 10);
+    request.output('output_parameter', sql.VarChar(50));
+    request.execute('procedure_name', function(err, recordsets, returnValue) {
+        // ... error checks
+
+        console.dir(recordsets);
+    });
+});
+
+connection2.on('error', function(err) {
+	// ... error handler
+});
+```
 
 ## Configuration
 
@@ -246,8 +341,8 @@ var config = {
 }
 ```
 
-<a name="cfg-basic" />
-### Basic configuration is same for all drivers.
+<a name="cfg-general" />
+### General (same for all drivers)
 
 - **driver** - Driver to use (default: `tedious`). Possible values: `tedious`, `msnodesqlv8` or `msnodesql` or `tds`.
 - **user** - User name to use for authentication.
@@ -264,8 +359,41 @@ var config = {
 - **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
 
+<a name="cfg-formats" />
+### Formats
+
+In addition to configuration object there is an option to pass config as a connection string. Two formats of connection string are supported.
+
+##### Classic Connection String
+
+__Examples__
+
+```
+Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
+Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
+```
+
+##### Connection String URI
+
+__Examples__
+
+```
+mssql://username:password@localhost:1433/database?encrypt=true
+mssql://username:password@localhost/INSTANCE/database?encrypt=true&domain=DOMAIN&driver=msnodesqlv8
+```
+
+__Version__
+
+2.5
+
+## Drivers
+
 <a name="cfg-tedious" />
 ### Tedious
+
+Default driver, actively maintained and production ready. Platform independent, runs everywhere Node.js runs.
+
+Extra options:
 
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
@@ -280,6 +408,8 @@ More information about Tedious specific options: http://pekim.github.io/tedious/
 ### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
 
 **Requires Node.js 0.12.x/4.2.0.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8`.
+
+Extra options:
 
 - **connectionString** - Connection string (default: see below).
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
@@ -301,6 +431,8 @@ Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database=
 
 **Requires Node.js 0.6.x/0.8.x/0.10.x.** This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
 
+Extra options:
+
 - **connectionString** - Connection string (default: see below).
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **options.trustedConnection** - Use Windows Authentication (default: `false`).
@@ -319,36 +451,9 @@ Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database=
 <a name="cfg-node-tds" />
 ### node-tds
 
-This driver is not part of the default package and must be installed separately by `npm install tds`.
+**Legacy support, don't use this for new projects.** This driver is not part of the default package and must be installed separately by `npm install tds`.
 
 _This module updates the node-tds driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`._
-
-<a name="cfg-formats" />
-### Configuration Formats
-
-In addition to configuration object there is an option to pass config as a connection string. Two formats of connection string are supported.
-
-#### Classic Connection String
-
-__Examples__
-
-```
-Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
-Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
-```
-
-#### Connection String URI
-
-__Examples__
-
-```
-mssql://username:password@localhost:1433/database?encrypt=true
-mssql://username:password@localhost/INSTANCE/database?encrypt=true&domain=DOMAIN&driver=msnodesqlv8
-```
-
-__Version__
-
-2.5
 
 <a name="connection" />
 ## Connections
@@ -1246,31 +1351,6 @@ __Version__
 
 2.3
 
-<a name="promises" />
-## Promises
-
-You can retrieve a Promise when you omit a callback argument.
-
-```javascript
-var connection = new sql.Connection(config);
-connection.connect().then(function() {
-	var request = new sql.Request(connection);
-	request.query('select * from mytable').then(function(recordset) {
-		// ...
-	}).catch(function(err) {
-		// ...
-	});
-}).catch(function(err) {
-	// ...
-});
-```
-
-Native Promise is returned by default. You can easily change this with `sql.Promise = require('myownpromisepackage')`.
-
-__Version__
-
-2.0
-
 <a name="errors" />
 ## Errors
 
@@ -1491,7 +1571,6 @@ Output for the example above could look similar to this.
 
 ### msnodesqlv8
 
-- msnodesqlv8 has problem with concurrent connections - [reported here](https://github.com/TimelordUK/node-sqlserver-v8/issues/5).
 - msnodesqlv8 has problem with errors during transactions - [reported here](https://github.com/patriksimek/node-mssql/issues/77).
 - msnodesqlv8 contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
 - msnodesqlv8 doesn't support TVP data type.
