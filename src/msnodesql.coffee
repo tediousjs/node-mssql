@@ -185,21 +185,17 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				
 				@_pooledConnection = connection
 				
-				@request().query "set transaction isolation level #{isolationLevelDeclaration(@isolationLevel)};begin tran;", callback
+				@request()._dedicated(@_pooledConnection).query "set transaction isolation level #{isolationLevelDeclaration(@isolationLevel)};begin tran;", callback
 			
 		commit: (callback) ->
-			@_dedicatedConnection = @_pooledConnection
-			@request().query 'commit tran', (err) =>
+			@request()._dedicated(@_pooledConnection).query 'commit tran', (err) =>
 				@connection.pool.release @_pooledConnection
-				@_dedicateConnection = null
 				@_pooledConnection = null
 				callback err
 
 		rollback: (callback) ->
-			@_dedicatedConnection = @_pooledConnection
-			@request().query 'rollback tran', (err) =>
+			@request()._dedicated(@_pooledConnection).query 'rollback tran', (err) =>
 				@connection.pool.release @_pooledConnection
-				@_dedicateConnection = null
 				@_pooledConnection = null
 				callback err
 
@@ -211,8 +207,6 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			process.nextTick -> callback RequestError("Bulk insert is not supported in 'msnodesql' driver.", 'ENOTSUPP')
 			
 		query: (command, callback) ->
-			if @verbose and not @nested then @_log "---------- sql query ----------\n    query: #{command}"
-			
 			if command.length is 0
 				return process.nextTick ->
 					if @verbose and not @nested
@@ -243,6 +237,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			
 			@_acquire (err, connection) =>
 				unless err
+					if @verbose and not @nested then @_log "---------- sql query ----------\n    query: #{command}"
+					
 					req = connection.queryRaw command, (castParameter(param.value, param.type) for name, param of @parameters when param.io is 1)
 					if @verbose and not @nested then @_log "---------- response -----------"
 					

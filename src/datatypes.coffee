@@ -31,6 +31,7 @@ TYPES =
 	UDT: -> type: TYPES.UDT
 	Geography: -> type: TYPES.Geography
 	Geometry: -> type: TYPES.Geometry
+	Variant: -> type: TYPES.Variant
 
 module.exports.TYPES = TYPES
 module.exports.DECLARATIONS = {}

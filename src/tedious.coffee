@@ -44,6 +44,7 @@ getTediousType = (type) ->
 		when TYPES.VarBinary then return tds.TYPES.VarBinary
 		when TYPES.UDT, TYPES.Geography, TYPES.Geometry then return tds.TYPES.UDT
 		when TYPES.TVP then return tds.TYPES.TVP
+		when TYPES.Variant then return tds.TYPES.Variant
 		else return type
 
 ###
@@ -100,6 +101,7 @@ getMssqlType = (type, length) ->
 		when tds.TYPES.Xml then return TYPES.Xml
 		when tds.TYPES.UDT then return TYPES.UDT
 		when tds.TYPES.TVP then return TYPES.TVP
+		when tds.TYPES.Variant then return TYPES.Variant
 
 ###
 @ignore

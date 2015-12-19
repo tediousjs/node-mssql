@@ -180,6 +180,15 @@ global.TESTS =
 
 			done err
 	
+	'variant data': (done) ->
+		r = new sql.Request
+		r[MODE] 'select cast(11.77 as sql_variant) as variant', (err, recordset) ->
+			unless err
+				assert.equal recordset.length, 1
+				assert.strictEqual recordset[0].variant, 11.77
+
+			done err
+	
 	'stored procedure with one empty recordset': (done) ->
 		request = new sql.Request
 		
@@ -873,7 +882,7 @@ global.TESTS =
 			password: '...'
 			server: '10.0.0.1'
 			driver: driver
-			timeout: 1000
+			connectionTimeout: 1000
 			pool: {idleTimeoutMillis: 500}
 			
 		, (err) ->
@@ -900,6 +909,7 @@ global.TESTS =
 				assert.equal connection.pool.getPoolSize(), 3
 				assert.equal connection.pool.availableObjectsCount(), 3
 				assert.equal connection.pool.waitingClientsCount(), 0
+				assert.equal connection.pool.inUseObjectsCount(), 0
 				done()
 				
 			, 100
@@ -946,6 +956,7 @@ global.TESTS =
 		assert.equal connection.pool.getPoolSize(), 1
 		assert.equal connection.pool.availableObjectsCount(), 0
 		assert.equal connection.pool.waitingClientsCount(), 2
+		assert.equal connection.pool.inUseObjectsCount(), 1
 	
 	'concurrent connections': (done, driver) ->
 		#return done null

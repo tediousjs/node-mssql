@@ -1,6 +1,10 @@
+v2.6.0 (not yet released)
+-------------------
+[new] Added support for Variant data type
+
 v2.5.0 (2015-12-17)
 -------------------
-[new] Added support for new TDS driver msnodesqv8
+[new] Added support for new TDS driver msnodesqlv8
 [new] Support for configs formated as Connection String, Connection String URI
 
 v2.4.0 (2015-12-11)

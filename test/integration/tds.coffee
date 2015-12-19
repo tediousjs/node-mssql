@@ -49,6 +49,9 @@ describe 'node-tds', ->
 		it.skip 'binary data (not supported by node-tds)', (done) ->
 			TESTS['binary data'] done
 		
+		it.skip 'variant data (not supported by node-tds)', (done) ->
+			TESTS['variant data'] done
+		
 		it 'stored procedure with one empty recordset', (done) ->
 			TESTS['stored procedure with one empty recordset'] done
 		

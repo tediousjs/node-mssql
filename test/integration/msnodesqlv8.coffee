@@ -47,8 +47,11 @@ if process.platform.match(/^win/)
 			it 'user defined types', (done) ->
 				TESTS['user defined types'] done
 			
-			it.skip 'binary data (bugged)', (done) ->
+			it.skip 'binary data (buggy in msnodesqlv8)', (done) ->
 				TESTS['binary data'] done
+		
+			it.skip 'variant data (not supported by msnodesql)', (done) ->
+				TESTS['variant data'] done
 			
 			it 'stored procedure with one empty recordset', (done) ->
 				TESTS['stored procedure with one empty recordset'] done
@@ -101,16 +104,16 @@ if process.platform.match(/^win/)
 			it 'prepared statement in transaction', (done) ->
 				TESTS['prepared statement in transaction'] done
 			
-			it.skip 'transaction with rollback (bugged because of problem with concurrent connections)', (done) ->
+			it 'transaction with rollback', (done) ->
 				TESTS['transaction with rollback'] done
 		
-			it.skip 'transaction with rollback (manually interrupted) (bugged because of problem with concurrent connections)', (done) ->
+			it 'transaction with rollback (manually interrupted)', (done) ->
 				TESTS['transaction with rollback (manually interrupted)'] done
 			
-			it.skip 'transaction with commit (bugged because of problem with concurrent connections)', (done) ->
+			it 'transaction with commit', (done) ->
 				TESTS['transaction with commit'] done
 			
-			it.skip 'transaction queue (bugged because of problem with concurrent connections)', (done) ->
+			it 'transaction queue', (done) ->
 				TESTS['transaction queue'] done
 		
 			it.skip 'cancel request (not supported by msnodesqlv8)', (done) ->
@@ -191,7 +194,7 @@ if process.platform.match(/^win/)
 			after ->
 				sql.close()
 	
-		describe.skip 'msnodesqlv8 multiple connections test suite (bugged)', ->
+		describe 'msnodesqlv8 multiple connections test suite', ->
 			before (done) ->
 				global.MODE = 'query'
 				global.SPIDS = {}
@@ -217,13 +220,13 @@ if process.platform.match(/^win/)
 			it 'login failed', (done) ->
 				TESTS['login failed'] done, 'msnodesqlv8', /Login failed for user '(.*)'\./
 		
-			it.skip 'timeout', (done) ->
+			it.skip 'timeout (not supported by msnodesqlv8)', (done) ->
 				TESTS['timeout'] done, 'msnodesqlv8'
 		
-			it.skip 'network error', (done) ->
+			it.skip 'network error (not supported by msnodesqlv8)', (done) ->
 				TESTS['network error'] done, 'msnodesqlv8'
 		
-		describe.skip 'msnodesqlv8 connection pooling (bugged because of problem with concurrent connections)', ->
+		describe 'msnodesqlv8 connection pooling', ->
 			before (done) ->
 				connection1 = new sql.Connection config(), ->
 					cfg = config()

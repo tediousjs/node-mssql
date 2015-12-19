@@ -1501,6 +1501,8 @@ sql.SmallDateTime
 
 sql.UniqueIdentifier
 
+sql.Variant
+
 sql.Binary
 sql.VarBinary ([length])
 sql.Image
@@ -1510,7 +1512,7 @@ sql.Geography
 sql.Geometry
 ```
 
-To setup MAX length for `VarChar`, `NVarChar` and `VarBinary` use `sql.MAX` length. Type `sql.XML` is not supported as input parameter.
+To setup MAX length for `VarChar`, `NVarChar` and `VarBinary` use `sql.MAX` length. Types `sql.XML` and `sql.Variant` are not supported as input parameters.
 
 <a name="injection" />
 ## SQL injection
@@ -1570,19 +1572,21 @@ Output for the example above could look similar to this.
 
 ### msnodesqlv8
 
-- msnodesqlv8 has problem with errors during transactions - [reported here](https://github.com/patriksimek/node-mssql/issues/77).
-- msnodesqlv8 contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
+- msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
+- msnodesqlv8 contains bug in DateTimeOffset ([reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/8))
 - msnodesqlv8 doesn't support TVP data type.
+- msnodesqlv8 doesn't support Variant data type.
 - msnodesqlv8 doesn't support request timeout.
 - msnodesqlv8 doesn't support request cancellation.
 - msnodesqlv8 doesn't support detailed SQL errors.
 
 ### msnodesql
 
-- msnodesql has problem with errors during transactions - [reported here](https://github.com/patriksimek/node-mssql/issues/77).
+- msnodesql has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
 - msnodesql contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
 - msnodesql doesn't support Bulk load.
 - msnodesql doesn't support TVP data type.
+- msnodesql doesn't support Variant data type.
 - msnodesql doesn't support request timeout.
 - msnodesql doesn't support request cancellation.
 - msnodesql doesn't support detailed SQL errors.
@@ -1598,6 +1602,7 @@ Output for the example above could look similar to this.
 - node-tds always return date/time values in local time.
 - node-tds has serious problems with MAX types.
 - node-tds doesn't support TVP data type.
+- node-tds doesn't support Variant data type.
 - node-tds doesn't support request timeout.
 - node-tds doesn't support built-in JSON serialization introduced in SQL Server 2016.
 - node-tds doesn't support detailed SQL errors.

@@ -49,6 +49,9 @@ if process.platform.match(/^win/)
 			
 			it 'binary data', (done) ->
 				TESTS['binary data'] done
+		
+			it.skip 'variant data (not supported by msnodesql)', (done) ->
+				TESTS['variant data'] done
 			
 			it 'stored procedure with one empty recordset', (done) ->
 				TESTS['stored procedure with one empty recordset'] done

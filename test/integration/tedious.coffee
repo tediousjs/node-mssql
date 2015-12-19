@@ -64,6 +64,9 @@ describe 'tedious', ->
 		it 'binary data', (done) ->
 			TESTS['binary data'] done
 		
+		it.skip 'variant data (not yet published)', (done) ->
+			TESTS['variant data'] done
+		
 		it 'stored procedure with one empty recordset', (done) ->
 			TESTS['stored procedure with one empty recordset'] done
 		

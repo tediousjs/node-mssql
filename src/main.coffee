@@ -748,10 +748,6 @@ class Transaction extends EventEmitter
 	###
 	
 	queue: (callback) ->
-		if @_dedicatedConnection
-			callback null, @_dedicatedConnection
-			return @
-		
 		unless @_pooledConnection
 			callback new TransactionError "Transaction has not begun. Call begin() first.", 'ENOTBEGUN'
 			return @
@@ -883,6 +879,15 @@ class Request extends EventEmitter
 				return callback new ConnectionError "Connection not yet open.", 'ENOTOPEN'
 			
 			@connection.pool.acquire callback
+	
+	###
+	Makes the request dedicated to one connection.
+	###
+	
+	_dedicated: (connection) ->
+		@_acquire = (callback) -> callback null, connection
+		@_release = ->
+		@
 	
 	###
 	Release connection used by this request.
