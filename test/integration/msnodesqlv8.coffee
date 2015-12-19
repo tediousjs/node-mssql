@@ -8,15 +8,14 @@ config = ->
 
 connection1 = null
 connection2 = null
-installed = true
 
-try
-	require 'msnodesqlv8'
-catch ex
-	installed = false
+if process.versions.node.match(/^(0\.12\.|4\.)/)
+	installed = true
 
-if not process.versions.node.match(/^(0\.12\.|4\.)/)
-	installed = false
+	try
+		require 'msnodesqlv8'
+	catch ex
+		installed = false
 
 # msnodesqlv8 tests are only available on windows
 if process.platform.match(/^win/) and installed
