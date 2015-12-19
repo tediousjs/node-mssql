@@ -8,9 +8,18 @@ config = ->
 
 connection1 = null
 connection2 = null
+installed = true
+
+try
+	require 'msnodesql'
+catch ex
+	installed = false
+
+if not process.versions.node.match(/^(0\.6\.|0\.8\.|0\.10\.)/)
+	installed = false
 
 # msnodesql tests are only available on windows
-if process.platform.match(/^win/)
+if process.platform.match(/^win/) and installed
 	describe 'msnodesql', ->
 		before (done) ->
 			sql.connect config(), (err) ->

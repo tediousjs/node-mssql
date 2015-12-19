@@ -8,9 +8,18 @@ config = ->
 
 connection1 = null
 connection2 = null
+installed = true
+
+try
+	require 'msnodesqlv8'
+catch ex
+	installed = false
+
+if not process.versions.node.match(/^(0\.12\.|4\.)/)
+	installed = false
 
 # msnodesqlv8 tests are only available on windows
-if process.platform.match(/^win/)
+if process.platform.match(/^win/) and installed
 	describe 'msnodesqlv8', ->
 		before (done) ->
 			sql.connect config(), (err) ->
