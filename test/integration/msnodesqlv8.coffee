@@ -133,7 +133,7 @@ if process.platform.match(/^win/) and installed
 			it 'dataLength type correction', (done) ->
 				TESTS['dataLength type correction'] done
 		
-			it 'chunked json support', (done) ->
+			it.skip 'chunked json support (requires SQL Server 2016)', (done) ->
 				TESTS['chunked json support'] done
 		
 			it 'chunked xml support', (done) ->
