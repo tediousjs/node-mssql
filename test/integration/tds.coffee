@@ -129,7 +129,10 @@ describe 'node-tds', ->
 		it 'dataLength type correction', (done) ->
 			TESTS['dataLength type correction'] done
 		
-		it 'chunked xml support (not supported by node-tds)', (done) ->
+		it.skip 'chunked json support (not supported by node-tds, requires SQL Server 2016)', (done) ->
+			TESTS['chunked json support'] done
+		
+		it.skip 'chunked xml support (not supported by node-tds)', (done) ->
 			TESTS['chunked xml support'] done
 		
 		after ->
