@@ -1318,7 +1318,7 @@ request.execute('MyCustomStoredProcedure', function(err, recordsets, returnValue
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
 
 <a name="json" />
-## JSON support (experimental)
+## JSON support (experimental, works only with Tedious driver)
 
 SQL Server 2016 introduced built-in JSON serialization. By default, JSON is returned as a plain text in a special column named `JSON_F52E2B61-18A1-11d1-B105-00805F49916B`.
 

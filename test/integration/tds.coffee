@@ -129,6 +129,9 @@ describe 'node-tds', ->
 		it 'dataLength type correction', (done) ->
 			TESTS['dataLength type correction'] done
 		
+		it 'chunked xml support (not supported by node-tds)', (done) ->
+			TESTS['chunked xml support'] done
+		
 		after ->
 			sql.close()
 	

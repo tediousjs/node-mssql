@@ -7,6 +7,8 @@ UDT = require('./udt').PARSERS
 ISOLATION_LEVEL = require('./isolationlevel')
 DECLARATIONS = require('./datatypes').DECLARATIONS
 EMPTY_BUFFER = new Buffer(0)
+JSON_COLUMN_ID = 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B'
+XML_COLUMN_ID = 'XML_F52E2B61-18A1-11d1-B105-00805F49916B'
 
 CONNECTION_STRING_PORT = 'Driver={SQL Server Native Client 11.0};Server={#{server},#{port}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};'
 CONNECTION_STRING_NAMED_INSTANCE = 'Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};'
@@ -293,6 +295,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			recordsets = []
 			started = Date.now()
 			handleOutput = false
+			isChunkedRecordset = false
+			chunksBuffer = null
 			
 			# nested = function is called by this.execute
 			
@@ -314,6 +318,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					
 					req.on 'meta', (metadata) =>
 						if row
+							if isChunkedRecordset
+								row[columns[0].name] = chunksBuffer.join ''
+								chunksBuffer = null
+								
 							if @verbose
 								@_log util.inspect(row)
 								@_log "---------- --------------------"
@@ -329,6 +337,11 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							enumerable: false
 							value: createColumns(metadata)
 						
+						isChunkedRecordset = false
+						if metadata.length is 1 and metadata[0].name in [JSON_COLUMN_ID, XML_COLUMN_ID]
+							isChunkedRecordset = true
+							chunksBuffer = []
+						
 						if @stream
 							unless recordset.columns["___return___"]?
 								@emit 'recordset', recordset.columns
@@ -338,6 +351,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						
 					req.on 'row', (rownumber) =>
 						if row
+							if isChunkedRecordset then return
+							
 							if @verbose
 								@_log util.inspect(row)
 								@_log "---------- --------------------"
@@ -352,18 +367,22 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							recordset.push row
 						
 					req.on 'column', (idx, data, more) =>
-						data = valueCorrection(data, columns[idx])
-
-						exi = row[columns[idx].name]
-						if exi?
-							if exi instanceof Array
-								exi.push data
-								
-							else
-								row[columns[idx].name] = [exi, data]
+						if isChunkedRecordset
+							chunksBuffer.push data
 						
 						else
-							row[columns[idx].name] = data
+							data = valueCorrection(data, columns[idx])
+	
+							exi = row[columns[idx].name]
+							if exi?
+								if exi instanceof Array
+									exi.push data
+									
+								else
+									row[columns[idx].name] = [exi, data]
+							
+							else
+								row[columns[idx].name] = data
 			
 					req.once 'error', (err) =>
 						e = RequestError err
@@ -386,6 +405,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req.once 'done', =>
 						unless @nested
 							if row
+								if isChunkedRecordset
+									row[columns[0].name] = chunksBuffer.join ''
+									chunksBuffer = null
+								
 								if @verbose
 									@_log util.inspect(row)
 									@_log "---------- --------------------"

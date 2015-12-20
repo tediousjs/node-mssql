@@ -815,16 +815,60 @@ global.TESTS =
 				
 			done()
 	
-	'json support': (done) ->
+	'json parser': (done) ->
 		r = new sql.Request
 		r.multiple = true
 		p = r[MODE] "select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for json path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for json path;with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for json auto;"
 		
-		p.then (recordset) ->
+		p.then (recordsets) ->
 			try
-				assert.deepEqual recordset[0][0], {"a":{"b":{"c":1,"d":2},"x":3,"y":4}}
-				assert.deepEqual recordset[1][0], {"a":{"b":{"c":5,"d":6},"x":7,"y":8}}
-				assert.strictEqual recordset[2][0].length, 1000
+				assert.deepEqual recordsets[0][0], [{"a":{"b":{"c":1,"d":2},"x":3,"y":4}}]
+				assert.deepEqual recordsets[1][0], [{"a":{"b":{"c":5,"d":6},"x":7,"y":8}}]
+				assert.strictEqual recordsets[2][0].length, 1000
+			catch ex
+				return done ex
+
+			done()
+
+		p.catch done
+	
+	'chunked json support': (done) ->
+		r = new sql.Request
+		r.multiple = true
+		p = r[MODE] "select 1 as val;select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for json path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for json path;with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for json auto;select 'abc' as val;"
+		
+		p.then (recordsets) ->
+			try
+				assert.equal recordsets[0][0].val, 1
+				assert.equal recordsets[0].length, 1
+				assert.equal recordsets[1][0]['JSON_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 39
+				assert.equal recordsets[2][0]['JSON_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 39
+				assert.equal recordsets[3][0]['JSON_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 9894
+				assert.equal recordsets[3].length, 1
+				assert.equal recordsets[4][0].val, 'abc'
+				assert.equal recordsets[4].length, 1
+			catch ex
+				return done ex
+
+			done()
+
+		p.catch done
+	
+	'chunked xml support': (done) ->
+		r = new sql.Request
+		r.multiple = true
+		p = r[MODE] "select 1 as val;select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for xml path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for xml path;with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for xml auto;select 'abc' as val;"
+		
+		p.then (recordsets) ->
+			try
+				assert.equal recordsets[0][0].val, 1
+				assert.equal recordsets[0].length, 1
+				assert.equal recordsets[1][0]['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 67
+				assert.equal recordsets[2][0]['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 67
+				assert.equal recordsets[3][0]['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 11893
+				assert.equal recordsets[3].length, 1
+				assert.equal recordsets[4][0].val, 'abc'
+				assert.equal recordsets[4].length, 1
 			catch ex
 				return done ex
 

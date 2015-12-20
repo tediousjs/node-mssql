@@ -132,6 +132,12 @@ if process.platform.match(/^win/) and installed
 		
 			it 'dataLength type correction', (done) ->
 				TESTS['dataLength type correction'] done
+		
+			it 'chunked json support', (done) ->
+				TESTS['chunked json support'] done
+		
+			it 'chunked xml support', (done) ->
+				TESTS['chunked xml support'] done
 			
 			after ->
 				sql.close()

@@ -36,7 +36,6 @@ describe 'tedious', ->
 			global.DRIVER = 'tedious'
 			
 			cfg = config()
-			cfg.parseJSON = true
 			cfg.options.abortTransactionOnError = true
 			sql.connect cfg, done
 		
@@ -163,8 +162,29 @@ describe 'tedious', ->
 			global.MODE = 'batch'
 			TESTS['type validation'] done
 		
-		it.skip 'json support (experimental, requires SQL Server 2016)', (done) ->
+		it.skip 'json support', (done) ->
 			TESTS['json support'] done
+		
+		it.skip 'chunked json support (requires SQL Server 2016)', (done) ->
+			TESTS['chunked json support'] done
+		
+		it 'chunked xml support', (done) ->
+			TESTS['chunked xml support'] done
+		
+		after (done) ->
+			sql.close done
+	
+	describe.skip 'json support (experimental, requires SQL Server 2016)', ->
+		before (done) ->
+			global.DRIVER = 'tedious'
+			global.MODE = 'query'
+			
+			cfg = config()
+			cfg.parseJSON = true
+			sql.connect cfg, done
+		
+		it 'parser', (done) ->
+			TESTS['json parser'] done
 		
 		after (done) ->
 			sql.close done

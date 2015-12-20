@@ -7,6 +7,7 @@ DECLARATIONS = require('./datatypes').DECLARATIONS
 UDT = require('./udt').PARSERS
 Table = require('./table')
 JSON_COLUMN_ID = 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B'
+XML_COLUMN_ID = 'XML_F52E2B61-18A1-11d1-B105-00805F49916B'
 
 ###
 @ignore
@@ -383,7 +384,6 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					connection.on 'errorMessage', errorHandlers['errorMessage']
 					connection.on 'error',        errorHandlers['error']
 
-					
 					done = (err, rowCount) =>
 						# to make sure we handle no-sql errors as well
 						if err and err.message isnt errors[errors.length - 1]?.message
@@ -461,7 +461,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			batchLastRow = null
 			batchHasOutput = false
 			isJSONRecordset = false
-			jsonBuffer = null
+			isChunkedRecordset = false
+			chunksBuffer = null
+			xmlBuffer = null
 			hasReturned = false
 			errorHandlers = {}
 			handleError = (doReturn, connection, info) =>
@@ -555,10 +557,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req.on 'columnMetadata', (metadata) =>
 						columns = createColumns metadata
 						
-						isJSONRecordset = false
-						if @connection.config.parseJSON is true and metadata.length is 1 and metadata[0].colName is JSON_COLUMN_ID
-							isJSONRecordset = true
-							jsonBuffer = []
+						isChunkedRecordset = false
+						if metadata.length is 1 and metadata[0].colName in [JSON_COLUMN_ID, XML_COLUMN_ID]
+							isChunkedRecordset = true
+							chunksBuffer = []
 						
 						if @stream
 							if @_isBatch
@@ -573,30 +575,35 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						# this function is called even when select only set variables so we should skip adding a new recordset
 						if Object.keys(columns).length is 0 then return
 						
-						if isJSONRecordset
-							try
-								parsedJSON = JSON.parse jsonBuffer.join ''
-							catch ex
-								parsedJSON = null
-								ex = RequestError new Error("Failed to parse incoming JSON. #{ex.message}"), 'EJSON'
-								
-								if @stream
-									@emit 'error', ex
-								
-								# we must collect errors even in stream mode
-								errors.push ex
+						if isChunkedRecordset
+							if columns[JSON_COLUMN_ID] and @connection.config.parseJSON is true
+								try
+									row = JSON.parse chunksBuffer.join ''
+								catch ex
+									row = null
+									ex = RequestError new Error("Failed to parse incoming JSON. #{ex.message}"), 'EJSON'
+									
+									if @stream
+										@emit 'error', ex
+									
+									# we must collect errors even in stream mode
+									errors.push ex
 							
-							jsonBuffer = null
+							else
+								row = {}
+								row[Object.keys(columns)[0]] = chunksBuffer.join ''
 							
+							chunksBuffer = null
+
 							if @verbose
-								@_log util.inspect parsedJSON
+								@_log util.inspect row
 								@_log "---------- --------------------"
 							
 							if @stream
-								@emit 'row', parsedJSON
+								@emit 'row', row
 								
 							else
-								recordset.push parsedJSON
+								recordset.push row
 
 						unless @stream
 							# all rows of current recordset loaded
@@ -629,8 +636,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						unless recordset
 							recordset = []
 						
-						if isJSONRecordset
-							jsonBuffer.push columns[0].value
+						if isChunkedRecordset
+							chunksBuffer.push columns[0].value
 						
 						else
 							row = {}
@@ -721,8 +728,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			returnValue = 0
 			started = Date.now()
 			errors = []
-			isJSONRecordset = false
-			jsonBuffer = null
+			isChunkedRecordset = false
+			chunksBuffer = null
 			hasReturned = false
 			errorHandlers = {}
 			handleError = (doReturn, connection, info) =>
@@ -763,7 +770,6 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					connection.on 'errorMessage', errorHandlers['errorMessage']
 					connection.on 'error',        errorHandlers['error']
 
-					
 					req = new tds.Request procedure, (err) =>
 						# to make sure we handle no-sql errors as well
 						if err and err.message isnt errors[errors.length - 1]?.message
@@ -805,10 +811,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req.on 'columnMetadata', (metadata) =>
 						columns = createColumns metadata
 						
-						isJSONRecordset = false
-						if @connection.config.parseJSON is true and metadata.length is 1 and metadata[0].colName is JSON_COLUMN_ID
-							isJSONRecordset = true
-							jsonBuffer = []
+						isChunkedRecordset = false
+						if metadata.length is 1 and metadata[0].colName in [JSON_COLUMN_ID, XML_COLUMN_ID]
+							isChunkedRecordset = true
+							chunksBuffer = []
 						
 						if @stream
 							@emit 'recordset', columns
@@ -817,8 +823,8 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						unless recordset
 							recordset = []
 						
-						if isJSONRecordset
-							jsonBuffer.push columns[0].value
+						if isChunkedRecordset
+							chunksBuffer.push columns[0].value
 						
 						else
 							row = {}
@@ -850,30 +856,35 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						# filter empty recordsets when NOCOUNT is OFF
 						if Object.keys(columns).length is 0 then return
 						
-						if isJSONRecordset
-							try
-								parsedJSON = JSON.parse jsonBuffer.join ''
-							catch ex
-								parsedJSON = null
-								ex = RequestError new Error("Failed to parse incoming JSON. #{ex.message}"), 'EJSON'
-								
-								if @stream
-									@emit 'error', ex
-								
-								# we must collect errors even in stream mode
-								errors.push ex
+						if isChunkedRecordset
+							if columns[0].metadata.colName is JSON_COLUMN_ID and @connection.config.parseJSON is true
+								try
+									row = JSON.parse chunksBuffer.join ''
+								catch ex
+									row = null
+									ex = RequestError new Error("Failed to parse incoming JSON. #{ex.message}"), 'EJSON'
+									
+									if @stream
+										@emit 'error', ex
+									
+									# we must collect errors even in stream mode
+									errors.push ex
 							
-							jsonBuffer = null
+							else
+								row = {}
+								row[columns[0].metadata.colName] = chunksBuffer.join ''
 							
+							chunksBuffer = null
+
 							if @verbose
-								@_log util.inspect parsedJSON
+								@_log util.inspect row
 								@_log "---------- --------------------"
 							
 							if @stream
-								@emit 'row', parsedJSON
+								@emit 'row', row
 								
 							else
-								recordset.push parsedJSON
+								recordset.push row
 						
 						unless @stream
 							# all rows of current recordset loaded
