@@ -195,11 +195,11 @@ if process.platform.match(/^win/) and installed
 				TIMES['datetime2 as parameter'] true, done
 			
 			# https://github.com/WindowsAzure/node-sqlserver/issues/160	
-			it.skip 'datetimeoffset (buggy in msnodesqlv8)', (done) ->
+			it 'datetimeoffset', (done) ->
 				TIMES['datetimeoffset'] true, done
 			
 			# https://github.com/WindowsAzure/node-sqlserver/issues/160	
-			it.skip 'datetimeoffset as parameter (buggy in msnodesqlv8)', (done) ->
+			it 'datetimeoffset as parameter', (done) ->
 				TIMES['datetimeoffset as parameter'] true, done
 				
 			it 'smalldatetime', (done) ->

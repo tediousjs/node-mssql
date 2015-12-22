@@ -1573,7 +1573,6 @@ Output for the example above could look similar to this.
 ### msnodesqlv8
 
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
-- msnodesqlv8 contains bug in DateTimeOffset ([reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/8))
 - msnodesqlv8 doesn't support TVP data type.
 - msnodesqlv8 doesn't support Variant data type.
 - msnodesqlv8 doesn't support request timeout.
