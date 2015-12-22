@@ -199,6 +199,17 @@ global.TESTS =
 			
 			done err
 	
+	'domain': (done) ->
+		d = require('domain').create()
+		d.run ->
+			r = new sql.Request
+			domain = process.domain
+			
+			r[MODE] '', (err, recordset) ->
+				assert.strictEqual domain, process.domain
+	
+				done err
+	
 	'empty query': (done) ->
 		r = new sql.Request
 		r[MODE] '', (err, recordset) ->
@@ -956,7 +967,7 @@ global.TESTS =
 				assert.equal connection.pool.inUseObjectsCount(), 0
 				done()
 				
-			, 100
+			, 500
 		
 		r1 = new sql.Request connection
 		r1[MODE] 'select 1 as id', (err, recordset) ->

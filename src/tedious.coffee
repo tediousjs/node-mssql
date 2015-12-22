@@ -13,6 +13,16 @@ XML_COLUMN_ID = 'XML_F52E2B61-18A1-11d1-B105-00805F49916B'
 @ignore
 ###
 
+bindDomain = (cb) ->
+	if process.domain
+		process.domain?.bind cb
+	else
+		cb
+
+###
+@ignore
+###
+
 getTediousType = (type) ->
 	switch type
 		when TYPES.VarChar then return tds.TYPES.VarChar
@@ -293,14 +303,14 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				@_pooledConnection = connection
 				@_pooledConnection.on 'rollbackTransaction', @_abort
 					
-				connection.beginTransaction (err) =>
+				connection.beginTransaction bindDomain (err) =>
 					if err then err = TransactionError err
 					callback err
 				
 				, @name, @isolationLevel
 			
 		commit: (callback) ->
-			@_pooledConnection.commitTransaction (err) =>
+			@_pooledConnection.commitTransaction bindDomain (err) =>
 				if err then err = TransactionError err
 				
 				@_pooledConnection.removeListener 'rollbackTransaction', @_abort
@@ -311,7 +321,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 
 		rollback: (callback) ->
 			@_rollbackRequested = true
-			@_pooledConnection.rollbackTransaction (err) =>
+			@_pooledConnection.rollbackTransaction bindDomain (err) =>
 				if err then err = TransactionError err
 				
 				@_pooledConnection.removeListener 'rollbackTransaction', @_abort
@@ -353,12 +363,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 
 				if @stream
 					@emit 'error', e
+				
 				else
-					if (doReturn && !hasReturned)
+					if doReturn and not hasReturned
 						if connection?
 							for event, handler of errorHandlers
 								connection.removeListener event, handler
+								
 							@_release connection
+							
 						hasReturned = true
 						callback?(e)
 
@@ -384,7 +397,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					connection.on 'errorMessage', errorHandlers['errorMessage']
 					connection.on 'error',        errorHandlers['error']
 
-					done = (err, rowCount) =>
+					done = bindDomain (err, rowCount) =>
 						# to make sure we handle no-sql errors as well
 						if err and err.message isnt errors[errors.length - 1]?.message
 							err = RequestError err, 'EREQUEST'
@@ -473,12 +486,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				
 				if @stream
 					@emit 'error', e
+				
 				else
-					if (doReturn && !hasReturned)
+					if doReturn and not hasReturned
 						if connection?
 							for event, handler of errorHandlers
 								connection.removeListener event, handler
+							
 							@_release connection
+							
 						hasReturned = true
 						callback?(e)
 
@@ -504,7 +520,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					connection.on 'errorMessage', errorHandlers['errorMessage']
 					connection.on 'error',        errorHandlers['error']
 					
-					req = new tds.Request command, (err) =>
+					req = new tds.Request command, bindDomain (err) =>
 						# to make sure we handle no-sql errors as well
 						if err and err.message isnt errors[errors.length - 1]?.message
 							err = RequestError err, 'EREQUEST'
@@ -739,12 +755,15 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				
 				if @stream
 					@emit 'error', e
+				
 				else
-					if (doReturn && !hasReturned)
+					if doReturn and not hasReturned
 						if connection?
 							for event, handler of errorHandlers
 								connection.removeListener event, handler
+							
 							@_release connection
+						
 						hasReturned = true
 						callback?(e)
 					
@@ -770,7 +789,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					connection.on 'errorMessage', errorHandlers['errorMessage']
 					connection.on 'error',        errorHandlers['error']
 
-					req = new tds.Request procedure, (err) =>
+					req = new tds.Request procedure, bindDomain (err) =>
 						# to make sure we handle no-sql errors as well
 						if err and err.message isnt errors[errors.length - 1]?.message
 							err = RequestError err, 'EREQUEST'

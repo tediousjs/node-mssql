@@ -63,6 +63,9 @@ if process.platform.match(/^win/) and installed
 			
 			it 'stored procedure with one empty recordset', (done) ->
 				TESTS['stored procedure with one empty recordset'] done
+		
+			it 'domain', (done) ->
+				TESTS['domain'] done
 			
 			it 'empty query', (done) ->
 				TESTS['empty query'] done
