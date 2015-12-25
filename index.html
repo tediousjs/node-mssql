@@ -102,7 +102,7 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-c">// ... connect error checks</span>
 });</pre></div>
 
-<p>If you're on Windows Azure, add <code>&amp;encrypt=true</code> to you connection string. See <a href="#cfg">docs</a> to learn more.</p>
+<p>If you're on Windows Azure, add <code>?encrypt=true</code> to you connection string. See <a href="#cfg">docs</a> to learn more.</p>
 
 <h2>
 <a id="documentation" class="anchor" href="#documentation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Documentation</h2>
@@ -188,6 +188,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 <li><a href="#cli">CLI</a></li>
 <li><a href="#geography">Geography and Geometry</a></li>
 <li><a href="#tvp">Table-Valued Parameter</a></li>
+<li><a href="#affected-rows">Affected Rows</a></li>
 <li><a href="#json">JSON support</a></li>
 <li><a href="#errors">Errors</a></li>
 <li><a href="#meta">Metadata</a></li>
@@ -910,6 +911,8 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
     <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordsets[<span class="pl-c1">1</span>][<span class="pl-c1">0</span>].<span class="pl-smi">number</span>); <span class="pl-c">// return 2</span>
 });</pre></div>
 
+<p><strong>NOTE</strong>: To get number of rows affected by the statement(s), see section <a href="#affected-rows">Affected Rows</a>.</p>
+
 <hr>
 
 <p><a name="batch"></a></p>
@@ -1354,10 +1357,11 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <span class="pl-smi">ps</span>.<span class="pl-en">prepare</span>(<span class="pl-s"><span class="pl-pds">'</span>select @param as value<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error checks</span>
 
-    <span class="pl-smi">ps</span>.<span class="pl-en">execute</span>({param<span class="pl-k">:</span> <span class="pl-c1">12345</span>}, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+    <span class="pl-smi">ps</span>.<span class="pl-en">execute</span>({param<span class="pl-k">:</span> <span class="pl-c1">12345</span>}, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>, <span class="pl-smi">affected</span>) {
         <span class="pl-c">// ... error checks</span>
 
         <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordset[<span class="pl-c1">0</span>].<span class="pl-c1">value</span>); <span class="pl-c">// return 12345</span>
+        <span class="pl-en">console</span>.<span class="pl-c1">log</span>(affected); <span class="pl-c">// Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.</span>
     });
 });</pre></div>
 
@@ -1369,10 +1373,11 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
     <span class="pl-c">// ... error checks</span>
 
     <span class="pl-smi">ps</span>.<span class="pl-c1">multiple</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
-    <span class="pl-smi">ps</span>.<span class="pl-en">execute</span>({param<span class="pl-k">:</span> <span class="pl-c1">12345</span>}, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>) {
+    <span class="pl-smi">ps</span>.<span class="pl-en">execute</span>({param<span class="pl-k">:</span> <span class="pl-c1">12345</span>}, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">affected</span>) {
         <span class="pl-c">// ... error checks</span>
 
         <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordsets[<span class="pl-c1">0</span>][<span class="pl-c1">0</span>].<span class="pl-c1">value</span>); <span class="pl-c">// return 12345</span>
+        <span class="pl-en">console</span>.<span class="pl-c1">log</span>(affected); <span class="pl-c">// Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.</span>
     });
 });</pre></div>
 
@@ -1398,10 +1403,14 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
         <span class="pl-c">// May be emitted multiple times</span>
     });
 
-    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">returnValue</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">returnValue</span>, <span class="pl-smi">affected</span>) {
         <span class="pl-c">// Always emitted as the last one</span>
+
+        <span class="pl-en">console</span>.<span class="pl-c1">log</span>(affected); <span class="pl-c">// Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.</span>
     });
 });</pre></div>
+
+<p><strong>TIP</strong>: To learn more about how number of affected rows works, see section <a href="#affected-rows">Affected Rows</a>.</p>
 
 <p><strong>Errors</strong></p>
 
@@ -1553,10 +1562,42 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 
 <p><strong>TIP</strong>: You can also create Table variable from any recordset with <code>recordset.toTable()</code>.</p>
 
+<p><a name="affected-rows"></a></p>
+
+<h2>
+<a id="affected-rows" class="anchor" href="#affected-rows" aria-hidden="true"><span class="octicon octicon-link"></span></a>Affected Rows</h2>
+
+<p>If you're performing <code>INSERT</code>, <code>UPDATE</code> or <code>DELETE</code> in a query, you can read number of affected rows.</p>
+
+<p><strong>Example using Promises</strong></p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>update myAwesomeTable set awesomness = 100<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">request</span>.<span class="pl-smi">rowsAffected</span>);
+});</pre></div>
+
+<p><strong>Example using callbacks</strong></p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>update myAwesomeTable set awesomness = 100<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>, <span class="pl-smi">affected</span>) {
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(affected);
+});</pre></div>
+
+<p><strong>Example using streaming</strong></p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+<span class="pl-smi">request</span>.<span class="pl-smi">stream</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
+<span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>update myAwesomeTable set awesomness = 100<span class="pl-pds">'</span></span>);
+<span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">affected</span>) {
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(affected);
+});</pre></div>
+
+<p><strong>NOTE</strong>: If your query contains multiple <code>INSERT</code>, <code>UPDATE</code> or <code>DELETE</code> statements, the number of affected rows is a sum of all of them.</p>
+
 <p><a name="json"></a></p>
 
 <h2>
-<a id="json-support-experimental" class="anchor" href="#json-support-experimental" aria-hidden="true"><span class="octicon octicon-link"></span></a>JSON support (experimental)</h2>
+<a id="json-support-experimental-works-only-with-tedious-driver" class="anchor" href="#json-support-experimental-works-only-with-tedious-driver" aria-hidden="true"><span class="octicon octicon-link"></span></a>JSON support (experimental, works only with Tedious driver)</h2>
 
 <p>SQL Server 2016 introduced built-in JSON serialization. By default, JSON is returned as a plain text in a special column named <code>JSON_F52E2B61-18A1-11d1-B105-00805F49916B</code>.</p>
 
@@ -1852,6 +1893,8 @@ sql.SmallDateTime
 
 sql.UniqueIdentifier
 
+sql.Variant
+
 sql.Binary
 sql.VarBinary ([length])
 sql.Image
@@ -1861,7 +1904,7 @@ sql.Geography
 sql.Geometry
 </code></pre>
 
-<p>To setup MAX length for <code>VarChar</code>, <code>NVarChar</code> and <code>VarBinary</code> use <code>sql.MAX</code> length. Type <code>sql.XML</code> is not supported as input parameter.</p>
+<p>To setup MAX length for <code>VarChar</code>, <code>NVarChar</code> and <code>VarBinary</code> use <code>sql.MAX</code> length. Types <code>sql.XML</code> and <code>sql.Variant</code> are not supported as input parameters.</p>
 
 <p><a name="injection"></a></p>
 
@@ -1927,25 +1970,28 @@ sql.Geometry
 <a id="msnodesqlv8" class="anchor" href="#msnodesqlv8" aria-hidden="true"><span class="octicon octicon-link"></span></a>msnodesqlv8</h3>
 
 <ul>
-<li>msnodesqlv8 has problem with errors during transactions - <a href="https://github.com/patriksimek/node-mssql/issues/77">reported here</a>.</li>
-<li>msnodesqlv8 contains bug in DateTimeOffset (<a href="https://github.com/WindowsAzure/node-sqlserver/issues/160">reported</a>)</li>
-<li>msnodesqlv8 doesn't support TVP data type.</li>
+<li>msnodesqlv8 has problem with errors during transactions - <a href="https://github.com/patriksimek/node-mssql/issues/77">reported</a>.</li>
+<li>msnodesqlv8 has problem with affected rows - <a href="https://github.com/TimelordUK/node-sqlserver-v8/issues/11">reported</a>.</li>
+<li>msnodesqlv8 doesn't support <a href="#tvp">TVP</a> data type.</li>
+<li>msnodesqlv8 doesn't support Variant data type.</li>
 <li>msnodesqlv8 doesn't support request timeout.</li>
 <li>msnodesqlv8 doesn't support request cancellation.</li>
-<li>msnodesqlv8 doesn't support detailed SQL errors.</li>
+<li>msnodesqlv8 doesn't support <a href="#detailed-sql-errors">detailed SQL errors</a>.</li>
 </ul>
 
 <h3>
 <a id="msnodesql" class="anchor" href="#msnodesql" aria-hidden="true"><span class="octicon octicon-link"></span></a>msnodesql</h3>
 
 <ul>
-<li>msnodesql has problem with errors during transactions - <a href="https://github.com/patriksimek/node-mssql/issues/77">reported here</a>.</li>
+<li>msnodesql has problem with errors during transactions - <a href="https://github.com/patriksimek/node-mssql/issues/77">reported</a>.</li>
+<li>msnodesql has problem with affected rows - <a href="https://github.com/TimelordUK/node-sqlserver-v8/issues/11">reported</a>.</li>
 <li>msnodesql contains bug in DateTimeOffset (<a href="https://github.com/WindowsAzure/node-sqlserver/issues/160">reported</a>)</li>
-<li>msnodesql doesn't support Bulk load.</li>
-<li>msnodesql doesn't support TVP data type.</li>
+<li>msnodesql doesn't support <a href="#bulk">Bulk</a> load.</li>
+<li>msnodesql doesn't support <a href="#tvp">TVP</a> data type.</li>
+<li>msnodesql doesn't support Variant data type.</li>
 <li>msnodesql doesn't support request timeout.</li>
 <li>msnodesql doesn't support request cancellation.</li>
-<li>msnodesql doesn't support detailed SQL errors.</li>
+<li>msnodesql doesn't support <a href="#detailed-sql-errors">detailed SQL errors</a>.</li>
 </ul>
 
 <h3>
@@ -1960,10 +2006,14 @@ sql.Geometry
 <li>node-tds doesn't support Binary, VarBinary and Image as parameters.</li>
 <li>node-tds always return date/time values in local time.</li>
 <li>node-tds has serious problems with MAX types.</li>
-<li>node-tds doesn't support TVP data type.</li>
+<li>node-tds doesn't support <a href="#bulk">Bulk</a> load.</li>
+<li>node-tds doesn't support <a href="#tvp">TVP</a> data type.</li>
+<li>node-tds doesn't support Variant data type.</li>
 <li>node-tds doesn't support request timeout.</li>
-<li>node-tds doesn't support built-in JSON serialization introduced in SQL Server 2016.</li>
-<li>node-tds doesn't support detailed SQL errors.</li>
+<li>node-tds doesn't support <a href="#json">built-in JSON serialization</a> introduced in SQL Server 2016.</li>
+<li>node-tds doesn't support <a href="#detailed-sql-errors">detailed SQL errors</a>.</li>
+<li>node-tds doesn't support <a href="#affected-rows">Affected Rows</a>
+</li>
 </ul>
 
 <p><a name="license"></a></p>
