@@ -123,9 +123,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				defaultConnectionString = CONNECTION_STRING_NAMED_INSTANCE
 			
 			cfg =
-				connectionString: config.connectionString ? defaultConnectionString
+				conn_str: config.connectionString ? defaultConnectionString
+				conn_timeout: (config.connectionTimeout ? config.timeout ? 15000) / 1000 # config.timeout deprecated in 0.6.0
 			
-			cfg.connectionString = cfg.connectionString.replace new RegExp('#{([^}]*)}', 'g'), (p) ->
+			cfg.conn_str = cfg.conn_str.replace new RegExp('#{([^}]*)}', 'g'), (p) ->
 				key = p.substr(2, p.length - 3)
 				if key is 'instance'
 					return config.options.instanceName
@@ -140,7 +141,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				min: 0
 				idleTimeoutMillis: 30000
 				create: (callback) =>
-					msnodesql.open cfg.connectionString, (err, c) =>
+					msnodesql.open cfg, (err, c) =>
 						if err then err = ConnectionError err
 						if err then return callback err, null # there must be a second argument null
 						callback null, c

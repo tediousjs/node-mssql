@@ -1618,7 +1618,6 @@ Output for the example above could look similar to this.
 ### msnodesqlv8
 
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
-- msnodesqlv8 has problem with affected rows - [reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/11).
 - msnodesqlv8 doesn't support [TVP](#tvp) data type.
 - msnodesqlv8 doesn't support Variant data type.
 - msnodesqlv8 doesn't support request timeout.
@@ -1628,7 +1627,6 @@ Output for the example above could look similar to this.
 ### msnodesql
 
 - msnodesql has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
-- msnodesql has problem with affected rows - [reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/11).
 - msnodesql contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
 - msnodesql doesn't support [Bulk](#bulk) load.
 - msnodesql doesn't support [TVP](#tvp) data type.
@@ -1636,6 +1634,7 @@ Output for the example above could look similar to this.
 - msnodesql doesn't support request timeout.
 - msnodesql doesn't support request cancellation.
 - msnodesql doesn't support [detailed SQL errors](#detailed-sql-errors).
+- msnodesql reports invalid number of affected rows in some cases.
 
 ### node-tds
 
