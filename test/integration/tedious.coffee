@@ -128,6 +128,9 @@ describe 'tedious', ->
 		it 'prepared statement (stream)', (done) ->
 			TESTS['prepared statement'] true, done, true
 		
+		it 'prepared statement with affected rows', (done) ->
+			TESTS['prepared statement with affected rows'] done
+		
 		it 'prepared statement in transaction', (done) ->
 			TESTS['prepared statement in transaction'] done
 		

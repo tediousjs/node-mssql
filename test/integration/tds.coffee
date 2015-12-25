@@ -108,6 +108,9 @@ describe 'node-tds', ->
 		it 'prepared statement (stream)', (done) ->
 			TESTS['prepared statement'] false, done, true
 		
+		it.skip 'prepared statement with affected rows (not supported by node-tds)', (done) ->
+			TESTS['prepared statement with affected rows'] done
+		
 		it 'prepared statement in transaction', (done) ->
 			TESTS['prepared statement in transaction'] done
 		

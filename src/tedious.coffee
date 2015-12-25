@@ -876,7 +876,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					
 					req.on 'doneInProc', (rowCount, more) =>
 						# filter empty recordsets when NOCOUNT is OFF
-						if Object.keys(columns).length is 0 then return
+						if Object.keys(columns).length is 0
+							@rowsAffected += rowCount if rowCount > 0
+							return
 						
 						if isChunkedRecordset
 							if columns[0].metadata.colName is JSON_COLUMN_ID and @connection.config.parseJSON is true

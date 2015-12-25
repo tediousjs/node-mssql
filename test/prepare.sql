@@ -86,6 +86,10 @@ begin
 
 end')
 
+exec('create table [dbo].[prepstm_test] (
+	data varchar(50) not null
+)')
+
 exec('create table [dbo].[tran_test] (
 	data varchar(50) not null
 )')

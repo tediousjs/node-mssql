@@ -552,7 +552,7 @@ class PreparedStatement extends EventEmitter
 		req.execute 'sp_execute', (err, recordsets, returnValue) =>
 			if err then return callback err
 			
-			callback null, (if @multiple then recordsets else recordsets[0])
+			callback null, (if @multiple then recordsets else recordsets[0]), req.rowsAffected
 		
 		req
 		
@@ -1279,10 +1279,10 @@ class Request extends EventEmitter
 		@connection.driver.Request::execute.call @, procedure, (err, recordsets, returnValue) =>
 			if @stream
 				if err then @emit 'error', err
-				@emit 'done', returnValue
+				@emit 'done', returnValue, @rowsAffected
 			
 			else
-				callback err, recordsets, returnValue
+				callback err, recordsets, returnValue, @rowsAffected
 			
 		@
 	

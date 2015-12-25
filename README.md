@@ -1114,10 +1114,11 @@ ps.input('param', sql.Int);
 ps.prepare('select @param as value', function(err) {
     // ... error checks
 
-    ps.execute({param: 12345}, function(err, recordset) {
+    ps.execute({param: 12345}, function(err, recordset, affected) {
         // ... error checks
 
         console.log(recordset[0].value); // return 12345
+        console.log(affected); // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
     });
 });
 ```
@@ -1131,10 +1132,11 @@ ps.prepare('select @param as value', function(err) {
     // ... error checks
 
     ps.multiple = true;
-    ps.execute({param: 12345}, function(err, recordsets) {
+    ps.execute({param: 12345}, function(err, recordsets, affected) {
         // ... error checks
 
         console.log(recordsets[0][0].value); // return 12345
+        console.log(affected); // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
     });
 });
 ```
@@ -1162,11 +1164,15 @@ ps.prepare('select @param as value', function(err) {
     	// May be emitted multiple times
     });
 
-    request.on('done', function(returnValue) {
+    request.on('done', function(returnValue, affected) {
     	// Always emitted as the last one
+    	
+        console.log(affected); // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
     });
 });
 ```
+
+**TIP**: To learn more about how number of affected rows works, see section [Affected Rows](#affected-rows).
 
 __Errors__
 - ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.

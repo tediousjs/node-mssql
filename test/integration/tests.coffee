@@ -545,6 +545,17 @@ global.TESTS =
 					r.on 'done', ->
 						complete errs.pop(), rsts.shift()
 	
+	'prepared statement with affected rows': (done) ->
+		ps = new sql.PreparedStatement
+		ps.input 'data', sql.VarChar(50)
+		ps.prepare 'insert into prepstm_test values (@data);insert into prepstm_test values (@data);delete from prepstm_test;', (err) ->
+			if err then return done err
+			
+			ps.execute {data: 'abc'}, (err, recordsets, affected) ->
+				assert.equal affected, 4
+				
+				ps.unprepare done
+	
 	'prepared statement in transaction': (done) ->
 		tran = new sql.Transaction
 		tran.begin (err) ->

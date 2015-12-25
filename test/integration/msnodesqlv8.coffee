@@ -112,6 +112,9 @@ if process.platform.match(/^win/) and installed
 			it 'prepared statement (stream)', (done) ->
 				TESTS['prepared statement'] true, done, true
 		
+			it.skip 'prepared statement with affected rows (buggy in msnodesqlv8)', (done) ->
+				TESTS['prepared statement with affected rows'] done
+		
 			it 'prepared statement in transaction', (done) ->
 				TESTS['prepared statement in transaction'] done
 			
