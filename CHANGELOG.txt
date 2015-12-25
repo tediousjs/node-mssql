@@ -1,6 +1,10 @@
-v2.6.0 (not yet released)
+v2.7.0 (not yet released)
 -------------------
 [new] Added support for Variant data type
+
+v2.6.1 (2015-12-25)
+-------------------
+[new] Added support for receiving number of affected rows
 [new] Automatically concat chunks of FOR XML / FOR JSON recordset
 [fix] Correctly preserve domains
 
