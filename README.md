@@ -122,6 +122,7 @@ If you're on Windows Azure, add `?encrypt=true` to you connection string. See [d
 * [CLI](#cli)
 * [Geography and Geometry](#geography)
 * [Table-Valued Parameter](#tvp)
+* [Affected Rows](#affected-rows)
 * [JSON support](#json)
 * [Errors](#errors)
 * [Metadata](#meta)
@@ -728,6 +729,8 @@ request.query('select 1 as number; select 2 as number', function(err, recordsets
 });
 ```
 
+**NOTE**: To get number of rows affected by the statement(s), see section [Affected Rows](#affected-rows).
+
 ---------------------------------------
 
 <a name="batch" />
@@ -1317,6 +1320,42 @@ request.execute('MyCustomStoredProcedure', function(err, recordsets, returnValue
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
 
+<a name="affected-rows">
+## Affected Rows
+
+If you're performing `INSERT`, `UPDATE` or `DELETE` in a query, you can read number of affected rows.
+
+__Example using Promises__
+
+```javascript
+var request = new sql.Request();
+request.query('update myAwesomeTable set awesomness = 100').then(function(recordset) {
+    console.log(request.rowsAffected);
+});
+```
+
+__Example using callbacks__
+
+```javascript
+var request = new sql.Request();
+request.query('update myAwesomeTable set awesomness = 100', function(err, recordset, affected) {
+    console.log(affected);
+});
+```
+
+__Example using streaming__
+
+```javascript
+var request = new sql.Request();
+request.stream = true;
+request.query('update myAwesomeTable set awesomness = 100');
+request.on('done', function(affected) {
+    console.log(affected);
+});
+```
+
+**NOTE**: If your query contains multiple `INSERT`, `UPDATE` or `DELETE` statements, the number of affected rows is a sum of all of them.
+
 <a name="json" />
 ## JSON support (experimental, works only with Tedious driver)
 
@@ -1573,22 +1612,24 @@ Output for the example above could look similar to this.
 ### msnodesqlv8
 
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
-- msnodesqlv8 doesn't support TVP data type.
+- msnodesqlv8 has problem with affected rows - [reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/11).
+- msnodesqlv8 doesn't support [TVP](#tvp) data type.
 - msnodesqlv8 doesn't support Variant data type.
 - msnodesqlv8 doesn't support request timeout.
 - msnodesqlv8 doesn't support request cancellation.
-- msnodesqlv8 doesn't support detailed SQL errors.
+- msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
 
 ### msnodesql
 
 - msnodesql has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
+- msnodesql has problem with affected rows - [reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/11).
 - msnodesql contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
-- msnodesql doesn't support Bulk load.
-- msnodesql doesn't support TVP data type.
+- msnodesql doesn't support [Bulk](#bulk) load.
+- msnodesql doesn't support [TVP](#tvp) data type.
 - msnodesql doesn't support Variant data type.
 - msnodesql doesn't support request timeout.
 - msnodesql doesn't support request cancellation.
-- msnodesql doesn't support detailed SQL errors.
+- msnodesql doesn't support [detailed SQL errors](#detailed-sql-errors).
 
 ### node-tds
 
@@ -1600,11 +1641,13 @@ Output for the example above could look similar to this.
 - node-tds doesn't support Binary, VarBinary and Image as parameters.
 - node-tds always return date/time values in local time.
 - node-tds has serious problems with MAX types.
-- node-tds doesn't support TVP data type.
+- node-tds doesn't support [Bulk](#bulk) load.
+- node-tds doesn't support [TVP](#tvp) data type.
 - node-tds doesn't support Variant data type.
 - node-tds doesn't support request timeout.
-- node-tds doesn't support built-in JSON serialization introduced in SQL Server 2016.
-- node-tds doesn't support detailed SQL errors.
+- node-tds doesn't support [built-in JSON serialization](#json) introduced in SQL Server 2016.
+- node-tds doesn't support [detailed SQL errors](#detailed-sql-errors).
+- node-tds doesn't support [Affected Rows](#affected-rows)
 
 <a name="license" />
 ## License

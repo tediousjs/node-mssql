@@ -834,6 +834,7 @@ class Request extends EventEmitter
 	multiple: false
 	canceled: false
 	stream: null
+	rowsAffected: null
 
 	###
 	Create new Request.
@@ -1011,6 +1012,7 @@ class Request extends EventEmitter
 	
 	batch: (batch, callback) ->
 		@stream ?= @connection?.config.stream
+		@rowsAffected = 0
 		
 		if @stream or callback?
 			return @_batch batch, callback
@@ -1045,13 +1047,13 @@ class Request extends EventEmitter
 		
 		@canceled = false
 		
-		@connection.driver.Request::batch.call @, batch, (err, recordset) =>
+		@connection.driver.Request::batch.call @, batch, (err, recordsets) =>
 			if @stream
 				if err then @emit 'error', err
-				@emit 'done'
+				@emit 'done', @rowsAffected
 			
 			else
-				callback err, recordset
+				callback err, recordsets, @rowsAffected
 			
 		@
 			
@@ -1163,14 +1165,15 @@ class Request extends EventEmitter
 	
 	query: (command, callback) ->
 		@stream ?= @connection?.config.stream
+		@rowsAffected = 0
 		
 		if @stream or callback?
 			return @_query command, callback
 		
 		new module.exports.Promise (resolve, reject) =>
-			@_query command, (err, recordset) ->
+			@_query command, (err, recordsets) ->
 				if err then return reject err
-				resolve recordset
+				resolve recordsets
 
 	_query: (command, callback) ->
 		unless @connection
@@ -1197,13 +1200,13 @@ class Request extends EventEmitter
 		
 		@canceled = false
 		
-		@connection.driver.Request::query.call @, command, (err, recordset) =>
+		@connection.driver.Request::query.call @, command, (err, recordsets) =>
 			if @stream
 				if err then @emit 'error', err
-				@emit 'done'
+				@emit 'done', @rowsAffected
 			
 			else
-				callback err, recordset
+				callback err, recordsets, @rowsAffected
 			
 		@
 	
@@ -1238,6 +1241,7 @@ class Request extends EventEmitter
 	
 	execute: (command, callback) ->
 		@stream ?= @connection?.config.stream
+		@rowsAffected = 0
 		
 		if @stream or callback?
 			return @_execute command, callback

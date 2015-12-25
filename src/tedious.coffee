@@ -245,7 +245,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						c.on 'debug', (msg) => @_debug msg
 
 				validate: (c) ->
-					c? and !c.closed
+					c? and not c.closed
 				
 				destroy: (c) ->
 					c?.close()
@@ -423,7 +423,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							error = errors.pop()
 							error.precedingErrors = errors
 						
-						if (!hasReturned)
+						if not hasReturned
 							for event, handler of errorHandlers
 								connection.removeListener event, handler
 							@_release connection
@@ -496,7 +496,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							@_release connection
 							
 						hasReturned = true
-						callback?(e)
+						callback? e
 
 				# we must collect errors even in stream mode
 				errors.push e
@@ -558,9 +558,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							error = errors.pop()
 							error.precedingErrors = errors
 						
-						if (!hasReturned)
+						if not hasReturned
 							for event, handler of errorHandlers
 								connection.removeListener event, handler
+							
 							@_release connection
 							hasReturned = true
 
@@ -587,9 +588,11 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							else
 								@emit 'recordset', columns
 
-					doneHandler = (rowCount, more, rows) =>
+					doneHandler = (rowCount, more) =>
 						# this function is called even when select only set variables so we should skip adding a new recordset
-						if Object.keys(columns).length is 0 then return
+						if Object.keys(columns).length is 0
+							@rowsAffected += rowCount if rowCount > 0
+							return
 						
 						if isChunkedRecordset
 							if columns[JSON_COLUMN_ID] and @connection.config.parseJSON is true
@@ -765,7 +768,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							@_release connection
 						
 						hasReturned = true
-						callback?(e)
+						callback? e
 					
 				# we must collect errors even in stream mode
 				errors.push e
@@ -814,7 +817,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							error = errors.pop()
 							error.precedingErrors = errors
 						
-						if (!hasReturned)
+						if not hasReturned
 							for event, handler of errorHandlers
 								connection.removeListener event, handler
 							@_release connection
@@ -871,7 +874,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							else
 								recordset.push row
 					
-					req.on 'doneInProc', (rowCount, more, rows) =>
+					req.on 'doneInProc', (rowCount, more) =>
 						# filter empty recordsets when NOCOUNT is OFF
 						if Object.keys(columns).length is 0 then return
 						
@@ -920,7 +923,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						recordset = []
 						columns = {}
 					
-					req.on 'doneProc', (rowCount, more, returnStatus, rows) =>
+					req.on 'doneProc', (rowCount, more, returnStatus) =>
 						returnValue = returnStatus
 					
 					req.on 'returnValue', (parameterName, value, metadata) =>

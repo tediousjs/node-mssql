@@ -383,6 +383,9 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							
 							else
 								row[columns[idx].name] = data
+					
+					req.on 'rowcount', (count) =>
+						@rowsAffected += count if count > 0
 			
 					req.once 'error', (err) =>
 						e = RequestError err
