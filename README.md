@@ -63,6 +63,8 @@ If you're on Windows Azure, add `?encrypt=true` to you connection string. See [d
 
 ## Documentation
 
+* [2.x to 3.x changes](#twotothree)
+
 ### Examples
 
 * [Promises](#promises)
@@ -262,7 +264,7 @@ sql.connect(config, function(err) {
     	// May be emitted multiple times
     });
 
-    request.on('done', function(returnValue) {
+    request.on('done', function(affected) {
     	// Always emitted as the last one
     });
 });
@@ -555,13 +557,15 @@ __Example__
 var request = new sql.Request();
 request.input('input_parameter', sql.Int, value);
 request.output('output_parameter', sql.Int);
-request.execute('procedure_name', function(err, recordsets, returnValue) {
+request.execute('procedure_name', function(err, recordsets, returnValue, affected) {
     // ... error checks
 
     console.log(recordsets.length); // count of recordsets returned by the procedure
     console.log(recordsets[0].length); // count of rows contained in first recordset
     console.log(returnValue); // procedure return value
     console.log(recordsets.returnValue); // same as previous line
+    console.log(affected); // number of rows affected by the statemens
+    console.log(recordsets.rowsAffected); // same as previous line
 
     console.log(request.parameters.output_parameter.value); // output value
 
@@ -720,7 +724,7 @@ You can enable multiple recordsets in queries with the `request.multiple = true`
 var request = new sql.Request();
 request.multiple = true;
 
-request.query('select 1 as number; select 2 as number', function(err, recordsets) {
+request.query('select 1 as number; select 2 as number', function(err, recordsets, affected) {
     // ... error checks
 
     console.log(recordsets[0][0].number); // return 1
@@ -1658,6 +1662,49 @@ Output for the example above could look similar to this.
 - node-tds doesn't support [built-in JSON serialization](#json) introduced in SQL Server 2016.
 - node-tds doesn't support [detailed SQL errors](#detailed-sql-errors).
 - node-tds doesn't support [Affected Rows](#affected-rows)
+
+<a name="twotothree" />
+## 2.x to 3.x changes
+
+### Prepared Statement
+
+* [`execute`](#prepared-statement-execute) method now returns 3 arguments instead of 2.
+
+    ```javascript
+    ps.execute(values, function(err, recordset, affected) { });
+    ```
+
+    When streaming, `done` event now returns 2 arguments instead of 1.
+
+    ```javascript
+    request.on('done', function(returnValue, affected) { });
+    ```
+
+### Request
+
+* [`execute`](#execute) method now returns 4 arguments instead of 3.
+
+    ```javascript
+    ps.execute(values, function(err, recordset, returnValue, affected) { });
+    ```
+
+    When streaming, `done` event now returns 2 arguments instead of 1.
+
+    ```javascript
+    request.on('done', function(returnValue, affected) { });
+    ```
+
+* [`query`](#query) method now returns 3 arguments instead of 2.
+
+    ```javascript
+    ps.execute(values, function(err, recordset, affected) { });
+    ```
+
+    When streaming, `done` event now returns 1 argument.
+
+    ```javascript
+    request.on('done', function(affected) { });
+    ```
 
 <a name="license" />
 ## License
