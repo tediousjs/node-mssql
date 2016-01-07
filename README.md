@@ -1361,6 +1361,10 @@ request.on('done', function(affected) {
 
 **NOTE**: If your query contains multiple `INSERT`, `UPDATE` or `DELETE` statements, the number of affected rows is a sum of all of them.
 
+__Version__
+
+3.0
+
 <a name="json" />
 ## JSON support (experimental, works only with Tedious driver)
 
