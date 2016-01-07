@@ -45,8 +45,7 @@
 <li>Supports serialization of Geography and Geometry CLR types.</li>
 <li>Has smart JS data type to SQL data type mapper.</li>
 <li>Supports Promises, Streams and standard callbacks.</li>
-<li>Is stable and has no breaking change since 2013.</li>
-<li>Is tested in production environment.</li>
+<li>Is stable and tested in production environment.</li>
 <li>Is well documented.</li>
 </ul>
 
@@ -1594,6 +1593,10 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 
 <p><strong>NOTE</strong>: If your query contains multiple <code>INSERT</code>, <code>UPDATE</code> or <code>DELETE</code> statements, the number of affected rows is a sum of all of them.</p>
 
+<p><strong>Version</strong></p>
+
+<p>3.0</p>
+
 <p><a name="json"></a></p>
 
 <h2>
@@ -1971,7 +1974,7 @@ sql.Geometry
 
 <ul>
 <li>msnodesqlv8 has problem with errors during transactions - <a href="https://github.com/patriksimek/node-mssql/issues/77">reported</a>.</li>
-<li>msnodesqlv8 has problem with affected rows - <a href="https://github.com/TimelordUK/node-sqlserver-v8/issues/11">reported</a>.</li>
+<li>msnodesqlv8 doesn't timeout the connection reliably - <a href="https://github.com/TimelordUK/node-sqlserver-v8/issues/9">reported</a>.</li>
 <li>msnodesqlv8 doesn't support <a href="#tvp">TVP</a> data type.</li>
 <li>msnodesqlv8 doesn't support Variant data type.</li>
 <li>msnodesqlv8 doesn't support request timeout.</li>
@@ -1984,14 +1987,15 @@ sql.Geometry
 
 <ul>
 <li>msnodesql has problem with errors during transactions - <a href="https://github.com/patriksimek/node-mssql/issues/77">reported</a>.</li>
-<li>msnodesql has problem with affected rows - <a href="https://github.com/TimelordUK/node-sqlserver-v8/issues/11">reported</a>.</li>
 <li>msnodesql contains bug in DateTimeOffset (<a href="https://github.com/WindowsAzure/node-sqlserver/issues/160">reported</a>)</li>
 <li>msnodesql doesn't support <a href="#bulk">Bulk</a> load.</li>
 <li>msnodesql doesn't support <a href="#tvp">TVP</a> data type.</li>
 <li>msnodesql doesn't support Variant data type.</li>
+<li>msnodesql doesn't support connection timeout.</li>
 <li>msnodesql doesn't support request timeout.</li>
 <li>msnodesql doesn't support request cancellation.</li>
 <li>msnodesql doesn't support <a href="#detailed-sql-errors">detailed SQL errors</a>.</li>
+<li>msnodesql reports invalid number of affected rows in some cases.</li>
 </ul>
 
 <h3>
