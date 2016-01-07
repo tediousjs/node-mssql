@@ -12,8 +12,7 @@ An easy-to-use MSSQL database connector for Node.js.
 - Supports serialization of Geography and Geometry CLR types.
 - Has smart JS data type to SQL data type mapper.
 - Supports Promises, Streams and standard callbacks.
-- Is stable and has no breaking change since 2013.
-- Is tested in production environment.
+- Is stable and tested in production environment.
 - Is well documented.
 
 There is also [co](https://github.com/visionmedia/co) wrapper available - [co-mssql](https://github.com/patriksimek/co-mssql).
@@ -1618,6 +1617,7 @@ Output for the example above could look similar to this.
 ### msnodesqlv8
 
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
+- msnodesqlv8 doesn't timeout the connection reliably - [reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/9).
 - msnodesqlv8 doesn't support [TVP](#tvp) data type.
 - msnodesqlv8 doesn't support Variant data type.
 - msnodesqlv8 doesn't support request timeout.
@@ -1631,6 +1631,7 @@ Output for the example above could look similar to this.
 - msnodesql doesn't support [Bulk](#bulk) load.
 - msnodesql doesn't support [TVP](#tvp) data type.
 - msnodesql doesn't support Variant data type.
+- msnodesql doesn't support connection timeout.
 - msnodesql doesn't support request timeout.
 - msnodesql doesn't support request cancellation.
 - msnodesql doesn't support [detailed SQL errors](#detailed-sql-errors).

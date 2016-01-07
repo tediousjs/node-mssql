@@ -1,8 +1,12 @@
-v2.7.0 (not yet released)
+v3.1.0 (not yet released)
 -------------------
 [new] Added support for Variant data type
 
-v2.6.2 (2015-12-25)
+v3.0.0 (2016-01-08)
+-------------------
+[new] Version bump because of breakinch change introduced in release 2.6.
+
+v2.6.2 (2015-12-25) - unpublished from npm
 -------------------
 [new] Added support for receiving number of affected rows
 [new] Automatically concat chunks of FOR XML / FOR JSON recordset
