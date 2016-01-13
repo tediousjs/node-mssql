@@ -106,6 +106,10 @@ If you're looking for session store for connect/express, visit <a href="https://
 <h2>
 <a id="documentation" class="anchor" href="#documentation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Documentation</h2>
 
+<ul>
+<li><a href="#twotothree">2.x to 3.x changes</a></li>
+</ul>
+
 <h3>
 <a id="examples" class="anchor" href="#examples" aria-hidden="true"><span class="octicon octicon-link"></span></a>Examples</h3>
 
@@ -331,7 +335,7 @@ If you're looking for session store for connect/express, visit <a href="https://
         <span class="pl-c">// May be emitted multiple times</span>
     });
 
-    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">returnValue</span>) {
+    <span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">affected</span>) {
         <span class="pl-c">// Always emitted as the last one</span>
     });
 });
@@ -699,13 +703,15 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
 <span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value);
 <span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>);
-<span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
+<span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>, <span class="pl-smi">affected</span>) {
     <span class="pl-c">// ... error checks</span>
 
     <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">recordsets</span>.<span class="pl-c1">length</span>); <span class="pl-c">// count of recordsets returned by the procedure</span>
     <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordsets[<span class="pl-c1">0</span>].<span class="pl-c1">length</span>); <span class="pl-c">// count of rows contained in first recordset</span>
     <span class="pl-en">console</span>.<span class="pl-c1">log</span>(returnValue); <span class="pl-c">// procedure return value</span>
     <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">recordsets</span>.<span class="pl-smi">returnValue</span>); <span class="pl-c">// same as previous line</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(affected); <span class="pl-c">// number of rows affected by the statemens</span>
+    <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">recordsets</span>.<span class="pl-smi">rowsAffected</span>); <span class="pl-c">// same as previous line</span>
 
     <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">request</span>.<span class="pl-smi">parameters</span>.<span class="pl-smi">output_parameter</span>.<span class="pl-c1">value</span>); <span class="pl-c">// output value</span>
 
@@ -903,7 +909,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
 <span class="pl-smi">request</span>.<span class="pl-c1">multiple</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
 
-<span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number; select 2 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>) {
+<span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number; select 2 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">affected</span>) {
     <span class="pl-c">// ... error checks</span>
 
     <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordsets[<span class="pl-c1">0</span>][<span class="pl-c1">0</span>].<span class="pl-smi">number</span>); <span class="pl-c">// return 1</span>
@@ -2017,6 +2023,50 @@ sql.Geometry
 <li>node-tds doesn't support <a href="#json">built-in JSON serialization</a> introduced in SQL Server 2016.</li>
 <li>node-tds doesn't support <a href="#detailed-sql-errors">detailed SQL errors</a>.</li>
 <li>node-tds doesn't support <a href="#affected-rows">Affected Rows</a>
+</li>
+</ul>
+
+<p><a name="twotothree"></a></p>
+
+<h2>
+<a id="2x-to-3x-changes" class="anchor" href="#2x-to-3x-changes" aria-hidden="true"><span class="octicon octicon-link"></span></a>2.x to 3.x changes</h2>
+
+<h3>
+<a id="prepared-statement" class="anchor" href="#prepared-statement" aria-hidden="true"><span class="octicon octicon-link"></span></a>Prepared Statement</h3>
+
+<ul>
+<li>
+<p><a href="#prepared-statement-execute"><code>execute</code></a> method now returns 3 arguments instead of 2.</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">ps</span>.<span class="pl-en">execute</span>(values, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>, <span class="pl-smi">affected</span>) { });</pre></div>
+
+<p>When streaming, <code>done</code> event now returns 2 arguments instead of 1.</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">returnValue</span>, <span class="pl-smi">affected</span>) { });</pre></div>
+</li>
+</ul>
+
+<h3>
+<a id="request" class="anchor" href="#request" aria-hidden="true"><span class="octicon octicon-link"></span></a>Request</h3>
+
+<ul>
+<li>
+<p><a href="#execute"><code>execute</code></a> method now returns 4 arguments instead of 3.</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">ps</span>.<span class="pl-en">execute</span>(values, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>, <span class="pl-smi">returnValue</span>, <span class="pl-smi">affected</span>) { });</pre></div>
+
+<p>When streaming, <code>done</code> event now returns 2 arguments instead of 1.</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">returnValue</span>, <span class="pl-smi">affected</span>) { });</pre></div>
+</li>
+<li>
+<p><a href="#query"><code>query</code></a> method now returns 3 arguments instead of 2.</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">ps</span>.<span class="pl-en">execute</span>(values, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>, <span class="pl-smi">affected</span>) { });</pre></div>
+
+<p>When streaming, <code>done</code> event now returns 1 argument.</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">request</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>done<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">affected</span>) { });</pre></div>
 </li>
 </ul>
 
