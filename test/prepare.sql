@@ -49,6 +49,14 @@ begin
 
 end')
 
+exec('create procedure [dbo].[__test3]
+as
+begin
+	
+	with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for xml auto;
+
+end')
+
 exec('create procedure [dbo].[__test5]
 	@in BINARY(4),
 	@in2 BINARY(4) = NULL,

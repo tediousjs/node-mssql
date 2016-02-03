@@ -893,8 +893,26 @@ global.TESTS =
 				assert.equal recordsets[4].length, 1
 			catch ex
 				return done ex
+			
+			r = new sql.Request
+			r.execute '__test3', (err, recordset) ->
+				if err then return done err
 
-			done()
+				assert.equal recordset[0][0]['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 11893
+				
+				error = null
+				
+				r = new sql.Request
+				r.stream = true
+				r.execute '__test3'
+				r.on 'error', (err) ->
+					error = err
+				
+				r.on 'row', (row) ->
+					assert.equal row['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 11893
+				
+				r.on 'done', ->
+					done error
 
 		p.catch done
 	

@@ -881,7 +881,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							return
 						
 						if isChunkedRecordset
-							if columns[0].metadata.colName is JSON_COLUMN_ID and @connection.config.parseJSON is true
+							if columns[JSON_COLUMN_ID] and @connection.config.parseJSON is true
 								try
 									row = JSON.parse chunksBuffer.join ''
 								catch ex
@@ -896,7 +896,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 							
 							else
 								row = {}
-								row[columns[0].metadata.colName] = chunksBuffer.join ''
+								row[Object.keys(columns)[0]] = chunksBuffer.join ''
 							
 							chunksBuffer = null
 

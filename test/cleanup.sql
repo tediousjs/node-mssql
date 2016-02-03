@@ -4,6 +4,9 @@ if exists (select * from sys.procedures where name = '__test')
 if exists (select * from sys.procedures where name = '__test2')
 	exec('drop procedure [dbo].[__test2]')
 
+if exists (select * from sys.procedures where name = '__test3')
+	exec('drop procedure [dbo].[__test3]')
+
 if exists (select * from sys.procedures where name = '__test5')
 	exec('drop procedure [dbo].[__test5]')
 

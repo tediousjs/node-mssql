@@ -49,8 +49,8 @@ sql.connect("mssql://username:password@localhost/database").then(function() {
 	new sql.Request()
 	.input('input_parameter', sql.Int, value)
     .output('output_parameter', sql.VarChar(50))
-	.execute('procedure_name').then(function(recordset) {
-		console.dir(recordset);
+	.execute('procedure_name').then(function(recordsets) {
+		console.dir(recordsets);
 	}).catch(function(err) {
 		// ... execute error checks
 	});
@@ -167,8 +167,8 @@ sql.connect(config).then(function() {
 	var request = new sql.Request();
 	request.input('input_parameter', sql.Int, value);
     request.output('output_parameter', sql.VarChar(50));
-	request.execute('procedure_name').then(function(recordset) {
-		console.dir(recordset);
+	request.execute('procedure_name').then(function(recordsets) {
+		console.dir(recordsets);
 	}).catch(function(err) {
 		// ... error checks
 	});
