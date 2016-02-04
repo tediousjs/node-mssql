@@ -2,9 +2,14 @@ v3.1.0 (not yet released)
 -------------------
 [new] Added support for Variant data type
 
+v3.0.1 (2016-02-04)
+-------------------
+[fix] Fix error causing app to crash when parsing json/xml from stored procedure
+[fix] Correctly check connection health after socket error
+
 v3.0.0 (2016-01-08)
 -------------------
-[new] Version bump because of breakinch change introduced in release 2.6.
+[new] Version bump because of breakinch change introduced in release 2.6
 
 v2.6.2 (2015-12-25) - unpublished from npm
 -------------------
