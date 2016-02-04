@@ -147,7 +147,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						callback null, c
 				
 				validate: (c) ->
-					c?
+					c? and not c.hasError
 				
 				destroy: (c) ->
 					c?.close()
@@ -223,11 +223,13 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					
 					done = (err, rowCount) =>
 						if err
+							if 'string' is typeof err.sqlstate and err.sqlstate.toLowerCase() is '08s01'
+								connection.hasError = true
+		
 							e = RequestError err
-							if (/^\[Microsoft\]\[SQL Server Native Client 11\.0\]\[SQL Server\](.*)$/).exec err.message
+							if (/^\[Microsoft\]\[SQL Server Native Client 11\.0\](?:\[SQL Server\])?([\s\S]*)$/).exec err.message
 								e.message = RegExp.$1
 							
-							e.number = err.code
 							e.code = 'EREQUEST'
 							
 							if @verbose and not @nested
@@ -389,11 +391,13 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						@rowsAffected += count if count > 0
 			
 					req.once 'error', (err) =>
+						if 'string' is typeof err.sqlstate and err.sqlstate.toLowerCase() is '08s01'
+							connection.hasError = true
+
 						e = RequestError err
-						if (/^\[Microsoft\]\[SQL Server Native Client 11\.0\]\[SQL Server\](.*)$/).exec err.message
+						if (/^\[Microsoft\]\[SQL Server Native Client 11\.0\](?:\[SQL Server\])?([\s\S]*)$/).exec err.message
 							e.message = RegExp.$1
 						
-						e.number = err.code
 						e.code = 'EREQUEST'
 						
 						if @verbose and not @nested

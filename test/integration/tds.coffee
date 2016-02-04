@@ -226,12 +226,19 @@ describe 'node-tds', ->
 				cfg = config()
 				cfg.pool = max: 1
 				connection2 = new sql.Connection cfg, done
+		
+		beforeEach (done) ->
+			global.MODE = 'query'
+			done()
 			
 		it 'max 10', (done) ->
 			TESTS['max 10'] done, connection1
 	
 		it 'max 1', (done) ->
 			TESTS['max 1'] done, connection2
+		
+		it 'interruption', (done) ->
+			TESTS['interruption'] done, connection1, connection2
 		
 		after: ->
 			connection1.close()

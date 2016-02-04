@@ -239,13 +239,17 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						callback null, c
 					
 					c.on 'error', (err) =>
+						if err.code is 'ESOCKET'
+							c.hasError = true
+							return
+
 						@emit 'error', err
 					
 					if config.debug
 						c.on 'debug', (msg) => @_debug msg
 
 				validate: (c) ->
-					c? and not c.closed
+					c? and not c.closed and not c.hasError
 				
 				destroy: (c) ->
 					c?.close()

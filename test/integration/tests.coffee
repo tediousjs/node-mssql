@@ -1041,6 +1041,34 @@ global.TESTS =
 		assert.equal connection.pool.availableObjectsCount(), 0
 		assert.equal connection.pool.waitingClientsCount(), 2
 		assert.equal connection.pool.inUseObjectsCount(), 1
+
+	'interruption': (done, connection1, connection2) ->
+		i = 0
+		#connection2.on 'error', (err) ->
+		go = ->
+			if i++ >= 1
+				return done new Error "Stack overflow."
+
+			r3 = new sql.Request connection2
+			r3[MODE] 'select 1', (err, recordset) ->
+				if err then return done err
+
+				assert.equal connection2.pool.getPoolSize(), 1
+				assert.equal connection2.pool.availableObjectsCount(), 1
+				assert.equal connection2.pool.waitingClientsCount(), 0
+				assert.equal connection2.pool.inUseObjectsCount(), 0
+				
+				done()
+		
+		r1 = new sql.Request connection2
+		r1[MODE] 'select @@spid as session', (err, recordset) ->
+			if err then return done err
+
+			r2 = new sql.Request connection1
+			r2[MODE] "kill #{recordset[0].session}", (err, recordset) ->
+				if err then return done err
+				
+				setTimeout go, 1000
 	
 	'concurrent connections': (done, driver) ->
 		#return done null
