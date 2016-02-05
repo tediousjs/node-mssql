@@ -2,7 +2,7 @@
 
 An easy-to-use MSSQL database connector for Node.js.
 
-[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Package Quality][quality-image]][quality-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 **node-mssql**
 - Has unified interface for multiple TDS drivers.
@@ -59,7 +59,7 @@ sql.connect("mssql://username:password@localhost/database").then(function() {
 });
 ```
 
-If you're on Windows Azure, add `?encrypt=true` to you connection string. See [docs](#cfg) to learn more.
+If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#cfg) to learn more.
 
 ## Documentation
 
@@ -1709,7 +1709,7 @@ Output for the example above could look similar to this.
 <a name="license" />
 ## License
 
-Copyright (c) 2013-2015 Patrik Simek
+Copyright (c) 2013-2016 Patrik Simek
 
 The MIT License
 
@@ -1723,6 +1723,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [npm-url]: https://www.npmjs.com/package/mssql
 [downloads-image]: https://img.shields.io/npm/dm/mssql.svg?style=flat-square
 [downloads-url]: https://www.npmjs.com/package/mssql
+[quality-image]: http://npm.packagequality.com/badge/mssql.png
+[quality-url]: http://packagequality.com/#?package=mssql
 [david-image]: https://img.shields.io/david/patriksimek/node-mssql.svg?style=flat-square
 [david-url]: https://david-dm.org/patriksimek/node-mssql
 [travis-image]: https://img.shields.io/travis/patriksimek/node-mssql/master.svg?style=flat-square&label=unit
