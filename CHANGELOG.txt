@@ -1,6 +1,10 @@
-v3.1.0 (not yet released)
+v3.2.0 (not yet released)
 -------------------
 [new] Added support for Variant data type
+
+v3.1.0 (2016-02-13)
+-------------------
+[new] Added support for creating columns with primary keys in TVP Tables
 
 v3.0.1 (2016-02-04)
 -------------------
