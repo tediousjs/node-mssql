@@ -62,6 +62,8 @@ describe 'Unit', ->
 		t = new sql.Table 'MyTable'
 		t.columns.add 'a', sql.Int, nullable: false
 		t.columns.add 'b', sql.VarChar(50), nullable: true
+		assert.strictEqual t.declare(), 'create table [MyTable] ([a] int not null, [b] varchar (50) null)'
+		
 		t.rows.add 777, 'asdf'
 		t.rows.add 453
 		t.rows.add 4535434
@@ -116,11 +118,24 @@ describe 'Unit', ->
 		rs.columns =
 			'JSON_F52E2B61-18A1-11d1-B105-00805F49916B':
 				name: 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B'
+				type: sql.NVarChar
 		
-		t = sql.Table.fromRecordset rs
+		t = sql.Table.fromRecordset rs, 'tablename'
+		assert.strictEqual t.declare(), 'create table [tablename] ([JSON_F52E2B61-18A1-11d1-B105-00805F49916B] nvarchar (MAX))'
 		
 		assert.strictEqual t.columns.length, 1
 		assert.strictEqual t.rows.length, 1
 		assert.deepEqual t.rows[0], ['{"a":{"b":{"c":1,"d":2},"x":3,"y":4}}']
+		
+		t = new sql.Table 'MyTable'
+		t.columns.add 'a', sql.Int, primary: true
+		t.columns.add 'b', sql.TinyInt, nullable: true
+		assert.strictEqual t.declare(), 'create table [MyTable] ([a] int primary key, [b] tinyint null)'
+		
+		t = new sql.Table '#mytemptable'
+		t.columns.add 'a', sql.Int, primary: true
+		t.columns.add 'b', sql.TinyInt, nullable: true
+		t.columns.add 'c', sql.TinyInt, nullable: false, primary: true
+		assert.strictEqual t.declare(), 'create table [#mytemptable] ([a] int, [b] tinyint null, [c] tinyint not null, constraint PK_mytemptable primary key (a, c))'
 		
 		done()

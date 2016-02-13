@@ -69,6 +69,7 @@ class Table
 				if column instanceof Function then column = column()
 				column.name = name
 				column.nullable = options.nullable
+				column.primary = options.primary
 				@push column
 				
 		Object.defineProperty @rows, "add",
@@ -88,10 +89,25 @@ class Table
 		@
 	
 	declare: ->
-		"create table #{@path} (#{("[#{col.name}] #{declare col.type, col}#{if col.nullable is true then " null" else if col.nullable is false then " not null" else ""}" for col in @columns).join ', '})"
+		pkey = @columns.filter((col) -> col.primary is true).map (col) -> col.name
+		cols = @columns.map (col) ->
+			def = ["[#{col.name}] #{declare col.type, col}"]
+			
+			if col.nullable is true
+				def.push "null"
+			
+			else if col.nullable is false
+				def.push "not null"
+			
+			if col.primary is true and pkey.length is 1
+				def.push "primary key"
+			
+			def.join ' '
+		
+		"create table #{@path} (#{cols.join ', '}#{if pkey.length > 1 then ", constraint PK_#{if @temporary then @name.substr(1) else @name} primary key (#{pkey.join ', '})" else ""})"
 
-	@fromRecordset: (recordset) ->
-		t = new @
+	@fromRecordset: (recordset, name) ->
+		t = new @ name
 		
 		for name, col of recordset.columns
 			t.columns.add name,

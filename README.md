@@ -786,7 +786,7 @@ __Example__
 ```javascript
 var table = new sql.Table('table_name'); // or temporary table, e.g. #temptable
 table.create = true;
-table.columns.add('a', sql.Int, {nullable: true});
+table.columns.add('a', sql.Int, {nullable: true, primary: true});
 table.columns.add('b', sql.VarChar(50), {nullable: false});
 table.rows.add(777, 'test');
 
@@ -798,7 +798,7 @@ request.bulk(table, function(err, rowCount) {
 
 **IMPORTANT**: Always indicate whether the column is nullable or not!
 
-**TIP**: If you set `table.create` to `true`, module will check if the table exists before it start sending data. If it doesn't, it will automatically create it.
+**TIP**: If you set `table.create` to `true`, module will check if the table exists before it start sending data. If it doesn't, it will automatically create it. You can specify primary key columns by setting `primary: true` to column's options. Primary key constraint on multiple columns is supported.
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
 
