@@ -15,7 +15,7 @@ An easy-to-use MSSQL database connector for Node.js.
 - Is stable and tested in production environment.
 - Is well documented.
 
-There is also [co](https://github.com/visionmedia/co) wrapper available - [co-mssql](https://github.com/patriksimek/co-mssql).
+There is also [co](https://github.com/tj/co) wrapper available - [co-mssql](https://github.com/patriksimek/co-mssql).
 If you're looking for session store for connect/express, visit [connect-mssql](https://github.com/patriksimek/connect-mssql).
 
 Supported TDS drivers:
@@ -430,7 +430,7 @@ Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database=
 <a name="cfg-msnodesql" />
 ### Microsoft Driver for Node.js for SQL Server
 
-**Requires Node.js 0.6.x/0.8.x/0.10.x. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-binary).
+**Requires Node.js 0.6.x/0.8.x/0.10.x. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-unofficial).
 
 **Extra options:**
 
@@ -1635,7 +1635,7 @@ Output for the example above could look similar to this.
 ### msnodesql
 
 - msnodesql has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
-- msnodesql contains bug in DateTimeOffset ([reported](https://github.com/WindowsAzure/node-sqlserver/issues/160))
+- msnodesql contains bug in DateTimeOffset ([reported](https://github.com/Azure/node-sqlserver/issues/160))
 - msnodesql doesn't support [Bulk](#bulk) load.
 - msnodesql doesn't support [TVP](#tvp) data type.
 - msnodesql doesn't support Variant data type.
