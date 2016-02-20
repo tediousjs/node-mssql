@@ -1122,6 +1122,10 @@ ps.prepare('select @param as value', function(err) {
 
         console.log(recordset[0].value); // return 12345
         console.log(affected); // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
+        
+        ps.unprepare(function(err) {
+            // ... error checks
+        });
     });
 });
 ```
@@ -1140,6 +1144,10 @@ ps.prepare('select @param as value', function(err) {
 
         console.log(recordsets[0][0].value); // return 12345
         console.log(affected); // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
+        
+        ps.unprepare(function(err) {
+            // ... error checks
+        });
     });
 });
 ```
@@ -1171,6 +1179,10 @@ ps.prepare('select @param as value', function(err) {
     	// Always emitted as the last one
     	
         console.log(affected); // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
+        
+        ps.unprepare(function(err) {
+            // ... error checks
+        });
     });
 });
 ```
