@@ -29,11 +29,11 @@
       <div class="inner clearfix">
         <section id="main-content">
           <h1>
-<a id="node-mssql" class="anchor" href="#node-mssql" aria-hidden="true"><span class="octicon octicon-link"></span></a>node-mssql</h1>
+<a id="node-mssql" class="anchor" href="#node-mssql" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>node-mssql</h1>
 
 <p>An easy-to-use MSSQL database connector for Node.js.</p>
 
-<p><a href="https://www.npmjs.com/package/mssql"><img src="https://img.shields.io/npm/v/mssql.svg?style=flat-square" alt="NPM Version"></a> <a href="https://www.npmjs.com/package/mssql"><img src="https://img.shields.io/npm/dm/mssql.svg?style=flat-square" alt="NPM Downloads"></a> <a href="https://travis-ci.org/patriksimek/node-mssql"><img src="https://img.shields.io/travis/patriksimek/node-mssql/master.svg?style=flat-square&amp;label=unit" alt="Travis CI"></a> <a href="https://ci.appveyor.com/project/patriksimek/node-mssql"><img src="https://img.shields.io/appveyor/ci/patriksimek/node-mssql/master.svg?style=flat-square&amp;label=integration" alt="Appveyor CI"></a> <a href="https://gitter.im/patriksimek/node-mssql?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Join the chat at https://gitter.im/patriksimek/node-mssql"></a></p>
+<p><a href="https://www.npmjs.com/package/mssql"><img src="https://img.shields.io/npm/v/mssql.svg?style=flat-square" alt="NPM Version"></a> <a href="https://www.npmjs.com/package/mssql"><img src="https://img.shields.io/npm/dm/mssql.svg?style=flat-square" alt="NPM Downloads"></a> <a href="http://packagequality.com/#?package=mssql"><img src="http://npm.packagequality.com/shield/mssql.svg?style=flat-square" alt="Package Quality"></a> <a href="https://travis-ci.org/patriksimek/node-mssql"><img src="https://img.shields.io/travis/patriksimek/node-mssql/master.svg?style=flat-square&amp;label=unit" alt="Travis CI"></a> <a href="https://ci.appveyor.com/project/patriksimek/node-mssql"><img src="https://img.shields.io/appveyor/ci/patriksimek/node-mssql/master.svg?style=flat-square&amp;label=integration" alt="Appveyor CI"></a> <a href="https://gitter.im/patriksimek/node-mssql?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Join the chat at https://gitter.im/patriksimek/node-mssql"></a></p>
 
 <p><strong>node-mssql</strong></p>
 
@@ -49,7 +49,7 @@
 <li>Is well documented.</li>
 </ul>
 
-<p>There is also <a href="https://github.com/visionmedia/co">co</a> wrapper available - <a href="https://github.com/patriksimek/co-mssql">co-mssql</a>.
+<p>There is also <a href="https://github.com/tj/co">co</a> wrapper available - <a href="https://github.com/patriksimek/co-mssql">co-mssql</a>.
 If you're looking for session store for connect/express, visit <a href="https://github.com/patriksimek/connect-mssql">connect-mssql</a>.</p>
 
 <p>Supported TDS drivers:</p>
@@ -68,13 +68,13 @@ If you're looking for session store for connect/express, visit <a href="https://
 <p>node-mssql uses Tedious as the default driver.</p>
 
 <h2>
-<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h2>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Installation</h2>
 
 <pre><code>npm install mssql
 </code></pre>
 
 <h2>
-<a id="quick-example" class="anchor" href="#quick-example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quick Example</h2>
+<a id="quick-example" class="anchor" href="#quick-example" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Quick Example</h2>
 
 <div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
 
@@ -82,7 +82,7 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-c">// Query</span>
 
     <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>().<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select * from mytable<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
-        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+        <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordset);
     }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// ... query error checks</span>
     });
@@ -92,8 +92,8 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>()
     .<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value)
     .<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>))
-    .<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
-        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+    .<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordsets</span>) {
+        <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordsets);
     }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// ... execute error checks</span>
     });
@@ -101,17 +101,17 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-c">// ... connect error checks</span>
 });</pre></div>
 
-<p>If you're on Windows Azure, add <code>?encrypt=true</code> to you connection string. See <a href="#cfg">docs</a> to learn more.</p>
+<p>If you're on Windows Azure, add <code>?encrypt=true</code> to your connection string. See <a href="#cfg">docs</a> to learn more.</p>
 
 <h2>
-<a id="documentation" class="anchor" href="#documentation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Documentation</h2>
+<a id="documentation" class="anchor" href="#documentation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Documentation</h2>
 
 <ul>
 <li><a href="#twotothree">2.x to 3.x changes</a></li>
 </ul>
 
 <h3>
-<a id="examples" class="anchor" href="#examples" aria-hidden="true"><span class="octicon octicon-link"></span></a>Examples</h3>
+<a id="examples" class="anchor" href="#examples" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Examples</h3>
 
 <ul>
 <li><a href="#promises">Promises</a></li>
@@ -121,7 +121,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 </ul>
 
 <h3>
-<a id="configuration" class="anchor" href="#configuration" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configuration</h3>
+<a id="configuration" class="anchor" href="#configuration" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Configuration</h3>
 
 <ul>
 <li><a href="#cfg-general">General</a></li>
@@ -129,7 +129,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 </ul>
 
 <h3>
-<a id="drivers" class="anchor" href="#drivers" aria-hidden="true"><span class="octicon octicon-link"></span></a>Drivers</h3>
+<a id="drivers" class="anchor" href="#drivers" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Drivers</h3>
 
 <ul>
 <li><a href="#cfg-tedious">Tedious</a></li>
@@ -139,7 +139,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 </ul>
 
 <h3>
-<a id="connections" class="anchor" href="#connections" aria-hidden="true"><span class="octicon octicon-link"></span></a>Connections</h3>
+<a id="connections" class="anchor" href="#connections" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Connections</h3>
 
 <ul>
 <li><a href="#connection">Connection</a></li>
@@ -148,7 +148,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 </ul>
 
 <h3>
-<a id="requests" class="anchor" href="#requests" aria-hidden="true"><span class="octicon octicon-link"></span></a>Requests</h3>
+<a id="requests" class="anchor" href="#requests" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Requests</h3>
 
 <ul>
 <li><a href="#request">Request</a></li>
@@ -163,7 +163,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 </ul>
 
 <h3>
-<a id="transactions" class="anchor" href="#transactions" aria-hidden="true"><span class="octicon octicon-link"></span></a>Transactions</h3>
+<a id="transactions" class="anchor" href="#transactions" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Transactions</h3>
 
 <ul>
 <li><a href="#transaction">Transaction</a></li>
@@ -173,7 +173,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 </ul>
 
 <h3>
-<a id="prepared-statements" class="anchor" href="#prepared-statements" aria-hidden="true"><span class="octicon octicon-link"></span></a>Prepared Statements</h3>
+<a id="prepared-statements" class="anchor" href="#prepared-statements" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Prepared Statements</h3>
 
 <ul>
 <li><a href="#prepared-statement">PreparedStatement</a></li>
@@ -185,7 +185,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 </ul>
 
 <h3>
-<a id="other" class="anchor" href="#other" aria-hidden="true"><span class="octicon octicon-link"></span></a>Other</h3>
+<a id="other" class="anchor" href="#other" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Other</h3>
 
 <ul>
 <li><a href="#cli">CLI</a></li>
@@ -203,12 +203,12 @@ If you're looking for session store for connect/express, visit <a href="https://
 </ul>
 
 <h2>
-<a id="examples-1" class="anchor" href="#examples-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Examples</h2>
+<a id="examples-1" class="anchor" href="#examples-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Examples</h2>
 
 <p><a name="promises"></a></p>
 
 <h3>
-<a id="promises" class="anchor" href="#promises" aria-hidden="true"><span class="octicon octicon-link"></span></a>Promises</h3>
+<a id="promises" class="anchor" href="#promises" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Promises</h3>
 
 <div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
 
@@ -228,7 +228,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 
     <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
     <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select * from mytable<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
-        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+        <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordset);
     }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// ... error checks</span>
     });
@@ -238,8 +238,8 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
     <span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value);
     <span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));
-    <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
-        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+    <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordsets</span>) {
+        <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordsets);
     }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// ... error checks</span>
     });
@@ -252,7 +252,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 <p><a name="callbacks"></a></p>
 
 <h3>
-<a id="nested-callbacks" class="anchor" href="#nested-callbacks" aria-hidden="true"><span class="octicon octicon-link"></span></a>Nested callbacks</h3>
+<a id="nested-callbacks" class="anchor" href="#nested-callbacks" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Nested callbacks</h3>
 
 <div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
 
@@ -276,7 +276,7 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
         <span class="pl-c">// ... error checks</span>
 
-        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+        <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordset);
     });
 
     <span class="pl-c">// Stored Procedure</span>
@@ -287,7 +287,7 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
         <span class="pl-c">// ... error checks</span>
 
-        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordsets);
+        <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordsets);
     });
 });
 
@@ -298,7 +298,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 <p><a name="streaming"></a></p>
 
 <h3>
-<a id="streaming" class="anchor" href="#streaming" aria-hidden="true"><span class="octicon octicon-link"></span></a>Streaming</h3>
+<a id="streaming" class="anchor" href="#streaming" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Streaming</h3>
 
 <p>If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.</p>
 
@@ -347,7 +347,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 <p><a name="multiple-connections"></a></p>
 
 <h2>
-<a id="multiple-connections" class="anchor" href="#multiple-connections" aria-hidden="true"><span class="octicon octicon-link"></span></a>Multiple Connections</h2>
+<a id="multiple-connections" class="anchor" href="#multiple-connections" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Multiple Connections</h2>
 
 <div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> sql <span class="pl-k">=</span> <span class="pl-c1">require</span>(<span class="pl-s"><span class="pl-pds">'</span>mssql<span class="pl-pds">'</span></span>);
 
@@ -371,7 +371,7 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
         <span class="pl-c">// ... error checks</span>
 
-        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+        <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordset);
     });
 
 });
@@ -391,7 +391,7 @@ If you're looking for session store for connect/express, visit <a href="https://
     <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
         <span class="pl-c">// ... error checks</span>
 
-        <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordsets);
+        <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordsets);
     });
 });
 
@@ -402,7 +402,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 <p><a name="cfg"></a></p>
 
 <h2>
-<a id="configuration-1" class="anchor" href="#configuration-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Configuration</h2>
+<a id="configuration-1" class="anchor" href="#configuration-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Configuration</h2>
 
 <div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> config <span class="pl-k">=</span> {
     user<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>...<span class="pl-pds">'</span></span>,
@@ -419,7 +419,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 <p><a name="cfg-general"></a></p>
 
 <h3>
-<a id="general-same-for-all-drivers" class="anchor" href="#general-same-for-all-drivers" aria-hidden="true"><span class="octicon octicon-link"></span></a>General (same for all drivers)</h3>
+<a id="general-same-for-all-drivers" class="anchor" href="#general-same-for-all-drivers" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>General (same for all drivers)</h3>
 
 <ul>
 <li>
@@ -455,19 +455,19 @@ If you're looking for session store for connect/express, visit <a href="https://
 <p><a name="cfg-formats"></a></p>
 
 <h3>
-<a id="formats" class="anchor" href="#formats" aria-hidden="true"><span class="octicon octicon-link"></span></a>Formats</h3>
+<a id="formats" class="anchor" href="#formats" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Formats</h3>
 
 <p>In addition to configuration object there is an option to pass config as a connection string. Two formats of connection string are supported.</p>
 
 <h5>
-<a id="classic-connection-string" class="anchor" href="#classic-connection-string" aria-hidden="true"><span class="octicon octicon-link"></span></a>Classic Connection String</h5>
+<a id="classic-connection-string" class="anchor" href="#classic-connection-string" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Classic Connection String</h5>
 
 <pre><code>Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
 Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
 </code></pre>
 
 <h5>
-<a id="connection-string-uri" class="anchor" href="#connection-string-uri" aria-hidden="true"><span class="octicon octicon-link"></span></a>Connection String URI</h5>
+<a id="connection-string-uri" class="anchor" href="#connection-string-uri" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Connection String URI</h5>
 
 <pre><code>mssql://username:password@localhost:1433/database?encrypt=true
 mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DOMAIN&amp;driver=msnodesqlv8
@@ -478,12 +478,12 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p>2.5</p>
 
 <h2>
-<a id="drivers-1" class="anchor" href="#drivers-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Drivers</h2>
+<a id="drivers-1" class="anchor" href="#drivers-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Drivers</h2>
 
 <p><a name="cfg-tedious"></a></p>
 
 <h3>
-<a id="tedious" class="anchor" href="#tedious" aria-hidden="true"><span class="octicon octicon-link"></span></a>Tedious</h3>
+<a id="tedious" class="anchor" href="#tedious" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Tedious</h3>
 
 <p>Default driver, actively maintained and production ready. Platform independent, runs everywhere Node.js runs.</p>
 
@@ -509,7 +509,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="cfg-msnodesqlv8"></a></p>
 
 <h3>
-<a id="microsoft--contributors-node-v8-driver-for-nodejs-for-sql-server" class="anchor" href="#microsoft--contributors-node-v8-driver-for-nodejs-for-sql-server" aria-hidden="true"><span class="octicon octicon-link"></span></a>Microsoft / Contributors Node V8 Driver for Node.js for SQL Server</h3>
+<a id="microsoft--contributors-node-v8-driver-for-nodejs-for-sql-server" class="anchor" href="#microsoft--contributors-node-v8-driver-for-nodejs-for-sql-server" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Microsoft / Contributors Node V8 Driver for Node.js for SQL Server</h3>
 
 <p><strong>Requires Node.js 0.12.x/4.2.0. Windows only.</strong> This driver is not part of the default package and must be installed separately by <code>npm install msnodesqlv8</code>.</p>
 
@@ -539,9 +539,9 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="cfg-msnodesql"></a></p>
 
 <h3>
-<a id="microsoft-driver-for-nodejs-for-sql-server" class="anchor" href="#microsoft-driver-for-nodejs-for-sql-server" aria-hidden="true"><span class="octicon octicon-link"></span></a>Microsoft Driver for Node.js for SQL Server</h3>
+<a id="microsoft-driver-for-nodejs-for-sql-server" class="anchor" href="#microsoft-driver-for-nodejs-for-sql-server" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Microsoft Driver for Node.js for SQL Server</h3>
 
-<p><strong>Requires Node.js 0.6.x/0.8.x/0.10.x. Windows only.</strong> This driver is not part of the default package and must be installed separately by <code>npm install msnodesql</code>. If you are looking for compiled binaries, see <a href="https://github.com/jorgeazevedo/node-sqlserver-binary">node-sqlserver-binary</a>.</p>
+<p><strong>Requires Node.js 0.6.x/0.8.x/0.10.x. Windows only.</strong> This driver is not part of the default package and must be installed separately by <code>npm install msnodesql</code>. If you are looking for compiled binaries, see <a href="https://github.com/jorgeazevedo/node-sqlserver-unofficial">node-sqlserver-binary</a>.</p>
 
 <p><strong>Extra options:</strong></p>
 
@@ -569,7 +569,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="cfg-node-tds"></a></p>
 
 <h3>
-<a id="node-tds" class="anchor" href="#node-tds" aria-hidden="true"><span class="octicon octicon-link"></span></a>node-tds</h3>
+<a id="node-tds" class="anchor" href="#node-tds" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>node-tds</h3>
 
 <p><strong>Legacy support, don't use this driver for new projects.</strong> This driver is not part of the default package and must be installed separately by <code>npm install tds</code>.</p>
 
@@ -578,7 +578,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="connection"></a></p>
 
 <h2>
-<a id="connections-1" class="anchor" href="#connections-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Connections</h2>
+<a id="connections-1" class="anchor" href="#connections-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Connections</h2>
 
 <p>Internally, each <code>Connection</code> instance is a separate pool of TDS connections. Once you create a new <code>Request</code>/<code>Transaction</code>/<code>Prepared Statement</code>, a new TDS connection is acquired from the pool and reserved for desired action. Once the action is complete, connection is released back to the pool. Connection health check is built-in so once the dead connection is discovered, it is immediately replaced with a new one.</p>
 
@@ -593,7 +593,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 </ul>
 
 <h3>
-<a id="events" class="anchor" href="#events" aria-hidden="true"><span class="octicon octicon-link"></span></a>Events</h3>
+<a id="events" class="anchor" href="#events" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Events</h3>
 
 <ul>
 <li>
@@ -609,7 +609,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="connect"></a></p>
 
 <h3>
-<a id="connectcallback" class="anchor" href="#connectcallback" aria-hidden="true"><span class="octicon octicon-link"></span></a>connect([callback])</h3>
+<a id="connectcallback" class="anchor" href="#connectcallback" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>connect([callback])</h3>
 
 <p>Create a new connection pool with one active connection. This one initial connection serves as a probe to find out whether the configuration is valid.</p>
 
@@ -649,7 +649,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="close"></a></p>
 
 <h3>
-<a id="close" class="anchor" href="#close" aria-hidden="true"><span class="octicon octicon-link"></span></a>close()</h3>
+<a id="close" class="anchor" href="#close" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>close()</h3>
 
 <p>Close all active connections in the pool.</p>
 
@@ -660,14 +660,14 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="request"></a></p>
 
 <h2>
-<a id="requests-1" class="anchor" href="#requests-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Requests</h2>
+<a id="requests-1" class="anchor" href="#requests-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Requests</h2>
 
 <div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>(<span class="pl-c">/* [connection] */</span>);</pre></div>
 
 <p>If you omit connection argument, global connection is used instead.</p>
 
 <h3>
-<a id="events-1" class="anchor" href="#events-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Events</h3>
+<a id="events-1" class="anchor" href="#events-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Events</h3>
 
 <ul>
 <li>
@@ -685,7 +685,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="execute"></a></p>
 
 <h3>
-<a id="executeprocedure-callback" class="anchor" href="#executeprocedure-callback" aria-hidden="true"><span class="octicon octicon-link"></span></a>execute(procedure, [callback])</h3>
+<a id="executeprocedure-callback" class="anchor" href="#executeprocedure-callback" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>execute(procedure, [callback])</h3>
 
 <p>Call a stored procedure.</p>
 
@@ -737,7 +737,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="input"></a></p>
 
 <h3>
-<a id="inputname-type-value" class="anchor" href="#inputname-type-value" aria-hidden="true"><span class="octicon octicon-link"></span></a>input(name, [type], value)</h3>
+<a id="inputname-type-value" class="anchor" href="#inputname-type-value" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>input(name, [type], value)</h3>
 
 <p>Add an input parameter to the request.</p>
 
@@ -802,7 +802,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="output"></a></p>
 
 <h3>
-<a id="outputname-type-value" class="anchor" href="#outputname-type-value" aria-hidden="true"><span class="octicon octicon-link"></span></a>output(name, type, [value])</h3>
+<a id="outputname-type-value" class="anchor" href="#outputname-type-value" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>output(name, type, [value])</h3>
 
 <p>Add an output parameter to the request.</p>
 
@@ -834,7 +834,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="pipe"></a></p>
 
 <h3>
-<a id="pipestream" class="anchor" href="#pipestream" aria-hidden="true"><span class="octicon octicon-link"></span></a>pipe(stream)</h3>
+<a id="pipestream" class="anchor" href="#pipestream" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>pipe(stream)</h3>
 
 <p>Sets request to <code>stream</code> mode and pulls all rows from all recordsets to a given stream.</p>
 
@@ -866,7 +866,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="query"></a></p>
 
 <h3>
-<a id="querycommand-callback" class="anchor" href="#querycommand-callback" aria-hidden="true"><span class="octicon octicon-link"></span></a>query(command, [callback])</h3>
+<a id="querycommand-callback" class="anchor" href="#querycommand-callback" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>query(command, [callback])</h3>
 
 <p>Execute the SQL command. To execute commands like <code>create procedure</code> or if you plan to work with local temporary tables, use <a href="#batch">batch</a> instead.</p>
 
@@ -923,7 +923,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="batch"></a></p>
 
 <h3>
-<a id="batchbatch-callback" class="anchor" href="#batchbatch-callback" aria-hidden="true"><span class="octicon octicon-link"></span></a>batch(batch, [callback])</h3>
+<a id="batchbatch-callback" class="anchor" href="#batchbatch-callback" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>batch(batch, [callback])</h3>
 
 <p>Execute the SQL command. Unlike <a href="#query">query</a>, it doesn't use <code>sp_executesql</code>, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like <code>create procedure</code> which can't be executed with <a href="#query">query</a> or if you're executing statements longer than 4000 chars on SQL Server 2000. Also you should use this if you're plan to work with local temporary tables (<a href="http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx">more information here</a>).</p>
 
@@ -966,7 +966,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="bulk"></a></p>
 
 <h3>
-<a id="bulktable-callback" class="anchor" href="#bulktable-callback" aria-hidden="true"><span class="octicon octicon-link"></span></a>bulk(table, [callback])</h3>
+<a id="bulktable-callback" class="anchor" href="#bulktable-callback" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>bulk(table, [callback])</h3>
 
 <p>Perform a bulk insert.</p>
 
@@ -983,7 +983,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 
 <div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> table <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Table</span>(<span class="pl-s"><span class="pl-pds">'</span>table_name<span class="pl-pds">'</span></span>); <span class="pl-c">// or temporary table, e.g. #temptable</span>
 <span class="pl-smi">table</span>.<span class="pl-smi">create</span> <span class="pl-k">=</span> <span class="pl-c1">true</span>;
-<span class="pl-smi">table</span>.<span class="pl-smi">columns</span>.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>a<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, {nullable<span class="pl-k">:</span> <span class="pl-c1">true</span>});
+<span class="pl-smi">table</span>.<span class="pl-smi">columns</span>.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>a<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, {nullable<span class="pl-k">:</span> <span class="pl-c1">true</span>, primary<span class="pl-k">:</span> <span class="pl-c1">true</span>});
 <span class="pl-smi">table</span>.<span class="pl-smi">columns</span>.<span class="pl-c1">add</span>(<span class="pl-s"><span class="pl-pds">'</span>b<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>), {nullable<span class="pl-k">:</span> <span class="pl-c1">false</span>});
 <span class="pl-smi">table</span>.<span class="pl-c1">rows</span>.<span class="pl-c1">add</span>(<span class="pl-c1">777</span>, <span class="pl-s"><span class="pl-pds">'</span>test<span class="pl-pds">'</span></span>);
 
@@ -994,7 +994,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 
 <p><strong>IMPORTANT</strong>: Always indicate whether the column is nullable or not!</p>
 
-<p><strong>TIP</strong>: If you set <code>table.create</code> to <code>true</code>, module will check if the table exists before it start sending data. If it doesn't, it will automatically create it.</p>
+<p><strong>TIP</strong>: If you set <code>table.create</code> to <code>true</code>, module will check if the table exists before it start sending data. If it doesn't, it will automatically create it. You can specify primary key columns by setting <code>primary: true</code> to column's options. Primary key constraint on multiple columns is supported.</p>
 
 <p><strong>TIP</strong>: You can also create Table variable from any recordset with <code>recordset.toTable()</code>.</p>
 
@@ -1018,7 +1018,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="cancel"></a></p>
 
 <h3>
-<a id="cancel" class="anchor" href="#cancel" aria-hidden="true"><span class="octicon octicon-link"></span></a>cancel()</h3>
+<a id="cancel" class="anchor" href="#cancel" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>cancel()</h3>
 
 <p>Cancel currently executing request. Return <code>true</code> if cancellation packet was send successfully.</p>
 
@@ -1038,7 +1038,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="transaction"></a></p>
 
 <h2>
-<a id="transactions-1" class="anchor" href="#transactions-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Transactions</h2>
+<a id="transactions-1" class="anchor" href="#transactions-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Transactions</h2>
 
 <p><strong>IMPORTANT:</strong> always use <code>Transaction</code> class to create transactions - it ensures that all your requests are executed on one connection. Once you call <code>begin</code>, a single connection is acquired from the connection pool and all subsequent requests (initialized with the <code>Transaction</code> object) are executed exclusively on this connection. Transaction also contains a queue to make sure your requests are executed in series. After you call <code>commit</code> or <code>rollback</code>, connection is then released back to the connection pool.</p>
 
@@ -1101,7 +1101,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 });</pre></div>
 
 <h3>
-<a id="events-2" class="anchor" href="#events-2" aria-hidden="true"><span class="octicon octicon-link"></span></a>Events</h3>
+<a id="events-2" class="anchor" href="#events-2" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Events</h3>
 
 <ul>
 <li>
@@ -1117,7 +1117,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="begin"></a></p>
 
 <h3>
-<a id="beginisolationlevel-callback" class="anchor" href="#beginisolationlevel-callback" aria-hidden="true"><span class="octicon octicon-link"></span></a>begin([isolationLevel], [callback])</h3>
+<a id="beginisolationlevel-callback" class="anchor" href="#beginisolationlevel-callback" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>begin([isolationLevel], [callback])</h3>
 
 <p>Begin a transaction.</p>
 
@@ -1149,7 +1149,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="commit"></a></p>
 
 <h3>
-<a id="commitcallback" class="anchor" href="#commitcallback" aria-hidden="true"><span class="octicon octicon-link"></span></a>commit([callback])</h3>
+<a id="commitcallback" class="anchor" href="#commitcallback" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>commit([callback])</h3>
 
 <p>Commit a transaction.</p>
 
@@ -1183,7 +1183,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="rollback"></a></p>
 
 <h3>
-<a id="rollbackcallback" class="anchor" href="#rollbackcallback" aria-hidden="true"><span class="octicon octicon-link"></span></a>rollback([callback])</h3>
+<a id="rollbackcallback" class="anchor" href="#rollbackcallback" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>rollback([callback])</h3>
 
 <p>Rollback a transaction. If the queue isn't empty, all queued requests will be Cancelled and the transaction will be marked as aborted.</p>
 
@@ -1215,7 +1215,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="prepared-statement"></a></p>
 
 <h2>
-<a id="preparedstatement" class="anchor" href="#preparedstatement" aria-hidden="true"><span class="octicon octicon-link"></span></a>PreparedStatement</h2>
+<a id="preparedstatement" class="anchor" href="#preparedstatement" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>PreparedStatement</h2>
 
 <p><strong>IMPORTANT:</strong> always use <code>PreparedStatement</code> class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call <code>prepare</code>, a single connection is acquired from the connection pool and all subsequent executions are executed exclusively on this connection. Prepared Statement also contains a queue to make sure your executions are executed in series. After you call <code>unprepare</code>, the connection is then released back to the connection pool.</p>
 
@@ -1249,7 +1249,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="prepared-statement-input"></a></p>
 
 <h3>
-<a id="inputname-type" class="anchor" href="#inputname-type" aria-hidden="true"><span class="octicon octicon-link"></span></a>input(name, type)</h3>
+<a id="inputname-type" class="anchor" href="#inputname-type" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>input(name, type)</h3>
 
 <p>Add an input parameter to the prepared statement.</p>
 
@@ -1279,7 +1279,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="prepared-statement-output"></a></p>
 
 <h3>
-<a id="outputname-type" class="anchor" href="#outputname-type" aria-hidden="true"><span class="octicon octicon-link"></span></a>output(name, type)</h3>
+<a id="outputname-type" class="anchor" href="#outputname-type" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>output(name, type)</h3>
 
 <p>Add an output parameter to the prepared statement.</p>
 
@@ -1309,7 +1309,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="prepare"></a></p>
 
 <h3>
-<a id="preparestatement-callback" class="anchor" href="#preparestatement-callback" aria-hidden="true"><span class="octicon octicon-link"></span></a>prepare(statement, [callback])</h3>
+<a id="preparestatement-callback" class="anchor" href="#preparestatement-callback" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>prepare(statement, [callback])</h3>
 
 <p>Prepare a statement.</p>
 
@@ -1342,7 +1342,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="prepared-statement-execute"></a></p>
 
 <h3>
-<a id="executevalues-callback" class="anchor" href="#executevalues-callback" aria-hidden="true"><span class="octicon octicon-link"></span></a>execute(values, [callback])</h3>
+<a id="executevalues-callback" class="anchor" href="#executevalues-callback" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>execute(values, [callback])</h3>
 
 <p>Execute a prepared statement.</p>
 
@@ -1367,6 +1367,10 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 
         <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordset[<span class="pl-c1">0</span>].<span class="pl-c1">value</span>); <span class="pl-c">// return 12345</span>
         <span class="pl-en">console</span>.<span class="pl-c1">log</span>(affected); <span class="pl-c">// Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.</span>
+
+        <span class="pl-smi">ps</span>.<span class="pl-en">unprepare</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+            <span class="pl-c">// ... error checks</span>
+        });
     });
 });</pre></div>
 
@@ -1383,6 +1387,10 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 
         <span class="pl-en">console</span>.<span class="pl-c1">log</span>(recordsets[<span class="pl-c1">0</span>][<span class="pl-c1">0</span>].<span class="pl-c1">value</span>); <span class="pl-c">// return 12345</span>
         <span class="pl-en">console</span>.<span class="pl-c1">log</span>(affected); <span class="pl-c">// Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.</span>
+
+        <span class="pl-smi">ps</span>.<span class="pl-en">unprepare</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+            <span class="pl-c">// ... error checks</span>
+        });
     });
 });</pre></div>
 
@@ -1412,6 +1420,10 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
         <span class="pl-c">// Always emitted as the last one</span>
 
         <span class="pl-en">console</span>.<span class="pl-c1">log</span>(affected); <span class="pl-c">// Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.</span>
+
+        <span class="pl-smi">ps</span>.<span class="pl-en">unprepare</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+            <span class="pl-c">// ... error checks</span>
+        });
     });
 });</pre></div>
 
@@ -1432,7 +1444,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="unprepare"></a></p>
 
 <h3>
-<a id="unpreparecallback" class="anchor" href="#unpreparecallback" aria-hidden="true"><span class="octicon octicon-link"></span></a>unprepare([callback])</h3>
+<a id="unpreparecallback" class="anchor" href="#unpreparecallback" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>unprepare([callback])</h3>
 
 <p>Unprepare a prepared statement.</p>
 
@@ -1465,7 +1477,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="cli"></a></p>
 
 <h2>
-<a id="cli" class="anchor" href="#cli" aria-hidden="true"><span class="octicon octicon-link"></span></a>CLI</h2>
+<a id="cli" class="anchor" href="#cli" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>CLI</h2>
 
 <p>Before you can start using CLI, you must install <code>mssql</code> globally with <code>npm install mssql -g</code>. Once you do that you will be able to execute <code>mssql</code> command.</p>
 
@@ -1505,7 +1517,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="geography"></a></p>
 
 <h2>
-<a id="geography-and-geometry" class="anchor" href="#geography-and-geometry" aria-hidden="true"><span class="octicon octicon-link"></span></a>Geography and Geometry</h2>
+<a id="geography-and-geometry" class="anchor" href="#geography-and-geometry" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Geography and Geometry</h2>
 
 <p>node-mssql has built-in serializer for Geography and Geometry CLR data types.</p>
 
@@ -1534,7 +1546,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="tvp"></a></p>
 
 <h2>
-<a id="table-valued-parameter-tvp" class="anchor" href="#table-valued-parameter-tvp" aria-hidden="true"><span class="octicon octicon-link"></span></a>Table-Valued Parameter (TVP)</h2>
+<a id="table-valued-parameter-tvp" class="anchor" href="#table-valued-parameter-tvp" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Table-Valued Parameter (TVP)</h2>
 
 <p>Supported on SQL Server 2008 and later. You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.</p>
 
@@ -1562,7 +1574,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>MyCustomStoredProcedure<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
     <span class="pl-c">// ... error checks</span>
 
-    <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordsets[<span class="pl-c1">0</span>][<span class="pl-c1">0</span>]); <span class="pl-c">// {a: 'hello tvp', b: 777}</span>
+    <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordsets[<span class="pl-c1">0</span>][<span class="pl-c1">0</span>]); <span class="pl-c">// {a: 'hello tvp', b: 777}</span>
 });</pre></div>
 
 <p><strong>TIP</strong>: You can also create Table variable from any recordset with <code>recordset.toTable()</code>.</p>
@@ -1570,7 +1582,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="affected-rows"></a></p>
 
 <h2>
-<a id="affected-rows" class="anchor" href="#affected-rows" aria-hidden="true"><span class="octicon octicon-link"></span></a>Affected Rows</h2>
+<a id="affected-rows" class="anchor" href="#affected-rows" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Affected Rows</h2>
 
 <p>If you're performing <code>INSERT</code>, <code>UPDATE</code> or <code>DELETE</code> in a query, you can read number of affected rows.</p>
 
@@ -1606,7 +1618,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="json"></a></p>
 
 <h2>
-<a id="json-support-experimental-works-only-with-tedious-driver" class="anchor" href="#json-support-experimental-works-only-with-tedious-driver" aria-hidden="true"><span class="octicon octicon-link"></span></a>JSON support (experimental, works only with Tedious driver)</h2>
+<a id="json-support-experimental-works-only-with-tedious-driver" class="anchor" href="#json-support-experimental-works-only-with-tedious-driver" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>JSON support (experimental, works only with Tedious driver)</h2>
 
 <p>SQL Server 2016 introduced built-in JSON serialization. By default, JSON is returned as a plain text in a special column named <code>JSON_F52E2B61-18A1-11d1-B105-00805F49916B</code>.</p>
 
@@ -1638,7 +1650,7 @@ FOR JSON <span class="pl-k">PATH</span></pre></div>
 <p><a name="errors"></a></p>
 
 <h2>
-<a id="errors" class="anchor" href="#errors" aria-hidden="true"><span class="octicon octicon-link"></span></a>Errors</h2>
+<a id="errors" class="anchor" href="#errors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Errors</h2>
 
 <p>There are 4 types of errors you can handle:</p>
 
@@ -1658,7 +1670,7 @@ FOR JSON <span class="pl-k">PATH</span></pre></div>
 <p>SQL Server may generate more than one error for one request so you can access preceding errors with <code>err.precedingErrors</code>.</p>
 
 <h3>
-<a id="error-codes" class="anchor" href="#error-codes" aria-hidden="true"><span class="octicon octicon-link"></span></a>Error Codes</h3>
+<a id="error-codes" class="anchor" href="#error-codes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Error Codes</h3>
 
 <p>Each known error has <code>name</code>, <code>code</code> and <code>message</code> properties.</p>
 
@@ -1790,7 +1802,7 @@ FOR JSON <span class="pl-k">PATH</span></pre></div>
 </table>
 
 <h3>
-<a id="detailed-sql-errors" class="anchor" href="#detailed-sql-errors" aria-hidden="true"><span class="octicon octicon-link"></span></a>Detailed SQL Errors</h3>
+<a id="detailed-sql-errors" class="anchor" href="#detailed-sql-errors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Detailed SQL Errors</h3>
 
 <p>SQL errors (<code>RequestError</code> with <code>err.code</code> equal to <code>EREQUEST</code>) contains additional details.</p>
 
@@ -1812,13 +1824,13 @@ FOR JSON <span class="pl-k">PATH</span></pre></div>
 <p><a name="meta"></a></p>
 
 <h2>
-<a id="metadata" class="anchor" href="#metadata" aria-hidden="true"><span class="octicon octicon-link"></span></a>Metadata</h2>
+<a id="metadata" class="anchor" href="#metadata" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Metadata</h2>
 
 <p>Recordset metadata are accessible through the <code>recordset.columns</code> property.</p>
 
 <div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
 <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select convert(decimal(18, 4), 1) as first, <span class="pl-cce">\'</span>asdf<span class="pl-cce">\'</span> as second<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
-    <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(<span class="pl-smi">recordset</span>.<span class="pl-smi">columns</span>);
+    <span class="pl-en">console</span>.<span class="pl-en">dir</span>(<span class="pl-smi">recordset</span>.<span class="pl-smi">columns</span>);
 
     <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">recordset</span>.<span class="pl-smi">columns</span>.<span class="pl-smi">first</span>.<span class="pl-c1">type</span> <span class="pl-k">===</span> <span class="pl-smi">sql</span>.<span class="pl-smi">Decimal</span>); <span class="pl-c">// true</span>
     <span class="pl-en">console</span>.<span class="pl-c1">log</span>(<span class="pl-smi">recordset</span>.<span class="pl-smi">columns</span>.<span class="pl-smi">second</span>.<span class="pl-c1">type</span> <span class="pl-k">===</span> <span class="pl-smi">sql</span>.<span class="pl-smi">VarChar</span>); <span class="pl-c">// true</span>
@@ -1854,7 +1866,7 @@ FOR JSON <span class="pl-k">PATH</span></pre></div>
 <p><a name="data-types"></a></p>
 
 <h2>
-<a id="data-types" class="anchor" href="#data-types" aria-hidden="true"><span class="octicon octicon-link"></span></a>Data Types</h2>
+<a id="data-types" class="anchor" href="#data-types" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Data Types</h2>
 
 <p>You can define data types with length/precision/scale:</p>
 
@@ -1918,20 +1930,20 @@ sql.Geometry
 <p><a name="injection"></a></p>
 
 <h2>
-<a id="sql-injection" class="anchor" href="#sql-injection" aria-hidden="true"><span class="octicon octicon-link"></span></a>SQL injection</h2>
+<a id="sql-injection" class="anchor" href="#sql-injection" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>SQL injection</h2>
 
 <p>This module has built-in SQL injection protection. Always use parameters to pass sanitized values to your queries.</p>
 
 <div class="highlight highlight-source-js"><pre><span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
 <span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>myval<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">VarChar</span>, <span class="pl-s"><span class="pl-pds">'</span>-- commented<span class="pl-pds">'</span></span>);
 <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select @myval as myval<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
-    <span class="pl-en">console</span>.<span class="pl-c1">dir</span>(recordset);
+    <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordset);
 });</pre></div>
 
 <p><a name="verbose"></a></p>
 
 <h2>
-<a id="verbose-mode" class="anchor" href="#verbose-mode" aria-hidden="true"><span class="octicon octicon-link"></span></a>Verbose Mode</h2>
+<a id="verbose-mode" class="anchor" href="#verbose-mode" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Verbose Mode</h2>
 
 <p>You can enable verbose mode by <code>request.verbose = true</code> command.</p>
 
@@ -1965,10 +1977,10 @@ sql.Geometry
 <p><a name="issues"></a></p>
 
 <h2>
-<a id="known-issues" class="anchor" href="#known-issues" aria-hidden="true"><span class="octicon octicon-link"></span></a>Known issues</h2>
+<a id="known-issues" class="anchor" href="#known-issues" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Known issues</h2>
 
 <h3>
-<a id="tedious-1" class="anchor" href="#tedious-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Tedious</h3>
+<a id="tedious-1" class="anchor" href="#tedious-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Tedious</h3>
 
 <ul>
 <li>If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with <code>config.options.tdsVersion = '7_1'</code> (<a href="https://github.com/patriksimek/node-mssql/issues/36">issue</a>)</li>
@@ -1976,7 +1988,7 @@ sql.Geometry
 </ul>
 
 <h3>
-<a id="msnodesqlv8" class="anchor" href="#msnodesqlv8" aria-hidden="true"><span class="octicon octicon-link"></span></a>msnodesqlv8</h3>
+<a id="msnodesqlv8" class="anchor" href="#msnodesqlv8" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>msnodesqlv8</h3>
 
 <ul>
 <li>msnodesqlv8 has problem with errors during transactions - <a href="https://github.com/patriksimek/node-mssql/issues/77">reported</a>.</li>
@@ -1989,11 +2001,11 @@ sql.Geometry
 </ul>
 
 <h3>
-<a id="msnodesql" class="anchor" href="#msnodesql" aria-hidden="true"><span class="octicon octicon-link"></span></a>msnodesql</h3>
+<a id="msnodesql" class="anchor" href="#msnodesql" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>msnodesql</h3>
 
 <ul>
 <li>msnodesql has problem with errors during transactions - <a href="https://github.com/patriksimek/node-mssql/issues/77">reported</a>.</li>
-<li>msnodesql contains bug in DateTimeOffset (<a href="https://github.com/WindowsAzure/node-sqlserver/issues/160">reported</a>)</li>
+<li>msnodesql contains bug in DateTimeOffset (<a href="https://github.com/Azure/node-sqlserver/issues/160">reported</a>)</li>
 <li>msnodesql doesn't support <a href="#bulk">Bulk</a> load.</li>
 <li>msnodesql doesn't support <a href="#tvp">TVP</a> data type.</li>
 <li>msnodesql doesn't support Variant data type.</li>
@@ -2005,7 +2017,7 @@ sql.Geometry
 </ul>
 
 <h3>
-<a id="node-tds-1" class="anchor" href="#node-tds-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>node-tds</h3>
+<a id="node-tds-1" class="anchor" href="#node-tds-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>node-tds</h3>
 
 <ul>
 <li>If you're facing problems with date, try changing your tsql language <code>set language 'English';</code>.</li>
@@ -2029,10 +2041,10 @@ sql.Geometry
 <p><a name="twotothree"></a></p>
 
 <h2>
-<a id="2x-to-3x-changes" class="anchor" href="#2x-to-3x-changes" aria-hidden="true"><span class="octicon octicon-link"></span></a>2.x to 3.x changes</h2>
+<a id="2x-to-3x-changes" class="anchor" href="#2x-to-3x-changes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>2.x to 3.x changes</h2>
 
 <h3>
-<a id="prepared-statement" class="anchor" href="#prepared-statement" aria-hidden="true"><span class="octicon octicon-link"></span></a>Prepared Statement</h3>
+<a id="prepared-statement" class="anchor" href="#prepared-statement" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Prepared Statement</h3>
 
 <ul>
 <li>
@@ -2047,7 +2059,7 @@ sql.Geometry
 </ul>
 
 <h3>
-<a id="request" class="anchor" href="#request" aria-hidden="true"><span class="octicon octicon-link"></span></a>Request</h3>
+<a id="request" class="anchor" href="#request" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Request</h3>
 
 <ul>
 <li>
@@ -2073,9 +2085,9 @@ sql.Geometry
 <p><a name="license"></a></p>
 
 <h2>
-<a id="license" class="anchor" href="#license" aria-hidden="true"><span class="octicon octicon-link"></span></a>License</h2>
+<a id="license" class="anchor" href="#license" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>License</h2>
 
-<p>Copyright (c) 2013-2015 Patrik Simek</p>
+<p>Copyright (c) 2013-2016 Patrik Simek</p>
 
 <p>The MIT License</p>
 
