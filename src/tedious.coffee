@@ -290,8 +290,13 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 		_abort: ->
 			if not @_rollbackRequested
 				# transaction interrupted because of XACT_ABORT
+				
+				pc = @_pooledConnection
+				setImmediate =>
+					# defer releasing so connection can switch from SentClientRequest to LoggedIn state
+					@connection.pool.release pc
+					
 				@_pooledConnection.removeListener 'rollbackTransaction', @_abort
-				@connection.pool.release @_pooledConnection
 				@_pooledConnection = null
 				@_aborted = true
 				
