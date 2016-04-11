@@ -31,7 +31,7 @@
           <h1>
 <a id="node-mssql" class="anchor" href="#node-mssql" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>node-mssql</h1>
 
-<p>An easy-to-use MSSQL database connector for Node.js.</p>
+<p>Microsoft SQL Server client for Node.js</p>
 
 <p><a href="https://www.npmjs.com/package/mssql"><img src="https://img.shields.io/npm/v/mssql.svg?style=flat-square" alt="NPM Version"></a> <a href="https://www.npmjs.com/package/mssql"><img src="https://img.shields.io/npm/dm/mssql.svg?style=flat-square" alt="NPM Downloads"></a> <a href="http://packagequality.com/#?package=mssql"><img src="http://npm.packagequality.com/shield/mssql.svg?style=flat-square" alt="Package Quality"></a> <a href="https://travis-ci.org/patriksimek/node-mssql"><img src="https://img.shields.io/travis/patriksimek/node-mssql/master.svg?style=flat-square&amp;label=unit" alt="Travis CI"></a> <a href="https://ci.appveyor.com/project/patriksimek/node-mssql"><img src="https://img.shields.io/appveyor/ci/patriksimek/node-mssql/master.svg?style=flat-square&amp;label=integration" alt="Appveyor CI"></a> <a href="https://gitter.im/patriksimek/node-mssql?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Join the chat at https://gitter.im/patriksimek/node-mssql"></a></p>
 
@@ -45,6 +45,7 @@
 <li>Supports serialization of Geography and Geometry CLR types.</li>
 <li>Has smart JS data type to SQL data type mapper.</li>
 <li>Supports Promises, Streams and standard callbacks.</li>
+<li>Supports ES6 tagged template literals.</li>
 <li>Is stable and tested in production environment.</li>
 <li>Is well documented.</li>
 </ul>
@@ -96,6 +97,14 @@ If you're looking for session store for connect/express, visit <a href="https://
         <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordsets);
     }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// ... execute error checks</span>
+    });
+
+    <span class="pl-c">// ES6 Tagged template literals (experimental)</span>
+
+    <span class="pl-smi">sql</span>.<span class="pl-smi">query</span><span class="pl-s"><span class="pl-pds">`</span>select * from mytable where id = <span class="pl-s1"><span class="pl-pse">${</span>value<span class="pl-pse">}</span></span><span class="pl-pds">`</span></span>.<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
+        <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordset);
+    }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+        <span class="pl-c">// ... query error checks</span>
     });
 }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... connect error checks</span>
@@ -226,8 +235,9 @@ If you're looking for session store for connect/express, visit <a href="https://
 <span class="pl-smi">sql</span>.<span class="pl-en">connect</span>(config).<span class="pl-en">then</span>(<span class="pl-k">function</span>() {
     <span class="pl-c">// Query</span>
 
-    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select * from mytable<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
+    <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+    .<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value);
+    .<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select * from mytable where id = @input_parameter<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
         <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordset);
     }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// ... error checks</span>
@@ -235,10 +245,10 @@ If you're looking for session store for connect/express, visit <a href="https://
 
     <span class="pl-c">// Stored Procedure</span>
 
-    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-    <span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value);
-    <span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));
-    <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordsets</span>) {
+    <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
+    .<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value);
+    .<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));
+    .<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>).<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordsets</span>) {
         <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordsets);
     }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
         <span class="pl-c">// ... error checks</span>
@@ -248,6 +258,20 @@ If you're looking for session store for connect/express, visit <a href="https://
 });</pre></div>
 
 <p>Native Promise is used by default. You can easily change this with <code>sql.Promise = require('myownpromisepackage')</code>.</p>
+
+<p><strong>ES6 Tagged template literals (experimental)</strong></p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">sql</span>.<span class="pl-en">connect</span>(config).<span class="pl-en">then</span>(<span class="pl-k">function</span>() {
+    <span class="pl-smi">sql</span>.<span class="pl-smi">query</span><span class="pl-s"><span class="pl-pds">`</span>select * from mytable where id = <span class="pl-s1"><span class="pl-pse">${</span>value<span class="pl-pse">}</span></span><span class="pl-pds">`</span></span>.<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
+        <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordset);
+    }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+        <span class="pl-c">// ... error checks</span>
+    });
+}).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error checks</span>
+});</pre></div>
+
+<p>All values are automatically sanitized against sql injection.</p>
 
 <p><a name="callbacks"></a></p>
 
@@ -272,8 +296,7 @@ If you're looking for session store for connect/express, visit <a href="https://
 
     <span class="pl-c">// Query</span>
 
-    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-    <span class="pl-smi">request</span>.<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
+    <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>().<span class="pl-en">query</span>(<span class="pl-s"><span class="pl-pds">'</span>select 1 as number<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordset</span>) {
         <span class="pl-c">// ... error checks</span>
 
         <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordset);
@@ -281,10 +304,10 @@ If you're looking for session store for connect/express, visit <a href="https://
 
     <span class="pl-c">// Stored Procedure</span>
 
-    <span class="pl-k">var</span> request <span class="pl-k">=</span> <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>();
-    <span class="pl-smi">request</span>.<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value);
-    <span class="pl-smi">request</span>.<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>));
-    <span class="pl-smi">request</span>.<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
+    <span class="pl-k">new</span> <span class="pl-en">sql.Request</span>()
+    .<span class="pl-c1">input</span>(<span class="pl-s"><span class="pl-pds">'</span>input_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-smi">Int</span>, value)
+    .<span class="pl-en">output</span>(<span class="pl-s"><span class="pl-pds">'</span>output_parameter<span class="pl-pds">'</span></span>, <span class="pl-smi">sql</span>.<span class="pl-en">VarChar</span>(<span class="pl-c1">50</span>))
+    .<span class="pl-en">execute</span>(<span class="pl-s"><span class="pl-pds">'</span>procedure_name<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>, <span class="pl-smi">recordsets</span>, <span class="pl-smi">returnValue</span>) {
         <span class="pl-c">// ... error checks</span>
 
         <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordsets);
@@ -398,6 +421,20 @@ If you're looking for session store for connect/express, visit <a href="https://
 <span class="pl-smi">connection2</span>.<span class="pl-en">on</span>(<span class="pl-s"><span class="pl-pds">'</span>error<span class="pl-pds">'</span></span>, <span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
     <span class="pl-c">// ... error handler</span>
 });</pre></div>
+
+<p><strong>ES6 Tagged template literals (experimental)</strong></p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-k">new</span> <span class="pl-en">sql.Connection</span>(config).<span class="pl-en">connect</span>().<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">conn</span>) {
+    <span class="pl-smi">conn</span>.<span class="pl-smi">query</span><span class="pl-s"><span class="pl-pds">`</span>select * from mytable where id = <span class="pl-s1"><span class="pl-pse">${</span>value<span class="pl-pse">}</span></span><span class="pl-pds">`</span></span>.<span class="pl-en">then</span>(<span class="pl-k">function</span>(<span class="pl-smi">recordset</span>) {
+        <span class="pl-en">console</span>.<span class="pl-en">dir</span>(recordset);
+    }).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+        <span class="pl-c">// ... error checks</span>
+    });
+}).<span class="pl-en">catch</span>(<span class="pl-k">function</span>(<span class="pl-smi">err</span>) {
+    <span class="pl-c">// ... error checks</span>
+});</pre></div>
+
+<p>All values are automatically sanitized against sql injection.</p>
 
 <p><a name="cfg"></a></p>
 
@@ -1618,7 +1655,7 @@ mssql://username:password@localhost/INSTANCE/database?encrypt=true&amp;domain=DO
 <p><a name="json"></a></p>
 
 <h2>
-<a id="json-support-experimental-works-only-with-tedious-driver" class="anchor" href="#json-support-experimental-works-only-with-tedious-driver" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>JSON support (experimental, works only with Tedious driver)</h2>
+<a id="json-support-works-only-with-tedious-driver" class="anchor" href="#json-support-works-only-with-tedious-driver" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>JSON support (works only with Tedious driver)</h2>
 
 <p>SQL Server 2016 introduced built-in JSON serialization. By default, JSON is returned as a plain text in a special column named <code>JSON_F52E2B61-18A1-11d1-B105-00805F49916B</code>.</p>
 
