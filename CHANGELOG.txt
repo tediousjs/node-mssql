@@ -1,6 +1,8 @@
-v3.2.0 (not yet released)
+v3.2.0 (2016-04-11)
 -------------------
+[new] Added experimental support for ES6 tagged template literals
 [new] Added support for Variant data type
+[change] Updated to latest Tedious 1.14.0
 
 v3.1.2 (2016-03-08)
 -------------------

@@ -203,7 +203,7 @@ sql.connect(config).then(function() {
 });
 ```
 
-All values are automatically santized against sql injection.
+All values are automatically sanitized against sql injection.
 
 <a name="callbacks" />
 ### Nested callbacks
@@ -367,6 +367,8 @@ new sql.Connection(config).connect().then(function(conn) {
 	// ... error checks
 });
 ```
+
+All values are automatically sanitized against sql injection.
 
 <a name="cfg" />
 ## Configuration
