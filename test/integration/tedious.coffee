@@ -1,6 +1,9 @@
 sql = require '../../'
 assert = require "assert"
 
+if parseInt(process.version.match(/^v(\d+)\./)[1]) > 0
+	require '../es6/templatestring.js'
+
 config = ->
 	cfg = JSON.parse require('fs').readFileSync "#{__dirname}/../.mssql.json"
 	cfg.driver = 'tedious'
@@ -315,6 +318,21 @@ describe 'tedious', ->
 		
 		after (done) ->
 			sql.close done
+	
+	if global.TEMPLATE_STRING
+		describe 'template strings', ->
+			before (done) ->
+				global.DRIVER = 'tedious'
+				sql.connect config(), done
+			
+			it 'query', (done) ->
+				TEMPLATE_STRING['query'] done
+			
+			it 'batch', (done) ->
+				TEMPLATE_STRING['batch'] done
+			
+			after (done) ->
+				sql.close done
 	
 	describe 'multiple connections test suite', ->
 		before (done) ->

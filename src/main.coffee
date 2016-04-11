@@ -293,6 +293,28 @@ class Connection extends EventEmitter
 	
 	transaction: ->
 		new Transaction @
+	
+	###
+	Creates a new query using this connection from a tagged template string.
+	
+	@param {Array} strings Array of string literals.
+	@param {...*} keys Values.
+	@returns {Request}
+	###
+	
+	query: (strings, values...) ->
+		new Request(@)._template 'query', strings, values
+	
+	###
+	Creates a new batch using this connection from a tagged template string.
+	
+	@param {Array} strings Array of string literals.
+	@param {...*} keys Values.
+	@returns {Request}
+	###
+	
+	batch: (strings, values...) ->
+		new Request(@)._template 'batch', strings, values
 
 ###
 Class PreparedStatement.
@@ -867,6 +889,19 @@ class Request extends EventEmitter
 		if typeof @logger is "function" then @logger out else console.log out
 	
 	###
+	Fetch request from tagged template string.
+	###
+	
+	_template: (method, strings, values) ->
+		command = [strings[0]]
+
+		for value, index in values
+			@input "param#{index + 1}", value
+			command.push "@param#{index + 1}", strings[index + 1]
+		
+		@[method] command.join ''
+	
+	###
 	Acquire connection for this request from connection.
 	###
 	
@@ -1412,8 +1447,38 @@ Close global connection.
 module.exports.close = (callback) ->
 	global_connection?.close callback
 
+###
+Attach evnet handler to global connection.
+
+@param {String} event Event name.
+@param {Function} handler Event handler.
+@returns {Connection}
+###
+
 module.exports.on = (event, handler) ->
 	global_connection?.on event, handler
+
+###
+Creates a new query using global connection from a tagged template string.
+
+@param {Array} strings Array of string literals.
+@param {...*} keys Values.
+@returns {Request}
+###
+
+module.exports.query = (strings, values...) ->
+	new Request()._template 'query', strings, values
+
+###
+Creates a new batch using global connection from a tagged template string.
+
+@param {Array} strings Array of string literals.
+@param {...*} keys Values.
+@returns {Request}
+###
+
+module.exports.batch = (strings, values...) ->
+	new Request()._template 'batch', strings, values
 
 module.exports.Connection = Connection
 module.exports.Transaction = Transaction
@@ -1439,7 +1504,7 @@ module.exports.Promise = global.Promise ? require('promise')
 for key, value of TYPES
 	module.exports[key] = value
 	module.exports[key.toUpperCase()] = value
-	
+
 # --- DEPRECATED IN 0.3.0 ------------------------------------------
 
 module.exports.pool =

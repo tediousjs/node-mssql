@@ -1,6 +1,6 @@
 # node-mssql
 
-An easy-to-use MSSQL database connector for Node.js.
+Microsoft SQL Server client for Node.js
 
 [![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Package Quality][quality-image]][quality-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -12,6 +12,7 @@ An easy-to-use MSSQL database connector for Node.js.
 - Supports serialization of Geography and Geometry CLR types.
 - Has smart JS data type to SQL data type mapper.
 - Supports Promises, Streams and standard callbacks.
+- Supports ES6 tagged template literals.
 - Is stable and tested in production environment.
 - Is well documented.
 
@@ -53,6 +54,14 @@ sql.connect("mssql://username:password@localhost/database").then(function() {
 		console.dir(recordsets);
 	}).catch(function(err) {
 		// ... execute error checks
+	});
+	
+	// ES6 Tagged template literals (experimental)
+	
+	sql.query`select * from mytable where id = ${value}`.then(function(recordset) {
+		console.dir(recordset);
+	}).catch(function(err) {
+		// ... query error checks
 	});
 }).catch(function(err) {
 	// ... connect error checks
@@ -155,8 +164,9 @@ var config = {
 sql.connect(config).then(function() {
 	// Query
 	
-	var request = new sql.Request();
-	request.query('select * from mytable').then(function(recordset) {
+	new sql.Request();
+	.input('input_parameter', sql.Int, value);
+	.query('select * from mytable where id = @input_parameter').then(function(recordset) {
 		console.dir(recordset);
 	}).catch(function(err) {
 		// ... error checks
@@ -164,10 +174,10 @@ sql.connect(config).then(function() {
 
     // Stored Procedure
 	
-	var request = new sql.Request();
-	request.input('input_parameter', sql.Int, value);
-    request.output('output_parameter', sql.VarChar(50));
-	request.execute('procedure_name').then(function(recordsets) {
+	new sql.Request();
+	.input('input_parameter', sql.Int, value);
+    .output('output_parameter', sql.VarChar(50));
+	.execute('procedure_name').then(function(recordsets) {
 		console.dir(recordsets);
 	}).catch(function(err) {
 		// ... error checks
@@ -178,6 +188,22 @@ sql.connect(config).then(function() {
 ```
 
 Native Promise is used by default. You can easily change this with `sql.Promise = require('myownpromisepackage')`.
+
+**ES6 Tagged template literals (experimental)**
+
+```javascript
+sql.connect(config).then(function() {
+	sql.query`select * from mytable where id = ${value}`.then(function(recordset) {
+		console.dir(recordset);
+	}).catch(function(err) {
+		// ... error checks
+	});
+}).catch(function(err) {
+	// ... error checks
+});
+```
+
+All values are automatically santized against sql injection.
 
 <a name="callbacks" />
 ### Nested callbacks
@@ -201,8 +227,7 @@ sql.connect(config, function(err) {
 
     // Query
 
-    var request = new sql.Request();
-    request.query('select 1 as number', function(err, recordset) {
+    new sql.Request().query('select 1 as number', function(err, recordset) {
         // ... error checks
 
         console.dir(recordset);
@@ -210,10 +235,10 @@ sql.connect(config, function(err) {
 
     // Stored Procedure
 
-    var request = new sql.Request();
-    request.input('input_parameter', sql.Int, value);
-    request.output('output_parameter', sql.VarChar(50));
-    request.execute('procedure_name', function(err, recordsets, returnValue) {
+    new sql.Request()
+    .input('input_parameter', sql.Int, value)
+    .output('output_parameter', sql.VarChar(50))
+    .execute('procedure_name', function(err, recordsets, returnValue) {
         // ... error checks
 
         console.dir(recordsets);
@@ -326,6 +351,20 @@ var connection2 = new sql.Connection(config, function(err) {
 
 connection2.on('error', function(err) {
 	// ... error handler
+});
+```
+
+**ES6 Tagged template literals (experimental)**
+
+```javascript
+new sql.Connection(config).connect().then(function(conn) {
+	conn.query`select * from mytable where id = ${value}`.then(function(recordset) {
+		console.dir(recordset);
+	}).catch(function(err) {
+		// ... error checks
+	});
+}).catch(function(err) {
+	// ... error checks
 });
 ```
 
@@ -1382,7 +1421,7 @@ __Version__
 3.0
 
 <a name="json" />
-## JSON support (experimental, works only with Tedious driver)
+## JSON support (works only with Tedious driver)
 
 SQL Server 2016 introduced built-in JSON serialization. By default, JSON is returned as a plain text in a special column named `JSON_F52E2B61-18A1-11d1-B105-00805F49916B`.
 

@@ -4,11 +4,12 @@
 		"url": "https://patriksimek.cz"
 	},
 	"name": "mssql",
-	"description": "An easy-to-use MSSQL database connector for Node.js.",
+	"description": "Microsoft SQL Server client for Node.js.",
 	"keywords": [
 		"database",
 		"mssql",
 		"sql",
+		"server",
 		"msnodesql",
 		"sqlserver",
 		"tds",
@@ -28,7 +29,7 @@
 	},
 	"license": "MIT",
 	"dependencies": {
-		"tedious": "~1.13.1",
+		"tedious": "~1.14.0",
 		"generic-pool": "^2.2.0",
 		"promise": "^7.0.1"
 	},
@@ -45,6 +46,7 @@
 		"test": "node_modules/.bin/mocha test/unit",
 		"test-tedious": "node_modules/.bin/mocha test/integration -g tedious",
 		"test-msnodesql": "node_modules/.bin/mocha test/integration -g msnodesql",
+		"test-msnodesqlv8": "node_modules/.bin/mocha test/integration -g msnodesqlv8",
 		"test-tds": "node_modules/.bin/mocha test/integration -g tds",
 		"test-cli": "node_modules/.bin/mocha test/integration -g cli"
 	},
