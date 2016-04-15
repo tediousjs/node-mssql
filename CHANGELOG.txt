@@ -1,3 +1,7 @@
+v3.2.1 (2016-04-16)
+-------------------
+[fix] Added PreparedStatement.lastRequest to access internal Request when using Promises
+
 v3.2.0 (2016-04-11)
 -------------------
 [new] Added experimental support for ES6 tagged template literals
