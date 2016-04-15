@@ -324,6 +324,7 @@ IMPORTANT: Rememeber that each prepared statement means one reserved connection 
 @property {Connection} connection Reference to used connection.
 @property {Boolean} multiple If `true`, `execute` will handle multiple recordsets.
 @property {String} statement Prepared SQL statement.
+@property {Request} lastRequest References instance of most recent Request created by executing a statement.
 ###
 
 class PreparedStatement extends EventEmitter
@@ -339,6 +340,7 @@ class PreparedStatement extends EventEmitter
 	parameters: null
 	multiple: false
 	stream: null
+	lastRequest: null
 	
 	###
 	Create new Prepared Statement.
@@ -556,7 +558,7 @@ class PreparedStatement extends EventEmitter
 				resolve recordset
 	
 	_execute: (values, callback) ->
-		req = new Request @
+		req = @lastRequest = new Request @
 		req.stream = @stream if @stream?
 		req.input 'handle', TYPES.Int, @_handle
 		

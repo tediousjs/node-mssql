@@ -487,6 +487,7 @@ global.TESTS =
 					assert.equal recordset[0].chars2, null
 					assert.equal recordset[0].chars3, ''
 					assert.equal recordset[0].chars4, ''
+					assert.strictEqual ps.lastRequest, r
 					
 					ps.unprepare done
 				
@@ -521,6 +522,7 @@ global.TESTS =
 				complete = (err, recordset) ->
 					assert.equal recordset.length, 1
 					assert.equal recordset[0].number, 555
+					assert.strictEqual ps.lastRequest, r
 					
 					ps.unprepare done
 				
@@ -551,8 +553,10 @@ global.TESTS =
 		ps.prepare 'insert into prepstm_test values (@data);insert into prepstm_test values (@data);delete from prepstm_test;', (err) ->
 			if err then return done err
 			
-			ps.execute {data: 'abc'}, (err, recordsets, affected) ->
+			r = ps.execute {data: 'abc'}, (err, recordsets, affected) ->
 				assert.equal affected, 4
+				assert.equal r.rowsAffected, 4
+				assert.strictEqual ps.lastRequest, r
 				
 				ps.unprepare done
 	
@@ -569,9 +573,10 @@ global.TESTS =
 				assert.ok tran._pooledConnection is ps._pooledConnection
 				
 				ps.multiple = true
-				ps.execute {num: 555}, (err, recordsets) ->
+				r = ps.execute {num: 555}, (err, recordsets) ->
 					assert.equal recordsets[0].length, 1
 					assert.equal recordsets[0][0].number, 555
+					assert.strictEqual ps.lastRequest, r
 					
 					ps.unprepare (err) ->
 						if err then return done err

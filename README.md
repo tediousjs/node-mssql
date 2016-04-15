@@ -1230,6 +1230,8 @@ ps.prepare('select @param as value', function(err) {
 
 **TIP**: To learn more about how number of affected rows works, see section [Affected Rows](#affected-rows).
 
+**TIP**: To access number of affected rows when using Prepared Statement with Promises, use `ps.lastRequest.affectedRows`.
+
 __Errors__
 - ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
 - ETIMEOUT (`RequestError`) - Request timeout.
