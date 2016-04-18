@@ -36,7 +36,7 @@ describe 'Connection String', ->
 		done()
 	
 	it 'Connection String #4', (done) ->
-		cfg = cs.resolve "mssql://username:password@localhost:1433/database?encrypt=true&stream=true&domain=mydomain"
+		cfg = cs.resolve "mssql://username:password@localhost:1433/database?encrypt=true&stream=true&domain=mydomain&requestTimeout=30000"
 		
 		assert.strictEqual cfg.driver, undefined
 		assert.strictEqual cfg.user, 'username'
@@ -46,7 +46,8 @@ describe 'Connection String', ->
 		assert.strictEqual cfg.domain, 'mydomain'
 		assert.strictEqual cfg.port, 1433
 		assert.strictEqual cfg.options.encrypt, true
-		
+		assert.strictEqual cfg.requestTimeout, 30000
+
 		done()
 	
 	it 'Connection String #5', (done) ->

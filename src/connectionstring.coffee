@@ -159,7 +159,7 @@ resolveConnectionString = (string) ->
 		parsed = parseConnectionURI string
 	else
 		parsed = parseConnectionString string
-	
+
 	if parsed.driver is 'msnodesql'
 		parsed.driver = 'SQL Server Native Client 11.0'
 		parsed.__original__?.driver = name: 'Driver', escape: ['{', '}']
@@ -172,11 +172,15 @@ resolveConnectionString = (string) ->
 		driver: parsed.driver
 		password: parsed.pwd ? parsed.password
 		database: parsed.database ? parsed['initial catalog']
-		connectionTimeout: parsed.timeout ? parsed['connect timeout'] ? parsed['connection timeout']
-		requestTimeout: parsed['request timeout']
+		connectionTimeout: parsed.connectionTimeout ? parsed.timeout ? parsed['connect timeout'] ? parsed['connection timeout']
+		requestTimeout: parsed.requestTimeout ? parsed['request timeout']
 		stream: parsed.stream?.toLowerCase() in ['true', 'yes', '1']
 		options:
 			encrypt: parsed.encrypt?.toLowerCase() in ['true', 'yes', '1']
+
+	if parsed.useUTC? then config.options.useUTC = parsed.useUTC.toLowerCase() in ['true', 'yes', '1']
+	if config.connectionTimeout? then config.connectionTimeout = parseInt config.connectionTimeout
+	if config.requestTimeout? then config.requestTimeout = parseInt config.requestTimeout
 	
 	if (/^(.*)\\(.*)$/).exec user
 		config.domain = RegExp.$1
