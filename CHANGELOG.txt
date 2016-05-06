@@ -1,3 +1,9 @@
+v3.3.0 (2016-05-06)
+-------------------
+[new] Added support for receiving informational messages
+[new] Added JSON support for msnodesql and msnodesqlv8 drivers
+[fix] Minor fixes in connection string parsing
+
 v3.2.1 (2016-04-16)
 -------------------
 [fix] Added PreparedStatement.lastRequest to access internal Request when using Promises
