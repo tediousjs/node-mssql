@@ -68,11 +68,11 @@ sql.connect("mssql://username:password@localhost/database").then(function() {
 });
 ```
 
-If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#cfg) to learn more.
+If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#configuration) to learn more.
 
 ## Documentation
 
-* [2.x to 3.x changes](#twotothree)
+* [2.x to 3.x changes](#2x-to-3x-changes)
 
 ### Examples
 
@@ -83,57 +83,57 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 
 ### Configuration
 
-* [General](#configuration-general)
-* [Formats](#configuration-formats)
+* [General](#general-same-for-all-drivers)
+* [Formats](#formats)
 
 ### Drivers
 
 * [Tedious](#tedious)
-* [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server](#msnodesqlv8)
-* [Microsoft Driver for Node.js for SQL Server](#msnodesql)
+* [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server](#microsoft--contributors-node-v8-driver-for-nodejs-for-sql-server)
+* [Microsoft Driver for Node.js for SQL Server](#microsoft-driver-for-nodejs-for-sql-server)
 * [node-tds](#node-tds)
 
 ### Connections
 
 * [Connection](#connection)
-* [connect](#connect)
+* [connect](#connect-callback)
 * [close](#close)
 
 ### Requests
 
 * [Request](#request)
-* [execute](#execute)
-* [input](#input)
-* [output](#output)
-* [pipe](#pipe)
-* [query](#query)
-* [batch](#batch)
-* [bulk](#bulk)
+* [execute](#execute-procedure-callback)
+* [input](#input-name-type-value)
+* [output](#output-name-type-value)
+* [pipe](#pipe-stream)
+* [query](#query-command-callback)
+* [batch](#batch-batch-callback)
+* [bulk](#bulk-table-callback)
 * [cancel](#cancel)
 
 ### Transactions
 
 * [Transaction](#transaction)
-* [begin](#begin)
-* [commit](#commit)
-* [rollback](#rollback)
+* [begin](#begin-isolationlevel-callback)
+* [commit](#commit-callback)
+* [rollback](#rollback-callback)
 
 ### Prepared Statements
 
 * [PreparedStatement](#prepared-statement)
-* [input](#prepared-statement-input)
-* [output](#prepared-statement-output)
-* [prepare](#prepare)
-* [execute](#prepared-statement-execute)
-* [unprepare](#unprepare)
+* [input](#input-name-type)
+* [output](#output-name-type)
+* [prepare](#prepare-statement-callback)
+* [execute](#execute-values-callback)
+* [unprepare](#unprepare-callback)
 
 ### Other
 
 * [CLI](#cli)
-* [Geography and Geometry](#geography)
-* [Table-Valued Parameter](#tvp)
+* [Geography and Geometry](#geography-and-geometry)
+* [Table-Valued Parameter](#table-valued-parameter-tvp)
 * [Affected Rows](#affected-rows)
-* [JSON support](#json)
+* [JSON support](#json-support)
 * [Errors](#errors)
 * [Informational messages](#informational-messages)
 * [Metadata](#metadata)
@@ -383,7 +383,7 @@ var config = {
 }
 ```
 
-### General (same for all drivers) <a id="configuration-general"></a>
+### General (same for all drivers)
 
 - **driver** - Driver to use (default: `tedious`). Possible values: `tedious`, `msnodesqlv8` or `msnodesql` or `tds`.
 - **user** - User name to use for authentication.
@@ -395,12 +395,12 @@ var config = {
 - **connectionTimeout** - Connection timeout in ms (default: `15000`).
 - **requestTimeout** - Request timeout in ms (default: `15000`).
 - **stream** - Stream recordsets/rows instead of returning them all at once as an argument of callback (default: `false`). You can also enable streaming for each request independently (`request.stream = true`). Always set to `true` if you plan to work with large amount of rows.
-- **parseJSON** - Parse JSON recordsets to JS objects (default: `false`). For more information please see section [JSON support](#json).
+- **parseJSON** - Parse JSON recordsets to JS objects (default: `false`). For more information please see section [JSON support](#json-support).
 - **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
 - **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
 
-### Formats <a id="configuration-formats"></a>
+### Formats
 
 In addition to configuration object there is an option to pass config as a connection string. Two formats of connection string are supported.
 
@@ -424,7 +424,7 @@ __Version__
 
 ## Drivers
 
-### Tedious <a id="tedious"></a>
+### Tedious
 
 Default driver, actively maintained and production ready. Platform independent, runs everywhere Node.js runs.
 
@@ -439,7 +439,7 @@ Default driver, actively maintained and production ready. Platform independent, 
 
 More information about Tedious specific options: http://pekim.github.io/tedious/api-connection.html
 
-### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server <a id="msnodesqlv8"></a>
+### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
 
 **Requires Node.js 0.12.x/4.2.0. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8`.
 
@@ -460,7 +460,7 @@ Default connection string when connecting to named instance:
 Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
 ```
 
-### Microsoft Driver for Node.js for SQL Server <a id="msnodesql"></a>
+### Microsoft Driver for Node.js for SQL Server
 
 **Requires Node.js 0.6.x/0.8.x/0.10.x. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-unofficial).
 
@@ -481,13 +481,13 @@ Default connection string when connecting to named instance:
 Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
 ```
 
-### node-tds <a id="node-tds"></a>
+### node-tds
 
 **Legacy support, don't use this driver for new projects.** This driver is not part of the default package and must be installed separately by `npm install tds`.
 
 _node-mssql updates this driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`._
 
-## Connection <a id="connection"></a>
+## Connection
 
 Internally, each `Connection` instance is a separate pool of TDS connections. Once you create a new `Request`/`Transaction`/`Prepared Statement`, a new TDS connection is acquired from the pool and reserved for desired action. Once the action is complete, connection is released back to the pool. Connection health check is built-in so once the dead connection is discovered, it is immediately replaced with a new one.
 
@@ -508,7 +508,7 @@ __Errors__
 
 ---------------------------------------
 
-### connect([callback]) <a id="connect"></a>
+### connect ([callback])
 
 Create a new connection pool with one active connection. This one initial connection serves as a probe to find out whether the configuration is valid.
 
@@ -541,7 +541,7 @@ __Errors__
 
 ---------------------------------------
 
-### close() <a id="close"></a>
+### close()
 
 Close all active connections in the pool.
 
@@ -551,7 +551,7 @@ __Example__
 connection.close();
 ```
 
-## Request <a id="request"></a>
+## Request
 
 ```javascript
 var request = new sql.Request(/* [connection] */);
@@ -569,7 +569,7 @@ If you omit connection argument, global connection is used instead.
 
 ---------------------------------------
 
-### execute(procedure, [callback]) <a id="execute"></a>
+### execute (procedure, [callback])
 
 Call a stored procedure.
 
@@ -612,7 +612,7 @@ __Errors__
 
 ---------------------------------------
 
-### input(name, [type], value) <a id="input"></a>
+### input (name, [type], value)
 
 Add an input parameter to the request.
 
@@ -658,7 +658,7 @@ __Errors__ (synchronous)
 
 ---------------------------------------
 
-### output(name, type, [value]) <a id="output"></a>
+### output (name, type, [value])
 
 Add an output parameter to the request.
 
@@ -681,7 +681,7 @@ __Errors__ (synchronous)
 
 ---------------------------------------
 
-### pipe(stream) <a id="pipe"></a>
+### pipe (stream)
 
 Sets request to `stream` mode and pulls all rows from all recordsets to a given stream.
 
@@ -709,9 +709,9 @@ __Version__
 
 ---------------------------------------
 
-### query(command, [callback]) <a id="query"></a>
+### query (command, [callback])
 
-Execute the SQL command. To execute commands like `create procedure` or if you plan to work with local temporary tables, use [batch](#batch) instead.
+Execute the SQL command. To execute commands like `create procedure` or if you plan to work with local temporary tables, use [batch](#batch-batch-callback) instead.
 
 __Arguments__
 
@@ -759,9 +759,9 @@ request.query('select 1 as number; select 2 as number', function(err, recordsets
 
 ---------------------------------------
 
-### batch(batch, [callback]) <a id="batch"></a>
+### batch (batch, [callback])
 
-Execute the SQL command. Unlike [query](#query), it doesn't use `sp_executesql`, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like `create procedure` which can't be executed with [query](#query) or if you're executing statements longer than 4000 chars on SQL Server 2000. Also you should use this if you're plan to work with local temporary tables ([more information here](http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx)).
+Execute the SQL command. Unlike [query](#query-command-callback), it doesn't use `sp_executesql`, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like `create procedure` which can't be executed with [query](#query-command-callback) or if you're executing statements longer than 4000 chars on SQL Server 2000. Also you should use this if you're plan to work with local temporary tables ([more information here](http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx)).
 
 NOTE: Table-Valued Parameter (TVP) is not supported in batch.
 
@@ -793,7 +793,7 @@ You can enable multiple recordsets in queries with the `request.multiple = true`
 
 ---------------------------------------
 
-### bulk(table, [callback]) <a id="bulk"></a>
+### bulk(table, [callback])
 
 Perform a bulk insert.
 
@@ -836,7 +836,7 @@ __Errors__
 
 ---------------------------------------
 
-### cancel() <a id="cancel"></a>
+### cancel()
 
 Cancel currently executing request. Return `true` if cancellation packet was send successfully.
 
@@ -855,7 +855,7 @@ request.query('waitfor delay \'00:00:05\'; select 1 as number', function(err, re
 request.cancel();
 ```
 
-## Transaction <a id="transaction"></a>
+## Transaction
 
 **IMPORTANT:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is acquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. Transaction also contains a queue to make sure your requests are executed in series. After you call `commit` or `rollback`, connection is then released back to the connection pool.
 
@@ -931,7 +931,7 @@ transaction.begin(function(err) {
 
 ---------------------------------------
 
-### begin([isolationLevel], [callback]) <a id="begin"></a>
+### begin ([isolationLevel], [callback])
 
 Begin a transaction.
 
@@ -955,7 +955,7 @@ __Errors__
 
 ---------------------------------------
 
-### commit([callback]) <a id="commit"></a>
+### commit ([callback])
 
 Commit a transaction.
 
@@ -982,7 +982,7 @@ __Errors__
 
 ---------------------------------------
 
-### rollback([callback]) <a id="rollback"></a>
+### rollback ([callback])
 
 Rollback a transaction. If the queue isn't empty, all queued requests will be Cancelled and the transaction will be marked as aborted.
 
@@ -1007,7 +1007,7 @@ __Errors__
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 - EREQINPROG (`TransactionError`) - Can't rollback transaction. There is a request in progress.
 
-## PreparedStatement <a id="prepared-statement"></a>
+## Prepared Statement
 
 **IMPORTANT:** always use `PreparedStatement` class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call `prepare`, a single connection is acquired from the connection pool and all subsequent executions are executed exclusively on this connection. Prepared Statement also contains a queue to make sure your executions are executed in series. After you call `unprepare`, the connection is then released back to the connection pool.
 
@@ -1042,7 +1042,7 @@ ps.prepare('select @param as value', function(err) {
 
 ---------------------------------------
 
-### input(name, type) <a id="prepared-statement-input"></a>
+### input (name, type)
 
 Add an input parameter to the prepared statement.
 
@@ -1064,7 +1064,7 @@ __Errors__ (synchronous)
 
 ---------------------------------------
 
-### output(name, type) <a id="prepared-statement-output"></a>
+### output (name, type)
 
 Add an output parameter to the prepared statement.
 
@@ -1086,7 +1086,7 @@ __Errors__ (synchronous)
 
 ---------------------------------------
 
-### prepare(statement, [callback]) <a id="prepare"></a>
+### prepare (statement, [callback])
 
 Prepare a statement.
 
@@ -1111,7 +1111,7 @@ __Errors__
 
 ---------------------------------------
 
-### execute(values, [callback]) <a id="prepared-statement-execute"></a>
+### execute (values, [callback])
 
 Execute a prepared statement.
 
@@ -1210,7 +1210,7 @@ __Errors__
 
 ---------------------------------------
 
-### unprepare([callback]) <a id="unprepare"></a>
+### unprepare ([callback])
 
 Unprepare a prepared statement.
 
@@ -1279,7 +1279,7 @@ __Version__
 
 2.0
 
-## Geography and Geometry <a id="geography"></a>
+## Geography and Geometry
 
 node-mssql has built-in serializer for Geography and Geometry CLR data types.
 
@@ -1309,7 +1309,7 @@ Results in:
   segments: [] }
 ```
 
-## Table-Valued Parameter (TVP) <a id="tvp"></a>
+## Table-Valued Parameter (TVP)
 
 Supported on SQL Server 2008 and later. You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.
 
@@ -1389,7 +1389,7 @@ __Version__
 
 3.0
 
-## JSON support <a id="json"></a>
+## JSON support
 
 SQL Server 2016 introduced built-in JSON serialization. By default, JSON is returned as a plain text in a special column named `JSON_F52E2B61-18A1-11d1-B105-00805F49916B`.
 
@@ -1434,7 +1434,6 @@ Those errors are initialized in node-mssql module and its original stack may be 
 
 SQL Server may generate more than one error for one request so you can access preceding errors with `err.precedingErrors`.
 
-<a id="error-codes"></a>
 ### Error Codes
 
 Each known error has `name`, `code` and `message` properties.
@@ -1662,13 +1661,13 @@ Output for the example above could look similar to this.
 ### Tedious
 
 - If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/patriksimek/node-mssql/issues/36))
-- If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch) instead of [query](#query) ([issue](https://github.com/patriksimek/node-mssql/issues/68))
+- If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/patriksimek/node-mssql/issues/68))
 
 ### msnodesqlv8
 
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
 - msnodesqlv8 doesn't timeout the connection reliably - [reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/9).
-- msnodesqlv8 doesn't support [TVP](#tvp) data type.
+- msnodesqlv8 doesn't support [TVP](#table-valued-parameter-tvp) data type.
 - msnodesqlv8 doesn't support Variant data type.
 - msnodesqlv8 doesn't support request timeout.
 - msnodesqlv8 doesn't support request cancellation.
@@ -1679,8 +1678,8 @@ Output for the example above could look similar to this.
 
 - msnodesql has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
 - msnodesql contains bug in DateTimeOffset ([reported](https://github.com/Azure/node-sqlserver/issues/160))
-- msnodesql doesn't support [Bulk](#bulk) load.
-- msnodesql doesn't support [TVP](#tvp) data type.
+- msnodesql doesn't support [Bulk](#bulk-table-callback) load.
+- msnodesql doesn't support [TVP](#table-valued-parameter-tvp) data type.
 - msnodesql doesn't support Variant data type.
 - msnodesql doesn't support connection timeout.
 - msnodesql doesn't support request timeout.
@@ -1699,19 +1698,19 @@ Output for the example above could look similar to this.
 - node-tds doesn't support Binary, VarBinary and Image as parameters.
 - node-tds always return date/time values in local time.
 - node-tds has serious problems with MAX types.
-- node-tds doesn't support [Bulk](#bulk) load.
-- node-tds doesn't support [TVP](#tvp) data type.
+- node-tds doesn't support [Bulk](#bulk-table-callback) load.
+- node-tds doesn't support [TVP](#table-valued-parameter-tvp) data type.
 - node-tds doesn't support Variant data type.
 - node-tds doesn't support request timeout.
-- node-tds doesn't support [built-in JSON serialization](#json) introduced in SQL Server 2016.
+- node-tds doesn't support [built-in JSON serialization](#json-support) introduced in SQL Server 2016.
 - node-tds doesn't support [detailed SQL errors](#detailed-sql-errors).
 - node-tds doesn't support [Affected Rows](#affected-rows)
 
-## 2.x to 3.x changes <a id="twotothree"></a>
+## 2.x to 3.x changes
 
 ### Prepared Statement
 
-* [`execute`](#prepared-statement-execute) method now returns 3 arguments instead of 2.
+* [`execute`](#execute-values-callback) method now returns 3 arguments instead of 2.
 
     ```javascript
     ps.execute(values, function(err, recordset, affected) { });
@@ -1725,7 +1724,7 @@ Output for the example above could look similar to this.
 
 ### Request
 
-* [`execute`](#execute) method now returns 4 arguments instead of 3.
+* [`execute`](#execute-procedure-callback) method now returns 4 arguments instead of 3.
 
     ```javascript
     ps.execute(values, function(err, recordset, returnValue, affected) { });
@@ -1737,7 +1736,7 @@ Output for the example above could look similar to this.
     request.on('done', function(returnValue, affected) { });
     ```
 
-* [`query`](#query) method now returns 3 arguments instead of 2.
+* [`query`](#query-command-callback) method now returns 3 arguments instead of 2.
 
     ```javascript
     ps.execute(values, function(err, recordset, affected) { });
