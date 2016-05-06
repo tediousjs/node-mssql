@@ -386,6 +386,16 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 
 				# we must collect errors even in stream mode
 				errors.push e
+			
+			handleInfo = (msg) =>
+				@emit 'info',
+					message: msg.message
+					number: msg.number
+					state: msg.state
+					class: msg.class
+					lineNumber: msg.lineNumber
+					serverName: msg.serverName
+					procName: msg.procName
 
 			@_acquire (err, connection) =>
 				unless err
@@ -401,8 +411,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						connection.cancel()
 					
 					# attach handler to handle multiple error messages
+					errorHandlers['infoMessage'] = handleInfo
 					errorHandlers['errorMessage'] = handleError.bind(undefined, false, connection)
 					errorHandlers['error']        = handleError.bind(undefined, true, connection)
+					connection.on 'infoMessage', errorHandlers['infoMessage']
 					connection.on 'errorMessage', errorHandlers['errorMessage']
 					connection.on 'error',        errorHandlers['error']
 
@@ -510,6 +522,16 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 				# we must collect errors even in stream mode
 				errors.push e
 			
+			handleInfo = (msg) =>
+				@emit 'info',
+					message: msg.message
+					number: msg.number
+					state: msg.state
+					class: msg.class
+					lineNumber: msg.lineNumber
+					serverName: msg.serverName
+					procName: msg.procName
+			
 			@_acquire (err, connection) =>
 				unless err
 					if @verbose then @_log "---------- sql #{if @_isBatch then 'batch' else 'query'} ----------\n    #{if @_isBatch then 'batch' else 'query'}: #{command}"
@@ -524,8 +546,10 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						connection.cancel()
 					
 					# attach handler to handle multiple error messages
+					errorHandlers['infoMessage'] = handleInfo
 					errorHandlers['errorMessage'] = handleError.bind(undefined, false, connection)
 					errorHandlers['error']        = handleError.bind(undefined, true, connection)
+					connection.on 'infoMessage', errorHandlers['infoMessage']
 					connection.on 'errorMessage', errorHandlers['errorMessage']
 					connection.on 'error',        errorHandlers['error']
 					

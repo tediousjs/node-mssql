@@ -385,6 +385,16 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						else
 							callback? error, if @multiple or @nested then recordsets else recordsets[0]
 					
+					req.on 'message', (msg) =>
+						@emit 'info',
+							message: msg.text
+							number: msg.number
+							state: msg.state
+							class: msg.severity
+							lineNumber: msg.lineNumber
+							serverName: msg.serverName
+							procName: msg.procName
+					
 					req.on 'error', (err) =>
 						e = RequestError err, 'EREQUEST'
 						

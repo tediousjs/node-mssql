@@ -379,6 +379,44 @@ global.TESTS =
 				
 				complete error
 	
+	'query with raiseerror': (done, stream = false) ->
+		r = new sql.Request
+		r.stream = stream
+		
+		notices = []
+		r.on 'info', notices.push.bind notices
+		
+		complete = (err, recordset) ->
+			assert.equal err instanceof sql.RequestError, true
+			assert.equal err.message, 'An invalid parameter or option was specified for procedure \'mysp\'.'
+			assert.equal err.precedingErrors.length, 1
+			assert.equal err.precedingErrors[0] instanceof sql.RequestError, true
+			assert.equal err.precedingErrors[0].message, 'The size associated with an extended property cannot be more than 7,500 bytes.'
+			
+			assert.equal notices.length, 2
+			assert.equal notices[0].message, 'Print'
+			assert.equal notices[0].number, 0
+			assert.equal notices[0].state, 1
+			assert.equal notices[1].message, 'Notice'
+			assert.equal notices[1].number, 50000
+			assert.equal notices[1].state, 1
+
+			done()
+		
+		r[MODE] "print 'Print'; raiserror(N'Notice', 10, 1); raiserror(15097,-1,-1); raiserror (15600,-1,-1, 'mysp');", complete
+		
+		if stream
+			errors = []
+			
+			r.on 'error', (err) ->
+				errors.push err
+			
+			r.on 'done', ->
+				error = errors.pop()
+				error.precedingErrors = errors
+				
+				complete error
+	
 	'batch': (done, stream = false) ->
 		r = new sql.Request
 		r.stream = stream

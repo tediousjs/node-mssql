@@ -96,6 +96,9 @@ if process.platform.match(/^win/) and installed
 		
 			it.skip 'query with multiple errors (not supported by msnodesql)', (done) ->
 				TESTS['query with multiple errors'] done
+			
+			it.skip 'query with raiseerror (not supported by msnodesqlv8)', (done) ->
+				TESTS['query with raiseerror'] done
 		
 			it 'batch', (done) ->
 				TESTS['batch'] done

@@ -116,6 +116,9 @@ describe 'tedious', ->
 		it 'query with multiple errors (stream)', (done) ->
 			TESTS['query with multiple errors'] done, true
 		
+		it 'query with raiseerror', (done) ->
+			TESTS['query with raiseerror'] done
+		
 		it 'batch', (done) ->
 			TESTS['batch'] done
 		
