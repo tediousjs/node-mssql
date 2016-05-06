@@ -83,15 +83,15 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 
 ### Configuration
 
-* [General](#cfg-general)
-* [Formats](#cfg-formats)
+* [General](#configuration-general)
+* [Formats](#configuration-formats)
 
 ### Drivers
 
-* [Tedious](#cfg-tedious)
-* [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server](#cfg-msnodesqlv8)
-* [Microsoft Driver for Node.js for SQL Server](#cfg-msnodesql)
-* [node-tds](#cfg-node-tds)
+* [Tedious](#tedious)
+* [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server](#msnodesqlv8)
+* [Microsoft Driver for Node.js for SQL Server](#msnodesql)
+* [node-tds](#node-tds)
 
 ### Connections
 
@@ -136,11 +136,11 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 * [JSON support](#json)
 * [Errors](#errors)
 * [Informational messages](#informational-messages)
-* [Metadata](#meta)
+* [Metadata](#metadata)
 * [Data Types](#data-types)
-* [SQL injection](#injection)
-* [Verbose Mode](#verbose)
-* [Known Issues](#issues)
+* [SQL injection](#sql-injection)
+* [Verbose Mode](#verbose-mode)
+* [Known Issues](#known-issues)
 * [Contributing](https://github.com/patriksimek/node-mssql/wiki/Contributing)
 
 ## Examples
@@ -249,7 +249,6 @@ sql.on('error', function(err) {
 });
 ```
 
-<a id="streaming"></a>
 ### Streaming
 
 If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.
@@ -298,7 +297,6 @@ sql.on('error', function(err) {
 });
 ```
 
-<a id="multiple-connections"></a>
 ## Multiple Connections
 
 ```javascript
@@ -369,7 +367,6 @@ new sql.Connection(config).connect().then(function(conn) {
 
 All values are automatically sanitized against sql injection.
 
-<a id="cfg"></a>
 ## Configuration
 
 ```javascript
@@ -386,8 +383,7 @@ var config = {
 }
 ```
 
-<a id="cfg-general"></a>
-### General (same for all drivers)
+### General (same for all drivers) <a id="configuration-general"></a>
 
 - **driver** - Driver to use (default: `tedious`). Possible values: `tedious`, `msnodesqlv8` or `msnodesql` or `tds`.
 - **user** - User name to use for authentication.
@@ -404,8 +400,7 @@ var config = {
 - **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
 
-<a id="cfg-formats"></a>
-### Formats
+### Formats <a id="configuration-formats"></a>
 
 In addition to configuration object there is an option to pass config as a connection string. Two formats of connection string are supported.
 
@@ -429,8 +424,7 @@ __Version__
 
 ## Drivers
 
-<a id="cfg-tedious"></a>
-### Tedious
+### Tedious <a id="tedious"></a>
 
 Default driver, actively maintained and production ready. Platform independent, runs everywhere Node.js runs.
 
@@ -445,8 +439,7 @@ Default driver, actively maintained and production ready. Platform independent, 
 
 More information about Tedious specific options: http://pekim.github.io/tedious/api-connection.html
 
-<a id="cfg-msnodesqlv8"></a>
-### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
+### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server <a id="msnodesqlv8"></a>
 
 **Requires Node.js 0.12.x/4.2.0. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8`.
 
@@ -467,8 +460,7 @@ Default connection string when connecting to named instance:
 Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
 ```
 
-<a id="cfg-msnodesql"></a>
-### Microsoft Driver for Node.js for SQL Server
+### Microsoft Driver for Node.js for SQL Server <a id="msnodesql"></a>
 
 **Requires Node.js 0.6.x/0.8.x/0.10.x. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-unofficial).
 
@@ -489,15 +481,13 @@ Default connection string when connecting to named instance:
 Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
 ```
 
-<a id="cfg-node-tds"></a>
-### node-tds
+### node-tds <a id="node-tds"></a>
 
 **Legacy support, don't use this driver for new projects.** This driver is not part of the default package and must be installed separately by `npm install tds`.
 
 _node-mssql updates this driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`._
 
-<a id="connection"></a>
-## Connections
+## Connection <a id="connection"></a>
 
 Internally, each `Connection` instance is a separate pool of TDS connections. Once you create a new `Request`/`Transaction`/`Prepared Statement`, a new TDS connection is acquired from the pool and reserved for desired action. Once the action is complete, connection is released back to the pool. Connection health check is built-in so once the dead connection is discovered, it is immediately replaced with a new one.
 
@@ -518,8 +508,7 @@ __Errors__
 
 ---------------------------------------
 
-<a id="connect"></a>
-### connect([callback])
+### connect([callback]) <a id="connect"></a>
 
 Create a new connection pool with one active connection. This one initial connection serves as a probe to find out whether the configuration is valid.
 
@@ -552,8 +541,7 @@ __Errors__
 
 ---------------------------------------
 
-<a id="close"></a>
-### close()
+### close() <a id="close"></a>
 
 Close all active connections in the pool.
 
@@ -563,8 +551,7 @@ __Example__
 connection.close();
 ```
 
-<a id="request"></a>
-## Requests
+## Request <a id="request"></a>
 
 ```javascript
 var request = new sql.Request(/* [connection] */);
@@ -578,11 +565,11 @@ If you omit connection argument, global connection is used instead.
 - **row(row)** - Dispatched when new row is parsed.
 - **done(returnValue)** - Dispatched when request is complete.
 - **error(err)** - Dispatched on error.
+- **info(message)** - Dispatched on informational message.
 
 ---------------------------------------
 
-<a id="execute"></a>
-### execute(procedure, [callback])
+### execute(procedure, [callback]) <a id="execute"></a>
 
 Call a stored procedure.
 
@@ -625,8 +612,7 @@ __Errors__
 
 ---------------------------------------
 
-<a id="input"></a>
-### input(name, [type], value)
+### input(name, [type], value) <a id="input"></a>
 
 Add an input parameter to the request.
 
@@ -672,8 +658,7 @@ __Errors__ (synchronous)
 
 ---------------------------------------
 
-<a id="output"></a>
-### output(name, type, [value])
+### output(name, type, [value]) <a id="output"></a>
 
 Add an output parameter to the request.
 
@@ -696,8 +681,7 @@ __Errors__ (synchronous)
 
 ---------------------------------------
 
-<a id="pipe"></a>
-### pipe(stream)
+### pipe(stream) <a id="pipe"></a>
 
 Sets request to `stream` mode and pulls all rows from all recordsets to a given stream.
 
@@ -725,8 +709,7 @@ __Version__
 
 ---------------------------------------
 
-<a id="query"></a>
-### query(command, [callback])
+### query(command, [callback]) <a id="query"></a>
 
 Execute the SQL command. To execute commands like `create procedure` or if you plan to work with local temporary tables, use [batch](#batch) instead.
 
@@ -776,8 +759,7 @@ request.query('select 1 as number; select 2 as number', function(err, recordsets
 
 ---------------------------------------
 
-<a id="batch"></a>
-### batch(batch, [callback])
+### batch(batch, [callback]) <a id="batch"></a>
 
 Execute the SQL command. Unlike [query](#query), it doesn't use `sp_executesql`, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like `create procedure` which can't be executed with [query](#query) or if you're executing statements longer than 4000 chars on SQL Server 2000. Also you should use this if you're plan to work with local temporary tables ([more information here](http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx)).
 
@@ -811,8 +793,7 @@ You can enable multiple recordsets in queries with the `request.multiple = true`
 
 ---------------------------------------
 
-<a id="bulk"></a>
-### bulk(table, [callback])
+### bulk(table, [callback]) <a id="bulk"></a>
 
 Perform a bulk insert.
 
@@ -855,8 +836,7 @@ __Errors__
 
 ---------------------------------------
 
-<a id="cancel"></a>
-### cancel()
+### cancel() <a id="cancel"></a>
 
 Cancel currently executing request. Return `true` if cancellation packet was send successfully.
 
@@ -875,8 +855,7 @@ request.query('waitfor delay \'00:00:05\'; select 1 as number', function(err, re
 request.cancel();
 ```
 
-<a id="transaction"></a>
-## Transactions
+## Transaction <a id="transaction"></a>
 
 **IMPORTANT:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is acquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. Transaction also contains a queue to make sure your requests are executed in series. After you call `commit` or `rollback`, connection is then released back to the connection pool.
 
@@ -952,8 +931,7 @@ transaction.begin(function(err) {
 
 ---------------------------------------
 
-<a id="begin"></a>
-### begin([isolationLevel], [callback])
+### begin([isolationLevel], [callback]) <a id="begin"></a>
 
 Begin a transaction.
 
@@ -977,8 +955,7 @@ __Errors__
 
 ---------------------------------------
 
-<a id="commit"></a>
-### commit([callback])
+### commit([callback]) <a id="commit"></a>
 
 Commit a transaction.
 
@@ -1005,8 +982,7 @@ __Errors__
 
 ---------------------------------------
 
-<a id="rollback"></a>
-### rollback([callback])
+### rollback([callback]) <a id="rollback"></a>
 
 Rollback a transaction. If the queue isn't empty, all queued requests will be Cancelled and the transaction will be marked as aborted.
 
@@ -1031,8 +1007,7 @@ __Errors__
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 - EREQINPROG (`TransactionError`) - Can't rollback transaction. There is a request in progress.
 
-<a id="prepared-statement"></a>
-## PreparedStatement
+## PreparedStatement <a id="prepared-statement"></a>
 
 **IMPORTANT:** always use `PreparedStatement` class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call `prepare`, a single connection is acquired from the connection pool and all subsequent executions are executed exclusively on this connection. Prepared Statement also contains a queue to make sure your executions are executed in series. After you call `unprepare`, the connection is then released back to the connection pool.
 
@@ -1067,8 +1042,7 @@ ps.prepare('select @param as value', function(err) {
 
 ---------------------------------------
 
-<a id="prepared-statement-input"></a>
-### input(name, type)
+### input(name, type) <a id="prepared-statement-input"></a>
 
 Add an input parameter to the prepared statement.
 
@@ -1090,8 +1064,7 @@ __Errors__ (synchronous)
 
 ---------------------------------------
 
-<a id="prepared-statement-output"></a>
-### output(name, type)
+### output(name, type) <a id="prepared-statement-output"></a>
 
 Add an output parameter to the prepared statement.
 
@@ -1113,8 +1086,7 @@ __Errors__ (synchronous)
 
 ---------------------------------------
 
-<a id="prepare"></a>
-### prepare(statement, [callback])
+### prepare(statement, [callback]) <a id="prepare"></a>
 
 Prepare a statement.
 
@@ -1139,8 +1111,7 @@ __Errors__
 
 ---------------------------------------
 
-<a id="prepared-statement-execute"></a>
-### execute(values, [callback])
+### execute(values, [callback]) <a id="prepared-statement-execute"></a>
 
 Execute a prepared statement.
 
@@ -1239,8 +1210,7 @@ __Errors__
 
 ---------------------------------------
 
-<a id="unprepare"></a>
-### unprepare([callback])
+### unprepare([callback]) <a id="unprepare"></a>
 
 Unprepare a prepared statement.
 
@@ -1266,7 +1236,6 @@ ps.prepare('select @param as value', function(err, recordsets) {
 __Errors__
 - ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
 
-<a id="cli"></a>
 ## CLI
 
 Before you can start using CLI, you must install `mssql` globally with `npm install mssql -g`. Once you do that you will be able to execute `mssql` command.
@@ -1310,8 +1279,7 @@ __Version__
 
 2.0
 
-<a id="geography"></a>
-## Geography and Geometry
+## Geography and Geometry <a id="geography"></a>
 
 node-mssql has built-in serializer for Geography and Geometry CLR data types.
 
@@ -1341,8 +1309,7 @@ Results in:
   segments: [] }
 ```
 
-<a id="tvp"></a>
-## Table-Valued Parameter (TVP)
+## Table-Valued Parameter (TVP) <a id="tvp"></a>
 
 Supported on SQL Server 2008 and later. You can pass a data table as a parameter to stored procedure. First, we have to create custom type in our database.
 
@@ -1383,7 +1350,6 @@ request.execute('MyCustomStoredProcedure', function(err, recordsets, returnValue
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
 
-<a id="affected-rows">
 ## Affected Rows
 
 If you're performing `INSERT`, `UPDATE` or `DELETE` in a query, you can read number of affected rows.
@@ -1423,8 +1389,7 @@ __Version__
 
 3.0
 
-<a id="json"></a>
-## JSON support
+## JSON support <a id="json"></a>
 
 SQL Server 2016 introduced built-in JSON serialization. By default, JSON is returned as a plain text in a special column named `JSON_F52E2B61-18A1-11d1-B105-00805F49916B`.
 
@@ -1456,7 +1421,6 @@ __Version__
 
 2.3
 
-<a id="errors"></a>
 ## Errors
 
 There are 4 types of errors you can handle:
@@ -1501,7 +1465,6 @@ Name | Code | Message
 `PreparedStatementError` | EALREADYPREPARED | Statement is already prepared.
 `PreparedStatementError` | ENOTPREPARED | Statement is not prepared.
 
-<a id="detailed-sql-errors"></a>
 ### Detailed SQL Errors
 
 SQL errors (`RequestError` with `err.code` equal to `EREQUEST`) contains additional details.
@@ -1513,7 +1476,6 @@ SQL errors (`RequestError` with `err.code` equal to `EREQUEST`) contains additio
 - **err.serverName** - The server name.
 - **err.procName** - The stored procedure name.
 
-<a id="informational-messages"></a>
 ## Informational messages
 
 To receive informational messages generated by `PRINT` or `RAISERROR` commands use:
@@ -1542,7 +1504,6 @@ __Version__
 
 3.3
 
-<a id="meta"></a>
 ## Metadata
 
 Recordset metadata are accessible through the `recordset.columns` property.
@@ -1586,7 +1547,6 @@ Columns structure for example above:
 }
 ```
 
-<a id="data-types"></a>
 ## Data Types
 
 You can define data types with length/precision/scale:
@@ -1651,7 +1611,6 @@ sql.Geometry
 
 To setup MAX length for `VarChar`, `NVarChar` and `VarBinary` use `sql.MAX` length. Types `sql.XML` and `sql.Variant` are not supported as input parameters.
 
-<a id="injection"></a>
 ## SQL injection
 
 This module has built-in SQL injection protection. Always use parameters to pass sanitized values to your queries.
@@ -1664,7 +1623,6 @@ request.query('select @myval as myval', function(err, recordset) {
 });
 ```
 
-<a id="verbose"></a>
 ## Verbose Mode
 
 You can enable verbose mode by `request.verbose = true` command.
@@ -1699,7 +1657,6 @@ Output for the example above could look similar to this.
 ---------- completed ----------
 ```
 
-<a id="issues"></a>
 ## Known issues
 
 ### Tedious
@@ -1750,8 +1707,7 @@ Output for the example above could look similar to this.
 - node-tds doesn't support [detailed SQL errors](#detailed-sql-errors).
 - node-tds doesn't support [Affected Rows](#affected-rows)
 
-<a id="twotothree"></a>
-## 2.x to 3.x changes
+## 2.x to 3.x changes <a id="twotothree"></a>
 
 ### Prepared Statement
 
@@ -1793,7 +1749,6 @@ Output for the example above could look similar to this.
     request.on('done', function(affected) { });
     ```
 
-<a id="license"></a>
 ## License
 
 Copyright (c) 2013-2016 Patrik Simek
