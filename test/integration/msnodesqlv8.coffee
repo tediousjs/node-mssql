@@ -147,6 +147,21 @@ if process.platform.match(/^win/) and installed
 			
 			after ->
 				sql.close()
+		
+		describe.skip 'json support (requires SQL Server 2016)', ->
+			before (done) ->
+				global.DRIVER = 'msnodesqlv8'
+				global.MODE = 'query'
+				
+				cfg = config()
+				cfg.parseJSON = true
+				sql.connect cfg, done
+			
+			it 'parser', (done) ->
+				TESTS['json parser'] done
+			
+			after (done) ->
+				sql.close done
 	
 		describe 'bulk load', ->
 			before (done) ->

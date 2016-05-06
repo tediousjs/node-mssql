@@ -1425,7 +1425,7 @@ __Version__
 3.0
 
 <a name="json" />
-## JSON support (works only with Tedious driver)
+## JSON support
 
 SQL Server 2016 introduced built-in JSON serialization. By default, JSON is returned as a plain text in a special column named `JSON_F52E2B61-18A1-11d1-B105-00805F49916B`.
 

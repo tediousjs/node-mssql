@@ -322,7 +322,23 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 					req.on 'meta', (metadata) =>
 						if row
 							if isChunkedRecordset
-								row[columns[0].name] = chunksBuffer.join ''
+								if columns[0].name is JSON_COLUMN_ID and @connection.config.parseJSON is true
+									try
+										row = JSON.parse chunksBuffer.join('')
+										if not @stream then recordsets[recordsets.length - 1][0] = row
+									catch ex
+										row = null
+										ex = RequestError new Error("Failed to parse incoming JSON. #{ex.message}"), 'EJSON'
+										
+										if @stream
+											@emit 'error', ex
+										
+										else
+											console.error ex
+								
+								else
+									row[columns[0].name] = chunksBuffer.join ''
+								
 								chunksBuffer = null
 								
 							if @verbose
@@ -414,7 +430,23 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						unless @nested
 							if row
 								if isChunkedRecordset
-									row[columns[0].name] = chunksBuffer.join ''
+									if columns[0].name is JSON_COLUMN_ID and @connection.config.parseJSON is true
+										try
+											row = JSON.parse chunksBuffer.join('')
+											if not @stream then recordsets[recordsets.length - 1][0] = row
+										catch ex
+											row = null
+											ex = RequestError new Error("Failed to parse incoming JSON. #{ex.message}"), 'EJSON'
+											
+											if @stream
+												@emit 'error', ex
+											
+											else
+												console.error ex
+									
+									else
+										row[columns[0].name] = chunksBuffer.join ''
+									
 									chunksBuffer = null
 								
 								if @verbose

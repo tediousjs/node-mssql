@@ -170,10 +170,7 @@ describe 'tedious', ->
 		it 'type validation (batch)', (done) ->
 			global.MODE = 'batch'
 			TESTS['type validation'] done
-		
-		it.skip 'json support', (done) ->
-			TESTS['json support'] done
-		
+
 		it.skip 'chunked json support (requires SQL Server 2016)', (done) ->
 			TESTS['chunked json support'] done
 		
@@ -183,7 +180,7 @@ describe 'tedious', ->
 		after (done) ->
 			sql.close done
 	
-	describe.skip 'json support (experimental, requires SQL Server 2016)', ->
+	describe.skip 'json support (requires SQL Server 2016)', ->
 		before (done) ->
 			global.DRIVER = 'tedious'
 			global.MODE = 'query'
