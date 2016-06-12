@@ -273,7 +273,9 @@ class Connection extends EventEmitter
 				callback err
 
 			@driver = null
-		
+		else 
+			#if the connection was not connecting or connected, invoke the callback right away
+			callback null 
 		@
 	
 	###
