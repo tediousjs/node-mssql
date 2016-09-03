@@ -551,7 +551,7 @@ class PreparedStatement extends EventEmitter
 	###
 	
 	execute: (values, callback) ->
-		if callback?
+		if @stream or callback?
 			return @_execute values, callback
 		
 		new module.exports.Promise (resolve, reject) =>
