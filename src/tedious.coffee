@@ -46,7 +46,7 @@ getTediousType = (type) ->
 		when TYPES.DateTimeOffset then return tds.TYPES.DateTimeOffsetN
 		when TYPES.SmallDateTime then return tds.TYPES.SmallDateTime
 		when TYPES.UniqueIdentifier then return tds.TYPES.UniqueIdentifierN
-		when TYPES.Xml then return tds.TYPES.VarChar
+		when TYPES.Xml then return tds.TYPES.NVarChar
 		when TYPES.Char then return tds.TYPES.Char
 		when TYPES.NChar then return tds.TYPES.NChar
 		when TYPES.NText then return tds.TYPES.NVarChar
