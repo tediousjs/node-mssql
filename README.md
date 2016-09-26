@@ -164,8 +164,8 @@ var config = {
 sql.connect(config).then(function() {
 	// Query
 	
-	new sql.Request();
-	.input('input_parameter', sql.Int, value);
+	new sql.Request()
+	.input('input_parameter', sql.Int, value)
 	.query('select * from mytable where id = @input_parameter').then(function(recordset) {
 		console.dir(recordset);
 	}).catch(function(err) {
@@ -174,9 +174,9 @@ sql.connect(config).then(function() {
 
     // Stored Procedure
 	
-	new sql.Request();
-	.input('input_parameter', sql.Int, value);
-    .output('output_parameter', sql.VarChar(50));
+	new sql.Request()
+	.input('input_parameter', sql.Int, value)
+	.output('output_parameter', sql.VarChar(50))
 	.execute('procedure_name').then(function(recordsets) {
 		console.dir(recordsets);
 	}).catch(function(err) {
