@@ -164,7 +164,7 @@ var config = {
 sql.connect(config).then(function() {
 	// Query
 	
-	new sql.Request();
+	new sql.Request()
 	.input('input_parameter', sql.Int, value);
 	.query('select * from mytable where id = @input_parameter').then(function(recordset) {
 		console.dir(recordset);
@@ -174,7 +174,7 @@ sql.connect(config).then(function() {
 
     // Stored Procedure
 	
-	new sql.Request();
+	new sql.Request()
 	.input('input_parameter', sql.Int, value);
     .output('output_parameter', sql.VarChar(50));
 	.execute('procedure_name').then(function(recordsets) {
@@ -193,7 +193,7 @@ Native Promise is used by default. You can easily change this with `sql.Promise 
 
 ```javascript
 sql.connect(config).then(function() {
-	sql.query`select * from mytable where id = ${value}`.then(function(recordset) {
+	sql.query(`select * from mytable where id = ${value}`).then(function(recordset) {
 		console.dir(recordset);
 	}).catch(function(err) {
 		// ... error checks
