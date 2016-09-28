@@ -21,7 +21,7 @@
 		"azure",
 		"node-mssql"
 	],
-	"version": "3.3.0",
+	"version": "4.0.0",
 	"main": "index.js",
 	"repository": {
 		"type": "git",
@@ -41,16 +41,19 @@
 		"node": ">=0.10"
 	},
 	"scripts": {
-		"prepublish": "node_modules/.bin/coffee --compile --output ./lib ./src",
-		"compile": "node_modules/.bin/coffee --compile --output ./lib ./src",
 		"test": "node_modules/.bin/mocha test/unit",
 		"test-tedious": "node_modules/.bin/mocha test/integration -g tedious",
-		"test-msnodesql": "node_modules/.bin/mocha test/integration -g msnodesql",
 		"test-msnodesqlv8": "node_modules/.bin/mocha test/integration -g msnodesqlv8",
-		"test-tds": "node_modules/.bin/mocha test/integration -g tds",
 		"test-cli": "node_modules/.bin/mocha test/integration -g cli"
 	},
 	"bin": {
 		"mssql": "./bin/mssql"
+	},
+	"xo": {
+		"esnext": true,
+		"rules": {
+			"eqeqeq": "off",
+			"no-eq-null": "off"
+		}
 	}
 }

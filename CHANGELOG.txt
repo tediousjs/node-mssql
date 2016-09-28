@@ -1,3 +1,10 @@
+v4.0.0 (2016-10-00)
+-------------------
+[new] Completly rewritten to ES6
+[change] Removed support for < Node.js 4
+[change] Removed support for outdated node-tds and msnodesql drivers
+[change] Removed require('mssql/nofix') syntax
+
 v3.3.0 (2016-05-06)
 -------------------
 [new] Added support for receiving informational messages
