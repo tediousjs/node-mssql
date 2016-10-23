@@ -437,7 +437,7 @@ Default driver, actively maintained and production ready. Platform independent, 
 - **options.appName** - Application name used for SQL server logging.
 - **options.abortTransactionOnError** - A boolean determining whether to rollback a transaction automatically if any error is encountered during the given transaction's execution. This sets the value for `XACT_ABORT` during the initial SQL phase of a connection.
 
-More information about Tedious specific options: http://pekim.github.io/tedious/api-connection.html
+More information about Tedious specific options: http://tediousjs.github.io/tedious/api-connection.html
 
 ### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
 
