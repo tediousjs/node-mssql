@@ -1,3 +1,15 @@
+*****
+
+This is a fork of [https://github.com/patriksimek/node-mssql]() with added
+support for [dynamic driver
+option](https://github.com/jholster/node-mssql/commit/f56617ef38d5c3ed99c5647d1d8163859fda85a3)
+for browserify compatibility. This fork will be deleted if the patch is
+accepted in the original project.
+
+Installable as `npm install mssql2`.
+
+*****
+
 # node-mssql
 
 Microsoft SQL Server client for Node.js
