@@ -2,7 +2,7 @@
 msnodesql = require 'msnodesqlv8'
 util = require 'util'
 
-{TYPES, declare} = require('./datatypes')
+{TYPES, declare, cast} = require('./datatypes')
 UDT = require('./udt').PARSERS
 ISOLATION_LEVEL = require('./isolationlevel')
 DECLARATIONS = require('./datatypes').DECLARATIONS
@@ -305,7 +305,7 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 			
 			unless @nested
 				input = ("@#{param.name} #{declare(param.type, param)}" for name, param of @parameters)
-				sets = ("set @#{param.name}=?" for name, param of @parameters when param.io is 1)
+				sets = ("set @#{param.name}= #{cast(param.value, param.type, param)}" for name, param of @parameters when param.io is 1)
 				output = ("@#{param.name} as '#{param.name}'" for name, param of @parameters when param.io is 2)
 				if input.length then command = "declare #{input.join ','};#{sets.join ';'};#{command};"
 				if output.length
