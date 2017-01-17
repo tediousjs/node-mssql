@@ -3,7 +3,7 @@
 		"name": "Patrik Simek",
 		"url": "https://patriksimek.cz"
 	},
-	"name": "mssql",
+	"name": "ut-mssql",
 	"description": "Microsoft SQL Server client for Node.js.",
 	"keywords": [
 		"database",
@@ -21,7 +21,7 @@
 		"azure",
 		"node-mssql"
 	],
-	"version": "3.3.0",
+	"version": "3.3.1",
 	"main": "index.js",
 	"repository": {
 		"type": "git",
