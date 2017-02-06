@@ -83,7 +83,7 @@ getMssqlType = (type, length) ->
 		when tds.TYPES.Bit, tds.TYPES.BitN then return TYPES.Bit
 		when tds.TYPES.Float then return TYPES.Float
 		when tds.TYPES.FloatN
-			if length is 8 then return TYPES.FloatN
+			if length is 8 then return TYPES.Float
 			return TYPES.Real
 		
 		when tds.TYPES.Real then return TYPES.Real
