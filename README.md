@@ -1647,7 +1647,7 @@ Output for the example above could look similar to this.
 
 TBD
 
-## Sponsors
+## Sponsors
 
 Development is sponsored by [Integromat](https://www.integromat.com/en/integrations/mssql).
 

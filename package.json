@@ -1,59 +1,58 @@
 {
-	"author": {
-		"name": "Patrik Simek",
-		"url": "https://patriksimek.cz"
-	},
-	"name": "mssql",
-	"description": "Microsoft SQL Server client for Node.js.",
-	"keywords": [
-		"database",
-		"mssql",
-		"sql",
-		"server",
-		"msnodesql",
-		"sqlserver",
-		"tds",
-		"node-tds",
-		"tedious",
-		"node-sqlserver",
-		"sqlserver",
-		"msnodesqlv8",
-		"azure",
-		"node-mssql"
-	],
-	"version": "4.0.0",
-	"main": "index.js",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/patriksimek/node-mssql"
-	},
-	"license": "MIT",
-	"dependencies": {
-		"tedious": "~1.14.0",
-		"generic-pool": "^2.2.0",
-		"promise": "^7.0.1"
-	},
-	"devDependencies": {
-		"coffee-script": "^1.9.3",
-		"mocha": "^2.1.0"
-	},
-	"engines": {
-		"node": ">=0.10"
-	},
-	"scripts": {
-		"test": "node_modules/.bin/mocha test/unit",
-		"test-tedious": "node_modules/.bin/mocha test/integration -g tedious",
-		"test-msnodesqlv8": "node_modules/.bin/mocha test/integration -g msnodesqlv8",
-		"test-cli": "node_modules/.bin/mocha test/integration -g cli"
-	},
-	"bin": {
-		"mssql": "./bin/mssql"
-	},
-	"xo": {
-		"esnext": true,
-		"rules": {
-			"eqeqeq": "off",
-			"no-eq-null": "off"
-		}
-	}
+  "author": {
+    "name": "Patrik Simek",
+    "url": "https://patriksimek.cz"
+  },
+  "name": "mssql",
+  "description": "Microsoft SQL Server client for Node.js.",
+  "keywords": [
+    "database",
+    "mssql",
+    "sql",
+    "server",
+    "msnodesql",
+    "sqlserver",
+    "tds",
+    "node-tds",
+    "tedious",
+    "node-sqlserver",
+    "sqlserver",
+    "msnodesqlv8",
+    "azure",
+    "node-mssql"
+  ],
+  "version": "4.0.0",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/patriksimek/node-mssql"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "debug": "^2.6.1",
+    "generic-pool": "^3.1.7",
+    "tedious": "~1.14.0"
+  },
+  "devDependencies": {
+    "mocha": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=4"
+  },
+  "scripts": {
+    "test": "node_modules/.bin/mocha test/unit",
+    "test-tedious": "node_modules/.bin/mocha test/integration -g tedious",
+    "test-msnodesqlv8": "node_modules/.bin/mocha test/integration -g msnodesqlv8",
+    "test-cli": "node_modules/.bin/mocha test/integration -g cli"
+  },
+  "bin": {
+    "mssql": "./bin/mssql"
+  },
+  "xo": {
+    "esnext": true,
+    "rules": {
+      "eqeqeq": "off",
+      "no-eq-null": "off"
+    }
+  }
 }
