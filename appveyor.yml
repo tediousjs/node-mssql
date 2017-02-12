@@ -2,15 +2,12 @@ version: "{build}"
 
 environment:
   matrix:
-    - nodejs_version: "0.10"
-    - nodejs_version: "0.12"
     - nodejs_version: "4"
-    - nodejs_version: "5"
+    - nodejs_version: "6"
 
 install:
   - ps: Install-Product node $env:nodejs_version
   - npm install
-  - npm install tds
   - npm install msnodesqlv8
 
 build: off
@@ -28,20 +25,22 @@ test_script:
       
       powershell %cd%\test\scripts\appveyor.ps1 SQL2008R2SP2
       npm run-script test-tedious || SET EXITVAL=1
-      npm run-script test-tds || SET EXITVAL=1
-      npm run-script test-msnodesql || SET EXITVAL=1
+      npm run-script test-msnodesqlv8 || SET EXITVAL=1
       net stop MSSQL$SQL2008R2SP2
       
       powershell %cd%\test\scripts\appveyor.ps1 SQL2012SP1
       npm run-script test-tedious || SET EXITVAL=1
-      npm run-script test-tds || SET EXITVAL=1
-      npm run-script test-msnodesql || SET EXITVAL=1
+      npm run-script test-msnodesqlv8 || SET EXITVAL=1
       net stop MSSQL$SQL2012SP1
       
       powershell %cd%\test\scripts\appveyor.ps1 SQL2014
       npm run-script test-tedious || SET EXITVAL=1
-      npm run-script test-tds || SET EXITVAL=1
-      npm run-script test-msnodesql || SET EXITVAL=1
+      npm run-script test-msnodesqlv8 || SET EXITVAL=1
       net stop MSSQL$SQL2014
+      
+      powershell %cd%\test\scripts\appveyor.ps1 SQL2016
+      npm run-script test-tedious || SET EXITVAL=1
+      npm run-script test-msnodesqlv8 || SET EXITVAL=1
+      net stop MSSQL$SQL2016
       
       EXIT /B %EXITVAL%
