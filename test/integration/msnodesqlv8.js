@@ -1,3 +1,5 @@
+'use strict'
+
 let installed;
 const sql = require('../../');
 const assert = require("assert");

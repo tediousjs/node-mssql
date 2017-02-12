@@ -1,3 +1,5 @@
+'use strict'
+
 const sql = require('../../');
 const assert = require('assert');
 

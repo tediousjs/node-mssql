@@ -1,3 +1,5 @@
+'use strict'
+
 const sql = require('../../tedious.js');
 const assert = require("assert");
 
