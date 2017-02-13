@@ -3,8 +3,11 @@
 const sql = require('../../tedious.js');
 const assert = require("assert");
 
+const TESTS = require('../common/tests.js')(sql);
+const TIMES = require('../common/times.js')(sql);
+
 if (parseInt(process.version.match(/^v(\d+)\./)[1]) > 0) {
-	require('../es6/templatestring.js');
+	require('../common/templatestring.js');
 }
 
 const config = function() {

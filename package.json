@@ -40,10 +40,10 @@
     "node": ">=4"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha test/unit",
-    "test-tedious": "node_modules/.bin/mocha test/integration -g tedious",
-    "test-msnodesqlv8": "node_modules/.bin/mocha test/integration -g msnodesqlv8",
-    "test-cli": "node_modules/.bin/mocha test/integration -g cli"
+    "test": "node_modules/.bin/mocha test/common/unit.js",
+    "test-tedious": "node_modules/.bin/mocha test/tedious",
+    "test-msnodesqlv8": "node_modules/.bin/mocha test/msnodesqlv8",
+    "test-cli": "node_modules/.bin/mocha test/common/cli.js"
   },
   "bin": {
     "mssql": "./bin/mssql"
