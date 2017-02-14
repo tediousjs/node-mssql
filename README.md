@@ -1273,7 +1273,7 @@ request.execute('MyCustomStoredProcedure', (err, result) => {
 
 ## Affected Rows
 
-If you're performing `INSERT`, `UPDATE` or `DELETE` in a query, you can read number of affected rows.
+If you're performing `INSERT`, `UPDATE` or `DELETE` in a query, you can read number of affected rows. The `rowsAffected` variable is an array of numbers. Each number represents number of affected rows by a single statement.
 
 __Example using Promises__
 
@@ -1303,8 +1303,6 @@ request.on('done', result => {
     console.log(result.rowsAffected);
 });
 ```
-
-**NOTE**: If your query contains multiple `INSERT`, `UPDATE` or `DELETE` statements, the number of affected rows is a sum of all of them.
 
 __Version__
 
@@ -1564,13 +1562,14 @@ request.query('select @myval as myval', (err, result) => {
 ## 3.x to 4.x changes
 
 - Library & tests are rewritten to ES6.
-- Removed support for `tds` and `msnodesql` drivers.
-- `Connection` was renamed to `ConnectionPool`
-- Drivers are no longer loaded dynamically so the library is now compatible with Webpack. To use `msnodesqlv2` driver, use `const sql = require('mssql/msnodesqlv8')` syntax.
-- Every callback/resolve now returns `results` object only. This object contains `recordsets` (array of recordsets), `recordset` (first recordset from array of recordsets), `rowsAffected` (array of numbers representig number of affected rows by each insert/update/delete statement) and `output` (key/value collection of output parameters' values).
+- `Connection` was renamed to `ConnectionPool`.
+- Drivers are no longer loaded dynamically so the library is now compatible with Webpack. To use `msnodesqlv8` driver, use `const sql = require('mssql/msnodesqlv8')` syntax.
+- Every callback/resolve now returns `result` object only. This object contains `recordsets` (array of recordsets), `recordset` (first recordset from array of recordsets), `rowsAffected` (array of numbers representig number of affected rows by each insert/update/delete statement) and `output` (key/value collection of output parameters' values).
+- Affected rows are now returned as an array. A separate number for each SQL statement.
 - Directive `multiple: true` was removed.
 - `Transaction` and `PreparedStatement` internal queues was removed.
 - Removed verbose mode.
+- Removed support for `tds` and `msnodesql` drivers.
 - Removed support for Node versions lower than 4.
 
 ## Sponsors
@@ -1579,7 +1578,7 @@ Development is sponsored by [Integromat](https://www.integromat.com/en/integrati
 
 ## License
 
-Copyright (c) 2013-2016 Patrik Simek
+Copyright (c) 2013-2017 Patrik Simek
 
 The MIT License
 
