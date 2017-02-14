@@ -134,8 +134,8 @@ class Connection extends EventEmitter
 		if @config.driver in DRIVERS
 			@driver = @initializeDriver require("./#{@config.driver}")
 			
-			# fix the driver by default
-			if module.exports.fix then @driver.fix()
+		else if typeof @config.driver is 'function'
+			@driver = @initializeDriver @config.driver
 
 		else
 			err = new ConnectionError "Unknown driver #{@config.driver}!", 'EDRIVER'
@@ -144,6 +144,9 @@ class Connection extends EventEmitter
 				return callback err
 			else
 				throw err
+		
+		# fix the driver by default
+		if module.exports.fix then @driver.fix()
 
 		if callback then @connect callback
 	

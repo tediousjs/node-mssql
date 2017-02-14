@@ -1,10 +1,9 @@
 {
 	"author": {
-		"name": "Patrik Simek",
-		"url": "https://patriksimek.cz"
+		"name": "Jaakko Holster (originally Patrik Simek)"
 	},
-	"name": "mssql",
-	"description": "Microsoft SQL Server client for Node.js.",
+	"name": "mssql2",
+	"description": "Microsoft SQL Server client for Node.js (fork)",
 	"keywords": [
 		"database",
 		"mssql",
@@ -21,11 +20,11 @@
 		"azure",
 		"node-mssql"
 	],
-	"version": "3.3.0",
+	"version": "3.3.1",
 	"main": "index.js",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/patriksimek/node-mssql"
+		"url": "https://github.com/jholster/node-mssql"
 	},
 	"license": "MIT",
 	"dependencies": {
