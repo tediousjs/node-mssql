@@ -9,6 +9,7 @@ v4.0.0 (2017-02-00)
 [change] Removed verbose mode
 [change] Removed 'driver' from options
 [change] Removed Transaction and Prepared Statement queues
+[change] Removed 'multiple' directive
 [change] Connection renamed to ConnectionPool
 
 v3.3.0 (2016-05-06)

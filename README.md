@@ -1,4 +1,4 @@
-# node-mssql v4 (WIP)
+# node-mssql v4 alpha
 
 Microsoft SQL Server client for Node.js
 
@@ -31,7 +31,7 @@ node-mssql uses Tedious as the default driver.
 
 **IMPORTANT**: Requires Node.js 4 or newer.
 
-    npm install mssql
+    npm install mssql@alpha
 
 ## Quick Example
 
@@ -1563,7 +1563,15 @@ request.query('select @myval as myval', (err, result) => {
 
 ## 3.x to 4.x changes
 
-TBD
+- Library & tests are rewritten to ES6.
+- Removed support for `tds` and `msnodesql` drivers.
+- `Connection` was renamed to `ConnectionPool`
+- Drivers are no longer loaded dynamically so the library is now compatible with Webpack. To use `msnodesqlv2` driver, use `const sql = require('mssql/msnodesqlv8')` syntax.
+- Every callback/resolve now returns `results` object only. This object contains `recordsets` (array of recordsets), `recordset` (first recordset from array of recordsets), `rowsAffected` (array of numbers representig number of affected rows by each insert/update/delete statement) and `output` (key/value collection of output parameters' values).
+- Directive `multiple: true` was removed.
+- `Transaction` and `PreparedStatement` internal queues was removed.
+- Removed verbose mode.
+- Removed support for Node versions lower than 4.
 
 ## Sponsors
 
