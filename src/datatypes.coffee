@@ -45,10 +45,14 @@ for key, value of TYPES
 
 module.exports.declare = (type, options) ->
 	switch type
-		when TYPES.VarChar, TYPES.NVarChar, TYPES.VarBinary
+		when TYPES.VarChar, TYPES.VarBinary
 			return "#{type.declaration} (#{if options.length > 8000 then 'MAX' else (options.length ? 'MAX')})"
 		when TYPES.NVarChar
 			return "#{type.declaration} (#{if options.length > 4000 then 'MAX' else (options.length ? 'MAX')})"
+		when TYPES.NText
+			return "nvarchar (MAX)";
+		when TYPES.Text
+			return "varchar (MAX)";
 		when TYPES.Char, TYPES.NChar, TYPES.Binary
 			return "#{type.declaration} (#{options.length ? 1})"
 		when TYPES.Decimal, TYPES.Numeric
