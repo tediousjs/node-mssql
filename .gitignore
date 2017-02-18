@@ -3,5 +3,4 @@ node_modules
 .svn
 .coffeemaker
 .idea
-/lib/*.js
 /test/.mssql.json
