@@ -33,7 +33,6 @@
 	},
 	"license": "MIT",
 	"dependencies": {
-		"tedious": "https://github.com/TeamSQL/tedious/archive/v1.14.0.tar.gz",
 		"generic-pool": "^2.2.0",
 		"promise": "^7.0.1"
 	},
