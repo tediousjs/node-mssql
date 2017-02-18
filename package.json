@@ -3,6 +3,10 @@
 		"name": "Patrik Simek",
 		"url": "https://patriksimek.cz"
 	},
+	"contributors": [
+		"Can Abacigil <abacigil@gmail.com>",
+		"Eren Baydemir <erenbaydemir@gmail.com>"
+	],
 	"name": "mssql",
 	"description": "Microsoft SQL Server client for Node.js.",
 	"keywords": [
@@ -21,7 +25,7 @@
 		"azure",
 		"node-mssql"
 	],
-	"version": "3.3.0",
+	"version": "3.3.1",
 	"main": "index.js",
 	"repository": {
 		"type": "git",

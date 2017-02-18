@@ -119,9 +119,9 @@ getMssqlType = (type, length) ->
 ###
 
 createColumns = (metadata) ->
-	out = {}
+	out = []
 	for column, index in metadata
-		out[column.colName] =
+		out[index] =
 			index: index
 			name: column.colName
 			length: column.dataLength
@@ -693,9 +693,14 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						
 						else
 							row = {}
+							row.valueSet = []
 							for col in columns
 								col.value = valueCorrection col.value, col.metadata
-								
+								fieldValueSet = {}
+								fieldValueSet.fieldName = col.metadata.colName
+								fieldValueSet.value = col.value
+								row.valueSet.push fieldValueSet
+
 								exi = row[col.metadata.colName]
 								if exi?
 									if exi instanceof Array
@@ -883,9 +888,14 @@ module.exports = (Connection, Transaction, Request, ConnectionError, Transaction
 						
 						else
 							row = {}
+							row.valueSet = []
 							for col in columns
 								col.value = valueCorrection col.value, col.metadata
-								
+								fieldValueSet = {}
+								fieldValueSet.fieldName = col.metadata.colName
+								fieldValueSet.value = col.value
+								row.valueSet.push fieldValueSet
+
 								exi = row[col.metadata.colName]
 								if exi?
 									if exi instanceof Array
