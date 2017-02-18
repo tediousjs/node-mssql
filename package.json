@@ -33,6 +33,7 @@
 	},
 	"license": "MIT",
 	"dependencies": {
+		"tedious": "~1.14.0",
 		"generic-pool": "^2.2.0",
 		"promise": "^7.0.1"
 	},
