@@ -450,8 +450,6 @@ const pool = new sql.ConnectionPool({ /* config */ });
 
 ### Events
 
-- **connect** - Dispatched when initial probe connection has been successfuly established.
-- **close** - Dispatched when the pool is closed (by calling `close`).
 - **error(err)** - Dispatched on connection error.
 
 ---------------------------------------
@@ -1568,6 +1566,7 @@ request.query('select @myval as myval', (err, result) => {
 - Affected rows are now returned as an array. A separate number for each SQL statement.
 - Directive `multiple: true` was removed.
 - `Transaction` and `PreparedStatement` internal queues was removed.
+- ConnectionPool no longer emits `connect` and `close` events.
 - Removed verbose mode.
 - Removed support for `tds` and `msnodesql` drivers.
 - Removed support for Node versions lower than 4.
