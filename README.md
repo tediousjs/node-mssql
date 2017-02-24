@@ -48,12 +48,12 @@ sql.connect("mssql://username:password@localhost/database").then(function() {
 	});
 
     // Stored Procedure
-	
-	new sql.Request()
-	.input('input_parameter', sql.Int, value)
+	var req = new sql.Request()
+	req.input('input_parameter', sql.Int, value)
     .output('output_parameter', sql.VarChar(50))
 	.execute('procedure_name').then(function(recordsets) {
 		console.dir(recordsets);
+		console.log('affected rows: ', req.affectedRows)
 	}).catch(function(err) {
 		// ... execute error checks
 	});
