@@ -1,3 +1,17 @@
+v4.0.0 (2017-02-00)
+-------------------
+[new] Completly rewritten to ES6
+[new] Library is now compatible with Webpack
+[new] Library is ready for async/await
+[change] Removed support for < Node.js 4
+[change] Removed support for outdated node-tds and msnodesql drivers
+[change] Removed require('mssql/nofix') syntax
+[change] Removed verbose mode
+[change] Removed 'driver' from options
+[change] Removed Transaction and Prepared Statement queues
+[change] Removed 'multiple' directive
+[change] Connection renamed to ConnectionPool
+
 v3.3.0 (2016-05-06)
 -------------------
 [new] Added support for receiving informational messages
