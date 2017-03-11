@@ -1601,6 +1601,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [appveyor-url]: https://ci.appveyor.com/project/patriksimek/node-mssql
 
 [tedious-url]: https://www.npmjs.com/package/tedious
-[tedious-image]: https://img.shields.io/github/stars/pekim/tedious.svg?style=flat-square&label=%E2%98%85
+[tedious-image]: https://img.shields.io/github/stars/tediousjs/tedious.svg?style=flat-square&label=%E2%98%85
 [msnodesqlv8-url]: https://www.npmjs.com/package/msnodesqlv8
 [msnodesqlv8-image]: https://img.shields.io/github/stars/TimelordUK/node-sqlserver-v8.svg?style=flat-square&label=%E2%98%85

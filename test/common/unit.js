@@ -8,7 +8,6 @@ describe('Connection String', function() {
 	it('Connection String #1', function(done) {
 		let cfg = cs.resolve("Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd");
 		
-		assert.strictEqual(cfg.driver, undefined);
 		assert.strictEqual(cfg.user, 'testuser');
 		assert.strictEqual(cfg.password, 'testpwd');
 		assert.strictEqual(cfg.database, 'testdb');
@@ -21,7 +20,6 @@ describe('Connection String', function() {
 	it('Connection String #2', function(done) {
 		let cfg = cs.resolve("Server=tcp:192.168.0.1,1433;Database=testdb;User Id=testuser;Password=testpwd");
 		
-		assert.strictEqual(cfg.driver, undefined);
 		assert.strictEqual(cfg.user, 'testuser');
 		assert.strictEqual(cfg.password, 'testpwd');
 		assert.strictEqual(cfg.database, 'testdb');
@@ -32,10 +30,9 @@ describe('Connection String', function() {
 	});
 	
 	it('Connection String #3', function(done) {
-		let cfg = cs.resolve("Driver=msnodesql;Server=192.168.0.1;Database=testdb;User Id={testuser};Password='t;estpwd'");
+		let cfg = cs.resolve("Server=192.168.0.1;Database=testdb;User Id={testuser};Password='t;estpwd'", "msnodesqlv8");
 
-		assert.strictEqual(cfg.driver, 'msnodesql');
-		assert.strictEqual(cfg.connectionString, "Driver={SQL Server Native Client 11.0};Server=192.168.0.1;Database=testdb;User Id={testuser};Password='t;estpwd'");
+		assert.strictEqual(cfg.connectionString, "Server=192.168.0.1;Database=testdb;User Id={testuser};Password='t;estpwd';Driver={SQL Server Native Client 11.0}");
 		
 		return done();
 	});
@@ -43,7 +40,6 @@ describe('Connection String', function() {
 	it('Connection String #4', function(done) {
 		let cfg = cs.resolve("mssql://username:password@localhost:1433/database?encrypt=true&stream=true&domain=mydomain&requestTimeout=30000");
 		
-		assert.strictEqual(cfg.driver, undefined);
 		assert.strictEqual(cfg.user, 'username');
 		assert.strictEqual(cfg.password, 'password');
 		assert.strictEqual(cfg.database, 'database');
@@ -57,9 +53,8 @@ describe('Connection String', function() {
 	});
 	
 	return it('Connection String #5', function(done) {
-		let cfg = cs.resolve("mssql://username:password@localhost/INSTANCE/database?encrypt=true&stream=true&domain=mydomain&driver=msnodesql");
+		let cfg = cs.resolve("mssql://username:password@localhost/INSTANCE/database?encrypt=true&stream=true&domain=mydomain", "msnodesqlv8");
 		
-		assert.strictEqual(cfg.driver, 'msnodesql');
 		assert.strictEqual(cfg.connectionString, "server={localhost\\INSTANCE};uid={mydomain\\username};pwd={password};database={database};encrypt={true};driver={SQL Server Native Client 11.0}");
 		
 		return done();
