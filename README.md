@@ -4,28 +4,11 @@ Microsoft SQL Server client for Node.js
 
 [![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Package Quality][quality-image]][quality-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**v4 upgrade warning** - Version 4 contains many braking changes, read more in the [3.x to 4.x changes](#3x-to-4x-changes) section.
-
-**node-mssql**
-- Has unified interface for multiple TDS drivers.
-- Has built-in connection pooling.
-- Supports built-in JSON serialization introduced in SQL Server 2016.
-- Supports Stored Procedures, Transactions, Prepared Statements, Bulk Load and TVP.
-- Supports serialization of Geography and Geometry CLR types.
-- Has smart JS data type to SQL data type mapper.
-- Supports Promises, Streams and standard callbacks.
-- Supports ES6 tagged template literals.
-- Is stable and tested in production environment.
-- Is well documented.
-
-There is also [co](https://github.com/tj/co) wrapper available - [co-mssql](https://github.com/patriksimek/co-mssql).
-If you're looking for session store for connect/express, visit [connect-mssql](https://github.com/patriksimek/connect-mssql).
+**v4 upgrade warning** - Version 4 contains many braking changes, read more in the [3.x to 4.x changes](#3x-to-4x-changes) section. Version 3 docs are available [here](https://github.com/patriksimek/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md).
 
 Supported TDS drivers:
-- [![Github Stars][tedious-image] Tedious][tedious-url] (pure JavaScript - Windows/OSX/Linux)
+- [![Github Stars][tedious-image] Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
 - [![Github Stars][msnodesqlv8-image] Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (native - Windows only)
-
-node-mssql uses Tedious as the default driver.
 
 ## Installation
 
@@ -55,6 +38,7 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 
 ### Examples
 
+* [Async/Await](#async-await)
 * [Promises](#promises)
 * [ES6 Tagged template literals](#es6-tagged-template-literals)
 * [Callbacks](#callbacks)
@@ -122,11 +106,9 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 
 ## Examples
 
-### Promises
+### Config
 
 ```javascript
-const sql = require('mssql');
-
 const config = {
     user: '...',
     password: '...',
@@ -137,6 +119,45 @@ const config = {
         encrypt: true // Use this if you're on Windows Azure
     }
 }
+```
+
+
+### Async/Await
+
+```javascript
+const sql = require('mssql');
+
+(async function() {
+	try {
+		let pool = await sql.connect(config);
+		let result1 = await pool.request()
+			.input('input_parameter', sql.Int, value)
+			.query('select * from mytable where id = @input_parameter');
+			
+		console.dir(result1);
+	
+		// Stored procedure
+		
+		let result2 = pool.request()
+			.input('input_parameter', sql.Int, value)
+			.output('output_parameter', sql.VarChar(50))
+			.execute('procedure_name');
+		
+		console.dir(result2);
+	} catch (err) {
+		// ... error checks
+	}
+})();
+
+sql.on('error', err => {
+	// ... error handler
+});
+```
+
+### Promises
+
+```javascript
+const sql = require('mssql');
 
 sql.connect(config).then(pool => {
 	// Query
@@ -154,7 +175,7 @@ sql.connect(config).then(pool => {
 	.output('output_parameter', sql.VarChar(50))
 	.execute('procedure_name');
 }).then(result => {
-	console.dir(recordset);
+	console.dir(result);
 }).catch(err => {
 	// ... error checks
 });
@@ -174,7 +195,7 @@ const sql = require('mssql');
 sql.connect(config).then(() => {
 	return sql.query`select * from mytable where id = ${value}`;
 }).then(result => {
-	console.dir(recordset);
+	console.dir(result);
 }).catch(err => {
 	// ... error checks
 });
@@ -190,17 +211,6 @@ All values are automatically sanitized against sql injection.
 
 ```javascript
 const sql = require('mssql');
-
-const config = {
-    user: '...',
-    password: '...',
-    server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
-    database: '...',
-
-    options: {
-        encrypt: true // Use this if you're on Windows Azure
-    }
-}
 
 sql.connect(config, err => {
     // ... error checks
@@ -237,18 +247,6 @@ If you plan to work with large amount of rows, you should always use streaming. 
 ```javascript
 const sql = require('mssql');
 
-const config = {
-    user: '...',
-    password: '...',
-    server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
-    database: '...',
-    stream: true, // You can enable streaming globally
-
-    options: {
-        encrypt: true // Use this if you're on Windows Azure
-    }
-}
-
 sql.connect(config, err => {
     // ... error checks
 
@@ -282,17 +280,6 @@ sql.on('error', err => {
 
 ```javascript
 const sql = require('mssql');
-
-const config = {
-    user: '...',
-    password: '...',
-    server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
-    database: '...',
-
-    options: {
-        encrypt: true // Use this if you're on Windows Azure
-    }
-}
 
 const pool1 = new sql.ConnectionPool(config, err => {
     // ... error checks
