@@ -7,8 +7,8 @@ Microsoft SQL Server client for Node.js
 **v4 upgrade warning** - Version 4 contains many braking changes, read more in the [3.x to 4.x changes](#3x-to-4x-changes) section. Version 3 docs are available [here](https://github.com/patriksimek/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md).
 
 Supported TDS drivers:
-- [![Github Stars][tedious-image] Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
-- [![Github Stars][msnodesqlv8-image] Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (native - Windows only)
+- [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
+- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (native - Windows only)
 
 ## Installation
 
@@ -1273,7 +1273,7 @@ __Example using callbacks__
 
 ```javascript
 const request = new sql.Request();
-const.query('update myAwesomeTable set awesomness = 100', (err, result) => {
+request.query('update myAwesomeTable set awesomness = 100', (err, result) => {
     console.log(result.rowsAffected);
 });
 ```
@@ -1588,6 +1588,4 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [appveyor-url]: https://ci.appveyor.com/project/patriksimek/node-mssql
 
 [tedious-url]: https://www.npmjs.com/package/tedious
-[tedious-image]: https://img.shields.io/github/stars/tediousjs/tedious.svg?style=flat-square&label=%E2%98%85
 [msnodesqlv8-url]: https://www.npmjs.com/package/msnodesqlv8
-[msnodesqlv8-image]: https://img.shields.io/github/stars/TimelordUK/node-sqlserver-v8.svg?style=flat-square&label=%E2%98%85
