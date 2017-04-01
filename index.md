@@ -4,82 +4,48 @@ Microsoft SQL Server client for Node.js
 
 [![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Package Quality][quality-image]][quality-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**node-mssql**
-- Has unified interface for multiple TDS drivers.
-- Has built-in connection pooling.
-- Supports built-in JSON serialization introduced in SQL Server 2016.
-- Supports Stored Procedures, Transactions, Prepared Statements, Bulk Load and TVP.
-- Supports serialization of Geography and Geometry CLR types.
-- Has smart JS data type to SQL data type mapper.
-- Supports Promises, Streams and standard callbacks.
-- Supports ES6 tagged template literals.
-- Is stable and tested in production environment.
-- Is well documented.
-
-There is also [co](https://github.com/tj/co) wrapper available - [co-mssql](https://github.com/patriksimek/co-mssql).
-If you're looking for session store for connect/express, visit [connect-mssql](https://github.com/patriksimek/connect-mssql).
+**v4 upgrade warning** - Version 4 contains many braking changes, read more in the [3.x to 4.x changes](#3x-to-4x-changes) section. Version 3 docs are available [here](https://github.com/patriksimek/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md).
 
 Supported TDS drivers:
-- [![Github Stars][tedious-image] Tedious][tedious-url] (pure JavaScript - Windows/OSX/Linux)
-- [![Github Stars][msnodesqlv8-image] Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (native - Windows only)
-- [![Github Stars][msnodesql-image] Microsoft Driver for Node.js for SQL Server][msnodesql-url] (native - Windows only)
-- [![Github Stars][tds-image] node-tds][tds-url] (pure JavaScript - Windows/OSX/Linux)
-
-node-mssql uses Tedious as the default driver.
+- [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
+- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (native - Windows only)
 
 ## Installation
+
+**IMPORTANT**: Requires Node.js 4 or newer.
 
     npm install mssql
 
 ## Quick Example
 
 ```javascript
-var sql = require('mssql');
+const sql = require('mssql')
 
-sql.connect("mssql://username:password@localhost/database").then(function() {
-    // Query
-    
-	new sql.Request().query('select * from mytable').then(function(recordset) {
-		console.dir(recordset);
-	}).catch(function(err) {
-		// ... query error checks
-	});
-
-    // Stored Procedure
-	
-	new sql.Request()
-	.input('input_parameter', sql.Int, value)
-    .output('output_parameter', sql.VarChar(50))
-	.execute('procedure_name').then(function(recordsets) {
-		console.dir(recordsets);
-	}).catch(function(err) {
-		// ... execute error checks
-	});
-	
-	// ES6 Tagged template literals (experimental)
-	
-	sql.query`select * from mytable where id = ${value}`.then(function(recordset) {
-		console.dir(recordset);
-	}).catch(function(err) {
-		// ... query error checks
-	});
-}).catch(function(err) {
-	// ... connect error checks
-});
+async () => {
+    try {
+        const pool = await sql.connect('mssql://username:password@localhost/database')
+        const result = await sql.query`select * from mytable where id = ${value}`
+        console.dir(result)
+    } catch (err) {
+        // ... error checks
+    }
+}
 ```
 
 If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#configuration) to learn more.
 
 ## Documentation
 
-* [2.x to 3.x changes](#2x-to-3x-changes)
+* [3.x to 4.x changes](#3x-to-4x-changes)
 
 ### Examples
 
+* [Async/Await](#async-await)
 * [Promises](#promises)
-* [Nested callbacks](#nested-callbacks)
+* [ES6 Tagged template literals](#es6-tagged-template-literals)
+* [Callbacks](#callbacks)
 * [Streaming](#streaming)
-* [Multiple Connections](#multiple-connections)
+* [Connection Pools](#connection-pools)
 
 ### Configuration
 
@@ -90,12 +56,10 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 
 * [Tedious](#tedious)
 * [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server](#microsoft--contributors-node-v8-driver-for-nodejs-for-sql-server)
-* [Microsoft Driver for Node.js for SQL Server](#microsoft-driver-for-nodejs-for-sql-server)
-* [node-tds](#node-tds)
 
 ### Connections
 
-* [Connection](#connection)
+* [ConnectionPool](#connectionpool)
 * [connect](#connect-callback)
 * [close](#close)
 
@@ -139,18 +103,15 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 * [Metadata](#metadata)
 * [Data Types](#data-types)
 * [SQL injection](#sql-injection)
-* [Verbose Mode](#verbose-mode)
 * [Known Issues](#known-issues)
 * [Contributing](https://github.com/patriksimek/node-mssql/wiki/Contributing)
 
 ## Examples
 
-### Promises
+### Config
 
 ```javascript
-var sql = require('mssql');
-
-var config = {
+const config = {
     user: '...',
     password: '...',
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
@@ -160,93 +121,125 @@ var config = {
         encrypt: true // Use this if you're on Windows Azure
     }
 }
+```
 
-sql.connect(config).then(function() {
-	// Query
-	
-	new sql.Request();
-	.input('input_parameter', sql.Int, value);
-	.query('select * from mytable where id = @input_parameter').then(function(recordset) {
-		console.dir(recordset);
-	}).catch(function(err) {
-		// ... error checks
-	});
 
-    // Stored Procedure
-	
-	new sql.Request();
-	.input('input_parameter', sql.Int, value);
-    .output('output_parameter', sql.VarChar(50));
-	.execute('procedure_name').then(function(recordsets) {
-		console.dir(recordsets);
-	}).catch(function(err) {
-		// ... error checks
-	});
-}).catch(function(err) {
-	// ... error checks
-});
+### Async/Await
+
+```javascript
+const sql = require('mssql')
+
+(async function () {
+    try {
+        let pool = await sql.connect(config)
+        let result1 = await pool.request()
+            .input('input_parameter', sql.Int, value)
+            .query('select * from mytable where id = @input_parameter')
+            
+        console.dir(result1)
+    
+        // Stored procedure
+        
+        let result2 = await pool.request()
+            .input('input_parameter', sql.Int, value)
+            .output('output_parameter', sql.VarChar(50))
+            .execute('procedure_name')
+        
+        console.dir(result2)
+    } catch (err) {
+        // ... error checks
+    }
+})()
+
+sql.on('error', err => {
+    // ... error handler
+})
+```
+
+### Promises
+
+```javascript
+const sql = require('mssql')
+
+sql.connect(config).then(pool => {
+    // Query
+    
+    return pool.request()
+    .input('input_parameter', sql.Int, value)
+    .query('select * from mytable where id = @input_parameter')
+}).then(result => {
+    console.dir(recordset)
+    
+    // Stored procedure
+    
+    return pool.request()
+    .input('input_parameter', sql.Int, value)
+    .output('output_parameter', sql.VarChar(50))
+    .execute('procedure_name')
+}).then(result => {
+    console.dir(result)
+}).catch(err => {
+    // ... error checks
+})
+
+sql.on('error', err => {
+    // ... error handler
+})
 ```
 
 Native Promise is used by default. You can easily change this with `sql.Promise = require('myownpromisepackage')`.
 
-**ES6 Tagged template literals (experimental)**
+**ES6 Tagged template literals**
 
 ```javascript
-sql.connect(config).then(function() {
-	sql.query`select * from mytable where id = ${value}`.then(function(recordset) {
-		console.dir(recordset);
-	}).catch(function(err) {
-		// ... error checks
-	});
-}).catch(function(err) {
-	// ... error checks
-});
+const sql = require('mssql')
+
+sql.connect(config).then(() => {
+    return sql.query`select * from mytable where id = ${value}`
+}).then(result => {
+    console.dir(result)
+}).catch(err => {
+    // ... error checks
+})
+
+sql.on('error', err => {
+    // ... error handler
+})
 ```
 
 All values are automatically sanitized against sql injection.
 
-### Nested callbacks
+### Callbacks
 
 ```javascript
-var sql = require('mssql');
+const sql = require('mssql')
 
-var config = {
-    user: '...',
-    password: '...',
-    server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
-    database: '...',
-
-    options: {
-        encrypt: true // Use this if you're on Windows Azure
-    }
-}
-
-sql.connect(config, function(err) {
+sql.connect(config, err => {
     // ... error checks
 
     // Query
 
-    new sql.Request().query('select 1 as number', function(err, recordset) {
+    new sql.Request().query('select 1 as number', (err, result) => {
         // ... error checks
 
-        console.dir(recordset);
-    });
+        console.dir(result)
+    })
 
     // Stored Procedure
 
     new sql.Request()
     .input('input_parameter', sql.Int, value)
     .output('output_parameter', sql.VarChar(50))
-    .execute('procedure_name', function(err, recordsets, returnValue) {
+    .execute('procedure_name', (err, result) => {
         // ... error checks
 
-        console.dir(recordsets);
-    });
-});
+        console.dir(result)
+    })
+})
 
-sql.on('error', function(err) {
-	// ... error handler
-});
+sql.on('error', err => {
+    // ... error handler
+})
 ```
 
 ### Streaming
@@ -254,115 +247,90 @@ sql.on('error', function(err) {
 If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.
 
 ```javascript
-var sql = require('mssql');
+const sql = require('mssql')
 
-var config = {
-    user: '...',
-    password: '...',
-    server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
-    database: '...',
-    stream: true, // You can enable streaming globally
-
-    options: {
-        encrypt: true // Use this if you're on Windows Azure
-    }
-}
-
-sql.connect(config, function(err) {
+sql.connect(config, err => {
     // ... error checks
 
-    var request = new sql.Request();
-    request.stream = true; // You can set streaming differently for each request
-    request.query('select * from verylargetable'); // or request.execute(procedure);
+    const request = new sql.Request()
+    request.stream = true // You can set streaming differently for each request
+    request.query('select * from verylargetable') // or request.execute(procedure)
 
-    request.on('recordset', function(columns) {
-    	// Emitted once for each recordset in a query
-    });
+    request.on('recordset', columns => {
+        // Emitted once for each recordset in a query
+    })
 
-    request.on('row', function(row) {
-    	// Emitted for each row in a recordset
-    });
+    request.on('row', row => {
+        // Emitted for each row in a recordset
+    })
 
-    request.on('error', function(err) {
-    	// May be emitted multiple times
-    });
+    request.on('error', err => {
+        // May be emitted multiple times
+    })
 
-    request.on('done', function(affected) {
-    	// Always emitted as the last one
-    });
-});
+    request.on('done', result => {
+        // Always emitted as the last one
+    })
+})
 
-sql.on('error', function(err) {
-	// ... error handler
-});
+sql.on('error', err => {
+    // ... error handler
+})
 ```
 
-## Multiple Connections
+## Connection Pools
 
 ```javascript
-var sql = require('mssql');
+const sql = require('mssql')
 
-var config = {
-    user: '...',
-    password: '...',
-    server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
-    database: '...',
-
-    options: {
-        encrypt: true // Use this if you're on Windows Azure
-    }
-}
-
-var connection1 = new sql.Connection(config, function(err) {
+const pool1 = new sql.ConnectionPool(config, err => {
     // ... error checks
 
     // Query
 
-    var request = new sql.Request(connection1); // or: var request = connection1.request();
-    request.query('select 1 as number', function(err, recordset) {
+    pool1.request() // or: new sql.Request(pool1)
+    .query('select 1 as number', (err, result) => {
         // ... error checks
 
-        console.dir(recordset);
-    });
+        console.dir(result)
+    })
 
-});
+})
 
-connection1.on('error', function(err) {
-	// ... error handler
-});
+pool1.on('error', err => {
+    // ... error handler
+})
 
-var connection2 = new sql.Connection(config, function(err) {
+const pool2 = new sql.Connection(config, err => {
     // ... error checks
 
     // Stored Procedure
 
-    var request = new sql.Request(connection2); // or: var request = connection2.request();
-    request.input('input_parameter', sql.Int, 10);
-    request.output('output_parameter', sql.VarChar(50));
-    request.execute('procedure_name', function(err, recordsets, returnValue) {
+    pool2.request() // or: new sql.Request(pool2)
+    .input('input_parameter', sql.Int, 10)
+    .output('output_parameter', sql.VarChar(50))
+    .execute('procedure_name', (err, result) => {
         // ... error checks
 
-        console.dir(recordsets);
-    });
-});
+        console.dir(result)
+    })
+})
 
-connection2.on('error', function(err) {
-	// ... error handler
-});
+pool1.on('error', err => {
+    // ... error handler
+})
 ```
 
-**ES6 Tagged template literals (experimental)**
+**ES6 Tagged template literals**
 
 ```javascript
-new sql.Connection(config).connect().then(function(conn) {
-	conn.query`select * from mytable where id = ${value}`.then(function(recordset) {
-		console.dir(recordset);
-	}).catch(function(err) {
-		// ... error checks
-	});
-}).catch(function(err) {
-	// ... error checks
-});
+new sql.ConnectionPool(config).connect().then(pool => {
+    return pool.query`select * from mytable where id = ${value}`
+}).then(result => {
+    console.dir(result)
+}).catch(err => {
+    // ... error checks
+})
 ```
 
 All values are automatically sanitized against sql injection.
@@ -370,7 +338,7 @@ All values are automatically sanitized against sql injection.
 ## Configuration
 
 ```javascript
-var config = {
+const config = {
     user: '...',
     password: '...',
     server: 'localhost',
@@ -385,7 +353,6 @@ var config = {
 
 ### General (same for all drivers)
 
-- **driver** - Driver to use (default: `tedious`). Possible values: `tedious`, `msnodesqlv8` or `msnodesql` or `tds`.
 - **user** - User name to use for authentication.
 - **password** - Password to use for authentication.
 - **server** - Server to connect to. You can use 'localhost\\instance' to connect to named instance.
@@ -426,7 +393,7 @@ __Version__
 
 ### Tedious
 
-Default driver, actively maintained and production ready. Platform independent, runs everywhere Node.js runs.
+Default driver, actively maintained and production ready. Platform independent, runs everywhere Node.js runs. Officially supported by Microsoft.
 
 **Extra options:**
 
@@ -437,11 +404,11 @@ Default driver, actively maintained and production ready. Platform independent, 
 - **options.appName** - Application name used for SQL server logging.
 - **options.abortTransactionOnError** - A boolean determining whether to rollback a transaction automatically if any error is encountered during the given transaction's execution. This sets the value for `XACT_ABORT` during the initial SQL phase of a connection.
 
-More information about Tedious specific options: http://pekim.github.io/tedious/api-connection.html
+More information about Tedious specific options: http://tediousjs.github.io/tedious/api-connection.html
 
 ### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
 
-**Requires Node.js 0.12.x/4.2.0. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8`.
+**Requires Node.js 0.12.x or newer. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
 
 **Extra options:**
 
@@ -460,75 +427,43 @@ Default connection string when connecting to named instance:
 Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
 ```
 
-### Microsoft Driver for Node.js for SQL Server
+## Connections
 
-**Requires Node.js 0.6.x/0.8.x/0.10.x. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesql`. If you are looking for compiled binaries, see [node-sqlserver-binary](https://github.com/jorgeazevedo/node-sqlserver-unofficial).
+Internally, each `ConnectionPool` instance is a separate pool of TDS connections. Once you create a new `Request`/`Transaction`/`Prepared Statement`, a new TDS connection is acquired from the pool and reserved for desired action. Once the action is complete, connection is released back to the pool. Connection health check is built-in so once the dead connection is discovered, it is immediately replaced with a new one.
 
-**Extra options:**
-
-- **connectionString** - Connection string (default: see below).
-- **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
-- **options.trustedConnection** - Use Windows Authentication (default: `false`).
-- **options.useUTC** - A boolean determining whether or not to use UTC time for values without time zone offset (default: `true`).
-
-Default connection string when connecting to port:
-```
-Driver={SQL Server Native Client 11.0};Server={#{server},#{port}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
-```
-
-Default connection string when connecting to named instance:
-```
-Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
-```
-
-### node-tds
-
-**Legacy support, don't use this driver for new projects.** This driver is not part of the default package and must be installed separately by `npm install tds`.
-
-_node-mssql updates this driver with extra features and bug fixes by overriding some of its internal functions. If you want to disable this, require module with `var sql = require('mssql/nofix')`._
-
-## Connection
-
-Internally, each `Connection` instance is a separate pool of TDS connections. Once you create a new `Request`/`Transaction`/`Prepared Statement`, a new TDS connection is acquired from the pool and reserved for desired action. Once the action is complete, connection is released back to the pool. Connection health check is built-in so once the dead connection is discovered, it is immediately replaced with a new one.
-
-**IMPORTANT**: Always attach an `error` listener to created connection. Whenever something goes wrong with the connection it will emit an error and if there is no listener (and no domain listener as a backup) it will crash the application as an uncaught error.
+**IMPORTANT**: Always attach an `error` listener to created connection. Whenever something goes wrong with the connection it will emit an error and if there is no listener it will crash your application with an uncaught error.
 
 ```javascript
-var connection = new sql.Connection({ /* config */ });
+const pool = new sql.ConnectionPool({ /* config */ })
 ```
-
-__Errors__
-- EDRIVER (`ConnectionError`) - Unknown driver.
 
 ### Events
 
-- **connect** - Dispatched after connection has established.
-- **close** - Dispatched after connection has closed a pool (by calling `close`).
 - **error(err)** - Dispatched on connection error.
 
 ---------------------------------------
 
 ### connect ([callback])
 
-Create a new connection pool with one active connection. This one initial connection serves as a probe to find out whether the configuration is valid.
+Create a new connection pool. The initial probe connection is created to find out whether the configuration is valid.
 
 __Arguments__
 
-- **callback(err)** - A callback which is called after connection has established, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
+- **callback(err)** - A callback which is called after initial probe connection has established, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
 
 ```javascript
-var connection = new sql.Connection({
+const pool = new sql.ConnectionPool({
     user: '...',
     password: '...',
     server: 'localhost',
     database: '...'
-});
+})
 
-connection.connect(function(err) {
+pool.connect(err => {
     // ...
-});
+})
 ```
 
 __Errors__
@@ -548,16 +483,16 @@ Close all active connections in the pool.
 __Example__
 
 ```javascript
-connection.close();
+pool.close()
 ```
 
 ## Request
 
 ```javascript
-var request = new sql.Request(/* [connection] */);
+const request = new sql.Request(/* [pool or transaction] */)
 ```
 
-If you omit connection argument, global connection is used instead.
+If you omit pool/transaction argument, global pool is used instead.
 
 ### Events
 
@@ -581,23 +516,21 @@ __Arguments__
 __Example__
 
 ```javascript
-var request = new sql.Request();
-request.input('input_parameter', sql.Int, value);
-request.output('output_parameter', sql.Int);
-request.execute('procedure_name', function(err, recordsets, returnValue, affected) {
+const request = new sql.Request()
+request.input('input_parameter', sql.Int, value)
+request.output('output_parameter', sql.Int)
+request.execute('procedure_name', (err, result) => {
     // ... error checks
 
-    console.log(recordsets.length); // count of recordsets returned by the procedure
-    console.log(recordsets[0].length); // count of rows contained in first recordset
-    console.log(returnValue); // procedure return value
-    console.log(recordsets.returnValue); // same as previous line
-    console.log(affected); // number of rows affected by the statemens
-    console.log(recordsets.rowsAffected); // same as previous line
-
-    console.log(request.parameters.output_parameter.value); // output value
+    console.log(result.recordsets.length) // count of recordsets returned by the procedure
+    console.log(result.recordsets[0].length) // count of rows contained in first recordset
+    console.log(result.recordset) // first recordset from result.recordsets
+    console.log(result.returnValue) // procedure return value
+    console.log(result.output) // key/value collection of output values
+    console.log(result.rowsAffected) // array of numbers, each number represents the number of rows affected by executed statemens
 
     // ...
-});
+})
 ```
 
 __Errors__
@@ -625,8 +558,8 @@ __Arguments__
 __Example__
 
 ```javascript
-request.input('input_parameter', value);
-request.input('input_parameter', sql.Int, value);
+request.input('input_parameter', value)
+request.input('input_parameter', sql.Int, value)
 ```
 
 __JS Data Type To SQL Data Type Map__
@@ -643,13 +576,13 @@ Default data type for unknown object is `sql.NVarChar`.
 You can define your own type map.
 
 ```javascript
-sql.map.register(MyClass, sql.Text);
+sql.map.register(MyClass, sql.Text)
 ```
 
 You can also overwrite the default type map.
 
 ```javascript
-sql.map.register(Number, sql.BigInt);
+sql.map.register(Number, sql.BigInt)
 ```
 
 __Errors__ (synchronous)
@@ -671,8 +604,8 @@ __Arguments__
 __Example__
 
 ```javascript
-request.output('output_parameter', sql.Int);
-request.output('output_parameter', sql.VarChar(50), 'abc');
+request.output('output_parameter', sql.Int)
+request.output('output_parameter', sql.VarChar(50), 'abc')
 ```
 
 __Errors__ (synchronous)
@@ -692,15 +625,15 @@ __Arguments__
 __Example__
 
 ```javascript
-var request = new sql.Request();
-request.pipe(stream);
-request.query('select * from mytable');
-stream.on('error', function(err) {
+const request = new sql.Request()
+request.pipe(stream)
+request.query('select * from mytable')
+stream.on('error', err => {
     // ...
-});
-stream.on('finish', function() {
+})
+stream.on('finish', () => {
     // ...
-});
+})
 ```
 
 __Version__
@@ -721,14 +654,14 @@ __Arguments__
 __Example__
 
 ```javascript
-var request = new sql.Request();
-request.query('select 1 as number', function(err, recordset) {
+const request = new sql.Request()
+request.query('select 1 as number', (err, result) => {
     // ... error checks
 
-    console.log(recordset[0].number); // return 1
+    console.log(result.recordset[0].number) // return 1
 
     // ...
-});
+})
 ```
 
 __Errors__
@@ -741,18 +674,17 @@ __Errors__
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 - EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
 
-You can enable multiple recordsets in queries with the `request.multiple = true` command.
-
 ```javascript
-var request = new sql.Request();
-request.multiple = true;
+const request = new sql.Request()
+request.multiple = true
 
-request.query('select 1 as number; select 2 as number', function(err, recordsets, affected) {
+request.query('select 1 as number; select 2 as number', (err, result) => {
     // ... error checks
 
-    console.log(recordsets[0][0].number); // return 1
-    console.log(recordsets[1][0].number); // return 2
-});
+    console.log(result.recordset[0].number) // return 1
+    console.log(result.recordsets[0][0].number) // return 1
+    console.log(result.recordsets[1][0].number) // return 2
+})
 ```
 
 **NOTE**: To get number of rows affected by the statement(s), see section [Affected Rows](#affected-rows).
@@ -773,10 +705,10 @@ __Arguments__
 __Example__
 
 ```javascript
-var request = new sql.Request();
-request.batch('create procedure #temporary as select * from table', function(err, recordset) {
+const request = new sql.Request()
+request.batch('create procedure #temporary as select * from table', (err, result) => {
     // ... error checks
-});
+})
 ```
 
 __Errors__
@@ -805,16 +737,16 @@ __Arguments__
 __Example__
 
 ```javascript
-var table = new sql.Table('table_name'); // or temporary table, e.g. #temptable
-table.create = true;
-table.columns.add('a', sql.Int, {nullable: true, primary: true});
-table.columns.add('b', sql.VarChar(50), {nullable: false});
-table.rows.add(777, 'test');
+const table = new sql.Table('table_name') // or temporary table, e.g. #temptable
+table.create = true
+table.columns.add('a', sql.Int, {nullable: true, primary: true})
+table.columns.add('b', sql.VarChar(50), {nullable: false})
+table.rows.add(777, 'test')
 
-var request = new sql.Request();
-request.bulk(table, function(err, rowCount) {
+const request = new sql.Request()
+request.bulk(table, (err, result) => {
     // ... error checks
-});
+})
 ```
 
 **IMPORTANT**: Always indicate whether the column is nullable or not!
@@ -843,24 +775,24 @@ Cancel currently executing request. Return `true` if cancellation packet was sen
 __Example__
 
 ```javascript
-var request = new sql.Request();
-request.query('waitfor delay \'00:00:05\'; select 1 as number', function(err, recordset) {
-    console.log(err instanceof sql.RequestError);  // true
-    console.log(err.message);                      // Cancelled.
-    console.log(err.code);                         // ECANCEL
+const request = new sql.Request()
+request.query('waitfor delay \'00:00:05\'; select 1 as number', (err, result) => {
+    console.log(err instanceof sql.RequestError)  // true
+    console.log(err.message)                      // Cancelled.
+    console.log(err.code)                         // ECANCEL
 
     // ...
-});
+})
 
-request.cancel();
+request.cancel()
 ```
 
 ## Transaction
 
-**IMPORTANT:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is acquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. Transaction also contains a queue to make sure your requests are executed in series. After you call `commit` or `rollback`, connection is then released back to the connection pool.
+**IMPORTANT:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is acquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. After you call `commit` or `rollback`, connection is then released back to the connection pool.
 
 ```javascript
-var transaction = new sql.Transaction(/* [connection] */);
+const transaction = new sql.Transaction(/* [pool] */)
 ```
 
 If you omit connection argument, global connection is used instead.
@@ -868,59 +800,59 @@ If you omit connection argument, global connection is used instead.
 __Example__
 
 ```javascript
-var transaction = new sql.Transaction(/* [connection] */);
-transaction.begin(function(err) {
+const transaction = new sql.Transaction(/* [pool] */)
+transaction.begin(err => {
     // ... error checks
 
-    var request = new sql.Request(transaction);
-    request.query('insert into mytable (mycolumn) values (12345)', function(err, recordset) {
+    const request = new sql.Request(transaction)
+    request.query('insert into mytable (mycolumn) values (12345)', (err, result) => {
         // ... error checks
 
-        transaction.commit(function(err, recordset) {
+        transaction.commit(err => {
             // ... error checks
 
-            console.log("Transaction committed.");
-        });
-    });
-});
+            console.log("Transaction committed.")
+        })
+    })
+})
 ```
 
-Transaction can also be created by `var transaction = connection.transaction();`. Requests can also be created by `var request = transaction.request();`.
+Transaction can also be created by `const transaction = pool.transaction()`. Requests can also be created by `const request = transaction.request()`.
 
 __Aborted transactions__
 
 This example shows how you should correctly handle transaction errors when `abortTransactionOnError` (`XACT_ABORT`) is enabled. Added in 2.0.
 
 ```javascript
-var transaction = new sql.Transaction(/* [connection] */);
-transaction.begin(function(err) {
+const transaction = new sql.Transaction(/* [pool] */)
+transaction.begin(err => {
     // ... error checks
 
-    var rolledBack = false;
+    let rolledBack = false
 
-    transaction.on('rollback', function(aborted) {
-	    // emited with aborted === true
+    transaction.on('rollback', aborted => {
+        // emited with aborted === true
 
-	    rolledBack = true;
-    });
+        rolledBack = true
+    })
 
-    var request = new sql.Request(transaction);
-    request.query('insert into mytable (bitcolumn) values (2)', function(err, recordset) {
+    new sql.Request(transaction)
+    .query('insert into mytable (bitcolumn) values (2)', (err, result) => {
         // insert should fail because of invalid value
 
-		if (err) {
-			if (!rolledBack) {
-		        transaction.rollback(function(err) {
-		            // ... error checks
-		        });
-		    }
-		} else {
-			transaction.commit(function(err) {
-	            // ... error checks
-	        });
-		}
-    });
-});
+        if (err) {
+            if (!rolledBack) {
+                transaction.rollback(err => {
+                    // ... error checks
+                })
+            }
+        } else {
+            transaction.commit(err => {
+                // ... error checks
+            })
+        }
+    })
+})
 ```
 
 ### Events
@@ -943,10 +875,10 @@ __Arguments__
 __Example__
 
 ```javascript
-var transaction = new sql.Transaction();
-transaction.begin(function(err) {
+const transaction = new sql.Transaction()
+transaction.begin(err => {
     // ... error checks
-});
+})
 ```
 
 __Errors__
@@ -966,14 +898,14 @@ __Arguments__
 __Example__
 
 ```javascript
-var transaction = new sql.Transaction();
-transaction.begin(function(err) {
+const transaction = new sql.Transaction()
+transaction.begin(err => {
     // ... error checks
 
-    transaction.commit(function(err) {
+    transaction.commit(err => {
         // ... error checks
     })
-});
+})
 ```
 
 __Errors__
@@ -993,14 +925,14 @@ __Arguments__
 __Example__
 
 ```javascript
-var transaction = new sql.Transaction();
-transaction.begin(function(err) {
+const transaction = new sql.Transaction()
+transaction.begin(err => {
     // ... error checks
 
-    transaction.rollback(function(err) {
+    transaction.rollback(err => {
         // ... error checks
     })
-});
+})
 ```
 
 __Errors__
@@ -1009,10 +941,10 @@ __Errors__
 
 ## Prepared Statement
 
-**IMPORTANT:** always use `PreparedStatement` class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call `prepare`, a single connection is acquired from the connection pool and all subsequent executions are executed exclusively on this connection. Prepared Statement also contains a queue to make sure your executions are executed in series. After you call `unprepare`, the connection is then released back to the connection pool.
+**IMPORTANT:** always use `PreparedStatement` class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call `prepare`, a single connection is acquired from the connection pool and all subsequent executions are executed exclusively on this connection. After you call `unprepare`, the connection is then released back to the connection pool.
 
 ```javascript
-var ps = new sql.PreparedStatement(/* [connection] */);
+const ps = new sql.PreparedStatement(/* [pool] */)
 ```
 
 If you omit the connection argument, the global connection is used instead.
@@ -1020,20 +952,20 @@ If you omit the connection argument, the global connection is used instead.
 __Example__
 
 ```javascript
-var ps = new sql.PreparedStatement(/* [connection] */);
-ps.input('param', sql.Int);
-ps.prepare('select @param as value', function(err) {
+const ps = new sql.PreparedStatement(/* [pool] */)
+ps.input('param', sql.Int)
+ps.prepare('select @param as value', err => {
     // ... error checks
 
-    ps.execute({param: 12345}, function(err, recordset) {
+    ps.execute({param: 12345}, (err, result) => {
         // ... error checks
 
-        ps.unprepare(function(err) {
+        ps.unprepare(err => {
             // ... error checks
 
-        });
-    });
-});
+        })
+    })
+})
 ```
 
 **IMPORTANT**: Remember that each prepared statement means one reserved connection from the pool. Don't forget to unprepare a prepared statement!
@@ -1054,8 +986,8 @@ __Arguments__
 __Example__
 
 ```javascript
-ps.input('input_parameter', sql.Int);
-ps.input('input_parameter', sql.VarChar(50));
+ps.input('input_parameter', sql.Int)
+ps.input('input_parameter', sql.VarChar(50))
 ```
 
 __Errors__ (synchronous)
@@ -1076,8 +1008,8 @@ __Arguments__
 __Example__
 
 ```javascript
-ps.output('output_parameter', sql.Int);
-ps.output('output_parameter', sql.VarChar(50));
+ps.output('output_parameter', sql.Int)
+ps.output('output_parameter', sql.VarChar(50))
 ```
 
 __Errors__ (synchronous)
@@ -1098,10 +1030,10 @@ __Arguments__
 __Example__
 
 ```javascript
-var ps = new sql.PreparedStatement();
-ps.prepare('select @param as value', function(err) {
+const ps = new sql.PreparedStatement()
+ps.prepare('select @param as value', err => {
     // ... error checks
-});
+})
 ```
 
 __Errors__
@@ -1123,84 +1055,60 @@ __Arguments__
 __Example__
 
 ```javascript
-var ps = new sql.PreparedStatement();
-ps.input('param', sql.Int);
-ps.prepare('select @param as value', function(err) {
+const ps = new sql.PreparedStatement()
+ps.input('param', sql.Int)
+ps.prepare('select @param as value', err => {
     // ... error checks
 
-    ps.execute({param: 12345}, function(err, recordset, affected) {
+    ps.execute({param: 12345}, (err, result) => {
         // ... error checks
 
-        console.log(recordset[0].value); // return 12345
-        console.log(affected); // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
+        console.log(result.recordset[0].value) // return 12345
+        console.log(result.rowsAffected) // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
         
-        ps.unprepare(function(err) {
+        ps.unprepare(err => {
             // ... error checks
-        });
-    });
-});
-```
-
-You can enable multiple recordsets by `ps.multiple = true` command.
-
-```javascript
-var ps = new sql.PreparedStatement();
-ps.input('param', sql.Int);
-ps.prepare('select @param as value', function(err) {
-    // ... error checks
-
-    ps.multiple = true;
-    ps.execute({param: 12345}, function(err, recordsets, affected) {
-        // ... error checks
-
-        console.log(recordsets[0][0].value); // return 12345
-        console.log(affected); // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
-        
-        ps.unprepare(function(err) {
-            // ... error checks
-        });
-    });
-});
+        })
+    })
+})
 ```
 
 You can also stream executed request.
 
 ```javascript
-var ps = new sql.PreparedStatement();
-ps.input('param', sql.Int);
-ps.prepare('select @param as value', function(err) {
+const ps = new sql.PreparedStatement()
+ps.input('param', sql.Int)
+ps.prepare('select @param as value', err => {
     // ... error checks
 
-    ps.stream = true;
-    request = ps.execute({param: 12345});
+    ps.stream = true
+    const request = ps.execute({param: 12345})
 
-    request.on('recordset', function(columns) {
-    	// Emitted once for each recordset in a query
-    });
+    request.on('recordset', columns => {
+        // Emitted once for each recordset in a query
+    })
 
-    request.on('row', function(row) {
-    	// Emitted for each row in a recordset
-    });
+    request.on('row', row => {
+        // Emitted for each row in a recordset
+    })
 
-    request.on('error', function(err) {
-    	// May be emitted multiple times
-    });
+    request.on('error', err => {
+        // May be emitted multiple times
+    })
 
-    request.on('done', function(returnValue, affected) {
-    	// Always emitted as the last one
-    	
-        console.log(affected); // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
+    request.on('done', result => {
+        // Always emitted as the last one
         
-        ps.unprepare(function(err) {
+        console.log(result.rowsAffected) // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
+        
+        ps.unprepare(err => {
             // ... error checks
-        });
-    });
-});
+        })
+    })
+})
 ```
 
 **TIP**: To learn more about how number of affected rows works, see section [Affected Rows](#affected-rows).
-
-**TIP**: To access number of affected rows when using Prepared Statement with Promises, use `ps.lastRequest.affectedRows`.
 
 __Errors__
 - ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
@@ -1221,16 +1129,16 @@ __Arguments__
 __Example__
 
 ```javascript
-var ps = new sql.PreparedStatement();
-ps.input('param', sql.Int);
-ps.prepare('select @param as value', function(err, recordsets) {
+const ps = new sql.PreparedStatement()
+ps.input('param', sql.Int)
+ps.prepare('select @param as value', err => {
     // ... error checks
 
-    ps.unprepare(function(err) {
+    ps.unprepare(err => {
         // ... error checks
 
-    });
-});
+    })
+})
 ```
 
 __Errors__
@@ -1326,64 +1234,62 @@ CREATE PROCEDURE MyCustomStoredProcedure (@tvp TestType readonly) AS SELECT * FR
 Now let's go back to our Node.js app.
 
 ```javascript
-var tvp = new sql.Table()
+const tvp = new sql.Table()
 
 // Columns must correspond with type we have created in database.
-tvp.columns.add('a', sql.VarChar(50));
-tvp.columns.add('b', sql.Int);
+tvp.columns.add('a', sql.VarChar(50))
+tvp.columns.add('b', sql.Int)
 
 // Add rows
-tvp.rows.add('hello tvp', 777); // Values are in same order as columns.
+tvp.rows.add('hello tvp', 777) // Values are in same order as columns.
 ```
 
 You can send table as a parameter to stored procedure.
 
 ```javascript
-var request = new sql.Request();
-request.input('tvp', tvp);
-request.execute('MyCustomStoredProcedure', function(err, recordsets, returnValue) {
+const request = new sql.Request()
+request.input('tvp', tvp)
+request.execute('MyCustomStoredProcedure', (err, result) => {
     // ... error checks
 
-    console.dir(recordsets[0][0]); // {a: 'hello tvp', b: 777}
-});
+    console.dir(result.recordsets[0][0]) // {a: 'hello tvp', b: 777}
+})
 ```
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
 
 ## Affected Rows
 
-If you're performing `INSERT`, `UPDATE` or `DELETE` in a query, you can read number of affected rows.
+If you're performing `INSERT`, `UPDATE` or `DELETE` in a query, you can read number of affected rows. The `rowsAffected` variable is an array of numbers. Each number represents number of affected rows by a single statement.
 
 __Example using Promises__
 
 ```javascript
-var request = new sql.Request();
-request.query('update myAwesomeTable set awesomness = 100').then(function(recordset) {
-    console.log(request.rowsAffected);
-});
+const request = new sql.Request()
+request.query('update myAwesomeTable set awesomness = 100').then(result => {
+    console.log(result.rowsAffected)
+})
 ```
 
 __Example using callbacks__
 
 ```javascript
-var request = new sql.Request();
-request.query('update myAwesomeTable set awesomness = 100', function(err, recordset, affected) {
-    console.log(affected);
-});
+const request = new sql.Request()
+request.query('update myAwesomeTable set awesomness = 100', (err, result) => {
+    console.log(result.rowsAffected)
+})
 ```
 
 __Example using streaming__
 
 ```javascript
-var request = new sql.Request();
-request.stream = true;
-request.query('update myAwesomeTable set awesomness = 100');
-request.on('done', function(affected) {
-    console.log(affected);
-});
+const request = new sql.Request()
+request.stream = true
+request.query('update myAwesomeTable set awesomness = 100')
+request.on('done', result => {
+    console.log(result.rowsAffected)
+})
 ```
-
-**NOTE**: If your query contains multiple `INSERT`, `UPDATE` or `DELETE` statements, the number of affected rows is a sum of all of them.
 
 __Version__
 
@@ -1480,13 +1386,13 @@ SQL errors (`RequestError` with `err.code` equal to `EREQUEST`) contains additio
 To receive informational messages generated by `PRINT` or `RAISERROR` commands use:
 
 ```javascript
-var request = new sql.Request();
-request.on('info', function(info) {
-	console.dir(info);
-});
-request.query('print \'Hello world.\';', function(err, recordset) {
+const request = new sql.Request()
+request.on('info', info => {
+    console.dir(info)
+})
+request.query('print \'Hello world.\';', (err, result) => {
     // ...
-});
+})
 ```
 
 Structure of informational message:
@@ -1508,41 +1414,41 @@ __Version__
 Recordset metadata are accessible through the `recordset.columns` property.
 
 ```javascript
-var request = new sql.Request();
-request.query('select convert(decimal(18, 4), 1) as first, \'asdf\' as second', function(err, recordset) {
-    console.dir(recordset.columns);
+const request = new sql.Request()
+request.query('select convert(decimal(18, 4), 1) as first, \'asdf\' as second', (err, result) => {
+    console.dir(result.recordset.columns)
 
-    console.log(recordset.columns.first.type === sql.Decimal); // true
-    console.log(recordset.columns.second.type === sql.VarChar); // true
-});
+    console.log(result.recordset.columns.first.type === sql.Decimal) // true
+    console.log(result.recordset.columns.second.type === sql.VarChar) // true
+})
 ```
 
 Columns structure for example above:
 
 ```javascript
 {
-	first: {
-		index: 0,
-		name: 'first',
-		length: 17,
-		type: [sql.Decimal],
-		scale: 4,
-		precision: 18,
-		nullable: true,
-		caseSensitive: false
-		identity: false
-		readOnly: true
-	},
-	second: {
-		index: 1,
-		name: 'second',
-		length: 4,
-		type: [sql.VarChar],
-		nullable: false,
-		caseSensitive: false
-		identity: false
-		readOnly: true
-	}
+    first: {
+        index: 0,
+        name: 'first',
+        length: 17,
+        type: [sql.Decimal],
+        scale: 4,
+        precision: 18,
+        nullable: true,
+        caseSensitive: false
+        identity: false
+        readOnly: true
+    },
+    second: {
+        index: 1,
+        name: 'second',
+        length: 4,
+        type: [sql.VarChar],
+        nullable: false,
+        caseSensitive: false
+        identity: false
+        readOnly: true
+    }
 }
 ```
 
@@ -1551,18 +1457,18 @@ Columns structure for example above:
 You can define data types with length/precision/scale:
 
 ```javascript
-request.input("name", sql.VarChar, "abc");               // varchar(3)
-request.input("name", sql.VarChar(50), "abc");           // varchar(50)
-request.input("name", sql.VarChar(sql.MAX), "abc");      // varchar(MAX)
-request.output("name", sql.VarChar);                     // varchar(8000)
-request.output("name", sql.VarChar, "abc");              // varchar(3)
+request.input("name", sql.VarChar, "abc")               // varchar(3)
+request.input("name", sql.VarChar(50), "abc")           // varchar(50)
+request.input("name", sql.VarChar(sql.MAX), "abc")      // varchar(MAX)
+request.output("name", sql.VarChar)                     // varchar(8000)
+request.output("name", sql.VarChar, "abc")              // varchar(3)
 
-request.input("name", sql.Decimal, 155.33);              // decimal(18, 0)
-request.input("name", sql.Decimal(10), 155.33);          // decimal(10, 0)
-request.input("name", sql.Decimal(10, 2), 155.33);       // decimal(10, 2)
+request.input("name", sql.Decimal, 155.33)              // decimal(18, 0)
+request.input("name", sql.Decimal(10), 155.33)          // decimal(10, 0)
+request.input("name", sql.Decimal(10, 2), 155.33)       // decimal(10, 2)
 
-request.input("name", sql.DateTime2, new Date());        // datetime2(7)
-request.input("name", sql.DateTime2(5), new Date());     // datetime2(5)
+request.input("name", sql.DateTime2, new Date())        // datetime2(7)
+request.input("name", sql.DateTime2(5), new Date())     // datetime2(5)
 ```
 
 List of supported data types:
@@ -1615,45 +1521,11 @@ To setup MAX length for `VarChar`, `NVarChar` and `VarBinary` use `sql.MAX` leng
 This module has built-in SQL injection protection. Always use parameters to pass sanitized values to your queries.
 
 ```javascript
-var request = new sql.Request();
-request.input('myval', sql.VarChar, '-- commented');
-request.query('select @myval as myval', function(err, recordset) {
-    console.dir(recordset);
-});
-```
-
-## Verbose Mode
-
-You can enable verbose mode by `request.verbose = true` command.
-
-```javascript
-var request = new sql.Request();
-request.verbose = true;
-request.input('username', 'patriksimek');
-request.input('password', 'dontuseplaintextpassword');
-request.input('attempts', 2);
-request.execute('my_stored_procedure');
-```
-
-Output for the example above could look similar to this.
-
-```
----------- sql execute --------
-     proc: my_stored_procedure
-    input: @username, varchar, patriksimek
-    input: @password, varchar, dontuseplaintextpassword
-    input: @attempts, bigint, 2
----------- response -----------
-{ id: 1,
-  username: 'patriksimek',
-  password: 'dontuseplaintextpassword',
-  email: null,
-  language: 'en',
-  attempts: 2 }
----------- --------------------
-   return: 0
- duration: 5ms
----------- completed ----------
+const request = new sql.Request()
+request.input('myval', sql.VarChar, '-- commented')
+request.query('select @myval as myval', (err, result) => {
+    console.dir(result)
+})
 ```
 
 ## Known issues
@@ -1674,83 +1546,27 @@ Output for the example above could look similar to this.
 - msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
 - msnodesqlv8 doesn't support [Informational messages](#informational-messages).
 
-### msnodesql
+## 3.x to 4.x changes
 
-- msnodesql has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
-- msnodesql contains bug in DateTimeOffset ([reported](https://github.com/Azure/node-sqlserver/issues/160))
-- msnodesql doesn't support [Bulk](#bulk-table-callback) load.
-- msnodesql doesn't support [TVP](#table-valued-parameter-tvp) data type.
-- msnodesql doesn't support Variant data type.
-- msnodesql doesn't support connection timeout.
-- msnodesql doesn't support request timeout.
-- msnodesql doesn't support request cancellation.
-- msnodesql doesn't support [detailed SQL errors](#detailed-sql-errors).
-- msnodesql doesn't support [Informational messages](#informational-messages).
-- msnodesql reports invalid number of affected rows in some cases.
+- Library & tests are rewritten to ES6.
+- `Connection` was renamed to `ConnectionPool`.
+- Drivers are no longer loaded dynamically so the library is now compatible with Webpack. To use `msnodesqlv8` driver, use `const sql = require('mssql/msnodesqlv8')` syntax.
+- Every callback/resolve now returns `result` object only. This object contains `recordsets` (array of recordsets), `recordset` (first recordset from array of recordsets), `rowsAffected` (array of numbers representig number of affected rows by each insert/update/delete statement) and `output` (key/value collection of output parameters' values).
+- Affected rows are now returned as an array. A separate number for each SQL statement.
+- Directive `multiple: true` was removed.
+- `Transaction` and `PreparedStatement` internal queues was removed.
+- ConnectionPool no longer emits `connect` and `close` events.
+- Removed verbose and debug mode.
+- Removed support for `tds` and `msnodesql` drivers.
+- Removed support for Node versions lower than 4.
 
-### node-tds
+## Sponsors
 
-- If you're facing problems with date, try changing your tsql language `set language 'English';`.
-- node-tds doesn't support connecting to named instances.
-- node-tds contains bug and return same value for columns with same name.
-- node-tds doesn't support codepage of input parameters.
-- node-tds contains bug in selects that doesn't return any values *(select @param = 'value')*.
-- node-tds doesn't support Binary, VarBinary and Image as parameters.
-- node-tds always return date/time values in local time.
-- node-tds has serious problems with MAX types.
-- node-tds doesn't support [Bulk](#bulk-table-callback) load.
-- node-tds doesn't support [TVP](#table-valued-parameter-tvp) data type.
-- node-tds doesn't support Variant data type.
-- node-tds doesn't support request timeout.
-- node-tds doesn't support [built-in JSON serialization](#json-support) introduced in SQL Server 2016.
-- node-tds doesn't support [detailed SQL errors](#detailed-sql-errors).
-- node-tds doesn't support [Affected Rows](#affected-rows)
-
-## 2.x to 3.x changes
-
-### Prepared Statement
-
-* [`execute`](#execute-values-callback) method now returns 3 arguments instead of 2.
-
-    ```javascript
-    ps.execute(values, function(err, recordset, affected) { });
-    ```
-
-    When streaming, `done` event now returns 2 arguments instead of 1.
-
-    ```javascript
-    request.on('done', function(returnValue, affected) { });
-    ```
-
-### Request
-
-* [`execute`](#execute-procedure-callback) method now returns 4 arguments instead of 3.
-
-    ```javascript
-    ps.execute(values, function(err, recordset, returnValue, affected) { });
-    ```
-
-    When streaming, `done` event now returns 2 arguments instead of 1.
-
-    ```javascript
-    request.on('done', function(returnValue, affected) { });
-    ```
-
-* [`query`](#query-command-callback) method now returns 3 arguments instead of 2.
-
-    ```javascript
-    ps.execute(values, function(err, recordset, affected) { });
-    ```
-
-    When streaming, `done` event now returns 1 argument.
-
-    ```javascript
-    request.on('done', function(affected) { });
-    ```
+Development is sponsored by [Integromat](https://www.integromat.com/en/integrations/mssql).
 
 ## License
 
-Copyright (c) 2013-2016 Patrik Simek
+Copyright (c) 2013-2017 Patrik Simek
 
 The MIT License
 
@@ -1774,10 +1590,4 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [appveyor-url]: https://ci.appveyor.com/project/patriksimek/node-mssql
 
 [tedious-url]: https://www.npmjs.com/package/tedious
-[tedious-image]: https://img.shields.io/github/stars/pekim/tedious.svg?style=flat-square&label=%E2%98%85
-[msnodesql-url]: https://www.npmjs.com/package/msnodesql
-[msnodesql-image]: https://img.shields.io/github/stars/Azure/node-sqlserver.svg?style=flat-square&label=%E2%98%85
 [msnodesqlv8-url]: https://www.npmjs.com/package/msnodesqlv8
-[msnodesqlv8-image]: https://img.shields.io/github/stars/TimelordUK/node-sqlserver-v8.svg?style=flat-square&label=%E2%98%85
-[tds-url]: https://www.npmjs.com/package/tds
-[tds-image]: https://img.shields.io/github/stars/cretz/node-tds.svg?style=flat-square&label=%E2%98%85
