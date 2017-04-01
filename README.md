@@ -301,7 +301,7 @@ pool1.on('error', err => {
     // ... error handler
 })
 
-const pool2 = new sql.Connection(config, err => {
+const pool2 = new sql.ConnectionPool(config, err => {
     // ... error checks
 
     // Stored Procedure
