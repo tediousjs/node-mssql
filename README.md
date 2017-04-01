@@ -19,15 +19,17 @@ Supported TDS drivers:
 ## Quick Example
 
 ```javascript
-const sql = require('mssql');
+const sql = require('mssql')
 
-sql.connect("mssql://username:password@localhost/database").then(() => {
-	return sql.query`select * from mytable where id = ${value}`;
-}).then(result => {
-	console.dir(result);
-}).catch(err => {
-	// ... connect error checks
-})
+async () => {
+    try {
+        const pool = await sql.connect('mssql://username:password@localhost/database')
+        const result = await sql.query`select * from mytable where id = ${value}`
+        console.dir(result)
+    } catch (err) {
+        // ... error checks
+    }
+}
 ```
 
 If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#configuration) to learn more.
@@ -125,64 +127,64 @@ const config = {
 ### Async/Await
 
 ```javascript
-const sql = require('mssql');
+const sql = require('mssql')
 
-(async function() {
-	try {
-		let pool = await sql.connect(config);
-		let result1 = await pool.request()
-			.input('input_parameter', sql.Int, value)
-			.query('select * from mytable where id = @input_parameter');
-			
-		console.dir(result1);
-	
-		// Stored procedure
-		
-		let result2 = pool.request()
-			.input('input_parameter', sql.Int, value)
-			.output('output_parameter', sql.VarChar(50))
-			.execute('procedure_name');
-		
-		console.dir(result2);
-	} catch (err) {
-		// ... error checks
-	}
-})();
+(async function () {
+    try {
+        let pool = await sql.connect(config)
+        let result1 = await pool.request()
+            .input('input_parameter', sql.Int, value)
+            .query('select * from mytable where id = @input_parameter')
+            
+        console.dir(result1)
+    
+        // Stored procedure
+        
+        let result2 = await pool.request()
+            .input('input_parameter', sql.Int, value)
+            .output('output_parameter', sql.VarChar(50))
+            .execute('procedure_name')
+        
+        console.dir(result2)
+    } catch (err) {
+        // ... error checks
+    }
+})()
 
 sql.on('error', err => {
-	// ... error handler
-});
+    // ... error handler
+})
 ```
 
 ### Promises
 
 ```javascript
-const sql = require('mssql');
+const sql = require('mssql')
 
 sql.connect(config).then(pool => {
-	// Query
-	
-	return pool.request()
-	.input('input_parameter', sql.Int, value)
-	.query('select * from mytable where id = @input_parameter');
+    // Query
+    
+    return pool.request()
+    .input('input_parameter', sql.Int, value)
+    .query('select * from mytable where id = @input_parameter')
 }).then(result => {
-	console.dir(recordset);
-	
-	// Stored procedure
-	
-	return pool.request()
-	.input('input_parameter', sql.Int, value)
-	.output('output_parameter', sql.VarChar(50))
-	.execute('procedure_name');
+    console.dir(recordset)
+    
+    // Stored procedure
+    
+    return pool.request()
+    .input('input_parameter', sql.Int, value)
+    .output('output_parameter', sql.VarChar(50))
+    .execute('procedure_name')
 }).then(result => {
-	console.dir(result);
+    console.dir(result)
 }).catch(err => {
-	// ... error checks
-});
+    // ... error checks
+})
 
 sql.on('error', err => {
-	// ... error handler
-});
+    // ... error handler
+})
 ```
 
 Native Promise is used by default. You can easily change this with `sql.Promise = require('myownpromisepackage')`.
@@ -190,19 +192,19 @@ Native Promise is used by default. You can easily change this with `sql.Promise 
 **ES6 Tagged template literals**
 
 ```javascript
-const sql = require('mssql');
+const sql = require('mssql')
 
 sql.connect(config).then(() => {
-	return sql.query`select * from mytable where id = ${value}`;
+    return sql.query`select * from mytable where id = ${value}`
 }).then(result => {
-	console.dir(result);
+    console.dir(result)
 }).catch(err => {
-	// ... error checks
-});
+    // ... error checks
+})
 
 sql.on('error', err => {
-	// ... error handler
-});
+    // ... error handler
+})
 ```
 
 All values are automatically sanitized against sql injection.
@@ -210,7 +212,7 @@ All values are automatically sanitized against sql injection.
 ### Callbacks
 
 ```javascript
-const sql = require('mssql');
+const sql = require('mssql')
 
 sql.connect(config, err => {
     // ... error checks
@@ -220,8 +222,8 @@ sql.connect(config, err => {
     new sql.Request().query('select 1 as number', (err, result) => {
         // ... error checks
 
-        console.dir(result);
-    });
+        console.dir(result)
+    })
 
     // Stored Procedure
 
@@ -231,13 +233,13 @@ sql.connect(config, err => {
     .execute('procedure_name', (err, result) => {
         // ... error checks
 
-        console.dir(result);
-    });
-});
+        console.dir(result)
+    })
+})
 
 sql.on('error', err => {
-	// ... error handler
-});
+    // ... error handler
+})
 ```
 
 ### Streaming
@@ -245,41 +247,41 @@ sql.on('error', err => {
 If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.
 
 ```javascript
-const sql = require('mssql');
+const sql = require('mssql')
 
 sql.connect(config, err => {
     // ... error checks
 
-    const request = new sql.Request();
-    request.stream = true; // You can set streaming differently for each request
-    request.query('select * from verylargetable'); // or request.execute(procedure);
+    const request = new sql.Request()
+    request.stream = true // You can set streaming differently for each request
+    request.query('select * from verylargetable') // or request.execute(procedure)
 
     request.on('recordset', columns => {
-    	// Emitted once for each recordset in a query
-    });
+        // Emitted once for each recordset in a query
+    })
 
     request.on('row', row => {
-    	// Emitted for each row in a recordset
-    });
+        // Emitted for each row in a recordset
+    })
 
     request.on('error', err => {
-    	// May be emitted multiple times
-    });
+        // May be emitted multiple times
+    })
 
     request.on('done', result => {
-    	// Always emitted as the last one
-    });
-});
+        // Always emitted as the last one
+    })
+})
 
 sql.on('error', err => {
-	// ... error handler
-});
+    // ... error handler
+})
 ```
 
 ## Connection Pools
 
 ```javascript
-const sql = require('mssql');
+const sql = require('mssql')
 
 const pool1 = new sql.ConnectionPool(config, err => {
     // ... error checks
@@ -290,14 +292,14 @@ const pool1 = new sql.ConnectionPool(config, err => {
     .query('select 1 as number', (err, result) => {
         // ... error checks
 
-        console.dir(result);
-    });
+        console.dir(result)
+    })
 
-});
+})
 
 pool1.on('error', err => {
-	// ... error handler
-});
+    // ... error handler
+})
 
 const pool2 = new sql.Connection(config, err => {
     // ... error checks
@@ -310,25 +312,25 @@ const pool2 = new sql.Connection(config, err => {
     .execute('procedure_name', (err, result) => {
         // ... error checks
 
-        console.dir(result);
-    });
-});
+        console.dir(result)
+    })
+})
 
 pool1.on('error', err => {
-	// ... error handler
-});
+    // ... error handler
+})
 ```
 
 **ES6 Tagged template literals**
 
 ```javascript
 new sql.ConnectionPool(config).connect().then(pool => {
-	return pool.query`select * from mytable where id = ${value}`;
+    return pool.query`select * from mytable where id = ${value}`
 }).then(result => {
-	console.dir(result);
+    console.dir(result)
 }).catch(err => {
-	// ... error checks
-});
+    // ... error checks
+})
 ```
 
 All values are automatically sanitized against sql injection.
@@ -432,7 +434,7 @@ Internally, each `ConnectionPool` instance is a separate pool of TDS connections
 **IMPORTANT**: Always attach an `error` listener to created connection. Whenever something goes wrong with the connection it will emit an error and if there is no listener it will crash your application with an uncaught error.
 
 ```javascript
-const pool = new sql.ConnectionPool({ /* config */ });
+const pool = new sql.ConnectionPool({ /* config */ })
 ```
 
 ### Events
@@ -457,11 +459,11 @@ const pool = new sql.ConnectionPool({
     password: '...',
     server: 'localhost',
     database: '...'
-});
+})
 
 pool.connect(err => {
     // ...
-});
+})
 ```
 
 __Errors__
@@ -481,13 +483,13 @@ Close all active connections in the pool.
 __Example__
 
 ```javascript
-pool.close();
+pool.close()
 ```
 
 ## Request
 
 ```javascript
-const request = new sql.Request(/* [pool or transaction] */);
+const request = new sql.Request(/* [pool or transaction] */)
 ```
 
 If you omit pool/transaction argument, global pool is used instead.
@@ -514,21 +516,21 @@ __Arguments__
 __Example__
 
 ```javascript
-const request = new sql.Request();
-request.input('input_parameter', sql.Int, value);
-request.output('output_parameter', sql.Int);
+const request = new sql.Request()
+request.input('input_parameter', sql.Int, value)
+request.output('output_parameter', sql.Int)
 request.execute('procedure_name', (err, result) => {
     // ... error checks
 
-    console.log(result.recordsets.length); // count of recordsets returned by the procedure
-    console.log(result.recordsets[0].length); // count of rows contained in first recordset
-    console.log(result.recordset); // first recordset from result.recordsets
-    console.log(result.returnValue); // procedure return value
-    console.log(result.output); // key/value collection of output values
-    console.log(result.rowsAffected); // array of numbers, each number represents the number of rows affected by executed statemens
+    console.log(result.recordsets.length) // count of recordsets returned by the procedure
+    console.log(result.recordsets[0].length) // count of rows contained in first recordset
+    console.log(result.recordset) // first recordset from result.recordsets
+    console.log(result.returnValue) // procedure return value
+    console.log(result.output) // key/value collection of output values
+    console.log(result.rowsAffected) // array of numbers, each number represents the number of rows affected by executed statemens
 
     // ...
-});
+})
 ```
 
 __Errors__
@@ -556,8 +558,8 @@ __Arguments__
 __Example__
 
 ```javascript
-request.input('input_parameter', value);
-request.input('input_parameter', sql.Int, value);
+request.input('input_parameter', value)
+request.input('input_parameter', sql.Int, value)
 ```
 
 __JS Data Type To SQL Data Type Map__
@@ -574,13 +576,13 @@ Default data type for unknown object is `sql.NVarChar`.
 You can define your own type map.
 
 ```javascript
-sql.map.register(MyClass, sql.Text);
+sql.map.register(MyClass, sql.Text)
 ```
 
 You can also overwrite the default type map.
 
 ```javascript
-sql.map.register(Number, sql.BigInt);
+sql.map.register(Number, sql.BigInt)
 ```
 
 __Errors__ (synchronous)
@@ -602,8 +604,8 @@ __Arguments__
 __Example__
 
 ```javascript
-request.output('output_parameter', sql.Int);
-request.output('output_parameter', sql.VarChar(50), 'abc');
+request.output('output_parameter', sql.Int)
+request.output('output_parameter', sql.VarChar(50), 'abc')
 ```
 
 __Errors__ (synchronous)
@@ -623,15 +625,15 @@ __Arguments__
 __Example__
 
 ```javascript
-const request = new sql.Request();
-request.pipe(stream);
-request.query('select * from mytable');
+const request = new sql.Request()
+request.pipe(stream)
+request.query('select * from mytable')
 stream.on('error', err => {
     // ...
-});
+})
 stream.on('finish', () => {
     // ...
-});
+})
 ```
 
 __Version__
@@ -652,14 +654,14 @@ __Arguments__
 __Example__
 
 ```javascript
-const request = new sql.Request();
+const request = new sql.Request()
 request.query('select 1 as number', (err, result) => {
     // ... error checks
 
-    console.log(result.recordset[0].number); // return 1
+    console.log(result.recordset[0].number) // return 1
 
     // ...
-});
+})
 ```
 
 __Errors__
@@ -673,16 +675,16 @@ __Errors__
 - EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
 
 ```javascript
-const request = new sql.Request();
-request.multiple = true;
+const request = new sql.Request()
+request.multiple = true
 
 request.query('select 1 as number; select 2 as number', (err, result) => {
     // ... error checks
 
-    console.log(result.recordset[0].number); // return 1
-    console.log(result.recordsets[0][0].number); // return 1
-    console.log(result.recordsets[1][0].number); // return 2
-});
+    console.log(result.recordset[0].number) // return 1
+    console.log(result.recordsets[0][0].number) // return 1
+    console.log(result.recordsets[1][0].number) // return 2
+})
 ```
 
 **NOTE**: To get number of rows affected by the statement(s), see section [Affected Rows](#affected-rows).
@@ -703,10 +705,10 @@ __Arguments__
 __Example__
 
 ```javascript
-const request = new sql.Request();
+const request = new sql.Request()
 request.batch('create procedure #temporary as select * from table', (err, result) => {
     // ... error checks
-});
+})
 ```
 
 __Errors__
@@ -735,16 +737,16 @@ __Arguments__
 __Example__
 
 ```javascript
-const table = new sql.Table('table_name'); // or temporary table, e.g. #temptable
-table.create = true;
-table.columns.add('a', sql.Int, {nullable: true, primary: true});
-table.columns.add('b', sql.VarChar(50), {nullable: false});
-table.rows.add(777, 'test');
+const table = new sql.Table('table_name') // or temporary table, e.g. #temptable
+table.create = true
+table.columns.add('a', sql.Int, {nullable: true, primary: true})
+table.columns.add('b', sql.VarChar(50), {nullable: false})
+table.rows.add(777, 'test')
 
-const request = new sql.Request();
+const request = new sql.Request()
 request.bulk(table, (err, result) => {
     // ... error checks
-});
+})
 ```
 
 **IMPORTANT**: Always indicate whether the column is nullable or not!
@@ -773,16 +775,16 @@ Cancel currently executing request. Return `true` if cancellation packet was sen
 __Example__
 
 ```javascript
-const request = new sql.Request();
+const request = new sql.Request()
 request.query('waitfor delay \'00:00:05\'; select 1 as number', (err, result) => {
-    console.log(err instanceof sql.RequestError);  // true
-    console.log(err.message);                      // Cancelled.
-    console.log(err.code);                         // ECANCEL
+    console.log(err instanceof sql.RequestError)  // true
+    console.log(err.message)                      // Cancelled.
+    console.log(err.code)                         // ECANCEL
 
     // ...
-});
+})
 
-request.cancel();
+request.cancel()
 ```
 
 ## Transaction
@@ -790,7 +792,7 @@ request.cancel();
 **IMPORTANT:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is acquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. After you call `commit` or `rollback`, connection is then released back to the connection pool.
 
 ```javascript
-const transaction = new sql.Transaction(/* [pool] */);
+const transaction = new sql.Transaction(/* [pool] */)
 ```
 
 If you omit connection argument, global connection is used instead.
@@ -798,59 +800,59 @@ If you omit connection argument, global connection is used instead.
 __Example__
 
 ```javascript
-const transaction = new sql.Transaction(/* [pool] */);
+const transaction = new sql.Transaction(/* [pool] */)
 transaction.begin(err => {
     // ... error checks
 
-    const request = new sql.Request(transaction);
+    const request = new sql.Request(transaction)
     request.query('insert into mytable (mycolumn) values (12345)', (err, result) => {
         // ... error checks
 
         transaction.commit(err => {
             // ... error checks
 
-            console.log("Transaction committed.");
-        });
-    });
-});
+            console.log("Transaction committed.")
+        })
+    })
+})
 ```
 
-Transaction can also be created by `const transaction = pool.transaction();`. Requests can also be created by `const request = transaction.request();`.
+Transaction can also be created by `const transaction = pool.transaction()`. Requests can also be created by `const request = transaction.request()`.
 
 __Aborted transactions__
 
 This example shows how you should correctly handle transaction errors when `abortTransactionOnError` (`XACT_ABORT`) is enabled. Added in 2.0.
 
 ```javascript
-const transaction = new sql.Transaction(/* [pool] */);
+const transaction = new sql.Transaction(/* [pool] */)
 transaction.begin(err => {
     // ... error checks
 
-    let rolledBack = false;
+    let rolledBack = false
 
     transaction.on('rollback', aborted => {
-	    // emited with aborted === true
+        // emited with aborted === true
 
-	    rolledBack = true;
-    });
+        rolledBack = true
+    })
 
     new sql.Request(transaction)
     .query('insert into mytable (bitcolumn) values (2)', (err, result) => {
         // insert should fail because of invalid value
 
-		if (err) {
-			if (!rolledBack) {
-		        transaction.rollback(err => {
-		            // ... error checks
-		        });
-		    }
-		} else {
-			transaction.commit(err => {
-	            // ... error checks
-	        });
-		}
-    });
-});
+        if (err) {
+            if (!rolledBack) {
+                transaction.rollback(err => {
+                    // ... error checks
+                })
+            }
+        } else {
+            transaction.commit(err => {
+                // ... error checks
+            })
+        }
+    })
+})
 ```
 
 ### Events
@@ -873,10 +875,10 @@ __Arguments__
 __Example__
 
 ```javascript
-const transaction = new sql.Transaction();
+const transaction = new sql.Transaction()
 transaction.begin(err => {
     // ... error checks
-});
+})
 ```
 
 __Errors__
@@ -896,14 +898,14 @@ __Arguments__
 __Example__
 
 ```javascript
-const transaction = new sql.Transaction();
+const transaction = new sql.Transaction()
 transaction.begin(err => {
     // ... error checks
 
     transaction.commit(err => {
         // ... error checks
     })
-});
+})
 ```
 
 __Errors__
@@ -923,14 +925,14 @@ __Arguments__
 __Example__
 
 ```javascript
-const transaction = new sql.Transaction();
+const transaction = new sql.Transaction()
 transaction.begin(err => {
     // ... error checks
 
     transaction.rollback(err => {
         // ... error checks
     })
-});
+})
 ```
 
 __Errors__
@@ -942,7 +944,7 @@ __Errors__
 **IMPORTANT:** always use `PreparedStatement` class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call `prepare`, a single connection is acquired from the connection pool and all subsequent executions are executed exclusively on this connection. After you call `unprepare`, the connection is then released back to the connection pool.
 
 ```javascript
-const ps = new sql.PreparedStatement(/* [pool] */);
+const ps = new sql.PreparedStatement(/* [pool] */)
 ```
 
 If you omit the connection argument, the global connection is used instead.
@@ -950,8 +952,8 @@ If you omit the connection argument, the global connection is used instead.
 __Example__
 
 ```javascript
-const ps = new sql.PreparedStatement(/* [pool] */);
-ps.input('param', sql.Int);
+const ps = new sql.PreparedStatement(/* [pool] */)
+ps.input('param', sql.Int)
 ps.prepare('select @param as value', err => {
     // ... error checks
 
@@ -961,9 +963,9 @@ ps.prepare('select @param as value', err => {
         ps.unprepare(err => {
             // ... error checks
 
-        });
-    });
-});
+        })
+    })
+})
 ```
 
 **IMPORTANT**: Remember that each prepared statement means one reserved connection from the pool. Don't forget to unprepare a prepared statement!
@@ -984,8 +986,8 @@ __Arguments__
 __Example__
 
 ```javascript
-ps.input('input_parameter', sql.Int);
-ps.input('input_parameter', sql.VarChar(50));
+ps.input('input_parameter', sql.Int)
+ps.input('input_parameter', sql.VarChar(50))
 ```
 
 __Errors__ (synchronous)
@@ -1006,8 +1008,8 @@ __Arguments__
 __Example__
 
 ```javascript
-ps.output('output_parameter', sql.Int);
-ps.output('output_parameter', sql.VarChar(50));
+ps.output('output_parameter', sql.Int)
+ps.output('output_parameter', sql.VarChar(50))
 ```
 
 __Errors__ (synchronous)
@@ -1028,10 +1030,10 @@ __Arguments__
 __Example__
 
 ```javascript
-const ps = new sql.PreparedStatement();
+const ps = new sql.PreparedStatement()
 ps.prepare('select @param as value', err => {
     // ... error checks
-});
+})
 ```
 
 __Errors__
@@ -1053,57 +1055,57 @@ __Arguments__
 __Example__
 
 ```javascript
-const ps = new sql.PreparedStatement();
-ps.input('param', sql.Int);
+const ps = new sql.PreparedStatement()
+ps.input('param', sql.Int)
 ps.prepare('select @param as value', err => {
     // ... error checks
 
     ps.execute({param: 12345}, (err, result) => {
         // ... error checks
 
-        console.log(result.recordset[0].value); // return 12345
-        console.log(result.rowsAffected); // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
+        console.log(result.recordset[0].value) // return 12345
+        console.log(result.rowsAffected) // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
         
         ps.unprepare(err => {
             // ... error checks
-        });
-    });
-});
+        })
+    })
+})
 ```
 
 You can also stream executed request.
 
 ```javascript
-const ps = new sql.PreparedStatement();
-ps.input('param', sql.Int);
+const ps = new sql.PreparedStatement()
+ps.input('param', sql.Int)
 ps.prepare('select @param as value', err => {
     // ... error checks
 
-    ps.stream = true;
-    const request = ps.execute({param: 12345});
+    ps.stream = true
+    const request = ps.execute({param: 12345})
 
     request.on('recordset', columns => {
-    	// Emitted once for each recordset in a query
-    });
+        // Emitted once for each recordset in a query
+    })
 
     request.on('row', row => {
-    	// Emitted for each row in a recordset
-    });
+        // Emitted for each row in a recordset
+    })
 
     request.on('error', err => {
-    	// May be emitted multiple times
-    });
+        // May be emitted multiple times
+    })
 
     request.on('done', result => {
-    	// Always emitted as the last one
-    	
-        console.log(result.rowsAffected); // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
+        // Always emitted as the last one
+        
+        console.log(result.rowsAffected) // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
         
         ps.unprepare(err => {
             // ... error checks
-        });
-    });
-});
+        })
+    })
+})
 ```
 
 **TIP**: To learn more about how number of affected rows works, see section [Affected Rows](#affected-rows).
@@ -1127,16 +1129,16 @@ __Arguments__
 __Example__
 
 ```javascript
-const ps = new sql.PreparedStatement();
-ps.input('param', sql.Int);
+const ps = new sql.PreparedStatement()
+ps.input('param', sql.Int)
 ps.prepare('select @param as value', err => {
     // ... error checks
 
     ps.unprepare(err => {
         // ... error checks
 
-    });
-});
+    })
+})
 ```
 
 __Errors__
@@ -1235,23 +1237,23 @@ Now let's go back to our Node.js app.
 const tvp = new sql.Table()
 
 // Columns must correspond with type we have created in database.
-tvp.columns.add('a', sql.VarChar(50));
-tvp.columns.add('b', sql.Int);
+tvp.columns.add('a', sql.VarChar(50))
+tvp.columns.add('b', sql.Int)
 
 // Add rows
-tvp.rows.add('hello tvp', 777); // Values are in same order as columns.
+tvp.rows.add('hello tvp', 777) // Values are in same order as columns.
 ```
 
 You can send table as a parameter to stored procedure.
 
 ```javascript
-const request = new sql.Request();
-request.input('tvp', tvp);
+const request = new sql.Request()
+request.input('tvp', tvp)
 request.execute('MyCustomStoredProcedure', (err, result) => {
     // ... error checks
 
-    console.dir(result.recordsets[0][0]); // {a: 'hello tvp', b: 777}
-});
+    console.dir(result.recordsets[0][0]) // {a: 'hello tvp', b: 777}
+})
 ```
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
@@ -1263,30 +1265,30 @@ If you're performing `INSERT`, `UPDATE` or `DELETE` in a query, you can read num
 __Example using Promises__
 
 ```javascript
-const request = new sql.Request();
+const request = new sql.Request()
 request.query('update myAwesomeTable set awesomness = 100').then(result => {
-    console.log(result.rowsAffected);
-});
+    console.log(result.rowsAffected)
+})
 ```
 
 __Example using callbacks__
 
 ```javascript
-const request = new sql.Request();
+const request = new sql.Request()
 request.query('update myAwesomeTable set awesomness = 100', (err, result) => {
-    console.log(result.rowsAffected);
-});
+    console.log(result.rowsAffected)
+})
 ```
 
 __Example using streaming__
 
 ```javascript
-const request = new sql.Request();
-request.stream = true;
-request.query('update myAwesomeTable set awesomness = 100');
+const request = new sql.Request()
+request.stream = true
+request.query('update myAwesomeTable set awesomness = 100')
 request.on('done', result => {
-    console.log(result.rowsAffected);
-});
+    console.log(result.rowsAffected)
+})
 ```
 
 __Version__
@@ -1384,13 +1386,13 @@ SQL errors (`RequestError` with `err.code` equal to `EREQUEST`) contains additio
 To receive informational messages generated by `PRINT` or `RAISERROR` commands use:
 
 ```javascript
-const request = new sql.Request();
+const request = new sql.Request()
 request.on('info', info => {
-	console.dir(info);
-});
+    console.dir(info)
+})
 request.query('print \'Hello world.\';', (err, result) => {
     // ...
-});
+})
 ```
 
 Structure of informational message:
@@ -1412,41 +1414,41 @@ __Version__
 Recordset metadata are accessible through the `recordset.columns` property.
 
 ```javascript
-const request = new sql.Request();
+const request = new sql.Request()
 request.query('select convert(decimal(18, 4), 1) as first, \'asdf\' as second', (err, result) => {
-    console.dir(result.recordset.columns);
+    console.dir(result.recordset.columns)
 
-    console.log(result.recordset.columns.first.type === sql.Decimal); // true
-    console.log(result.recordset.columns.second.type === sql.VarChar); // true
-});
+    console.log(result.recordset.columns.first.type === sql.Decimal) // true
+    console.log(result.recordset.columns.second.type === sql.VarChar) // true
+})
 ```
 
 Columns structure for example above:
 
 ```javascript
 {
-	first: {
-		index: 0,
-		name: 'first',
-		length: 17,
-		type: [sql.Decimal],
-		scale: 4,
-		precision: 18,
-		nullable: true,
-		caseSensitive: false
-		identity: false
-		readOnly: true
-	},
-	second: {
-		index: 1,
-		name: 'second',
-		length: 4,
-		type: [sql.VarChar],
-		nullable: false,
-		caseSensitive: false
-		identity: false
-		readOnly: true
-	}
+    first: {
+        index: 0,
+        name: 'first',
+        length: 17,
+        type: [sql.Decimal],
+        scale: 4,
+        precision: 18,
+        nullable: true,
+        caseSensitive: false
+        identity: false
+        readOnly: true
+    },
+    second: {
+        index: 1,
+        name: 'second',
+        length: 4,
+        type: [sql.VarChar],
+        nullable: false,
+        caseSensitive: false
+        identity: false
+        readOnly: true
+    }
 }
 ```
 
@@ -1455,18 +1457,18 @@ Columns structure for example above:
 You can define data types with length/precision/scale:
 
 ```javascript
-request.input("name", sql.VarChar, "abc");               // varchar(3)
-request.input("name", sql.VarChar(50), "abc");           // varchar(50)
-request.input("name", sql.VarChar(sql.MAX), "abc");      // varchar(MAX)
-request.output("name", sql.VarChar);                     // varchar(8000)
-request.output("name", sql.VarChar, "abc");              // varchar(3)
+request.input("name", sql.VarChar, "abc")               // varchar(3)
+request.input("name", sql.VarChar(50), "abc")           // varchar(50)
+request.input("name", sql.VarChar(sql.MAX), "abc")      // varchar(MAX)
+request.output("name", sql.VarChar)                     // varchar(8000)
+request.output("name", sql.VarChar, "abc")              // varchar(3)
 
-request.input("name", sql.Decimal, 155.33);              // decimal(18, 0)
-request.input("name", sql.Decimal(10), 155.33);          // decimal(10, 0)
-request.input("name", sql.Decimal(10, 2), 155.33);       // decimal(10, 2)
+request.input("name", sql.Decimal, 155.33)              // decimal(18, 0)
+request.input("name", sql.Decimal(10), 155.33)          // decimal(10, 0)
+request.input("name", sql.Decimal(10, 2), 155.33)       // decimal(10, 2)
 
-request.input("name", sql.DateTime2, new Date());        // datetime2(7)
-request.input("name", sql.DateTime2(5), new Date());     // datetime2(5)
+request.input("name", sql.DateTime2, new Date())        // datetime2(7)
+request.input("name", sql.DateTime2(5), new Date())     // datetime2(5)
 ```
 
 List of supported data types:
@@ -1519,11 +1521,11 @@ To setup MAX length for `VarChar`, `NVarChar` and `VarBinary` use `sql.MAX` leng
 This module has built-in SQL injection protection. Always use parameters to pass sanitized values to your queries.
 
 ```javascript
-const request = new sql.Request();
-request.input('myval', sql.VarChar, '-- commented');
+const request = new sql.Request()
+request.input('myval', sql.VarChar, '-- commented')
 request.query('select @myval as myval', (err, result) => {
-    console.dir(result);
-});
+    console.dir(result)
+})
 ```
 
 ## Known issues
