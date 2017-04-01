@@ -1,4 +1,4 @@
-# node-mssql v4 alpha
+# node-mssql
 
 Microsoft SQL Server client for Node.js
 
@@ -14,7 +14,7 @@ Supported TDS drivers:
 
 **IMPORTANT**: Requires Node.js 4 or newer.
 
-    npm install mssql@alpha
+    npm install mssql
 
 ## Quick Example
 
@@ -1554,7 +1554,7 @@ request.query('select @myval as myval', (err, result) => {
 - Directive `multiple: true` was removed.
 - `Transaction` and `PreparedStatement` internal queues was removed.
 - ConnectionPool no longer emits `connect` and `close` events.
-- Removed verbose mode.
+- Removed verbose and debug mode.
 - Removed support for `tds` and `msnodesql` drivers.
 - Removed support for Node versions lower than 4.
 

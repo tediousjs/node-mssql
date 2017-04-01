@@ -1,1 +1,1 @@
-module.exports = require('./lib/msnodesqlv8.js');
+module.exports = require('./lib/msnodesqlv8.js')

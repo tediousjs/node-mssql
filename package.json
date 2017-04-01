@@ -21,7 +21,7 @@
     "azure",
     "node-mssql"
   ],
-  "version": "4.0.0-alpha2",
+  "version": "4.0.0",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -29,30 +29,24 @@
   },
   "license": "MIT",
   "dependencies": {
-    "debug": "^2.6.1",
+    "debug": "^2.6.3",
     "generic-pool": "^3.1.7",
-    "tedious": "~1.15.0"
+    "tedious": "^2.0.0"
   },
   "devDependencies": {
-    "mocha": "^2.1.0"
+    "mocha": "^2.1.0",
+    "standard": "^9.0.2"
   },
   "engines": {
     "node": ">=4"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha test/common/unit.js",
+    "test": "standard && node_modules/.bin/mocha test/common/unit.js",
     "test-tedious": "node_modules/.bin/mocha test/tedious",
     "test-msnodesqlv8": "node_modules/.bin/mocha test/msnodesqlv8",
     "test-cli": "node_modules/.bin/mocha test/common/cli.js"
   },
   "bin": {
     "mssql": "./bin/mssql"
-  },
-  "xo": {
-    "esnext": true,
-    "rules": {
-      "eqeqeq": "off",
-      "no-eq-null": "off"
-    }
   }
 }

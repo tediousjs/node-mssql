@@ -1,7 +1,4 @@
 node_modules
 .DS_Store
-.svn
-.coffeemaker
-.idea
 /test/.mssql.json
-/src
+.vscode
