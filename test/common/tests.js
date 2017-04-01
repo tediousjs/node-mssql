@@ -8,11 +8,11 @@ process.on('unhandledRejection', (reason, p) => {
   // application specific logging, throwing an error, or other logic here
 })
 
-// eslint-disable-next-line no-unused-vars
 class WritableStream extends stream.Writable {
   constructor () {
     super({
-      objectMode: true})
+      objectMode: true
+    })
 
     this.cache = []
   }
@@ -372,6 +372,22 @@ module.exports = (sql, driver) => {
 
         done()
       })
+    },
+
+    'query with pipe' (done) {
+      const stream = new WritableStream()
+      stream.on('finish', () => {
+        assert.equal(stream.cache.length, 1)
+        assert.equal(stream.cache[0].text, 'asdf')
+        done()
+      })
+      stream.on('error', err => {
+        done(err)
+      })
+
+      const req = new sql.Request()
+      req.query('select \'asdf\' as text')
+      req.pipe(stream)
     },
 
     'batch' (done, stream) {

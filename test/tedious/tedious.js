@@ -74,6 +74,7 @@ describe('tedious', () => {
     it('query with error', done => TESTS['query with error'](done))
     it('query with multiple errors', done => TESTS['query with multiple errors'](done))
     it('query with raiseerror', done => TESTS['query with raiseerror'](done))
+    it('query with pipe', done => TESTS['query with pipe'](done))
     it('batch', done => TESTS['batch'](done))
     it('create procedure batch', done => TESTS['create procedure batch'](done))
     it('prepared statement', done => TESTS['prepared statement'](done))
