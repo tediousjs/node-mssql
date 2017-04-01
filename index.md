@@ -4,7 +4,7 @@ Microsoft SQL Server client for Node.js
 
 [![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Package Quality][quality-image]][quality-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**v4 upgrade warning** - Version 4 contains many braking changes, read more in the [3.x to 4.x changes](#3x-to-4x-changes) section. Version 3 docs are available [here](https://github.com/patriksimek/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md).
+**v4 upgrade warning** - Version 4 contains many breaking changes, read more in the [3.x to 4.x changes](#3x-to-4x-changes) section. Version 3 docs are available [here](https://github.com/patriksimek/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md).
 
 Supported TDS drivers:
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
@@ -1580,8 +1580,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [npm-url]: https://www.npmjs.com/package/mssql
 [downloads-image]: https://img.shields.io/npm/dm/mssql.svg?style=flat-square
 [downloads-url]: https://www.npmjs.com/package/mssql
-[quality-image]: http://npm.packagequality.com/shield/mssql.svg?style=flat-square
-[quality-url]: http://packagequality.com/#?package=mssql
+[quality-image]: https://npm.packagequality.com/shield/mssql.svg?style=flat-square
+[quality-url]: https://packagequality.com/#?package=mssql
 [david-image]: https://img.shields.io/david/patriksimek/node-mssql.svg?style=flat-square
 [david-url]: https://david-dm.org/patriksimek/node-mssql
 [travis-image]: https://img.shields.io/travis/patriksimek/node-mssql/master.svg?style=flat-square&label=unit
