@@ -1,0 +1,8 @@
+title: node-mssql
+description: Microsoft SQL Server client for Node.js
+google_analytics: UA-42442367-2
+show_downloads: true
+theme: jekyll-theme-architect
+
+gems:
+  - jekyll-mentions
