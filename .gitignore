@@ -4,3 +4,4 @@ node_modules
 .coffeemaker
 .idea
 /test/.mssql.json
+npm-debug.log
