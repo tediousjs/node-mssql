@@ -168,7 +168,7 @@ sql.connect(config).then(pool => {
     .input('input_parameter', sql.Int, value)
     .query('select * from mytable where id = @input_parameter')
 }).then(result => {
-    console.dir(recordset)
+    console.dir(result)
     
     // Stored procedure
     
