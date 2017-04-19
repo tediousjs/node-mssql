@@ -1540,7 +1540,6 @@ request.query('select @myval as myval', (err, result) => {
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
 - msnodesqlv8 doesn't timeout the connection reliably - [reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/9).
 - msnodesqlv8 doesn't support [TVP](#table-valued-parameter-tvp) data type.
-- msnodesqlv8 doesn't support Variant data type.
 - msnodesqlv8 doesn't support request timeout.
 - msnodesqlv8 doesn't support request cancellation.
 - msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
