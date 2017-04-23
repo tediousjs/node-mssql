@@ -53,6 +53,7 @@ describe('msnodesqlv8', function () {
     it('query with multiple recordsets', done => TESTS['query with multiple recordsets'](done))
     it('query with input parameters', done => TESTS['query with input parameters']('query', done))
     it('query with input parameters (batch)', done => TESTS['query with input parameters']('batch', done))
+    it('query with big strings', done => TESTS['query with big strings']('query', done))
     it('query with output parameters', done => TESTS['query with output parameters']('query', done))
     it('query with output parameters (batch)', done => TESTS['query with output parameters']('batch', done))
     it('query with error', done => TESTS['query with error'](done))

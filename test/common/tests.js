@@ -390,6 +390,30 @@ module.exports = (sql, driver) => {
       req.pipe(stream)
     },
 
+    'query with big strings' (mode, done) {
+      const req = new sql.Request()
+      var bigStr = 'S'.repeat(100000)
+      var ncharBigStr = 'S'.repeat(3500)
+      var charBigStr = ncharBigStr.repeat(2)
+
+      req.input('vch', sql.NVarChar(sql.MAX), bigStr)
+      req.input('nvch', sql.VarChar(sql.MAX), bigStr)
+      req.input('vch2', sql.VarChar, bigStr)
+      req.input('nch', sql.NChar(3500), ncharBigStr)
+      req.input('ch', sql.Char(7000), charBigStr)
+
+      req[mode]('select @vch as vch, @nvch as nvch, @vch2 as vch2, @nch as nch, @ch as ch').then(result => {
+        assert.equal(result.recordset.length, 1)
+        assert.equal(result.recordset[0].vch, bigStr)
+        assert.equal(result.recordset[0].nvch, bigStr)
+        assert.equal(result.recordset[0].vch2, bigStr)
+        assert.equal(result.recordset[0].nch, ncharBigStr)
+        assert.equal(result.recordset[0].ch, charBigStr)
+
+        done()
+      }).catch(done)
+    },
+
     'batch' (done, stream) {
       const req = new TestRequest()
       req.batch('select 1 as num;select \'asdf\' as text').then(result => {
