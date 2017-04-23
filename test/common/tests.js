@@ -398,15 +398,17 @@ module.exports = (sql, driver) => {
 
       req.input('vch', sql.NVarChar(sql.MAX), bigStr)
       req.input('nvch', sql.VarChar(sql.MAX), bigStr)
+      req.input('xml', sql.XML, bigStr)
       req.input('vch2', sql.VarChar, bigStr)
       req.input('nch', sql.NChar(3500), ncharBigStr)
       req.input('ch', sql.Char(7000), charBigStr)
 
-      req[mode]('select @vch as vch, @nvch as nvch, @vch2 as vch2, @nch as nch, @ch as ch').then(result => {
+      req[mode]('select @vch as vch, @nvch as nvch, @vch2 as vch2, @nch as nch, @ch as ch, @xml as xml').then(result => {
         assert.equal(result.recordset.length, 1)
         assert.equal(result.recordset[0].vch, bigStr)
         assert.equal(result.recordset[0].nvch, bigStr)
         assert.equal(result.recordset[0].vch2, bigStr)
+        assert.equal(result.recordset[0].xml, bigStr)
         assert.equal(result.recordset[0].nch, ncharBigStr)
         assert.equal(result.recordset[0].ch, charBigStr)
 
