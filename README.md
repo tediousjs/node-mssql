@@ -367,6 +367,8 @@ const config = {
 - **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
 
+Complete list of pool options can be found [here](https://github.com/coopernurse/node-pool).
+
 ### Formats
 
 In addition to configuration object there is an option to pass config as a connection string. Two formats of connection string are supported.
