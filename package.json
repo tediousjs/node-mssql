@@ -25,7 +25,7 @@
 	"main": "index.js",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/patriksimek/node-mssql"
+		"url": "git@github.com:softwaregroup-bg/ut-mssql.git"
 	},
 	"license": "MIT",
 	"dependencies": {
@@ -35,7 +35,8 @@
 	},
 	"devDependencies": {
 		"coffee-script": "^1.9.3",
-		"mocha": "^2.1.0"
+		"mocha": "^2.1.0",
+		"ut-tools": "^5.15.0"
 	},
 	"engines": {
 		"node": ">=0.10"
@@ -48,7 +49,24 @@
 		"test-msnodesql": "node_modules/.bin/mocha test/integration -g msnodesql",
 		"test-msnodesqlv8": "node_modules/.bin/mocha test/integration -g msnodesqlv8",
 		"test-tds": "node_modules/.bin/mocha test/integration -g tds",
-		"test-cli": "node_modules/.bin/mocha test/integration -g cli"
+		"test-cli": "node_modules/.bin/mocha test/integration -g cli",
+		"lint": "ut-lint .",
+		"release": "ut-release",
+		"changelog": "ut-changelog",
+		"check": "ut-check",
+		"cover": "ut-cover",
+		"lint-js": "ut-lint-js .",
+		"postpublish": "ut-postpublish",
+		"postversion": "ut-postversion",
+		"precommit": "ut-precommit",
+		"prepublish": "ut-prepublish",
+		"prepush": "ut-prepush",
+		"pretest": "ut-pretest",
+		"preversion": "ut-preversion",
+		"test": "ut-test",
+		"version": "ut-version",
+		"jenkins": "ut-jenkins",
+		"gitlab": "ut-gitlab"
 	},
 	"bin": {
 		"mssql": "./bin/mssql"
