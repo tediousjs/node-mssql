@@ -24,7 +24,7 @@ const sql = require('mssql')
 async () => {
     try {
         const pool = await sql.connect('mssql://username:password@localhost/database')
-        const result = await sql.query`select * from mytable where id = ${value}`
+        const result = await sql.query(`select * from mytable where id = ${value}`)
         console.dir(result)
     } catch (err) {
         // ... error checks
@@ -40,7 +40,7 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 
 ### Examples
 
-* [Async/Await](#async-await)
+* [Async/Await](#asyncawait)
 * [Promises](#promises)
 * [ES6 Tagged template literals](#es6-tagged-template-literals)
 * [Callbacks](#callbacks)
