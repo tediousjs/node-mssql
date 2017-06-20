@@ -650,7 +650,7 @@ module.exports = (sql, driver) => {
     'request timeout' (done, driver, message) {
       const config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
       config.driver = driver
-      config.requestTimeout = 500
+      config.requestTimeout = 1000  // note: msnodesqlv8 doesn't support timeouts less than 1 second
 
       new sql.ConnectionPool(config).connect().then(conn => {
         const req = new TestRequest(conn)
