@@ -173,4 +173,9 @@ describe('Unit', () => {
       done()
     })
   })
+
+  it('infer type by value', () => {
+    assert.strictEqual(sql.Int, sql.getTypeByValue(23))
+    assert.strictEqual(sql.Float, sql.getTypeByValue(1.23))
+  })
 })
