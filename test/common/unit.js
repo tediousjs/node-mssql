@@ -166,7 +166,7 @@ describe('Unit', () => {
     let resolved = false
 
     class FakePromise {
-      constructor(cb) {
+      constructor (cb) {
         setImmediate(cb, () => {
           resolved = true
           this._then()
@@ -175,7 +175,7 @@ describe('Unit', () => {
         })
       }
 
-      then(func) {
+      then (func) {
         this._then = func
       }
     }
