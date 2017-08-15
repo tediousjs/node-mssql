@@ -316,7 +316,7 @@ const pool2 = new sql.ConnectionPool(config, err => {
     })
 })
 
-pool1.on('error', err => {
+pool2.on('error', err => {
     // ... error handler
 })
 ```
