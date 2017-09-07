@@ -168,7 +168,7 @@ sql.connect(config).then(pool => {
     .input('input_parameter', sql.Int, value)
     .query('select * from mytable where id = @input_parameter')
 }).then(result => {
-    console.dir(recordset)
+    console.dir(result)
     
     // Stored procedure
     
@@ -316,7 +316,7 @@ const pool2 = new sql.ConnectionPool(config, err => {
     })
 })
 
-pool1.on('error', err => {
+pool2.on('error', err => {
     // ... error handler
 })
 ```
@@ -360,12 +360,14 @@ const config = {
 - **domain** - Once you set domain, driver will connect to SQL Server using domain login.
 - **database** - Database to connect to (default: dependent on server configuration).
 - **connectionTimeout** - Connection timeout in ms (default: `15000`).
-- **requestTimeout** - Request timeout in ms (default: `15000`).
+- **requestTimeout** - Request timeout in ms (default: `15000`). NOTE: msnodesqlv8 driver doesn't support timeouts < 1 second.
 - **stream** - Stream recordsets/rows instead of returning them all at once as an argument of callback (default: `false`). You can also enable streaming for each request independently (`request.stream = true`). Always set to `true` if you plan to work with large amount of rows.
 - **parseJSON** - Parse JSON recordsets to JS objects (default: `false`). For more information please see section [JSON support](#json-support).
 - **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
 - **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
+
+Complete list of pool options can be found [here](https://github.com/coopernurse/node-pool).
 
 ### Formats
 
@@ -1540,7 +1542,6 @@ request.query('select @myval as myval', (err, result) => {
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
 - msnodesqlv8 doesn't timeout the connection reliably - [reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/9).
 - msnodesqlv8 doesn't support [TVP](#table-valued-parameter-tvp) data type.
-- msnodesqlv8 doesn't support Variant data type.
 - msnodesqlv8 doesn't support request timeout.
 - msnodesqlv8 doesn't support request cancellation.
 - msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).

@@ -38,15 +38,14 @@ describe('msnodesqlv8', function () {
   describe('basic test suite', function () {
     before(function (done) {
       let cfg = config()
-      cfg.parseJSON = true
       sql.connect(cfg, done)
     })
 
     it('stored procedure (exec)', done => TESTS['stored procedure']('execute', done))
     it('stored procedure (batch)', done => TESTS['stored procedure']('batch', done))
     it('user defined types', done => TESTS['user defined types'](done))
-    it.skip('binary data (buggy in msnodesqlv8)', done => TESTS['binary data'](done))
-    it.skip('variant data (not supported by msnodesqlv8)', done => TESTS['variant data'](done))
+    it('binary data', done => TESTS['binary data'](done))
+    it('variant data', done => TESTS['variant data'](done))
     it('stored procedure with one empty recordset', done => TESTS['stored procedure with one empty recordset'](done))
     it('empty query', done => TESTS['empty query'](done))
     it('query with no recordset', done => TESTS['query with no recordset'](done))
@@ -69,7 +68,7 @@ describe('msnodesqlv8', function () {
     it('transaction with rollback', done => TESTS['transaction with rollback'](done))
     it('transaction with commit', done => TESTS['transaction with commit'](done))
     it.skip('cancel request (not supported by msnodesqlv8)', done => TESTS['cancel request'](done))
-    it.skip('request timeout (not supported by msnodesqlv8)', done => TESTS['request timeout'](done))
+    it('request timeout', done => TESTS['request timeout'](done))
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))
     it.skip('chunked json support (requires SQL Server 2016)', done => TESTS['chunked json support'](done))
     it('chunked xml support', done => TESTS['chunked xml support'](done))
