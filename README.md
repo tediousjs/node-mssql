@@ -40,7 +40,7 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 
 ### Examples
 
-* [Async/Await](#async-await)
+* [Async/Await](#asyncawait)
 * [Promises](#promises)
 * [ES6 Tagged template literals](#es6-tagged-template-literals)
 * [Callbacks](#callbacks)
@@ -59,7 +59,7 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 
 ### Connections
 
-* [ConnectionPool](#connectionpool)
+* [ConnectionPool](#connections-1)
 * [connect](#connect-callback)
 * [close](#close)
 
@@ -189,7 +189,7 @@ sql.on('error', err => {
 
 Native Promise is used by default. You can easily change this with `sql.Promise = require('myownpromisepackage')`.
 
-**ES6 Tagged template literals**
+### ES6 Tagged template literals
 
 ```javascript
 const sql = require('mssql')
@@ -727,7 +727,7 @@ You can enable multiple recordsets in queries with the `request.multiple = true`
 
 ---------------------------------------
 
-### bulk(table, [callback])
+### bulk (table, [callback])
 
 Perform a bulk insert.
 
