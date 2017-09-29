@@ -1,3 +1,10 @@
+v4.1.0 (2017-09-29)
+-------------------
+[new] Adding support for the MultiSubnetFailover option in connection strings (Paul Kehrer)
+[new] Add request timeout support for msnodesqlv8 queries (Michael Parque)
+[fix] Fix type inference of non-integer numbers (Andrew Crites)
+[fix] Set acquireTimeout on generic pool (Karl Wiggisser)
+
 v4.0.4 (2017-04-25)
 -------------------
 [fix] Fix auto-closing of idle connections
