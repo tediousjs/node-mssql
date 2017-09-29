@@ -359,7 +359,7 @@ const config = {
 - **port** - Port to connect to (default: `1433`). Don't set when connecting to named instance.
 - **domain** - Once you set domain, driver will connect to SQL Server using domain login.
 - **database** - Database to connect to (default: dependent on server configuration).
-- **connectionTimeout** - Connection timeout in ms (default: `15000`).
+- **connectTimeout** - Connection timeout in ms (default: `15000`).
 - **requestTimeout** - Request timeout in ms (default: `15000`). NOTE: msnodesqlv8 driver doesn't support timeouts < 1 second.
 - **stream** - Stream recordsets/rows instead of returning them all at once as an argument of callback (default: `false`). You can also enable streaming for each request independently (`request.stream = true`). Always set to `true` if you plan to work with large amount of rows.
 - **parseJSON** - Parse JSON recordsets to JS objects (default: `false`). For more information please see section [JSON support](#json-support).
