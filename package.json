@@ -43,7 +43,9 @@
     "test-unit": "node_modules/.bin/mocha test/common/unit.js",
     "test-tedious": "node_modules/.bin/mocha test/tedious",
     "test-msnodesqlv8": "node_modules/.bin/mocha test/msnodesqlv8",
-    "test-cli": "node_modules/.bin/mocha test/common/cli.js"
+    "test-cli": "node_modules/.bin/mocha test/common/cli.js",
+    "mssql-server:up": "docker-compose up --no-start &&  docker-compose start",
+    "mssql-server:down": "docker-compose down"
   },
   "bin": {
     "mssql": "./bin/mssql"

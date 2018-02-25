@@ -3,6 +3,8 @@
 const assert = require('assert')
 const stream = require('stream')
 
+function clone(val) { return Object.assign({}, val); }
+
 process.on('unhandledRejection', (reason, p) => {
   console.log('Unhandled Rejection at: Promise', p, 'reason:', reason)
   // application specific logging, throwing an error, or other logic here
@@ -642,7 +644,7 @@ module.exports = (sql, driver) => {
     },
 
     'request timeout' (done, driver, message) {
-      const config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
+      const config = clone(require('../mssql-config'))
       config.driver = driver
       config.requestTimeout = 1000 // note: msnodesqlv8 doesn't support timeouts less than 1 second
 
@@ -764,7 +766,7 @@ module.exports = (sql, driver) => {
     },
 
     'login failed' (done, message) {
-      const config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
+      const config = clone(require('../mssql-config'))
       config.user = '__notexistinguser__'
 
       // eslint-disable-next-line no-new
@@ -957,7 +959,7 @@ module.exports = (sql, driver) => {
       }
 
       __range__(1, peak, true).map((i) => {
-        const c = new sql.ConnectionPool(JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`)))
+        const c = new sql.ConnectionPool(require('../mssql-config'))
         c.connect(connected)
         conns.push(c)
       })
@@ -966,7 +968,7 @@ module.exports = (sql, driver) => {
     'concurrent requests' (done, driver) {
       console.log('')
 
-      let config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
+      let config = clone(require('../mssql-config'))
       config.driver = driver
       config.pool = {min: 0, max: 50}
 
@@ -1011,7 +1013,7 @@ module.exports = (sql, driver) => {
     },
 
     'streaming off' (done, driver) {
-      let config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
+      let config = clone(require('../mssql-config'))
       config.driver = driver
       config.requestTimeout = 60000
 
@@ -1030,7 +1032,7 @@ module.exports = (sql, driver) => {
     },
 
     'streaming on' (done, driver) {
-      let config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
+      let config = clone(require('../mssql-config'))
       config.driver = driver
       config.requestTimeout = 60000
 

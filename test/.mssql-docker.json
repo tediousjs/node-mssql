@@ -1,0 +1,7 @@
+{
+  "port": 31433,
+  "user": "sa",
+  "password": "S0meVeryHardPassword",
+  "server": "localhost",
+  "database": "mssql_test_db"
+}
