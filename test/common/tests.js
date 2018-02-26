@@ -3,7 +3,7 @@
 const assert = require('assert')
 const stream = require('stream')
 
-function clone(val) { return Object.assign({}, val); }
+function clone (val) { return Object.assign({}, val) }
 
 process.on('unhandledRejection', (reason, p) => {
   console.log('Unhandled Rejection at: Promise', p, 'reason:', reason)

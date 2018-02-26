@@ -1,9 +1,9 @@
-let config = null;
+let config = null
 
 try {
   config = require(`./.mssql.json`)
 } catch (e) {
-  config = require(`./.mssql-docker.json`)        
+  config = require(`./.mssql-docker.json`)
 }
 
-module.exports = config;
+module.exports = config
