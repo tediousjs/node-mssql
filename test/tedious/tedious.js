@@ -13,8 +13,10 @@ if (parseInt(process.version.match(/^v(\d+)\./)[1]) > 0) {
   require('../common/templatestring.js')
 }
 
+function clone (val) { return Object.assign({}, val) }
+
 const config = function () {
-  let cfg = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
+  let cfg = clone(require('../mssql-config'))
   cfg.driver = 'tedious'
   return cfg
 }
