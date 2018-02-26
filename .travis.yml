@@ -1,6 +1,19 @@
 language: node_js
 sudo: false
-node_js:
-  - "4"
-  - "6"
-  - "8"
+
+matrix:
+  include:
+  - node_js: "8"
+    env: RUN_TEDIOUS=true RUN_STRESS_TEST=true
+  - node_js: "6"
+    env: RUN_TEDIOUS=true
+  - node_js: "4"
+
+services:
+  - docker
+
+before_install:
+  - if [ ! -z $RUN_TEDIOUS ];then npm run mssql-server:up; fi
+
+script:
+  - npm run test && if [ ! -z $RUN_TEDIOUS ]; then npm run test-tedious; fi && if [ ! -z $RUN_STRESS_TEST ]; then npm run stress:tedious; fi
