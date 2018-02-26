@@ -13,10 +13,10 @@ if (parseInt(process.version.match(/^v(\d+)\./)[1]) > 0) {
   require('../common/templatestring.js')
 }
 
-function clone(val) { return Object.assign({}, val); }
+function clone (val) { return Object.assign({}, val) }
 
 const config = function () {
-  let cfg = clone(require('../mssql-config'));
+  let cfg = clone(require('../mssql-config'))
   cfg.driver = 'tedious'
   return cfg
 }
