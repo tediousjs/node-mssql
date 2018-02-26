@@ -32,7 +32,9 @@
   },
   "devDependencies": {
     "mocha": "^5.2.0",
-    "standard": "^11.0.1"
+    "request-promise-native": "^1.0.5",
+    "standard": "^11.0.1",
+    "toxiproxy-node-client": "^2.0.6"
   },
   "engines": {
     "node": ">=4"
@@ -45,7 +47,9 @@
     "test-msnodesqlv8": "node_modules/.bin/mocha test/msnodesqlv8",
     "test-cli": "node_modules/.bin/mocha test/common/cli.js",
     "mssql-server:up": "docker-compose up --no-start &&  docker-compose start",
-    "mssql-server:down": "docker-compose down"
+    "mssql-server:down": "docker-compose down",
+    "stress:tedious:debug": "DEBUG=* npm run stress:tedious",
+    "stress:tedious": "TEST_DRIVER=tedious node test/stress/pool-create-hanging.js"
   },
   "bin": {
     "mssql": "./bin/mssql"
