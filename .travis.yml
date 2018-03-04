@@ -14,7 +14,7 @@ services:
   - docker
 
 before_install:
-  - if [ ! -z $RUN_TEDIOUS ]; then npm run mssql-server:up; sleep 240; fi
+  - if [ ! -z $RUN_TEDIOUS ];then npm run mssql-server:up; fi
 
 script:
   - npm run test
