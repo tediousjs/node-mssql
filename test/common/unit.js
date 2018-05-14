@@ -54,10 +54,23 @@ describe('Connection String', () => {
     return done()
   })
 
-  return it('Connection String #5', done => {
+  it('Connection String #5', done => {
     let cfg = cs.resolve('mssql://username:password@localhost/INSTANCE/database?encrypt=true&stream=true&domain=mydomain', 'msnodesqlv8')
 
     assert.strictEqual(cfg.connectionString, 'server={localhost\\INSTANCE};uid={mydomain\\username};pwd={password};database={database};encrypt={true};driver={SQL Server Native Client 11.0}')
+
+    return done()
+  })
+
+  return it('Connection String #6 (multiSubnetFailover)', done => {
+    let cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd;MultiSubnetFailover=True')
+
+    assert.strictEqual(cfg.options.multiSubnetFailover, true)
+    assert.strictEqual(cfg.user, 'testuser')
+    assert.strictEqual(cfg.password, 'testpwd')
+    assert.strictEqual(cfg.database, 'testdb')
+    assert.strictEqual(cfg.server, '192.168.0.1')
+    assert.strictEqual(cfg.port, undefined)
 
     return done()
   })
@@ -66,8 +79,8 @@ describe('Connection String', () => {
 describe('Unit', () => {
   it('table', done => {
     let t = new sql.Table('MyTable')
-    t.columns.add('a', sql.Int, {nullable: false})
-    t.columns.add('b', sql.VarChar(50), {nullable: true})
+    t.columns.add('a', sql.Int, { nullable: false })
+    t.columns.add('b', sql.VarChar(50), { nullable: true })
     assert.strictEqual(t.declare(), 'create table [MyTable] ([a] int not null, [b] varchar (50) null)')
 
     t.rows.add(777, 'asdf')
@@ -119,7 +132,7 @@ describe('Unit', () => {
     assert.strictEqual(t.temporary, true)
 
     let rs = [
-      {'a': {'b': {'c': 1, 'd': 2}, 'x': 3, 'y': 4}}
+      { 'a': { 'b': { 'c': 1, 'd': 2 }, 'x': 3, 'y': 4 } }
     ]
     rs.columns = {
       'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': {
@@ -136,14 +149,14 @@ describe('Unit', () => {
     assert.deepEqual(t.rows[0], ['{"a":{"b":{"c":1,"d":2},"x":3,"y":4}}'])
 
     t = new sql.Table('MyTable')
-    t.columns.add('a', sql.Int, {primary: true})
-    t.columns.add('b', sql.TinyInt, {nullable: true})
+    t.columns.add('a', sql.Int, { primary: true })
+    t.columns.add('b', sql.TinyInt, { nullable: true })
     assert.strictEqual(t.declare(), 'create table [MyTable] ([a] int primary key, [b] tinyint null)')
 
     t = new sql.Table('#mytemptable')
-    t.columns.add('a', sql.Int, {primary: true})
-    t.columns.add('b', sql.TinyInt, {nullable: true})
-    t.columns.add('c', sql.TinyInt, {nullable: false, primary: true})
+    t.columns.add('a', sql.Int, { primary: true })
+    t.columns.add('b', sql.TinyInt, { nullable: true })
+    t.columns.add('c', sql.TinyInt, { nullable: false, primary: true })
     assert.strictEqual(t.declare(), 'create table [#mytemptable] ([a] int, [b] tinyint null, [c] tinyint not null, constraint PK_mytemptable primary key (a, c))')
 
     return done()
