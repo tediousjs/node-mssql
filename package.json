@@ -30,7 +30,7 @@
   "license": "MIT",
   "dependencies": {
     "debug": "^2.6.3",
-    "generic-pool": "^3.1.7",
+    "generic-pool": "https://github.com/DigitalIdentification/node-pool#pool-fix",
     "tedious": "^2.0.0"
   },
   "devDependencies": {
