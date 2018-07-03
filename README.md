@@ -2,9 +2,9 @@
 
 Microsoft SQL Server client for Node.js
 
-[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Package Quality][quality-image]][quality-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Package Quality][quality-image]][quality-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/tediousjs/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tediousjs/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**v4 upgrade warning** - Version 4 contains many breaking changes, read more in the [3.x to 4.x changes](#3x-to-4x-changes) section. Version 3 docs are available [here](https://github.com/patriksimek/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md).
+**v4 upgrade warning** - Version 4 contains many breaking changes, read more in the [3.x to 4.x changes](#3x-to-4x-changes) section. Version 3 docs are available [here](https://github.com/tediousjs/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md).
 
 Supported TDS drivers:
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
@@ -104,7 +104,7 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 * [Data Types](#data-types)
 * [SQL injection](#sql-injection)
 * [Known Issues](#known-issues)
-* [Contributing](https://github.com/patriksimek/node-mssql/wiki/Contributing)
+* [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
 
 ## Examples
 
@@ -399,7 +399,7 @@ Default driver, actively maintained and production ready. Platform independent, 
 
 **Extra options:**
 
-- **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
+- **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1434 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
 - **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`).
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_1`, `7_2`, `7_3_A`, `7_3_B`, `7_4`).
@@ -1534,12 +1534,12 @@ request.query('select @myval as myval', (err, result) => {
 
 ### Tedious
 
-- If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/patriksimek/node-mssql/issues/36))
-- If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/patriksimek/node-mssql/issues/68))
+- If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/tediousjs/node-mssql/issues/36))
+- If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/tediousjs/node-mssql/issues/68))
 
 ### msnodesqlv8
 
-- msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
+- msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
 - msnodesqlv8 doesn't timeout the connection reliably - [reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/9).
 - msnodesqlv8 doesn't support [TVP](#table-valued-parameter-tvp) data type.
 - msnodesqlv8 doesn't support request timeout.
@@ -1583,12 +1583,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [downloads-url]: https://www.npmjs.com/package/mssql
 [quality-image]: https://npm.packagequality.com/shield/mssql.svg?style=flat-square
 [quality-url]: https://packagequality.com/#?package=mssql
-[david-image]: https://img.shields.io/david/patriksimek/node-mssql.svg?style=flat-square
-[david-url]: https://david-dm.org/patriksimek/node-mssql
-[travis-image]: https://img.shields.io/travis/patriksimek/node-mssql/master.svg?style=flat-square&label=unit
-[travis-url]: https://travis-ci.org/patriksimek/node-mssql
-[appveyor-image]: https://img.shields.io/appveyor/ci/patriksimek/node-mssql/master.svg?style=flat-square&label=integration
-[appveyor-url]: https://ci.appveyor.com/project/patriksimek/node-mssql
+[david-image]: https://img.shields.io/david/tediousjs/node-mssql.svg?style=flat-square
+[david-url]: https://david-dm.org/tediousjs/node-mssql
+[travis-image]: https://img.shields.io/travis/tediousjs/node-mssql/master.svg?style=flat-square&label=unit
+[travis-url]: https://travis-ci.org/tediousjs/node-mssql
+[appveyor-image]: https://img.shields.io/appveyor/ci/patriksimek/node-mssql-o4dhf/master.svg?style=flat-square&label=integration
+[appveyor-url]: https://ci.appveyor.com/project/patriksimek/node-mssql-o4dhf
 
 [tedious-url]: https://www.npmjs.com/package/tedious
 [msnodesqlv8-url]: https://www.npmjs.com/package/msnodesqlv8
