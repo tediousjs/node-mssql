@@ -3,7 +3,11 @@
     "name": "Patrik Simek",
     "url": "https://patriksimek.cz"
   },
-  "name": "mssql",
+  "contributors": [
+    "Can Abacigil <abacigil@gmail.com>",
+    "Eren Baydemir <erenbaydemir@gmail.com>"
+  ],
+  "name": "@teamsqlio/mssql",
   "description": "Microsoft SQL Server client for Node.js.",
   "keywords": [
     "database",
