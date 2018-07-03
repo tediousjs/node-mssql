@@ -21,7 +21,7 @@
     "azure",
     "node-mssql"
   ],
-  "version": "4.1.1",
+  "version": "4.2.0",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -30,7 +30,7 @@
   "license": "MIT",
   "dependencies": {
     "debug": "^2.6.3",
-    "generic-pool": "^3.1.7",
+    "generic-pool": "^3.4.2",
     "tedious": "^2.3.1"
   },
   "devDependencies": {
