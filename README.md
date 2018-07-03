@@ -2,17 +2,13 @@
 
 Microsoft SQL Server client for Node.js
 
-[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Package Quality][quality-image]][quality-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/tediousjs/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tediousjs/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-**v4 upgrade warning** - Version 4 contains many breaking changes, read more in the [3.x to 4.x changes](#3x-to-4x-changes) section. Version 3 docs are available [here](https://github.com/tediousjs/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md).
+[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/tediousjs/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tediousjs/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Supported TDS drivers:
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
 - [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (native - Windows only)
 
 ## Installation
-
-**IMPORTANT**: Requires Node.js 4 or newer.
 
     npm install mssql
 
@@ -37,6 +33,7 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 ## Documentation
 
 * [3.x to 4.x changes](#3x-to-4x-changes)
+* [3.x Documentation](https://github.com/tediousjs/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md)
 
 ### Examples
 
@@ -1545,7 +1542,6 @@ request.query('select @myval as myval', (err, result) => {
 - msnodesqlv8 doesn't support request timeout.
 - msnodesqlv8 doesn't support request cancellation.
 - msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
-- msnodesqlv8 doesn't support [Informational messages](#informational-messages).
 
 ## 3.x to 4.x changes
 
@@ -1581,8 +1577,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [npm-url]: https://www.npmjs.com/package/mssql
 [downloads-image]: https://img.shields.io/npm/dm/mssql.svg?style=flat-square
 [downloads-url]: https://www.npmjs.com/package/mssql
-[quality-image]: https://npm.packagequality.com/shield/mssql.svg?style=flat-square
-[quality-url]: https://packagequality.com/#?package=mssql
 [david-image]: https://img.shields.io/david/tediousjs/node-mssql.svg?style=flat-square
 [david-url]: https://david-dm.org/tediousjs/node-mssql
 [travis-image]: https://img.shields.io/travis/tediousjs/node-mssql/master.svg?style=flat-square&label=unit
