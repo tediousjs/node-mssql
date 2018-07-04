@@ -176,6 +176,17 @@ describe('msnodesqlv8', function () {
     it.skip('streaming on', done => TESTS['streaming on'](done, 'msnodesqlv8'))
   })
 
+  describe('tvp', function () {
+    before((done) => {
+      sql.connect(config(), done)
+    })
+
+    it('new Table', done => TESTS['new Table'](done))
+    it('Recordset.toTable()', done => TESTS['Recordset.toTable()'](done))
+
+    after(() => sql.close())
+  })
+
   after(done =>
     sql.connect(config(), function (err) {
       if (err) return done(err)

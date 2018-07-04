@@ -92,6 +92,15 @@ module.exports = (sql, driver) => {
 
   }
 
+  class MSSQLTestType extends sql.Table {
+    constructor () {
+      super('dbo.MSSQLTestType')
+  
+      this.columns.add('a', sql.VarChar(50))
+      this.columns.add('b', sql.Int)
+    }
+  }
+
   return {
     'stored procedure' (mode, done) {
       const req = new TestRequest()
@@ -396,7 +405,6 @@ module.exports = (sql, driver) => {
           assert.equal(result.recordset[0].num, 1)
 
           req = new TestRequest()
-          req.multiple = true
           req.batch('exec #temporary;exec #temporary;exec #temporary').then(result => {
             assert.equal(result.recordsets[0][0].num, 1)
             assert.equal(result.recordsets[1][0].num, 1)
@@ -1035,6 +1043,38 @@ module.exports = (sql, driver) => {
           done()
         })
       })
+    },
+
+    'new Table' (done) {
+      let tvp = new MSSQLTestType()
+      tvp.rows.add('asdf', 15)
+
+      const req = new TestRequest()
+      req.input('tvp', tvp)
+      req.execute('__test7').then(result => {
+        assert.equal(result.recordsets[0].length, 1)
+        assert.equal(result.recordsets[0][0].a, 'asdf')
+        assert.equal(result.recordsets[0][0].b, 15)
+
+        done()
+      }).catch(done)
+    },
+
+    'Recordset.toTable()' (done) {
+      const req = new TestRequest()
+      req.query('select \'asdf\' as a, 15 as b').then(result => {
+        let tvp = result.recordset.toTable('dbo.MSSQLTestType')
+
+        const req2 = new TestRequest()
+        req2.input('tvp', tvp)
+        req2.execute('__test7').then(result => {
+          assert.equal(result.recordsets[0].length, 1)
+          assert.equal(result.recordsets[0][0].a, 'asdf')
+          assert.equal(result.recordsets[0][0].b, 15)
+
+          done()
+        }).catch(done)
+      }).catch(done)
     }
   }
 }
