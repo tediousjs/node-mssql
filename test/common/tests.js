@@ -184,7 +184,7 @@ module.exports = (sql, driver) => {
     },
 
     'binary data' (done) {
-      const sample = new Buffer([0x00, 0x01, 0xe2, 0x40])
+      const sample = Buffer.from([0x00, 0x01, 0xe2, 0x40])
 
       const req = new TestRequest()
       req.input('in', sql.Binary, sample)
@@ -229,20 +229,6 @@ module.exports = (sql, driver) => {
 
         done()
       }).catch(done)
-    },
-
-    'domain' (done) {
-      let d = require('domain').create()
-      d.run(function () {
-        const req = new TestRequest()
-        let domain = process.domain
-
-        req.query('', function (err, recordset) {
-          assert.strictEqual(domain, process.domain)
-
-          done(err)
-        })
-      })
     },
 
     'empty query' (done) {
@@ -290,7 +276,7 @@ module.exports = (sql, driver) => {
     },
 
     'query with input parameters' (mode, done) {
-      const buff = new Buffer([0x00, 0x01, 0xe2, 0x40])
+      const buff = Buffer.from([0x00, 0x01, 0xe2, 0x40])
 
       const req = new sql.Request()
       req.input('id', 12)
