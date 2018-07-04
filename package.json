@@ -29,13 +29,13 @@
   },
   "license": "MIT",
   "dependencies": {
-    "debug": "^2.6.3",
+    "debug": "^3.1.0",
     "generic-pool": "^3.4.2",
     "tedious": "^2.3.1"
   },
   "devDependencies": {
-    "mocha": "^2.1.0",
-    "standard": "^9.0.2"
+    "mocha": "^5.2.0",
+    "standard": "^11.0.1"
   },
   "engines": {
     "node": ">=4"
