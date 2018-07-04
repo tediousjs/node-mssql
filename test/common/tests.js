@@ -95,7 +95,7 @@ module.exports = (sql, driver) => {
   class MSSQLTestType extends sql.Table {
     constructor () {
       super('dbo.MSSQLTestType')
-  
+
       this.columns.add('a', sql.VarChar(50))
       this.columns.add('b', sql.Int)
     }

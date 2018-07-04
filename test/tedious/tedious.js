@@ -240,6 +240,15 @@ describe('tedious', () => {
     it('new Table', done => TESTS['new Table'](done))
     it('Recordset.toTable()', done => TESTS['Recordset.toTable()'](done))
 
+    class MSSQLTestType extends sql.Table {
+      constructor () {
+        super('dbo.MSSQLTestType')
+
+        this.columns.add('a', sql.VarChar(50))
+        this.columns.add('b', sql.Int)
+      }
+    }
+
     it.skip('query (todo)', function (done) {
       let tvp = new MSSQLTestType()
       tvp.rows.add('asdf', 15)
