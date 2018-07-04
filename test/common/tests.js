@@ -642,7 +642,7 @@ module.exports = (sql, driver) => {
         const req = new TestRequest(conn)
         req.query('waitfor delay \'00:00:05\';select 1').catch(err => {
           assert.ok((message ? (message.exec(err.message) != null) : (err instanceof sql.RequestError)))
-          
+
           conn.close()
           done()
         })
