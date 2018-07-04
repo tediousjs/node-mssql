@@ -759,7 +759,6 @@ module.exports = (sql, driver) => {
     },
 
     'timeout' (done, message) {
-      const log = require('why-is-node-running')
       // eslint-disable-next-line no-new
       const conn = new sql.ConnectionPool({
         user: '...',
@@ -770,7 +769,6 @@ module.exports = (sql, driver) => {
       }, (err) => {
         assert.equal((message ? (message.exec(err.message) != null) : (err instanceof sql.ConnectionPoolError)), true)
         conn.close()
-        log()
         done()
       })
     },
