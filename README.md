@@ -675,8 +675,6 @@ __Errors__
 
 ```javascript
 const request = new sql.Request()
-request.multiple = true
-
 request.query('select 1 as number; select 2 as number', (err, result) => {
     // ... error checks
 
@@ -752,7 +750,7 @@ request.bulk(table, (err, result) => {
 
 **TIP**: If you set `table.create` to `true`, module will check if the table exists before it start sending data. If it doesn't, it will automatically create it. You can specify primary key columns by setting `primary: true` to column's options. Primary key constraint on multiple columns is supported.
 
-**TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
+**TIP**: You can also create Table variable from any recordset with `recordset.toTable()`. You can optionally specify table type name in the first argument.
 
 __Errors__
 - ENAME (`RequestError`) - Table name must be specified for bulk insert.
@@ -1233,7 +1231,7 @@ CREATE PROCEDURE MyCustomStoredProcedure (@tvp TestType readonly) AS SELECT * FR
 Now let's go back to our Node.js app.
 
 ```javascript
-const tvp = new sql.Table()
+const tvp = new sql.Table() // You can optionally specify table type name in the first argument.
 
 // Columns must correspond with type we have created in database.
 tvp.columns.add('a', sql.VarChar(50))
@@ -1255,7 +1253,7 @@ request.execute('MyCustomStoredProcedure', (err, result) => {
 })
 ```
 
-**TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
+**TIP**: You can also create Table variable from any recordset with `recordset.toTable()`. You can optionally specify table type name in the first argument.
 
 ## Affected Rows
 
