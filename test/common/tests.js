@@ -642,7 +642,8 @@ module.exports = (sql, driver) => {
         const req = new TestRequest(conn)
         req.query('waitfor delay \'00:00:05\';select 1').catch(err => {
           assert.ok((message ? (message.exec(err.message) != null) : (err instanceof sql.RequestError)))
-
+          
+          conn.close()
           done()
         })
       })
@@ -750,15 +751,17 @@ module.exports = (sql, driver) => {
       config.user = '__notexistinguser__'
 
       // eslint-disable-next-line no-new
-      new sql.ConnectionPool(config, (err) => {
+      const conn = new sql.ConnectionPool(config, (err) => {
         assert.equal((message ? (message.exec(err.message) != null) : (err instanceof sql.ConnectionPoolError)), true)
+        conn.close()
         done()
       })
     },
 
     'timeout' (done, message) {
+      const log = require('why-is-node-running')
       // eslint-disable-next-line no-new
-      new sql.ConnectionPool({
+      const conn = new sql.ConnectionPool({
         user: '...',
         password: '...',
         server: '10.0.0.1',
@@ -766,18 +769,21 @@ module.exports = (sql, driver) => {
         pool: {idleTimeoutMillis: 500}
       }, (err) => {
         assert.equal((message ? (message.exec(err.message) != null) : (err instanceof sql.ConnectionPoolError)), true)
+        conn.close()
+        log()
         done()
       })
     },
 
     'network error' (done, message) {
       // eslint-disable-next-line no-new
-      new sql.ConnectionPool({
+      const conn = new sql.ConnectionPool({
         user: '...',
         password: '...',
         server: '...'
       }, (err) => {
         assert.equal((message ? (message.exec(err.message) != null) : (err instanceof sql.ConnectionPoolError)), true)
+        conn.close()
         done()
       })
     },
