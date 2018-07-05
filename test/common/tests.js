@@ -681,7 +681,7 @@ module.exports = (sql, driver) => {
     'empty json' (done) {
       const req = new TestRequest()
       req.query('declare @tbl table (id int); select * from @tbl for json path').then(result => {
-        assert.strictEqual(result.recordsets[0], null)
+        assert.equal(result.recordsets[0][0], null)
 
         done()
       }).catch(done)
