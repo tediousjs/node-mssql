@@ -19,7 +19,7 @@ const sql = require('mssql')
 
 async () => {
     try {
-        const pool = await sql.connect('mssql://username:password@localhost/database')
+        await sql.connect('mssql://username:password@localhost/database')
         const result = await sql.query`select * from mytable where id = ${value}`
         console.dir(result)
     } catch (err) {
@@ -31,9 +31,6 @@ async () => {
 If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#configuration) to learn more.
 
 ## Documentation
-
-* [3.x to 4.x changes](#3x-to-4x-changes)
-* [3.x Documentation](https://github.com/tediousjs/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md)
 
 ### Examples
 
@@ -102,6 +99,8 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 * [SQL injection](#sql-injection)
 * [Known Issues](#known-issues)
 * [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
+* [3.x to 4.x changes](#3x-to-4x-changes)
+* [3.x Documentation](https://github.com/tediousjs/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md)
 
 ## Examples
 
@@ -384,10 +383,6 @@ mssql://username:password@localhost:1433/database?encrypt=true
 mssql://username:password@localhost/INSTANCE/database?encrypt=true&domain=DOMAIN&driver=msnodesqlv8
 ```
 
-__Version__
-
-2.5
-
 ## Drivers
 
 ### Tedious
@@ -634,10 +629,6 @@ stream.on('finish', () => {
     // ...
 })
 ```
-
-__Version__
-
-2.0
 
 ---------------------------------------
 
@@ -1180,10 +1171,6 @@ Results in:
 
 If you omit config path argument, mssql will try to load it from current working directory.
 
-__Version__
-
-2.0
-
 ## Geography and Geometry
 
 node-mssql has built-in serializer for Geography and Geometry CLR data types.
@@ -1288,10 +1275,6 @@ request.on('done', result => {
 })
 ```
 
-__Version__
-
-3.0
-
 ## JSON support
 
 SQL Server 2016 introduced built-in JSON serialization. By default, JSON is returned as a plain text in a special column named `JSON_F52E2B61-18A1-11d1-B105-00805F49916B`.
@@ -1319,10 +1302,6 @@ recordset = [ { a: { b: { c: 1, d: 2 }, x: 3, y: 4 } } ]
 **IMPORTANT**: In order for this to work, there must be exactly one column named `JSON_F52E2B61-18A1-11d1-B105-00805F49916B` in the recordset.
 
 More information about JSON support can be found in [official documentation](https://msdn.microsoft.com/en-us/library/dn921882.aspx).
-
-__Version__
-
-2.3
 
 ## Errors
 
@@ -1401,10 +1380,6 @@ Structure of informational message:
 - **info.lineNumber** - The line number in the SQL batch or stored procedure that generated the message. Line numbers begin at 1; therefore, if the line number is not applicable to the message, the value of LineNumber will be 0.
 - **info.serverName** - The server name.
 - **info.procName** - The stored procedure name.
-
-__Version__
-
-3.3
 
 ## Metadata
 
@@ -1535,10 +1510,6 @@ request.query('select @myval as myval', (err, result) => {
 ### msnodesqlv8
 
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
-- msnodesqlv8 doesn't timeout the connection reliably - [reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/9).
-- msnodesqlv8 doesn't support [TVP](#table-valued-parameter-tvp) data type.
-- msnodesqlv8 doesn't support request timeout.
-- msnodesqlv8 doesn't support request cancellation.
 - msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
 
 ## 3.x to 4.x changes
@@ -1561,7 +1532,7 @@ Development is sponsored by [Integromat](https://www.integromat.com/en/integrati
 
 ## License
 
-Copyright (c) 2013-2017 Patrik Simek
+Copyright (c) 2013-2018 Patrik Simek
 
 The MIT License
 
