@@ -27,7 +27,7 @@ test_script:
   - cmd: |
       SET EXITVAL=0
       
-      npm run-script test || SET EXITVAL=1
+      npm run-script test-unit || SET EXITVAL=1
       
       SET MSSQL_VERSION=2008
       powershell %cd%\test\scripts\appveyor.ps1 SQL2008R2SP2
