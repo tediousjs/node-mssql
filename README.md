@@ -1515,7 +1515,7 @@ To setup MAX length for `VarChar`, `NVarChar` and `VarBinary` use `sql.MAX` leng
 
 ## SQL injection
 
-This module has built-in SQL injection protection. Always use parameters to pass sanitized values to your queries.
+This module has built-in SQL injection protection. Always use parameters or tagged template literals to pass sanitized values to your queries.
 
 ```javascript
 const request = new sql.Request()
