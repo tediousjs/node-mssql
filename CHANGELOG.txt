@@ -2,6 +2,7 @@ v4.2.0 (2018-XX-XX)
 -------------------
 [new] Added TVP support for msnodesqlv8 driver
 [new] Added support for information messages in msnodesqlv8 driver
+[new] Added support for request cancellation in msnodesqlv8 driver
 [fix] Fixed Tedious deprecation warnings
 [fix] Fixed ResourceRequest timed out error
 [fix] All query and batch methods now have the same interface

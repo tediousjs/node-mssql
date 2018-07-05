@@ -67,7 +67,7 @@ describe('msnodesqlv8', function () {
     it('prepared statement in transaction', done => TESTS['prepared statement in transaction'](done))
     it('transaction with rollback', done => TESTS['transaction with rollback'](done))
     it.skip('transaction with commit (temporarily disabled because of issues introduced in 0.5.3)', done => TESTS['transaction with commit'](done))
-    it.skip('cancel request (not supported by msnodesqlv8)', done => TESTS['cancel request'](done))
+    it('cancel request', done => TESTS['cancel request'](done))
     it('request timeout', done => TESTS['request timeout'](done))
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))
     it.skip('chunked json support (requires SQL Server 2016)', done => TESTS['chunked json support'](done))
