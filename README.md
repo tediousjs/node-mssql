@@ -12,6 +12,10 @@ Supported TDS drivers:
 
     npm install mssql
 
+Use `@next` tag to install the most recent version with latest fixes and features.
+
+    npm install mssql@next
+
 ## Quick Example
 
 ```javascript

@@ -23,10 +23,7 @@
   ],
   "version": "4.2.0",
   "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/patriksimek/node-mssql"
-  },
+  "repository": "github:tediousjs/node-mssql",
   "license": "MIT",
   "dependencies": {
     "debug": "^3.1.0",
