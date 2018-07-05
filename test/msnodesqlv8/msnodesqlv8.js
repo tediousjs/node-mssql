@@ -76,14 +76,17 @@ describe('msnodesqlv8', function () {
     after(() => sql.close())
   })
 
-  describe.skip('json support (requires SQL Server 2016)', function () {
+  describe('json support (requires SQL Server 2016)', () => {
     before(function (done) {
+      if (process.env.MSSQL_VERSION !== '2016') return this.skip()
+
       let cfg = config()
       cfg.parseJSON = true
       sql.connect(cfg, done)
     })
 
     it('parser', done => TESTS['json parser'](done))
+    it('empty json', done => TESTS['empty json'](done))
 
     after(done => sql.close(done))
   })

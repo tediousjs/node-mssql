@@ -678,6 +678,15 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'empty json' (done) {
+      const req = new TestRequest()
+      req.query('declare @tbl table (id int); select * from @tbl for xml path').then(result => {
+        assert.strictEqual(result.recordsets[0], null)
+
+        done()
+      }).catch(done)
+    },
+
     'chunked json support' (done) {
       const req = new TestRequest()
       req.query("select 1 as val;select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for json path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for json path;with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for json auto;select 'abc' as val;").then(result => {
