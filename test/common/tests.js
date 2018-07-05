@@ -680,7 +680,7 @@ module.exports = (sql, driver) => {
 
     'empty json' (done) {
       const req = new TestRequest()
-      req.query('declare @tbl table (id int); select * from @tbl for xml path').then(result => {
+      req.query('declare @tbl table (id int); select * from @tbl for json path').then(result => {
         assert.strictEqual(result.recordsets[0], null)
 
         done()
