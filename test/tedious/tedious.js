@@ -23,7 +23,7 @@ let connection1 = null
 let connection2 = null
 
 describe('tedious', () => {
-  before(done =>
+  before('connect: cleanup + prepare', done =>
     sql.connect(config(), err => {
       if (err) return done(err)
 
@@ -42,7 +42,7 @@ describe('tedious', () => {
   )
 
   describe('basic test suite', () => {
-    before((done) => {
+    before('reconnect', (done) => {
       let cfg = config()
       cfg.options.abortTransactionOnError = true
       sql.connect(cfg, done)
