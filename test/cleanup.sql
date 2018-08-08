@@ -21,7 +21,7 @@ if exists (select * from sys.tables where name = 'prepstm_test')
 	
 if exists (select * from sys.tables where name = 'tran_test')
 	exec('drop table [dbo].[tran_test]')
-	
+
 if exists (select * from sys.tables where name = 'bulk_table')
 	exec('drop table [dbo].[bulk_table]')
 	
