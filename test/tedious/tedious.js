@@ -101,7 +101,7 @@ describe('tedious', () => {
     after(done => sql.close(done))
   })
 
-  describe.only('bulk load', () => {
+  describe('bulk load', () => {
     before((done) => {
       sql.connect(config(), (err) => {
         if (err) return done(err)
