@@ -421,12 +421,13 @@ module.exports = (sql, driver) => {
       t.create = true
       t.columns.add('a', sql.Int, {nullable: false})
       t.columns.add('b', sql.VarChar(50), {nullable: true})
-      t.rows.add(777, 'asdf')
+      t.columns.add('d', sql.BigInt, {nullable: true})
+      t.rows.add(777, 'asdf',  "2018080722275917123")
       t.rows.add(453)
       t.rows.add(4535434)
-      t.rows.add(12, 'XCXCDCDSCDSC')
+      t.rows.add(12, 'XCXCDCDSCDSC',  "2018080722275917321")
       t.rows.add(1)
-      t.rows.add(7278, '4524254')
+      t.rows.add(7278, '4524254', "2018080722275917001")
 
       let req = new TestRequest()
       req.bulk(t).then(result => {
@@ -436,6 +437,7 @@ module.exports = (sql, driver) => {
         req.batch(`select * from ${name}`).then(result => {
           assert.equal(result.recordset[0].a, 777)
           assert.equal(result.recordset[0].b, 'asdf')
+          assert.equal(result.recordset[0].d, 2018080722275917123)
 
           done()
         }).catch(done)

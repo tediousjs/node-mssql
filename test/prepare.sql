@@ -105,7 +105,8 @@ exec('create table [dbo].[tran_test] (
 exec('create table [dbo].[bulk_table] (
 	a int not null,
 	b varchar (50) null,
-	c image null
+	c image null,
+	d bigint null
 )')
 
 /*
