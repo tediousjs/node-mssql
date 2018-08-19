@@ -2,9 +2,7 @@
 
 Microsoft SQL Server client for Node.js
 
-[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Package Quality][quality-image]][quality-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
-**v4 upgrade warning** - Version 4 contains many breaking changes, read more in the [3.x to 4.x changes](#3x-to-4x-changes) section. Version 3 docs are available [here](https://github.com/patriksimek/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md).
+[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Supported TDS drivers:
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
@@ -12,9 +10,11 @@ Supported TDS drivers:
 
 ## Installation
 
-**IMPORTANT**: Requires Node.js 4 or newer.
-
     npm install mssql
+
+Use `@next` tag to install the most recent version with latest fixes and features.
+
+    npm install mssql@next
 
 ## Quick Example
 
@@ -23,7 +23,7 @@ const sql = require('mssql')
 
 async () => {
     try {
-        const pool = await sql.connect('mssql://username:password@localhost/database')
+        await sql.connect('mssql://username:password@localhost/database')
         const result = await sql.query`select * from mytable where id = ${value}`
         console.dir(result)
     } catch (err) {
@@ -36,11 +36,9 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 
 ## Documentation
 
-* [3.x to 4.x changes](#3x-to-4x-changes)
-
 ### Examples
 
-* [Async/Await](#async-await)
+* [Async/Await](#asyncawait)
 * [Promises](#promises)
 * [ES6 Tagged template literals](#es6-tagged-template-literals)
 * [Callbacks](#callbacks)
@@ -59,7 +57,7 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 
 ### Connections
 
-* [ConnectionPool](#connectionpool)
+* [ConnectionPool](#connections-1)
 * [connect](#connect-callback)
 * [close](#close)
 
@@ -104,7 +102,9 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 * [Data Types](#data-types)
 * [SQL injection](#sql-injection)
 * [Known Issues](#known-issues)
-* [Contributing](https://github.com/patriksimek/node-mssql/wiki/Contributing)
+* [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
+* [3.x to 4.x changes](#3x-to-4x-changes)
+* [3.x Documentation](https://github.com/tediousjs/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md)
 
 ## Examples
 
@@ -168,7 +168,7 @@ sql.connect(config).then(pool => {
     .input('input_parameter', sql.Int, value)
     .query('select * from mytable where id = @input_parameter')
 }).then(result => {
-    console.dir(recordset)
+    console.dir(result)
     
     // Stored procedure
     
@@ -189,7 +189,7 @@ sql.on('error', err => {
 
 Native Promise is used by default. You can easily change this with `sql.Promise = require('myownpromisepackage')`.
 
-**ES6 Tagged template literals**
+### ES6 Tagged template literals
 
 ```javascript
 const sql = require('mssql')
@@ -301,7 +301,7 @@ pool1.on('error', err => {
     // ... error handler
 })
 
-const pool2 = new sql.Connection(config, err => {
+const pool2 = new sql.ConnectionPool(config, err => {
     // ... error checks
 
     // Stored Procedure
@@ -316,7 +316,7 @@ const pool2 = new sql.Connection(config, err => {
     })
 })
 
-pool1.on('error', err => {
+pool2.on('error', err => {
     // ... error handler
 })
 ```
@@ -360,12 +360,14 @@ const config = {
 - **domain** - Once you set domain, driver will connect to SQL Server using domain login.
 - **database** - Database to connect to (default: dependent on server configuration).
 - **connectionTimeout** - Connection timeout in ms (default: `15000`).
-- **requestTimeout** - Request timeout in ms (default: `15000`).
+- **requestTimeout** - Request timeout in ms (default: `15000`). NOTE: msnodesqlv8 driver doesn't support timeouts < 1 second.
 - **stream** - Stream recordsets/rows instead of returning them all at once as an argument of callback (default: `false`). You can also enable streaming for each request independently (`request.stream = true`). Always set to `true` if you plan to work with large amount of rows.
 - **parseJSON** - Parse JSON recordsets to JS objects (default: `false`). For more information please see section [JSON support](#json-support).
 - **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
 - **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
+
+Complete list of pool options can be found [here](https://github.com/coopernurse/node-pool).
 
 ### Formats
 
@@ -385,10 +387,6 @@ mssql://username:password@localhost:1433/database?encrypt=true
 mssql://username:password@localhost/INSTANCE/database?encrypt=true&domain=DOMAIN&driver=msnodesqlv8
 ```
 
-__Version__
-
-2.5
-
 ## Drivers
 
 ### Tedious
@@ -397,7 +395,7 @@ Default driver, actively maintained and production ready. Platform independent, 
 
 **Extra options:**
 
-- **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
+- **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1434 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
 - **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`).
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_1`, `7_2`, `7_3_A`, `7_3_B`, `7_4`).
@@ -636,10 +634,6 @@ stream.on('finish', () => {
 })
 ```
 
-__Version__
-
-2.0
-
 ---------------------------------------
 
 ### query (command, [callback])
@@ -676,8 +670,6 @@ __Errors__
 
 ```javascript
 const request = new sql.Request()
-request.multiple = true
-
 request.query('select 1 as number; select 2 as number', (err, result) => {
     // ... error checks
 
@@ -725,7 +717,7 @@ You can enable multiple recordsets in queries with the `request.multiple = true`
 
 ---------------------------------------
 
-### bulk(table, [callback])
+### bulk (table, [callback])
 
 Perform a bulk insert.
 
@@ -753,7 +745,7 @@ request.bulk(table, (err, result) => {
 
 **TIP**: If you set `table.create` to `true`, module will check if the table exists before it start sending data. If it doesn't, it will automatically create it. You can specify primary key columns by setting `primary: true` to column's options. Primary key constraint on multiple columns is supported.
 
-**TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
+**TIP**: You can also create Table variable from any recordset with `recordset.toTable()`. You can optionally specify table type name in the first argument.
 
 __Errors__
 - ENAME (`RequestError`) - Table name must be specified for bulk insert.
@@ -1183,10 +1175,6 @@ Results in:
 
 If you omit config path argument, mssql will try to load it from current working directory.
 
-__Version__
-
-2.0
-
 ## Geography and Geometry
 
 node-mssql has built-in serializer for Geography and Geometry CLR data types.
@@ -1234,7 +1222,7 @@ CREATE PROCEDURE MyCustomStoredProcedure (@tvp TestType readonly) AS SELECT * FR
 Now let's go back to our Node.js app.
 
 ```javascript
-const tvp = new sql.Table()
+const tvp = new sql.Table() // You can optionally specify table type name in the first argument.
 
 // Columns must correspond with type we have created in database.
 tvp.columns.add('a', sql.VarChar(50))
@@ -1256,7 +1244,7 @@ request.execute('MyCustomStoredProcedure', (err, result) => {
 })
 ```
 
-**TIP**: You can also create Table variable from any recordset with `recordset.toTable()`.
+**TIP**: You can also create Table variable from any recordset with `recordset.toTable()`. You can optionally specify table type name in the first argument.
 
 ## Affected Rows
 
@@ -1291,10 +1279,6 @@ request.on('done', result => {
 })
 ```
 
-__Version__
-
-3.0
-
 ## JSON support
 
 SQL Server 2016 introduced built-in JSON serialization. By default, JSON is returned as a plain text in a special column named `JSON_F52E2B61-18A1-11d1-B105-00805F49916B`.
@@ -1322,10 +1306,6 @@ recordset = [ { a: { b: { c: 1, d: 2 }, x: 3, y: 4 } } ]
 **IMPORTANT**: In order for this to work, there must be exactly one column named `JSON_F52E2B61-18A1-11d1-B105-00805F49916B` in the recordset.
 
 More information about JSON support can be found in [official documentation](https://msdn.microsoft.com/en-us/library/dn921882.aspx).
-
-__Version__
-
-2.3
 
 ## Errors
 
@@ -1404,10 +1384,6 @@ Structure of informational message:
 - **info.lineNumber** - The line number in the SQL batch or stored procedure that generated the message. Line numbers begin at 1; therefore, if the line number is not applicable to the message, the value of LineNumber will be 0.
 - **info.serverName** - The server name.
 - **info.procName** - The stored procedure name.
-
-__Version__
-
-3.3
 
 ## Metadata
 
@@ -1518,7 +1494,7 @@ To setup MAX length for `VarChar`, `NVarChar` and `VarBinary` use `sql.MAX` leng
 
 ## SQL injection
 
-This module has built-in SQL injection protection. Always use parameters to pass sanitized values to your queries.
+This module has built-in SQL injection protection. Always use parameters or tagged template literals to pass sanitized values to your queries.
 
 ```javascript
 const request = new sql.Request()
@@ -1532,19 +1508,13 @@ request.query('select @myval as myval', (err, result) => {
 
 ### Tedious
 
-- If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/patriksimek/node-mssql/issues/36))
-- If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/patriksimek/node-mssql/issues/68))
+- If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/tediousjs/node-mssql/issues/36))
+- If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/tediousjs/node-mssql/issues/68))
 
 ### msnodesqlv8
 
-- msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/patriksimek/node-mssql/issues/77).
-- msnodesqlv8 doesn't timeout the connection reliably - [reported](https://github.com/TimelordUK/node-sqlserver-v8/issues/9).
-- msnodesqlv8 doesn't support [TVP](#table-valued-parameter-tvp) data type.
-- msnodesqlv8 doesn't support Variant data type.
-- msnodesqlv8 doesn't support request timeout.
-- msnodesqlv8 doesn't support request cancellation.
+- msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
 - msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
-- msnodesqlv8 doesn't support [Informational messages](#informational-messages).
 
 ## 3.x to 4.x changes
 
@@ -1566,7 +1536,7 @@ Development is sponsored by [Integromat](https://www.integromat.com/en/integrati
 
 ## License
 
-Copyright (c) 2013-2017 Patrik Simek
+Copyright (c) 2013-2018 Patrik Simek
 
 The MIT License
 
@@ -1580,14 +1550,12 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 [npm-url]: https://www.npmjs.com/package/mssql
 [downloads-image]: https://img.shields.io/npm/dm/mssql.svg?style=flat-square
 [downloads-url]: https://www.npmjs.com/package/mssql
-[quality-image]: https://npm.packagequality.com/shield/mssql.svg?style=flat-square
-[quality-url]: https://packagequality.com/#?package=mssql
-[david-image]: https://img.shields.io/david/patriksimek/node-mssql.svg?style=flat-square
-[david-url]: https://david-dm.org/patriksimek/node-mssql
-[travis-image]: https://img.shields.io/travis/patriksimek/node-mssql/master.svg?style=flat-square&label=unit
-[travis-url]: https://travis-ci.org/patriksimek/node-mssql
-[appveyor-image]: https://img.shields.io/appveyor/ci/patriksimek/node-mssql/master.svg?style=flat-square&label=integration
-[appveyor-url]: https://ci.appveyor.com/project/patriksimek/node-mssql
+[david-image]: https://img.shields.io/david/tediousjs/node-mssql.svg?style=flat-square
+[david-url]: https://david-dm.org/tediousjs/node-mssql
+[travis-image]: https://img.shields.io/travis/tediousjs/node-mssql/master.svg?style=flat-square&label=unit
+[travis-url]: https://travis-ci.org/tediousjs/node-mssql
+[appveyor-image]: https://img.shields.io/appveyor/ci/patriksimek/node-mssql-o4dhf/master.svg?style=flat-square&label=integration
+[appveyor-url]: https://ci.appveyor.com/project/patriksimek/node-mssql-o4dhf
 
 [tedious-url]: https://www.npmjs.com/package/tedious
 [msnodesqlv8-url]: https://www.npmjs.com/package/msnodesqlv8
