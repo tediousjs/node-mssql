@@ -5,6 +5,7 @@
 const sql = require('../../')
 const assert = require('assert')
 const cs = require('../../lib/connectionstring')
+const base = require('../../lib/base')
 
 describe('Connection String', () => {
   it('Connection String #1', done => {
@@ -160,6 +161,27 @@ describe('Unit', () => {
     assert.strictEqual(t.declare(), 'create table [#mytemptable] ([a] int, [b] tinyint null, [c] tinyint not null, constraint PK_mytemptable primary key (a, c))')
 
     return done()
+  })
+
+  it('Request uses ConnectionPool\'s stream config value by default', () => {
+    const originalDriver = base.driver
+    base.driver.Request = base.Request
+    const connectionPool = new base.ConnectionPool({ stream: true })
+    let request = connectionPool.request()
+    connectionPool.on('error', () => {})
+    request.on('error', () => {})
+    try {
+      request.query('this will error', () => {})
+    } catch (e) {}
+    assert.strictEqual(request.stream, true)
+    request = connectionPool.request()
+    request.stream = false
+    request.on('error', () => {})
+    try {
+      request.query('this will error', () => {})
+    } catch (e) {}
+    assert.strictEqual(request.stream, false)
+    base.driver = originalDriver
   })
 
   it('custom promise library', done => {
