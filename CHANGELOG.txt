@@ -1,3 +1,7 @@
+v4.2.2 (2018-10-17)
+-------------------
+[change] Updated to latest Tedious 2.7.1
+
 v4.2.1 (2018-08-05)
 -------------------
 [fix] Fix connections in the pool depleting due to unfulfilled Promises and timeouts
