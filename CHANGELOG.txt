@@ -1,3 +1,23 @@
+v4.2.2 (2018-10-17)
+-------------------
+[change] Updated to latest Tedious 2.7.1
+
+v4.2.1 (2018-08-05)
+-------------------
+[fix] Fix connections in the pool depleting due to unfulfilled Promises and timeouts
+[change] Updated to latest Tedious 2.6.4
+
+v4.2.0 (2018-07-05)
+-------------------
+[new] Added TVP support for msnodesqlv8 driver
+[new] Added support for information messages in msnodesqlv8 driver
+[new] Added support for request cancellation in msnodesqlv8 driver
+[fix] Fixed Tedious deprecation warnings
+[fix] Fixed ResourceRequest timed out error
+[fix] All query and batch methods now have the same interface
+[fix] Fixed msnodesqlv8 issue where the encrypt option was getting ignored
+[change] Updated to latest Tedious 2.3.1
+
 v4.1.0 (2017-09-29)
 -------------------
 [new] Adding support for the MultiSubnetFailover option in connection strings (Paul Kehrer)

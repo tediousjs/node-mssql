@@ -1,4 +1,5 @@
 node_modules
 .DS_Store
 /test/.mssql.json
+/test.js
 .vscode

@@ -21,29 +21,28 @@
     "azure",
     "node-mssql"
   ],
-  "version": "4.1.0",
+  "version": "4.2.2",
   "main": "index.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/patriksimek/node-mssql"
-  },
+  "repository": "github:tediousjs/node-mssql",
   "license": "MIT",
   "dependencies": {
-    "debug": "^2.6.3",
-    "generic-pool": "^3.1.7",
-    "tedious": "^2.0.0"
+    "debug": "^3.2.6",
+    "generic-pool": "^3.4.2",
+    "tedious": "^2.7.1"
   },
   "devDependencies": {
-    "mocha": "^2.1.0",
+    "mocha": "^5.2.0",
     "request-promise-native": "^1.0.5",
-    "standard": "^9.0.2",
+    "standard": "^11.0.1",
     "toxiproxy-node-client": "^2.0.6"
   },
   "engines": {
     "node": ">=4"
   },
   "scripts": {
-    "test": "standard && node_modules/.bin/mocha test/common/unit.js",
+    "test": "npm run lint && npm run test-unit",
+    "lint": "standard",
+    "test-unit": "node_modules/.bin/mocha test/common/unit.js",
     "test-tedious": "node_modules/.bin/mocha test/tedious",
     "test-msnodesqlv8": "node_modules/.bin/mocha test/msnodesqlv8",
     "test-cli": "node_modules/.bin/mocha test/common/cli.js",

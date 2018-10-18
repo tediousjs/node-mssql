@@ -3,8 +3,10 @@ sudo: false
 
 matrix:
   include:
-  - node_js: "8"
+  - node_js: "10"
     env: RUN_TEDIOUS=true RUN_STRESS_TEST=true
+  - node_js: "8"
+    env: RUN_TEDIOUS=true
   - node_js: "6"
     env: RUN_TEDIOUS=true
   - node_js: "4"

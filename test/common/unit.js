@@ -191,4 +191,24 @@ describe('Unit', () => {
     assert.strictEqual(sql.Int, sql.getTypeByValue(23))
     assert.strictEqual(sql.Float, sql.getTypeByValue(1.23))
   })
+
+  it('tagged template literals', () => {
+    function query () {
+      const values = Array.prototype.slice.call(arguments)
+      const strings = values.shift()
+      const input = []
+
+      return {
+        input: input,
+        command: sql.Request.prototype._template.call({
+          input () { input.push(Array.prototype.slice.call(arguments)) }
+        }, strings, values)
+      }
+    }
+
+    assert.deepEqual(query`select * from myTable where id = ${123}`, {
+      input: [['param1', 123]],
+      command: 'select * from myTable where id = @param1'
+    })
+  })
 })

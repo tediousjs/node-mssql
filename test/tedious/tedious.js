@@ -24,15 +24,6 @@ const config = function () {
 let connection1 = null
 let connection2 = null
 
-class MSSQLTestType extends sql.Table {
-  constructor () {
-    super('dbo.MSSQLTestType')
-
-    this.columns.add('a', sql.VarChar(50))
-    this.columns.add('b', sql.Int)
-  }
-}
-
 describe('tedious', () => {
   before(done =>
     sql.connect(config(), err => {
@@ -97,14 +88,17 @@ describe('tedious', () => {
     after(done => sql.close(done))
   })
 
-  describe.skip('json support (requires SQL Server 2016)', () => {
+  describe('json support (requires SQL Server 2016)', () => {
     before(function (done) {
+      if (process.env.MSSQL_VERSION !== '2016') return this.skip()
+
       let cfg = config()
       cfg.parseJSON = true
       sql.connect(cfg, done)
     })
 
     it('parser', done => TESTS['json parser'](done))
+    it('empty json', done => TESTS['empty json'](done))
 
     after(done => sql.close(done))
   })
@@ -248,41 +242,17 @@ describe('tedious', () => {
       sql.connect(config(), done)
     })
 
-    it('new Table', function (done) {
-      let tvp = new MSSQLTestType()
-      tvp.rows.add('asdf', 15)
+    it('new Table', done => TESTS['new Table'](done))
+    it('Recordset.toTable()', done => TESTS['Recordset.toTable()'](done))
 
-      let r = new sql.Request()
-      r.input('tvp', tvp)
-      r.execute('__test7', function (err, result) {
-        if (err) return done(err)
+    class MSSQLTestType extends sql.Table {
+      constructor () {
+        super('dbo.MSSQLTestType')
 
-        assert.equal(result.recordsets[0].length, 1)
-        assert.equal(result.recordsets[0][0].a, 'asdf')
-        assert.equal(result.recordsets[0][0].b, 15)
-
-        return done()
-      })
-    })
-
-    it('Recordset.toTable()', function (done) {
-      let r = new sql.Request()
-      r.query('select \'asdf\' as a, 15 as b', function (err, result) {
-        if (err) return done(err)
-
-        let tvp = result.recordset.toTable()
-
-        let r2 = new sql.Request()
-        r2.input('tvp', tvp)
-        r2.execute('__test7', function (err, result) {
-          assert.equal(result.recordsets[0].length, 1)
-          assert.equal(result.recordsets[0][0].a, 'asdf')
-          assert.equal(result.recordsets[0][0].b, 15)
-
-          done(err)
-        })
-      })
-    })
+        this.columns.add('a', sql.VarChar(50))
+        this.columns.add('b', sql.Int)
+      }
+    }
 
     it.skip('query (todo)', function (done) {
       let tvp = new MSSQLTestType()

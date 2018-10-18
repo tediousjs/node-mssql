@@ -61,13 +61,13 @@ describe('msnodesqlv8', function () {
     it('query with pipe', done => TESTS['query with pipe'](done))
     it('batch', done => TESTS['batch'](done))
     it('batch (stream)', done => TESTS['batch'](done, true))
-    it('create procedure batch', done => TESTS['create procedure batch'](done))
+    it.skip('create procedure batch (temporarily disabled because of issues introduced in 0.5.3)', done => TESTS['create procedure batch'](done))
     it('prepared statement', done => TESTS['prepared statement'](done))
     it('prepared statement with affected rows', done => TESTS['prepared statement with affected rows'](done))
     it('prepared statement in transaction', done => TESTS['prepared statement in transaction'](done))
     it('transaction with rollback', done => TESTS['transaction with rollback'](done))
-    it('transaction with commit', done => TESTS['transaction with commit'](done))
-    it.skip('cancel request (not supported by msnodesqlv8)', done => TESTS['cancel request'](done))
+    it.skip('transaction with commit (temporarily disabled because of issues introduced in 0.5.3)', done => TESTS['transaction with commit'](done))
+    it('cancel request', done => TESTS['cancel request'](done))
     it('request timeout', done => TESTS['request timeout'](done))
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))
     it.skip('chunked json support (requires SQL Server 2016)', done => TESTS['chunked json support'](done))
@@ -76,14 +76,17 @@ describe('msnodesqlv8', function () {
     after(() => sql.close())
   })
 
-  describe.skip('json support (requires SQL Server 2016)', function () {
+  describe('json support (requires SQL Server 2016)', () => {
     before(function (done) {
+      if (process.env.MSSQL_VERSION !== '2016') return this.skip()
+
       let cfg = config()
       cfg.parseJSON = true
       sql.connect(cfg, done)
     })
 
     it('parser', done => TESTS['json parser'](done))
+    it('empty json', done => TESTS['empty json'](done))
 
     after(done => sql.close(done))
   })
@@ -174,6 +177,17 @@ describe('msnodesqlv8', function () {
     it.skip('concurrent requests', done => TESTS['concurrent requests'](done))
     it.skip('streaming off', done => TESTS['streaming off'](done, 'msnodesqlv8'))
     it.skip('streaming on', done => TESTS['streaming on'](done, 'msnodesqlv8'))
+  })
+
+  describe('tvp', function () {
+    before((done) => {
+      sql.connect(config(), done)
+    })
+
+    it('new Table', done => TESTS['new Table'](done))
+    it('Recordset.toTable()', done => TESTS['Recordset.toTable()'](done))
+
+    after(() => sql.close())
   })
 
   after(done =>
