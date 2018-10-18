@@ -3,3 +3,4 @@ node_modules
 /test/.mssql.json
 /test.js
 .vscode
+.idea
