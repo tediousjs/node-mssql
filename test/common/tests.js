@@ -2,8 +2,7 @@
 
 const assert = require('assert')
 const stream = require('stream')
-
-function cloneDeep (val) { return JSON.parse(JSON.stringify(val)) }
+const getConfig = require('../mssql-config')
 
 process.on('unhandledRejection', (reason, p) => {
   console.log('Unhandled Rejection at: Promise', p, 'reason:', reason)
@@ -644,7 +643,7 @@ module.exports = (sql, driver) => {
     },
 
     'request timeout' (done, driver, message) {
-      const config = cloneDeep(require('../mssql-config'))
+      const config = getConfig()
       config.driver = driver
       config.requestTimeout = 1000 // note: msnodesqlv8 doesn't support timeouts less than 1 second
 
@@ -766,7 +765,7 @@ module.exports = (sql, driver) => {
     },
 
     'login failed' (done, message) {
-      const config = cloneDeep(require('../mssql-config'))
+      const config = getConfig()
       config.user = '__notexistinguser__'
 
       // eslint-disable-next-line no-new
@@ -968,7 +967,7 @@ module.exports = (sql, driver) => {
     'concurrent requests' (done, driver) {
       console.log('')
 
-      let config = cloneDeep(require('../mssql-config'))
+      let config = getConfig()
       config.driver = driver
       config.pool = {min: 0, max: 50}
 
@@ -1013,7 +1012,7 @@ module.exports = (sql, driver) => {
     },
 
     'streaming off' (done, driver) {
-      let config = cloneDeep(require('../mssql-config'))
+      let config = getConfig()
       config.driver = driver
       config.requestTimeout = 60000
 
@@ -1032,7 +1031,7 @@ module.exports = (sql, driver) => {
     },
 
     'streaming on' (done, driver) {
-      let config = cloneDeep(require('../mssql-config'))
+      let config = getConfig()
       config.driver = driver
       config.requestTimeout = 60000
 

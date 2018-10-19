@@ -1,9 +1,15 @@
-let config = null
+let configOptions = null
 
 try {
-  config = require(`./.mssql.json`)
+  configOptions = require(`./.mssql.json`)
 } catch (e) {
-  config = require(`./.mssql-docker.json`)
+  configOptions = require(`./.mssql-docker.json`)
 }
 
-module.exports = config
+function getConfig () {
+  return Object.assign({
+    driver: 'tedious'
+  }, configOptions)
+}
+
+module.exports = getConfig

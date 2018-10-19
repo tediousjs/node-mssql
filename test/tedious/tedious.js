@@ -5,20 +5,14 @@
 const sql = require('../../tedious.js')
 const assert = require('assert')
 
+const config = require('../mssql-config')
+
 const TESTS = require('../common/tests.js')(sql, 'tedious')
 const TIMES = require('../common/times.js')(sql, 'tedious')
 const TEMPLATE_STRING = require('../common/templatestring.js')(sql, 'tedious')
 
 if (parseInt(process.version.match(/^v(\d+)\./)[1]) > 0) {
   require('../common/templatestring.js')
-}
-
-function clone (val) { return Object.assign({}, val) }
-
-const config = function () {
-  let cfg = clone(require('../mssql-config'))
-  cfg.driver = 'tedious'
-  return cfg
 }
 
 let connection1 = null
