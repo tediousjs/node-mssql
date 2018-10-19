@@ -1530,10 +1530,6 @@ request.query('select @myval as myval', (err, result) => {
 - Removed support for `tds` and `msnodesql` drivers.
 - Removed support for Node versions lower than 4.
 
-## Sponsors
-
-Development is sponsored by [Integromat](https://www.integromat.com/en/integrations/mssql).
-
 [npm-image]: https://img.shields.io/npm/v/mssql.svg?style=flat-square
 [npm-url]: https://www.npmjs.com/package/mssql
 [downloads-image]: https://img.shields.io/npm/dm/mssql.svg?style=flat-square
