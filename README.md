@@ -280,46 +280,56 @@ sql.on('error', err => {
 
 ## Connection Pools
 
+Using a single connection pool for your application/service is recommended.
+Instantiating a pool with a callback, or immediately calling `.connect`, is asynchronous to ensure a connection can be
+established before returning. From that point, you're able to acquire connections as normal:  
+
 ```javascript
 const sql = require('mssql')
 
-const pool1 = new sql.ConnectionPool(config, err => {
-    // ... error checks
-
-    // Query
-
-    pool1.request() // or: new sql.Request(pool1)
-    .query('select 1 as number', (err, result) => {
-        // ... error checks
-
-        console.dir(result)
-    })
-
-})
+// async/await style:
+const pool1 = new sql.ConnectionPool(config).connect();
 
 pool1.on('error', err => {
     // ... error handler
 })
 
+async function messageHandler() {
+    await pool1; // ensures that the pool has been created
+    try {
+    	const request = pool1.request(); // or: new sql.Request(pool1)
+    	const result = request.query('select 1 as number')
+    	console.dir(result)
+    	return result;
+	} catch (err) {
+        console.error('SQL error', err);
+	}
+}
+
+// promise style:
 const pool2 = new sql.ConnectionPool(config, err => {
     // ... error checks
-
-    // Stored Procedure
-
-    pool2.request() // or: new sql.Request(pool2)
-    .input('input_parameter', sql.Int, 10)
-    .output('output_parameter', sql.VarChar(50))
-    .execute('procedure_name', (err, result) => {
-        // ... error checks
-
-        console.dir(result)
-    })
-})
+});
 
 pool2.on('error', err => {
     // ... error handler
 })
+
+function runStoredProcedure() {
+    return pool2.then((pool) => {
+		pool.request() // or: new sql.Request(pool2)
+		.input('input_parameter', sql.Int, 10)
+		.output('output_parameter', sql.VarChar(50))
+		.execute('procedure_name', (err, result) => {
+			// ... error checks
+			console.dir(result)
+		})
+    });
+}
 ```
+
+Awaiting or `.then`ing the pool creation is a safe way to ensure that the pool is always ready, without knowing where it
+is needed first. In practice, once the pool is created then there will be no delay for the next operation.
 
 **ES6 Tagged template literals**
 
