@@ -211,4 +211,23 @@ describe('Unit', () => {
       command: 'select * from myTable where id = @param1'
     })
   })
+
+  it('tagged template arrays', () => {
+    function query () {
+      const values = Array.prototype.slice.call(arguments)
+      const strings = values.shift()
+      const input = []
+      return {
+        input: input,
+        command: sql.Request.prototype._template.call({
+          input () { input.push(Array.prototype.slice.call(arguments)) }
+        }, strings, values)
+      }
+    }
+
+    assert.deepEqual(query`select * from myTable where id in (${[1, 2, 3]})`, {
+      input: [['param1_0', 1], ['param1_1', 2], ['param1_2', 3]],
+      command: 'select * from myTable where id in (@param1_0, @param1_1, @param1_2)'
+    })
+  })
 })

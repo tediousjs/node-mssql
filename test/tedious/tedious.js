@@ -170,6 +170,7 @@ describe('tedious', () => {
 
     it('query', done => TEMPLATE_STRING['query'](done))
     it('batch', done => TEMPLATE_STRING['batch'](done))
+    it('array params', done => TEMPLATE_STRING['array params'](done))
 
     after(done => sql.close(done))
   })
