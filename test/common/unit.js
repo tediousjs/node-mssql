@@ -62,7 +62,7 @@ describe('Connection String', () => {
     return done()
   })
 
-  return it('Connection String #6 (multiSubnetFailover)', done => {
+  it('Connection String #6 (multiSubnetFailover)', done => {
     let cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd;MultiSubnetFailover=True')
 
     assert.strictEqual(cfg.options.multiSubnetFailover, true)
@@ -71,6 +71,18 @@ describe('Connection String', () => {
     assert.strictEqual(cfg.database, 'testdb')
     assert.strictEqual(cfg.server, '192.168.0.1')
     assert.strictEqual(cfg.port, undefined)
+
+    return done()
+  })
+
+  return it('Connection String #7 (connection timeout)', done => {
+    let cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd;Connection Timeout=30')
+    assert.strictEqual(cfg.user, 'testuser')
+    assert.strictEqual(cfg.password, 'testpwd')
+    assert.strictEqual(cfg.database, 'testdb')
+    assert.strictEqual(cfg.server, '192.168.0.1')
+    assert.strictEqual(cfg.port, undefined)
+    assert.strictEqual(cfg.connectionTimeout, 30000)
 
     return done()
   })
