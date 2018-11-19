@@ -2,7 +2,6 @@ version: "{build}"
 
 environment:
   matrix:
-    - nodejs_version: "4"
     - nodejs_version: "6"
     - nodejs_version: "8"
     - nodejs_version: "10"
@@ -27,31 +26,31 @@ test_script:
 
   - cmd: |
       SET EXITVAL=0
-      
+
       npm run-script test-unit || SET EXITVAL=1
-      
+
       SET MSSQL_VERSION=2008
       powershell %cd%\test\scripts\appveyor.ps1 SQL2008R2SP2
       npm run-script test-tedious || SET EXITVAL=1
       npm run-script test-msnodesqlv8 || SET EXITVAL=1
       net stop MSSQL$SQL2008R2SP2
-      
+
       SET MSSQL_VERSION=2012
       powershell %cd%\test\scripts\appveyor.ps1 SQL2012SP1
       npm run-script test-tedious || SET EXITVAL=1
       npm run-script test-msnodesqlv8 || SET EXITVAL=1
       net stop MSSQL$SQL2012SP1
-      
+
       SET MSSQL_VERSION=2014
       powershell %cd%\test\scripts\appveyor.ps1 SQL2014
       npm run-script test-tedious || SET EXITVAL=1
       npm run-script test-msnodesqlv8 || SET EXITVAL=1
       net stop MSSQL$SQL2014
-      
+
       SET MSSQL_VERSION=2016
       powershell %cd%\test\scripts\appveyor.ps1 SQL2016
       npm run-script test-tedious || SET EXITVAL=1
       npm run-script test-msnodesqlv8 || SET EXITVAL=1
       net stop MSSQL$SQL2016
-      
+
       EXIT /B %EXITVAL%
