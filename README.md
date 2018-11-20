@@ -405,6 +405,13 @@ Default driver, actively maintained and production ready. Platform independent, 
 
 **Extra options:**
 
+- **beforeConnect(conn)** - Function, which is invoked before opening the connection. The parameter `conn` is the configured tedious `Connection`. It can be used for attaching event handlers like in this example:
+```js
+require('mssql').connect(...config, beforeConnect: conn => {
+  conn.once('connect', err => { err ? console.error(err) : console.log('mssql connected')})
+  conn.once('end', err => { err ? console.error(err) : console.log('mssql disconnected')})
+}})
+```
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1434 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
 - **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`).
@@ -420,6 +427,7 @@ More information about Tedious specific options: http://tediousjs.github.io/tedi
 
 **Extra options:**
 
+- **beforeConnect(conn)** - Function, which is invoked before opening the connection. The parameter `conn` is the connection configuration, that can be modified to pass extra parameters to the driver's `open()` method.
 - **connectionString** - Connection string (default: see below).
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **options.trustedConnection** - Use Windows Authentication (default: `false`).
