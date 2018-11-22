@@ -21,21 +21,21 @@
     "azure",
     "node-mssql"
   ],
-  "version": "4.2.2",
+  "version": "5.0.0",
   "main": "index.js",
   "repository": "github:tediousjs/node-mssql",
   "license": "MIT",
   "dependencies": {
     "debug": "^3.2.6",
     "generic-pool": "^3.4.2",
-    "tedious": "^2.7.1"
+    "tedious": "^3.0.1"
   },
   "devDependencies": {
     "mocha": "^5.2.0",
     "standard": "^11.0.1"
   },
   "engines": {
-    "node": ">=4"
+    "node": ">=6"
   },
   "files": [
     "lib/",

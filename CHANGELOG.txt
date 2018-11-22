@@ -1,3 +1,8 @@
+v5.0.0 (2018-??-??)
+-------------------
+[change] Updated to latest Tedious 3.0.1
+[change] Node.js < 6 is no longer supported
+
 v4.2.2 (2018-10-17)
 -------------------
 [change] Updated to latest Tedious 2.7.1
