@@ -3,6 +3,19 @@ v5.0.0 (2018-??-??)
 [change] Updated to latest Tedious 3.0.1
 [change] Node.js < 6 is no longer supported
 
+v4.3.0 (2018-11-20)
+-------------------
+[new] Add beforeConnect handler
+[change] Interpret connection timeout in seconds (not milliseconds)
+
+v4.2.3 (2018-11-03)
+-------------------
+[new] Add info event for execute function
+[fix] Fix JSON parsing with empty recordsets
+[new] Array / string literal template query preparation fixes
+[new] Passing encrypt option from mssql connection options to tedious options
+[change] Return the _poolDestroy promise before connecting again
+
 v4.2.2 (2018-10-17)
 -------------------
 [change] Updated to latest Tedious 2.7.1
