@@ -28,7 +28,7 @@
   "dependencies": {
     "debug": "^3.2.6",
     "generic-pool": "^3.4.2",
-    "tedious": "^3.0.1"
+    "tedious": "^4.1.1"
   },
   "devDependencies": {
     "mocha": "^5.2.0",
