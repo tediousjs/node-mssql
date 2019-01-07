@@ -274,6 +274,31 @@ sql.on('error', err => {
 })
 ```
 
+When streaming large sets of data you want to back-off or chunk the amount of data you're processing
+ to prevent memory exhaustion issues; you can use the `Request.pause()` function to do this. Here is
+ an example of managing rows in batches of 15:
+
+```javascript
+let rowsToProcess = [];
+request.on('row', row => {
+  if (rowsToProcess.length < 15) {
+    rowsToProcess.push(row);
+  } else {
+    request.pause();
+    processRows();
+  }
+});
+request.on('done', () => {
+    processRows();
+});
+
+function processRows() {
+  // process rows
+  rowsToProcess = [];
+  request.resume();
+}
+```
+
 ## Connection Pools
 
 Using a single connection pool for your application/service is recommended.
