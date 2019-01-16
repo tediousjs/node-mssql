@@ -756,13 +756,14 @@ You can enable multiple recordsets in queries with the `request.multiple = true`
 
 ---------------------------------------
 
-### bulk (table, [callback])
+### bulk (table, [options,] [callback])
 
 Perform a bulk insert.
 
 __Arguments__
 
 - **table** - `sql.Table` instance.
+- **options** - Options object to be passed through to driver (currently tedious only). Optional. If argument is a function it will be treated as the callback.
 - **callback(err, rowCount)** - A callback which is called after bulk insert has completed, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
