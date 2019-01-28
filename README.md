@@ -992,6 +992,7 @@ ps.prepare('select @param as value', err => {
     ps.execute({param: 12345}, (err, result) => {
         // ... error checks
 
+        // release the connection after queries are executed
         ps.unprepare(err => {
             // ... error checks
 
@@ -1000,7 +1001,9 @@ ps.prepare('select @param as value', err => {
 })
 ```
 
-**IMPORTANT**: Remember that each prepared statement means one reserved connection from the pool. Don't forget to unprepare a prepared statement!
+**IMPORTANT**: Remember that each prepared statement means one reserved connection from the pool. Don't forget to unprepare a prepared statement when you've finished your queries!
+
+You can execute multiple queries against the same prepared statement but you *must* unprepare the statement when you have finished using it otherwise you will cause the connection pool to run out of available connections.
 
 **TIP**: You can also create prepared statements in transactions (`new sql.PreparedStatement(transaction)`), but keep in mind you can't execute other requests in the transaction until you call `unprepare`.
 
