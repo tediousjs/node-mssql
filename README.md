@@ -281,9 +281,8 @@ When streaming large sets of data you want to back-off or chunk the amount of da
 ```javascript
 let rowsToProcess = [];
 request.on('row', row => {
-  if (rowsToProcess.length < 15) {
-    rowsToProcess.push(row);
-  } else {
+  rowsToProcess.push(row);
+  if (rowsToProcess.length >= 15) {
     request.pause();
     processRows();
   }
