@@ -4,3 +4,22 @@ node_js:
   - "6"
   - "8"
   - "10"
+
+jobs:
+  include:
+    - stage: Docs publish
+      if: tag
+      script: echo "Deploying to GitHub pages ..."
+      deploy:
+        provider: pages
+        skip-cleanup: true
+        keep-history: true
+        github-token: $GITHUB_TOKEN
+        local-dir: docs
+        on:
+          tags: true
+
+before_deploy:
+  - git clone --single-branch --branch gh-pages "https://github.com/$TRAVIS_REPO_SLUG" ./docs
+  - rm -f ./docs/index.md
+  - cp ./README.md ./docs/index.md
