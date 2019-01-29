@@ -12,10 +12,6 @@ Supported TDS drivers:
 
     npm install mssql
 
-Use `@next` tag to install the most recent version with latest fixes and features.
-
-    npm install mssql@next
-
 ## Quick Example
 
 ```javascript
@@ -278,48 +274,82 @@ sql.on('error', err => {
 })
 ```
 
+When streaming large sets of data you want to back-off or chunk the amount of data you're processing
+ to prevent memory exhaustion issues; you can use the `Request.pause()` function to do this. Here is
+ an example of managing rows in batches of 15:
+
+```javascript
+let rowsToProcess = [];
+request.on('row', row => {
+  rowsToProcess.push(row);
+  if (rowsToProcess.length >= 15) {
+    request.pause();
+    processRows();
+  }
+});
+request.on('done', () => {
+    processRows();
+});
+
+function processRows() {
+  // process rows
+  rowsToProcess = [];
+  request.resume();
+}
+```
+
 ## Connection Pools
+
+Using a single connection pool for your application/service is recommended.
+Instantiating a pool with a callback, or immediately calling `.connect`, is asynchronous to ensure a connection can be
+established before returning. From that point, you're able to acquire connections as normal:  
 
 ```javascript
 const sql = require('mssql')
 
-const pool1 = new sql.ConnectionPool(config, err => {
-    // ... error checks
-
-    // Query
-
-    pool1.request() // or: new sql.Request(pool1)
-    .query('select 1 as number', (err, result) => {
-        // ... error checks
-
-        console.dir(result)
-    })
-
-})
+// async/await style:
+const pool1 = new sql.ConnectionPool(config).connect();
 
 pool1.on('error', err => {
     // ... error handler
 })
 
+async function messageHandler() {
+    await pool1; // ensures that the pool has been created
+    try {
+    	const request = pool1.request(); // or: new sql.Request(pool1)
+    	const result = request.query('select 1 as number')
+    	console.dir(result)
+    	return result;
+	} catch (err) {
+        console.error('SQL error', err);
+	}
+}
+
+// promise style:
 const pool2 = new sql.ConnectionPool(config, err => {
     // ... error checks
-
-    // Stored Procedure
-
-    pool2.request() // or: new sql.Request(pool2)
-    .input('input_parameter', sql.Int, 10)
-    .output('output_parameter', sql.VarChar(50))
-    .execute('procedure_name', (err, result) => {
-        // ... error checks
-
-        console.dir(result)
-    })
-})
+});
 
 pool2.on('error', err => {
     // ... error handler
 })
+
+function runStoredProcedure() {
+    return pool2.then((pool) => {
+		pool.request() // or: new sql.Request(pool2)
+		.input('input_parameter', sql.Int, 10)
+		.output('output_parameter', sql.VarChar(50))
+		.execute('procedure_name', (err, result) => {
+			// ... error checks
+			console.dir(result)
+		})
+    });
+}
 ```
+
+Awaiting or `.then`ing the pool creation is a safe way to ensure that the pool is always ready, without knowing where it
+is needed first. In practice, once the pool is created then there will be no delay for the next operation.
 
 **ES6 Tagged template literals**
 
@@ -360,7 +390,7 @@ const config = {
 - **domain** - Once you set domain, driver will connect to SQL Server using domain login.
 - **database** - Database to connect to (default: dependent on server configuration).
 - **connectionTimeout** - Connection timeout in ms (default: `15000`).
-- **requestTimeout** - Request timeout in ms (default: `15000`). NOTE: msnodesqlv8 driver doesn't support timeouts < 1 second.
+- **requestTimeout** - Request timeout in ms (default: `15000`). NOTE: msnodesqlv8 driver doesn't support timeouts < 1 second. When passed via connection string, the key must be `request timeout`
 - **stream** - Stream recordsets/rows instead of returning them all at once as an argument of callback (default: `false`). You can also enable streaming for each request independently (`request.stream = true`). Always set to `true` if you plan to work with large amount of rows.
 - **parseJSON** - Parse JSON recordsets to JS objects (default: `false`). For more information please see section [JSON support](#json-support).
 - **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
@@ -395,6 +425,13 @@ Default driver, actively maintained and production ready. Platform independent, 
 
 **Extra options:**
 
+- **beforeConnect(conn)** - Function, which is invoked before opening the connection. The parameter `conn` is the configured tedious `Connection`. It can be used for attaching event handlers like in this example:
+```js
+require('mssql').connect(...config, beforeConnect: conn => {
+  conn.once('connect', err => { err ? console.error(err) : console.log('mssql connected')})
+  conn.once('end', err => { err ? console.error(err) : console.log('mssql disconnected')})
+}})
+```
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1434 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
 - **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`).
@@ -410,6 +447,7 @@ More information about Tedious specific options: http://tediousjs.github.io/tedi
 
 **Extra options:**
 
+- **beforeConnect(conn)** - Function, which is invoked before opening the connection. The parameter `conn` is the connection configuration, that can be modified to pass extra parameters to the driver's `open()` method.
 - **connectionString** - Connection string (default: see below).
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **options.trustedConnection** - Use Windows Authentication (default: `false`).
@@ -717,13 +755,14 @@ You can enable multiple recordsets in queries with the `request.multiple = true`
 
 ---------------------------------------
 
-### bulk (table, [callback])
+### bulk (table, [options,] [callback])
 
 Perform a bulk insert.
 
 __Arguments__
 
 - **table** - `sql.Table` instance.
+- **options** - Options object to be passed through to driver (currently tedious only). Optional. If argument is a function it will be treated as the callback.
 - **callback(err, rowCount)** - A callback which is called after bulk insert has completed, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
@@ -952,6 +991,7 @@ ps.prepare('select @param as value', err => {
     ps.execute({param: 12345}, (err, result) => {
         // ... error checks
 
+        // release the connection after queries are executed
         ps.unprepare(err => {
             // ... error checks
 
@@ -960,7 +1000,9 @@ ps.prepare('select @param as value', err => {
 })
 ```
 
-**IMPORTANT**: Remember that each prepared statement means one reserved connection from the pool. Don't forget to unprepare a prepared statement!
+**IMPORTANT**: Remember that each prepared statement means one reserved connection from the pool. Don't forget to unprepare a prepared statement when you've finished your queries!
+
+You can execute multiple queries against the same prepared statement but you *must* unprepare the statement when you have finished using it otherwise you will cause the connection pool to run out of available connections.
 
 **TIP**: You can also create prepared statements in transactions (`new sql.PreparedStatement(transaction)`), but keep in mind you can't execute other requests in the transaction until you call `unprepare`.
 
@@ -1529,22 +1571,6 @@ request.query('select @myval as myval', (err, result) => {
 - Removed verbose and debug mode.
 - Removed support for `tds` and `msnodesql` drivers.
 - Removed support for Node versions lower than 4.
-
-## Sponsors
-
-Development is sponsored by [Integromat](https://www.integromat.com/en/integrations/mssql).
-
-## License
-
-Copyright (c) 2013-2018 Patrik Simek
-
-The MIT License
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 [npm-image]: https://img.shields.io/npm/v/mssql.svg?style=flat-square
 [npm-url]: https://www.npmjs.com/package/mssql
