@@ -1,8 +1,10 @@
-v5.0.0 (2018-??-??)
+v5.0.0 (2019-01-??)
 -------------------
+[new] Added pause / resume feature to streamed requests ([#775](https://github.com/tediousjs/node-mssql/pull/775))
+[new] Added options argument to bulk requests for compatibility with tedious driver
 [change] Updated to latest Tedious 4.1.1
-[change] Node.js < 6 is no longer supported
-[change] Support dropped for deprecated tedious configuration values and types
+[removed] Node.js < 6 is no longer supported
+[removed] Support dropped for deprecated tedious configuration values and types
 
 v4.3.0 (2018-11-20)
 -------------------
