@@ -329,7 +329,7 @@ async function messageHandler() {
 // promise style:
 const pool2 = new sql.ConnectionPool(config, err => {
     // ... error checks
-});
+}).connect();
 
 pool2.on('error', err => {
     // ... error handler
