@@ -157,7 +157,7 @@ describe('msnodesqlv8', function () {
     before(done => {
       connection1 = new sql.ConnectionPool(config(), function () {
         let cfg = config()
-        cfg.pool = {max: 1}
+        cfg.pool = { max: 1 }
         connection2 = new sql.ConnectionPool(cfg, done)
       })
     })

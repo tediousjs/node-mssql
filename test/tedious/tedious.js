@@ -204,7 +204,7 @@ describe('tedious', () => {
     before(done => {
       connection1 = new sql.ConnectionPool(config(), () => {
         let cfg = config()
-        cfg.pool = {max: 1}
+        cfg.pool = { max: 1 }
         connection2 = new sql.ConnectionPool(cfg, done)
       })
     })
@@ -263,9 +263,9 @@ describe('tedious', () => {
       r.query('select * from @tvp', function (err, result) {
         if (err) return done(err)
 
-        assert.equal(result.recordsets[0].length, 1)
-        assert.equal(result.recordsets[0][0].a, 'asdf')
-        assert.equal(result.recordsets[0][0].b, 15)
+        assert.strictEqual(result.recordsets[0].length, 1)
+        assert.strictEqual(result.recordsets[0][0].a, 'asdf')
+        assert.strictEqual(result.recordsets[0][0].b, 15)
 
         return done()
       })
@@ -280,12 +280,12 @@ describe('tedious', () => {
       ps.prepare('select * from @tvp', function (err) {
         if (err) { return done(err) }
 
-        ps.execute({tvp}, function (err, result) {
+        ps.execute({ tvp }, function (err, result) {
           if (err) { return done(err) }
 
-          assert.equal(result.recordsets[0].length, 1)
-          assert.equal(result.recordsets[0][0].a, 'asdf')
-          assert.equal(result.recordsets[0][0].b, 15)
+          assert.strictEqual(result.recordsets[0].length, 1)
+          assert.strictEqual(result.recordsets[0][0].a, 'asdf')
+          assert.strictEqual(result.recordsets[0][0].b, 15)
 
           ps.unprepare(done)
         })
