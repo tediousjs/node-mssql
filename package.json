@@ -26,13 +26,13 @@
   "repository": "github:tediousjs/node-mssql",
   "license": "MIT",
   "dependencies": {
-    "debug": "^3.2.6",
+    "debug": "^4",
     "generic-pool": "^3.6.1",
-    "tedious": "^4.2.0"
+    "tedious": "^6"
   },
   "devDependencies": {
-    "mocha": "^5.2.0",
-    "standard": "^11.0.1"
+    "mocha": "^6",
+    "standard": "^12"
   },
   "engines": {
     "node": ">=6"

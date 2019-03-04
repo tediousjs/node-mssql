@@ -112,10 +112,6 @@ const config = {
     password: '...',
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
     database: '...',
-
-    options: {
-        encrypt: true // Use this if you're on Windows Azure
-    }
 }
 ```
 
@@ -434,7 +430,7 @@ require('mssql').connect(...config, beforeConnect: conn => {
 ```
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1434 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
-- **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`).
+- **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `true`).
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_1`, `7_2`, `7_3_A`, `7_3_B`, `7_4`).
 - **options.appName** - Application name used for SQL server logging.
 - **options.abortTransactionOnError** - A boolean determining whether to rollback a transaction automatically if any error is encountered during the given transaction's execution. This sets the value for `XACT_ABORT` during the initial SQL phase of a connection.
