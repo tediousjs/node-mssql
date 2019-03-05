@@ -808,9 +808,10 @@ module.exports = (sql, driver) => {
       const complete = () =>
         setTimeout(() => {
           // this must be delayed because destroying connection take some time
-          assert.strictEqual(connection.pool.free.length + connection.pool.used.length + connection.pool.pendingCreates.length, 3)
-          assert.strictEqual(connection.pool.free.length, 3)
-          assert.strictEqual(connection.pool.pendingCreates.length, 0)
+          assert.strictEqual(connection.size, 3)
+          assert.strictEqual(connection.available, 3)
+          assert.strictEqual(connection.pending, 0)
+          assert.strictEqual(connection.borrowed, 0)
           done()
         }, 500)
 
@@ -873,9 +874,10 @@ module.exports = (sql, driver) => {
       })
 
       setImmediate(() => {
-        assert.strictEqual(connection.pool.free.length + connection.pool.used.length + connection.pool.pendingCreates.length, 1)
-        assert.strictEqual(connection.pool.free.length, 0)
-        assert.strictEqual(connection.pool.pendingAcquires.length, 3)
+        assert.strictEqual(connection.size, 1)
+        assert.strictEqual(connection.available, 0)
+        assert.strictEqual(connection.pending, 3)
+        assert.strictEqual(connection.borrowed, 0)
       })
     },
 
@@ -890,9 +892,10 @@ module.exports = (sql, driver) => {
         r3.query('select 1', function (err, result) {
           if (err) return done(err)
 
-          assert.strictEqual(connection2.pool.free.length + connection2.pool.used.length + connection2.pool.pendingCreates.length, 1)
-          assert.strictEqual(connection2.pool.free.length, 1)
-          assert.strictEqual(connection2.pool.pendingAcquires.length, 0)
+          assert.strictEqual(connection2.size, 1)
+          assert.strictEqual(connection2.available, 1)
+          assert.strictEqual(connection2.pending, 0)
+          assert.strictEqual(connection2.borrowed, 0)
 
           done()
         })
