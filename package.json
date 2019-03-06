@@ -27,7 +27,7 @@
   "license": "MIT",
   "dependencies": {
     "debug": "^3.2.6",
-    "generic-pool": "^3.6",
+    "generic-pool": "^3.6.1",
     "tedious": "^2.7.1"
   },
   "devDependencies": {
