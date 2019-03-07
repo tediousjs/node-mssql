@@ -1,5 +1,6 @@
 v6.0.0 (2019-0?-??)
 -------------------
+[new] Added `healthy` flag to the pool to help determine if the pool is safe to use or not ([#816](https://github.com/tediousjs/node-mssql/pull/816))
 [change] Upgraded tedious to v6 ([#818](https://github.com/tediousjs/node-mssql/pull/818))
 [change] `options.encrypt` is now set to true by default
 [change] Upgraded `debug` dependency to v4
