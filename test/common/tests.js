@@ -36,13 +36,13 @@ module.exports = (sql, driver) => {
           resolve(result)
         })
       }).then(result => {
-        result.recordsets.forEach(recordset => Object.defineProperty(recordset, 'columns', {enumerable: true})) // Make columns enumerable for tests
+        result.recordsets.forEach(recordset => Object.defineProperty(recordset, 'columns', { enumerable: true })) // Make columns enumerable for tests
         results.push(result)
 
         // Promise style
         return super.execute(method)
       }).then(result => {
-        result.recordsets.forEach(recordset => Object.defineProperty(recordset, 'columns', {enumerable: true})) // Make columns enumerable for tests
+        result.recordsets.forEach(recordset => Object.defineProperty(recordset, 'columns', { enumerable: true })) // Make columns enumerable for tests
         results.push(result)
 
         // Stream style
@@ -72,11 +72,11 @@ module.exports = (sql, driver) => {
         results.push(result)
 
         return new Promise((resolve, reject) => {
-          assert.deepEqual(results[0], results[1])
-          assert.deepEqual(results[1], results[2])
+          assert.deepStrictEqual(results[0], results[1])
+          assert.deepStrictEqual(results[1], results[2])
 
-          assert.deepEqual(results[0].output, results[1].output)
-          assert.deepEqual(results[1].output, results[2].output)
+          assert.deepStrictEqual(results[0].output, results[1].output)
+          assert.deepStrictEqual(results[1].output, results[2].output)
 
           resolve(results[0])
         })
@@ -115,34 +115,34 @@ module.exports = (sql, driver) => {
       req.output('out4', sql.DateTime)
       req.output('out5', sql.Char(10))
       req[mode](mode === 'batch' ? 'exec __test @in=@in, @in2=@in2, @in3=@in3, @in4=@in4, @in5=@in5, @out=@out output, @out2=@out2 output, @out3=@out3 output, @out4=@out4 output, @out5=@out5 output' : '__test').then(result => {
-        // if (method !== 'batch') assert.equal(result.returnValue, 11);
-        assert.equal(result.recordsets.length, 3)
-        assert.equal(result.recordsets[0].length, 2)
-        assert.equal(result.recordsets[0][0].a, 1)
-        assert.equal(result.recordsets[0][0].b, 2)
-        assert.equal(result.recordsets[0][1].a, 3)
-        assert.equal(result.recordsets[0][1].b, 4)
-        assert.equal(result.recordsets[1].length, 1)
-        assert.equal(result.recordsets[1][0].c, 5)
-        assert.equal(result.recordsets[1][0].d, 6)
-        assert.equal(result.recordsets[1][0].e.length, 3)
+        // if (method !== 'batch') assert.strictEqual(result.returnValue, 11);
+        assert.strictEqual(result.recordsets.length, 3)
+        assert.strictEqual(result.recordsets[0].length, 2)
+        assert.strictEqual(result.recordsets[0][0].a, 1)
+        assert.strictEqual(result.recordsets[0][0].b, 2)
+        assert.strictEqual(result.recordsets[0][1].a, 3)
+        assert.strictEqual(result.recordsets[0][1].b, 4)
+        assert.strictEqual(result.recordsets[1].length, 1)
+        assert.strictEqual(result.recordsets[1][0].c, 5)
+        assert.strictEqual(result.recordsets[1][0].d, 6)
+        assert.strictEqual(result.recordsets[1][0].e.length, 3)
 
-        assert.equal(result.recordsets[1][0].e[0], 0)
-        assert.equal(result.recordsets[1][0].e[1], 111)
-        assert.equal(result.recordsets[1][0].e[2], 'asdf')
+        assert.strictEqual(result.recordsets[1][0].e[0], 0)
+        assert.strictEqual(result.recordsets[1][0].e[1], 111)
+        assert.strictEqual(result.recordsets[1][0].e[2], 'asdf')
 
-        assert.equal(result.recordsets[1][0].f, null)
-        assert.equal(result.recordsets[1][0].g, 'anystring')
-        assert.equal(result.recordsets[2].length, 0)
+        assert.strictEqual(result.recordsets[1][0].f, null)
+        assert.strictEqual(result.recordsets[1][0].g, 'anystring')
+        assert.strictEqual(result.recordsets[2].length, 0)
 
-        assert.equal(result.output.out, 99)
-        assert.equal(result.output.out2, null)
-        assert.equal(result.output.out3, 'D916DD31-5CB3-44A7-83D4-2DD83E40279F')
-        assert.equal(result.output.out4.getTime(), +new Date(1860, 0, 24, 1, 52))
-        assert.equal(result.output.out5, 'anystring ')
+        assert.strictEqual(result.output.out, 99)
+        assert.strictEqual(result.output.out2, null)
+        assert.strictEqual(result.output.out3, 'D916DD31-5CB3-44A7-83D4-2DD83E40279F')
+        assert.strictEqual(result.output.out4.getTime(), +new Date(1860, 0, 24, 1, 52))
+        assert.strictEqual(result.output.out5, 'anystring ')
 
-        assert.equal(result.recordsets[0].columns.a.index, 0)
-        assert.equal(result.recordsets[0].columns.b.index, 1)
+        assert.strictEqual(result.recordsets[0].columns.a.index, 0)
+        assert.strictEqual(result.recordsets[0].columns.b.index, 1)
 
         done()
       }).catch(done)
@@ -154,8 +154,8 @@ module.exports = (sql, driver) => {
         // console.dir rst[0].geography
         // console.dir rst[0].geometry
 
-        // assert.deepEqual rst[0].geography, sample1
-        // assert.deepEqual rst[0].geometry, sample2
+        // assert.deepStrictEqual rst[0].geography, sample1
+        // assert.deepStrictEqual rst[0].geometry, sample2
 
         assert.strictEqual(result.recordset[0].geography.srid, 4326)
         assert.strictEqual(result.recordset[0].geography.version, 1)
@@ -185,8 +185,8 @@ module.exports = (sql, driver) => {
 
         assert(result.recordset.columns.geography.type === sql.Geography)
         assert(result.recordset.columns.geometry.type === sql.Geometry)
-        assert.equal(result.recordset.columns.geography.udt.name, 'geography')
-        assert.equal(result.recordset.columns.geometry.udt.name, 'geometry')
+        assert.strictEqual(result.recordset.columns.geography.udt.name, 'geography')
+        assert.strictEqual(result.recordset.columns.geometry.udt.name, 'geometry')
 
         done()
       }).catch(done)
@@ -205,16 +205,16 @@ module.exports = (sql, driver) => {
       req.output('out', sql.Binary(4))
       req.output('out2', sql.VarBinary)
       req.execute('__test5').then(result => {
-        assert.deepEqual(result.recordsets[0][0].bin, sample)
-        assert.deepEqual(result.recordsets[0][0].in, sample)
-        assert.equal(result.recordsets[0][0].in2, null)
-        assert.deepEqual(result.recordsets[0][0].in3, sample)
-        assert.equal(result.recordsets[0][0].in4, null)
-        assert.deepEqual(result.recordsets[0][0].in5, sample)
-        assert.equal(result.recordsets[0][0].in6, null)
+        assert.deepStrictEqual(result.recordsets[0][0].bin, sample)
+        assert.deepStrictEqual(result.recordsets[0][0].in, sample)
+        assert.strictEqual(result.recordsets[0][0].in2, null)
+        assert.deepStrictEqual(result.recordsets[0][0].in3, sample)
+        assert.strictEqual(result.recordsets[0][0].in4, null)
+        assert.deepStrictEqual(result.recordsets[0][0].in5, sample)
+        assert.strictEqual(result.recordsets[0][0].in6, null)
 
-        assert.deepEqual(result.output.out, sample)
-        assert.deepEqual(result.output.out2, sample)
+        assert.deepStrictEqual(result.output.out, sample)
+        assert.deepStrictEqual(result.output.out2, sample)
 
         done()
       }).catch(done)
@@ -223,7 +223,7 @@ module.exports = (sql, driver) => {
     'variant data' (done) {
       const req = new TestRequest()
       req.query('select cast(11.77 as sql_variant) as variant').then(result => {
-        assert.equal(result.recordset.length, 1)
+        assert.strictEqual(result.recordset.length, 1)
         assert.strictEqual(result.recordset[0].variant, 11.77)
 
         done()
@@ -233,8 +233,8 @@ module.exports = (sql, driver) => {
     'stored procedure with one empty recordset' (done) {
       const req = new TestRequest()
       req.execute('__test2').then(result => {
-        assert.equal(result.returnValue, 11)
-        assert.equal(result.recordsets.length, 2)
+        assert.strictEqual(result.returnValue, 11)
+        assert.strictEqual(result.recordsets.length, 2)
 
         done()
       }).catch(done)
@@ -243,7 +243,7 @@ module.exports = (sql, driver) => {
     'empty query' (done) {
       const req = new TestRequest()
       req.query('').then(result => {
-        assert.equal(result.recordset, null)
+        assert.ok(!result.recordset)
 
         done()
       }).catch(done)
@@ -252,7 +252,7 @@ module.exports = (sql, driver) => {
     'query with no recordset' (done) {
       const req = new TestRequest()
       req.query('select * from sys.tables where name = \'______\'').then(result => {
-        assert.equal(result.recordset.length, 0)
+        assert.strictEqual(result.recordset.length, 0)
 
         done()
       }).catch(done)
@@ -261,8 +261,8 @@ module.exports = (sql, driver) => {
     'query with one recordset' (done) {
       const req = new TestRequest()
       req.query('select \'asdf\' as text').then(result => {
-        assert.equal(result.recordset.length, 1)
-        assert.equal(result.recordset[0].text, 'asdf')
+        assert.strictEqual(result.recordset.length, 1)
+        assert.strictEqual(result.recordset[0].text, 'asdf')
 
         done()
       }).catch(done)
@@ -271,14 +271,14 @@ module.exports = (sql, driver) => {
     'query with multiple recordsets' (done) {
       const req = new TestRequest()
       req.query('select 41 as test, 5 as num, 6 as num;select 999 as second').then(result => {
-        assert.equal(result.recordsets.length, 2)
-        assert.equal(result.recordsets[0].length, 1)
-        assert.equal(result.recordsets[0][0].test, 41)
-        assert.equal(result.recordsets[0][0].num.length, 2)
-        assert.equal(result.recordsets[0][0].num[0], 5)
-        assert.equal(result.recordsets[0][0].num[1], 6)
-        assert.equal(result.recordsets[1][0].second, 999)
-        assert.equal(result.recordsets[0].columns.test.type, sql.Int)
+        assert.strictEqual(result.recordsets.length, 2)
+        assert.strictEqual(result.recordsets[0].length, 1)
+        assert.strictEqual(result.recordsets[0][0].test, 41)
+        assert.strictEqual(result.recordsets[0][0].num.length, 2)
+        assert.strictEqual(result.recordsets[0][0].num[0], 5)
+        assert.strictEqual(result.recordsets[0][0].num[1], 6)
+        assert.strictEqual(result.recordsets[1][0].second, 999)
+        assert.strictEqual(result.recordsets[0].columns.test.type, sql.Int)
 
         done()
       }).catch(done)
@@ -293,11 +293,11 @@ module.exports = (sql, driver) => {
       req.input('vchm', sql.VarChar(sql.MAX), 'fdsa')
       req.input('vbin', buff)
       req[mode]('select @id as id, @vch as vch, @vchm as vchm, @vbin as vbin').then(result => {
-        assert.equal(result.recordset.length, 1)
-        assert.equal(result.recordset[0].id, 12)
-        assert.equal(result.recordset[0].vch, 'asdf')
-        assert.equal(result.recordset[0].vchm, 'fdsa')
-        assert.deepEqual(result.recordset[0].vbin, buff)
+        assert.strictEqual(result.recordset.length, 1)
+        assert.strictEqual(result.recordset[0].id, 12)
+        assert.strictEqual(result.recordset[0].vch, 'asdf')
+        assert.strictEqual(result.recordset[0].vchm, 'fdsa')
+        assert.deepStrictEqual(result.recordset[0].vbin, buff)
 
         done()
       }).catch(done)
@@ -307,8 +307,8 @@ module.exports = (sql, driver) => {
       const req = new TestRequest()
       req.output('out', sql.VarChar)
       req[mode]('select @out = \'test\'').then(result => {
-        assert.equal(result.recordset, null)
-        assert.equal(result.output.out, 'test')
+        assert.ok(!result.recordset)
+        assert.strictEqual(result.output.out, 'test')
 
         done()
       }).catch(done)
@@ -317,7 +317,7 @@ module.exports = (sql, driver) => {
     'query with error' (done) {
       const req = new TestRequest()
       req.query('select * from notexistingtable', err => {
-        assert.equal(err instanceof sql.RequestError, true)
+        assert.strictEqual(err instanceof sql.RequestError, true)
 
         assert.strictEqual(err.message, 'Invalid object name \'notexistingtable\'.')
         assert.strictEqual(err.code, 'EREQUEST')
@@ -336,11 +336,11 @@ module.exports = (sql, driver) => {
     'query with multiple errors' (done) {
       const req = new TestRequest()
       req.query('select a;select b;', err => {
-        assert.equal(err instanceof sql.RequestError, true)
-        assert.equal(err.message, 'Invalid column name \'b\'.')
-        assert.equal(err.precedingErrors.length, 1)
-        assert.equal(err.precedingErrors[0] instanceof sql.RequestError, true)
-        assert.equal(err.precedingErrors[0].message, 'Invalid column name \'a\'.')
+        assert.strictEqual(err instanceof sql.RequestError, true)
+        assert.strictEqual(err.message, 'Invalid column name \'b\'.')
+        assert.strictEqual(err.precedingErrors.length, 1)
+        assert.strictEqual(err.precedingErrors[0] instanceof sql.RequestError, true)
+        assert.strictEqual(err.precedingErrors[0].message, 'Invalid column name \'a\'.')
 
         done()
       })
@@ -351,19 +351,19 @@ module.exports = (sql, driver) => {
       const req = new TestRequest()
       req.on('info', notices.push.bind(notices))
       req.query("print 'Print'; raiserror(N'Notice', 10, 1); raiserror(15097,-1,-1); raiserror (15600,-1,-1, 'mysp');", err => {
-        assert.equal(err instanceof sql.RequestError, true)
-        assert.equal(err.message, 'An invalid parameter or option was specified for procedure \'mysp\'.')
-        assert.equal(err.precedingErrors.length, 1)
-        assert.equal(err.precedingErrors[0] instanceof sql.RequestError, true)
-        assert.equal(err.precedingErrors[0].message, 'The size associated with an extended property cannot be more than 7,500 bytes.')
+        assert.strictEqual(err instanceof sql.RequestError, true)
+        assert.strictEqual(err.message, 'An invalid parameter or option was specified for procedure \'mysp\'.')
+        assert.strictEqual(err.precedingErrors.length, 1)
+        assert.strictEqual(err.precedingErrors[0] instanceof sql.RequestError, true)
+        assert.strictEqual(err.precedingErrors[0].message, 'The size associated with an extended property cannot be more than 7,500 bytes.')
 
-        assert.equal(notices.length, 2)
-        assert.equal(notices[0].message, 'Print')
-        assert.equal(notices[0].number, 0)
-        assert.equal(notices[0].state, 1)
-        assert.equal(notices[1].message, 'Notice')
-        assert.equal(notices[1].number, 50000)
-        assert.equal(notices[1].state, 1)
+        assert.strictEqual(notices.length, 2)
+        assert.strictEqual(notices[0].message, 'Print')
+        assert.strictEqual(notices[0].number, 0)
+        assert.strictEqual(notices[0].state, 1)
+        assert.strictEqual(notices[1].message, 'Notice')
+        assert.strictEqual(notices[1].number, 50000)
+        assert.strictEqual(notices[1].state, 1)
 
         done()
       })
@@ -372,8 +372,8 @@ module.exports = (sql, driver) => {
     'query with pipe' (done) {
       const stream = new WritableStream()
       stream.on('finish', () => {
-        assert.equal(stream.cache.length, 1)
-        assert.equal(stream.cache[0].text, 'asdf')
+        assert.strictEqual(stream.cache.length, 1)
+        assert.strictEqual(stream.cache[0].text, 'asdf')
         done()
       })
       stream.on('error', err => {
@@ -388,8 +388,8 @@ module.exports = (sql, driver) => {
     'batch' (done, stream) {
       const req = new TestRequest()
       req.batch('select 1 as num;select \'asdf\' as text').then(result => {
-        assert.equal(result.recordsets[0][0].num, 1)
-        assert.equal(result.recordsets[1][0].text, 'asdf')
+        assert.strictEqual(result.recordsets[0][0].num, 1)
+        assert.strictEqual(result.recordsets[1][0].text, 'asdf')
 
         done()
       }).catch(done)
@@ -398,17 +398,17 @@ module.exports = (sql, driver) => {
     'create procedure batch' (done) {
       let req = new TestRequest()
       req.batch('create procedure #temporary as select 1 as num').then(result => {
-        assert.equal(result.recordset, null)
+        assert.ok(!result.recordset)
 
         req = new TestRequest()
         req.batch('exec #temporary').then(result => {
-          assert.equal(result.recordset[0].num, 1)
+          assert.strictEqual(result.recordset[0].num, 1)
 
           req = new TestRequest()
           req.batch('exec #temporary;exec #temporary;exec #temporary').then(result => {
-            assert.equal(result.recordsets[0][0].num, 1)
-            assert.equal(result.recordsets[1][0].num, 1)
-            assert.equal(result.recordsets[2][0].num, 1)
+            assert.strictEqual(result.recordsets[0][0].num, 1)
+            assert.strictEqual(result.recordsets[1][0].num, 1)
+            assert.strictEqual(result.recordsets[2][0].num, 1)
 
             done()
           }).catch(done)
@@ -419,8 +419,8 @@ module.exports = (sql, driver) => {
     'bulk load' (name, done) {
       let t = new sql.Table(name)
       t.create = true
-      t.columns.add('a', sql.Int, {nullable: false})
-      t.columns.add('b', sql.VarChar(50), {nullable: true})
+      t.columns.add('a', sql.Int, { nullable: false })
+      t.columns.add('b', sql.VarChar(50), { nullable: true })
       t.rows.add(777, 'asdf')
       t.rows.add(453)
       t.rows.add(4535434)
@@ -430,12 +430,12 @@ module.exports = (sql, driver) => {
 
       let req = new TestRequest()
       req.bulk(t).then(result => {
-        assert.equal(result.rowsAffected, 6)
+        assert.strictEqual(result.rowsAffected, 6)
 
         req = new sql.Request()
         req.batch(`select * from ${name}`).then(result => {
-          assert.equal(result.recordset[0].a, 777)
-          assert.equal(result.recordset[0].b, 'asdf')
+          assert.strictEqual(result.recordset[0].a, 777)
+          assert.strictEqual(result.recordset[0].b, 'asdf')
 
           done()
         }).catch(done)
@@ -451,14 +451,14 @@ module.exports = (sql, driver) => {
       ps.input('chr3', sql.VarChar(5))
       ps.input('chr4', sql.VarChar(sql.MAX))
       ps.prepare('select @num as number, @num2 as number2, @chr as chars, @chr2 as chars2, @chr3 as chars3, @chr3 as chars4').then(() => {
-        ps.execute({num: 555, num2: 666.77, chr: 'asdf', chr2: null, chr3: '', chr4: ''}).then(result => {
-          assert.equal(result.recordset.length, 1)
-          assert.equal(result.recordset[0].number, 555)
-          assert.equal(result.recordset[0].number2, 666.77)
-          assert.equal(result.recordset[0].chars, 'asdf')
-          assert.equal(result.recordset[0].chars2, null)
-          assert.equal(result.recordset[0].chars3, '')
-          assert.equal(result.recordset[0].chars4, '')
+        ps.execute({ num: 555, num2: 666.77, chr: 'asdf', chr2: null, chr3: '', chr4: '' }).then(result => {
+          assert.strictEqual(result.recordset.length, 1)
+          assert.strictEqual(result.recordset[0].number, 555)
+          assert.strictEqual(result.recordset[0].number2, 666.77)
+          assert.strictEqual(result.recordset[0].chars, 'asdf')
+          assert.strictEqual(result.recordset[0].chars2, null)
+          assert.strictEqual(result.recordset[0].chars3, '')
+          assert.strictEqual(result.recordset[0].chars4, '')
 
           ps.unprepare(done)
         }).catch(err => {
@@ -471,8 +471,8 @@ module.exports = (sql, driver) => {
       let ps = new TestPreparedStatement()
       ps.input('data', sql.VarChar(50))
       ps.prepare('insert into prepstm_test values (@data);insert into prepstm_test values (@data);delete from prepstm_test;').then(result => {
-        ps.execute({data: 'abc'}).then(result => {
-          assert.deepEqual(result.rowsAffected, [1, 1, 2])
+        ps.execute({ data: 'abc' }).then(result => {
+          assert.deepStrictEqual(result.rowsAffected, [1, 1, 2])
 
           ps.unprepare(done)
         }).catch(done)
@@ -487,9 +487,9 @@ module.exports = (sql, driver) => {
         ps.prepare('select @num as number').then(() => {
           assert.ok(tran._acquiredConnection === ps._acquiredConnection)
 
-          ps.execute({num: 555}).then(result => {
-            assert.equal(result.recordsets[0].length, 1)
-            assert.equal(result.recordsets[0][0].number, 555)
+          ps.execute({ num: 555 }).then(result => {
+            assert.strictEqual(result.recordsets[0].length, 1)
+            assert.strictEqual(result.recordsets[0][0].number, 555)
 
             ps.unprepare().then(() => {
               tran.commit(done)
@@ -512,8 +512,8 @@ module.exports = (sql, driver) => {
 
           req = new TestRequest()
           req.query('select * from tran_test with (nolock)').then(result => {
-            assert.equal(result.recordset.length, 1)
-            assert.equal(result.recordset[0].data, 'test data')
+            assert.strictEqual(result.recordset.length, 1)
+            assert.strictEqual(result.recordset[0].data, 'test data')
 
             setTimeout(() => {
               if (!locked) return done(new Error('Unlocked before rollback.'))
@@ -524,14 +524,14 @@ module.exports = (sql, driver) => {
 
           req = new TestRequest()
           req.query('select * from tran_test').then(result => {
-            assert.equal(result.recordset.length, 0)
+            assert.strictEqual(result.recordset.length, 0)
 
             locked = false
 
             setTimeout(() => {
-              assert.equal(tbegin, true)
-              assert.equal(tcommit, false)
-              assert.equal(trollback, true)
+              assert.strictEqual(tbegin, true)
+              assert.strictEqual(tcommit, false)
+              assert.strictEqual(trollback, true)
 
               done()
             }, 100)
@@ -561,8 +561,8 @@ module.exports = (sql, driver) => {
 
           req = new sql.Request()
           req.query('select * from tran_test').then(result => {
-            assert.equal(result.recordset.length, 1)
-            assert.equal(result.recordset[0].data, 'test data')
+            assert.strictEqual(result.recordset.length, 1)
+            assert.strictEqual(result.recordset[0].data, 'test data')
 
             locked = false
           }).catch(done)
@@ -571,9 +571,9 @@ module.exports = (sql, driver) => {
             if (!locked) return done(new Error('Unlocked before commit.'))
 
             tran.commit().then(result => {
-              assert.equal(tbegin, true)
-              assert.equal(tcommit, true)
-              assert.equal(trollback, false)
+              assert.strictEqual(tbegin, true)
+              assert.strictEqual(tcommit, true)
+              assert.strictEqual(trollback, false)
 
               setTimeout(() => {
                 if (locked) { return done(new Error('Still locked after commit.')) }
@@ -598,11 +598,11 @@ module.exports = (sql, driver) => {
         let req = tran.request()
         req.query('insert into tran_test values (\'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasd\')').catch(err => {
           assert.ok(err)
-          assert.equal(err.message, 'String or binary data would be truncated.')
+          assert.strictEqual(err.message, 'String or binary data would be truncated.')
 
           tran.rollback().catch(err => {
             assert.ok(err)
-            assert.equal(err.message, 'Transaction has been aborted.')
+            assert.strictEqual(err.message, 'Transaction has been aborted.')
 
             if (!rollbackHandled) { return done(new Error("Rollback event didn't fire.")) }
 
@@ -661,7 +661,7 @@ module.exports = (sql, driver) => {
       const req = new TestRequest()
       req.input('image', sql.VarBinary, 'asdf')
       req[mode]('select * from @image').catch(err => {
-        assert.equal(err.message, "Validation failed for parameter 'image'. Invalid buffer.")
+        assert.strictEqual(err.message, "Validation failed for parameter 'image'. Invalid buffer.")
 
         done()
       })
@@ -670,8 +670,8 @@ module.exports = (sql, driver) => {
     'json parser' (done) {
       const req = new TestRequest()
       req.query("select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for json path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for json path;with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for json auto;").then(result => {
-        assert.deepEqual(result.recordsets[0][0], [{'a': {'b': {'c': 1, 'd': 2}, 'x': 3, 'y': 4}}])
-        assert.deepEqual(result.recordsets[1][0], [{'a': {'b': {'c': 5, 'd': 6}, 'x': 7, 'y': 8}}])
+        assert.deepStrictEqual(result.recordsets[0][0], [{ 'a': { 'b': { 'c': 1, 'd': 2 }, 'x': 3, 'y': 4 } }])
+        assert.deepStrictEqual(result.recordsets[1][0], [{ 'a': { 'b': { 'c': 5, 'd': 6 }, 'x': 7, 'y': 8 } }])
         assert.strictEqual(result.recordsets[2][0].length, 1000)
 
         done()
@@ -681,7 +681,7 @@ module.exports = (sql, driver) => {
     'empty json' (done) {
       const req = new TestRequest()
       req.query('declare @tbl table (id int); select * from @tbl for json path').then(result => {
-        assert.equal(result.recordsets[0][0], null)
+        assert.ok(!result.recordsets[0][0])
 
         done()
       }).catch(done)
@@ -690,14 +690,14 @@ module.exports = (sql, driver) => {
     'chunked json support' (done) {
       const req = new TestRequest()
       req.query("select 1 as val;select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for json path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for json path;with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for json auto;select 'abc' as val;").then(result => {
-        assert.equal(result.recordsets[0][0].val, 1)
-        assert.equal(result.recordsets[0].length, 1)
-        assert.equal(result.recordsets[1][0]['JSON_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 39)
-        assert.equal(result.recordsets[2][0]['JSON_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 39)
-        assert.equal(result.recordsets[3][0]['JSON_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 9894)
-        assert.equal(result.recordsets[3].length, 1)
-        assert.equal(result.recordsets[4][0].val, 'abc')
-        assert.equal(result.recordsets[4].length, 1)
+        assert.strictEqual(result.recordsets[0][0].val, 1)
+        assert.strictEqual(result.recordsets[0].length, 1)
+        assert.strictEqual(result.recordsets[1][0]['JSON_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 39)
+        assert.strictEqual(result.recordsets[2][0]['JSON_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 39)
+        assert.strictEqual(result.recordsets[3][0]['JSON_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 9894)
+        assert.strictEqual(result.recordsets[3].length, 1)
+        assert.strictEqual(result.recordsets[4][0].val, 'abc')
+        assert.strictEqual(result.recordsets[4].length, 1)
 
         done()
       }).catch(done)
@@ -706,18 +706,18 @@ module.exports = (sql, driver) => {
     'chunked xml support' (done) {
       let req = new TestRequest()
       req.query("select 1 as val;select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for xml path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for xml path;with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for xml auto;select 'abc' as val;").then(result => {
-        assert.equal(result.recordsets[0][0].val, 1)
-        assert.equal(result.recordsets[0].length, 1)
-        assert.equal(result.recordsets[1][0]['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 67)
-        assert.equal(result.recordsets[2][0]['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 67)
-        assert.equal(result.recordsets[3][0]['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 11893)
-        assert.equal(result.recordsets[3].length, 1)
-        assert.equal(result.recordsets[4][0].val, 'abc')
-        assert.equal(result.recordsets[4].length, 1)
+        assert.strictEqual(result.recordsets[0][0].val, 1)
+        assert.strictEqual(result.recordsets[0].length, 1)
+        assert.strictEqual(result.recordsets[1][0]['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 67)
+        assert.strictEqual(result.recordsets[2][0]['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 67)
+        assert.strictEqual(result.recordsets[3][0]['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 11893)
+        assert.strictEqual(result.recordsets[3].length, 1)
+        assert.strictEqual(result.recordsets[4][0].val, 'abc')
+        assert.strictEqual(result.recordsets[4].length, 1)
 
         req = new TestRequest()
         req.execute('__test3').then(result => {
-          assert.equal(result.recordset[0]['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 11893)
+          assert.strictEqual(result.recordset[0]['XML_F52E2B61-18A1-11d1-B105-00805F49916B'].length, 11893)
 
           done()
         }).catch(done)
@@ -769,7 +769,7 @@ module.exports = (sql, driver) => {
 
       // eslint-disable-next-line no-new
       const conn = new sql.ConnectionPool(config, (err) => {
-        assert.equal((message ? (message.exec(err.message) != null) : (err instanceof sql.ConnectionPoolError)), true)
+        assert.strictEqual((message ? (message.exec(err.message) != null) : (err instanceof sql.ConnectionPoolError)), true)
         conn.close()
         done()
       })
@@ -782,9 +782,9 @@ module.exports = (sql, driver) => {
         password: '...',
         server: '10.0.0.1',
         connectionTimeout: 1000,
-        pool: {idleTimeoutMillis: 500}
+        pool: { idleTimeoutMillis: 500 }
       }, (err) => {
-        assert.equal((message ? (message.exec(err.message) != null) : (err instanceof sql.ConnectionPoolError)), true)
+        assert.strictEqual((message ? (message.exec(err.message) != null) : (err instanceof sql.ConnectionPoolError)), true)
         conn.close()
         done()
       })
@@ -797,7 +797,7 @@ module.exports = (sql, driver) => {
         password: '...',
         server: '...'
       }, (err) => {
-        assert.equal((message ? (message.exec(err.message) != null) : (err instanceof sql.ConnectionPoolError)), true)
+        assert.strictEqual((message ? (message.exec(err.message) != null) : (err instanceof sql.ConnectionPoolError)), true)
         conn.close()
         done()
       })
@@ -808,10 +808,10 @@ module.exports = (sql, driver) => {
       const complete = () =>
         setTimeout(() => {
           // this must be delayed because destroying connection take some time
-          assert.equal(connection.pool.size, 3)
-          assert.equal(connection.pool.available, 3)
-          assert.equal(connection.pool.pending, 0)
-          assert.equal(connection.pool.borrowed, 0)
+          assert.strictEqual(connection.pool.size, 3)
+          assert.strictEqual(connection.pool.available, 3)
+          assert.strictEqual(connection.pool.pending, 0)
+          assert.strictEqual(connection.pool.borrowed, 0)
           done()
         }, 500)
 
@@ -819,7 +819,7 @@ module.exports = (sql, driver) => {
       r1.query('select 1 as id', function (err, result) {
         if (err) return done(err)
 
-        assert.equal(result.recordset[0].id, 1)
+        assert.strictEqual(result.recordset[0].id, 1)
 
         if (--countdown === 0) complete()
       })
@@ -828,7 +828,7 @@ module.exports = (sql, driver) => {
       r2.query('select 2 as id', function (err, result) {
         if (err) return done(err)
 
-        assert.equal(result.recordset[0].id, 2)
+        assert.strictEqual(result.recordset[0].id, 2)
 
         if (--countdown === 0) complete()
       })
@@ -837,7 +837,7 @@ module.exports = (sql, driver) => {
       r3.query('select 3 as id', function (err, result) {
         if (err) return done(err)
 
-        assert.equal(result.recordset[0].id, 3)
+        assert.strictEqual(result.recordset[0].id, 3)
 
         if (--countdown === 0) complete()
       })
@@ -850,7 +850,7 @@ module.exports = (sql, driver) => {
       r1.query('select 1 as id', function (err, result) {
         if (err) return done(err)
 
-        assert.equal(result.recordset[0].id, 1)
+        assert.strictEqual(result.recordset[0].id, 1)
 
         if (--countdown === 0) done()
       })
@@ -859,7 +859,7 @@ module.exports = (sql, driver) => {
       r2.query('select 2 as id', function (err, result) {
         if (err) return done(err)
 
-        assert.equal(result.recordset[0].id, 2)
+        assert.strictEqual(result.recordset[0].id, 2)
 
         if (--countdown === 0) done()
       })
@@ -868,16 +868,16 @@ module.exports = (sql, driver) => {
       r3.query('select 3 as id', function (err, result) {
         if (err) return done(err)
 
-        assert.equal(result.recordset[0].id, 3)
+        assert.strictEqual(result.recordset[0].id, 3)
 
         if (--countdown === 0) done()
       })
 
       setImmediate(() => {
-        assert.equal(connection.pool.size, 1)
-        assert.equal(connection.pool.available, 0)
-        assert.equal(connection.pool.pending, 3)
-        assert.equal(connection.pool.borrowed, 0)
+        assert.strictEqual(connection.pool.size, 1)
+        assert.strictEqual(connection.pool.available, 0)
+        assert.strictEqual(connection.pool.pending, 3)
+        assert.strictEqual(connection.pool.borrowed, 0)
       })
     },
 
@@ -892,10 +892,10 @@ module.exports = (sql, driver) => {
         r3.query('select 1', function (err, result) {
           if (err) return done(err)
 
-          assert.equal(connection2.pool.size, 1)
-          assert.equal(connection2.pool.available, 1)
-          assert.equal(connection2.pool.pending, 0)
-          assert.equal(connection2.pool.borrowed, 0)
+          assert.strictEqual(connection2.pool.size, 1)
+          assert.strictEqual(connection2.pool.available, 1)
+          assert.strictEqual(connection2.pool.pending, 0)
+          assert.strictEqual(connection2.pool.borrowed, 0)
 
           done()
         })
@@ -968,7 +968,7 @@ module.exports = (sql, driver) => {
 
       let config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
       config.driver = driver
-      config.pool = {min: 0, max: 50}
+      config.pool = { min: 0, max: 50 }
 
       let conn = new sql.ConnectionPool(config)
 
@@ -988,15 +988,15 @@ module.exports = (sql, driver) => {
             process.exit()
           }
 
-          assert.equal(recordset[0].num, 123456)
-          assert.equal(recordset[0].str, 'asdfasdfasdfasdfasdfasdfasdfasdfasdf')
+          assert.strictEqual(recordset[0].num, 123456)
+          assert.strictEqual(recordset[0].str, 'asdfasdfasdfasdfasdfasdfasdfasdfasdf')
 
           curr++
           if (curr === peak) {
             mem = process.memoryUsage()
             console.log('rss: %s, heapTotal: %s, heapUsed: %s', mem.rss / 1024 / 1024, mem.heapTotal / 1024 / 1024, mem.heapUsed / 1024 / 1024)
 
-            assert.equal(conn.pool.getPoolSize(), 50)
+            assert.strictEqual(conn.pool.getPoolSize(), 50)
 
             done()
           }
@@ -1061,9 +1061,9 @@ module.exports = (sql, driver) => {
       const req = new TestRequest()
       req.input('tvp', tvp)
       req.execute('__test7').then(result => {
-        assert.equal(result.recordsets[0].length, 1)
-        assert.equal(result.recordsets[0][0].a, 'asdf')
-        assert.equal(result.recordsets[0][0].b, 15)
+        assert.strictEqual(result.recordsets[0].length, 1)
+        assert.strictEqual(result.recordsets[0][0].a, 'asdf')
+        assert.strictEqual(result.recordsets[0][0].b, 15)
 
         done()
       }).catch(done)
@@ -1077,9 +1077,9 @@ module.exports = (sql, driver) => {
         const req2 = new TestRequest()
         req2.input('tvp', tvp)
         req2.execute('__test7').then(result => {
-          assert.equal(result.recordsets[0].length, 1)
-          assert.equal(result.recordsets[0][0].a, 'asdf')
-          assert.equal(result.recordsets[0][0].b, 15)
+          assert.strictEqual(result.recordsets[0].length, 1)
+          assert.strictEqual(result.recordsets[0][0].a, 'asdf')
+          assert.strictEqual(result.recordsets[0][0].b, 15)
 
           done()
         }).catch(done)

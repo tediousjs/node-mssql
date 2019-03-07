@@ -108,7 +108,7 @@ describe('Unit', () => {
     assert.strictEqual(t.path, '[MyTable]')
     assert.strictEqual(t.columns.length, 2)
     assert.strictEqual(t.rows.length, 6)
-    assert.deepEqual(t.rows[3], [12, 'XCXCDCDSCDSC'])
+    assert.deepStrictEqual(t.rows[3], [12, 'XCXCDCDSCDSC'])
     assert.strictEqual(t.temporary, false)
 
     t = new sql.Table('schm.MyTable')
@@ -158,7 +158,7 @@ describe('Unit', () => {
 
     assert.strictEqual(t.columns.length, 1)
     assert.strictEqual(t.rows.length, 1)
-    assert.deepEqual(t.rows[0], ['{"a":{"b":{"c":1,"d":2},"x":3,"y":4}}'])
+    assert.deepStrictEqual(t.rows[0], ['{"a":{"b":{"c":1,"d":2},"x":3,"y":4}}'])
 
     t = new sql.Table('MyTable')
     t.columns.add('a', sql.Int, { primary: true })
@@ -218,7 +218,7 @@ describe('Unit', () => {
       }
     }
 
-    assert.deepEqual(query`select * from myTable where id = ${123}`, {
+    assert.deepStrictEqual(query`select * from myTable where id = ${123}`, {
       input: [['param1', 123]],
       command: 'select * from myTable where id = @param1'
     })
@@ -237,7 +237,7 @@ describe('Unit', () => {
       }
     }
 
-    assert.deepEqual(query`select * from myTable where id in (${[1, 2, 3]})`, {
+    assert.deepStrictEqual(query`select * from myTable where id in (${[1, 2, 3]})`, {
       input: [['param1_0', 1], ['param1_1', 2], ['param1_2', 3]],
       command: 'select * from myTable where id in (@param1_0, @param1_1, @param1_2)'
     })
