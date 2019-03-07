@@ -329,7 +329,7 @@ async function messageHandler() {
 // promise style:
 const pool2 = new sql.ConnectionPool(config, err => {
     // ... error checks
-});
+}).connect();
 
 pool2.on('error', err => {
     // ... error handler
@@ -1580,8 +1580,8 @@ request.query('select @myval as myval', (err, result) => {
 [david-url]: https://david-dm.org/tediousjs/node-mssql
 [travis-image]: https://img.shields.io/travis/tediousjs/node-mssql/master.svg?style=flat-square&label=unit
 [travis-url]: https://travis-ci.org/tediousjs/node-mssql
-[appveyor-image]: https://img.shields.io/appveyor/ci/patriksimek/node-mssql-o4dhf/master.svg?style=flat-square&label=integration
-[appveyor-url]: https://ci.appveyor.com/project/patriksimek/node-mssql-o4dhf
+[appveyor-image]: https://ci.appveyor.com/api/projects/status/e5gq1a0ujwams9t7/branch/master?svg=true
+[appveyor-url]: https://ci.appveyor.com/project/tediousjs/node-mssql
 
 [tedious-url]: https://www.npmjs.com/package/tedious
 [msnodesqlv8-url]: https://www.npmjs.com/package/msnodesqlv8
