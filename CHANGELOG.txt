@@ -1,3 +1,9 @@
+v6.0.0 (2019-0?-??)
+-------------------
+[change] Upgraded tedious to v6 ([#818](https://github.com/tediousjs/node-mssql/pull/818))
+[change] `options.encrypt` is now set to true by default
+[change] Upgraded `debug` dependency to v4
+
 v5.0.0 (2019-03-07)
 -------------------
 [new] Added pause / resume feature to streamed requests ([#775](https://github.com/tediousjs/node-mssql/pull/775))
