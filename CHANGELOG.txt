@@ -1,7 +1,8 @@
-v5.0.0 (2019-03-??)
+v5.0.0 (2019-03-07)
 -------------------
 [new] Added pause / resume feature to streamed requests ([#775](https://github.com/tediousjs/node-mssql/pull/775))
 [new] Added options argument to bulk requests for compatibility with tedious driver
+[new] Added a backoff retry strategy for failed connection creation to mitigate issue with `generic-pool` connection creation logic ([#806](https://github.com/tediousjs/node-mssql/pull/806)
 [change] Updated to latest Tedious 4.1.1
 [removed] Node.js < 6 is no longer supported
 [removed] Support dropped for deprecated tedious configuration values and types
