@@ -1,3 +1,7 @@
+v4.3.4 (2019-03-09)
+-------------------
+[change] Config objects are cloned so that the original object is not modified
+
 v4.3.3 (2019-03-07)
 -------------------
 [change] Updated to latest generic-pool 3.6.1
