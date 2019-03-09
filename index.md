@@ -99,7 +99,6 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 * [SQL injection](#sql-injection)
 * [Known Issues](#known-issues)
 * [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
-* [4.x to 5.x changes](#4x-to-5x-changes)
 * [3.x to 4.x changes](#3x-to-4x-changes)
 * [3.x Documentation](https://github.com/tediousjs/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md)
 
@@ -113,6 +112,10 @@ const config = {
     password: '...',
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
     database: '...',
+
+    options: {
+        encrypt: true // Use this if you're on Windows Azure
+    }
 }
 ```
 
@@ -394,7 +397,7 @@ const config = {
 - **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
 
-Complete list of pool options can be found [here](https://github.com/vincit/tarn.js/#usage).
+Complete list of pool options can be found [here](https://github.com/coopernurse/node-pool).
 
 ### Formats
 
@@ -431,7 +434,7 @@ require('mssql').connect(...config, beforeConnect: conn => {
 ```
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1434 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
-- **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `true`).
+- **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`).
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_1`, `7_2`, `7_3_A`, `7_3_B`, `7_4`).
 - **options.appName** - Application name used for SQL server logging.
 - **options.abortTransactionOnError** - A boolean determining whether to rollback a transaction automatically if any error is encountered during the given transaction's execution. This sets the value for `XACT_ABORT` during the initial SQL phase of a connection.
@@ -1554,14 +1557,6 @@ request.query('select @myval as myval', (err, result) => {
 
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
 - msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
-
-## 4.x to 5.x changes
-
-- Moved pool library from `node-pool` to `tarn.js`
-- `ConnectionPool.pool.size` deprecated, use `ConnectionPool.size` instead
-- `ConnectionPool.pool.available` deprecated, use `ConnectionPool.available` instead
-- `ConnectionPool.pool.pending` deprecated, use `ConnectionPool.pending` instead
-- `ConnectionPool.pool.borrowed` deprecated, use `ConnectionPool.borrowed` instead
 
 ## 3.x to 4.x changes
 
