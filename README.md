@@ -624,6 +624,8 @@ __Errors__ (synchronous)
 
 ---------------------------------------
 
+NB: Do not use parameters `@p{n}` as these are used by the internal drivers and cause a conflict.
+
 ### output (name, type, [value])
 
 Add an output parameter to the request.
