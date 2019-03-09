@@ -1,3 +1,7 @@
+v5.0.2 (2019-03-09)
+-------------------
+[change] Remove references to deprecated `TYPES.Null` from tedious
+
 v5.0.1 (2019-03-09)
 -------------------
 [change] Config objects are cloned so that the original object is not modified
@@ -10,6 +14,10 @@ v5.0.0 (2019-03-07)
 [change] Updated to latest Tedious 4.1.1
 [removed] Node.js < 6 is no longer supported
 [removed] Support dropped for deprecated tedious configuration values and types
+
+v4.3.5 (2019-03-09)
+-------------------
+[change] Remove references to deprecated `TYPES.Null` from tedious
 
 v4.3.4 (2019-03-09)
 -------------------
