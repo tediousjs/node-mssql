@@ -1,3 +1,7 @@
+v5.0.1 (2019-03-09)
+-------------------
+[change] Config objects are cloned so that the original object is not modified
+
 v5.0.0 (2019-03-07)
 -------------------
 [new] Added pause / resume feature to streamed requests ([#775](https://github.com/tediousjs/node-mssql/pull/775))
@@ -6,6 +10,10 @@ v5.0.0 (2019-03-07)
 [change] Updated to latest Tedious 4.1.1
 [removed] Node.js < 6 is no longer supported
 [removed] Support dropped for deprecated tedious configuration values and types
+
+v4.3.4 (2019-03-09)
+-------------------
+[change] Config objects are cloned so that the original object is not modified
 
 v4.3.3 (2019-03-07)
 -------------------
