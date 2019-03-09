@@ -2,11 +2,16 @@ v6.0.0 (2019-0?-??)
 -------------------
 [new] Added `healthy` flag to the pool to help determine if the pool is safe to use or not ([#816](https://github.com/tediousjs/node-mssql/pull/816))
 [change] Upgraded tedious to v6 ([#818](https://github.com/tediousjs/node-mssql/pull/818))
+[change] Remove references to deprecated `TYPES.Null` from tedious
 [change] `options.encrypt` is now set to true by default
 [change] Upgraded `debug` dependency to v4
 [change] Config objects are cloned so that the original object is not modified
 [change] Replaced pool library (`generic-pool`) with `tarn.js` ([#808](https://github.com/tediousjs/node-mssql/pull/808))
 [removed] Backoff try strategy for creating connections removed, `tarn.js` built-in retry strategy used instead
+
+v5.0.2 (2019-03-09)
+-------------------
+[change] Remove references to deprecated `TYPES.Null` from tedious
 
 v5.0.1 (2019-03-09)
 -------------------
@@ -20,6 +25,10 @@ v5.0.0 (2019-03-07)
 [change] Updated to latest Tedious 4.1.1
 [removed] Node.js < 6 is no longer supported
 [removed] Support dropped for deprecated tedious configuration values and types
+
+v4.3.5 (2019-03-09)
+-------------------
+[change] Remove references to deprecated `TYPES.Null` from tedious
 
 v4.3.4 (2019-03-09)
 -------------------
