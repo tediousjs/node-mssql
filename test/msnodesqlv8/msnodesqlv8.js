@@ -67,6 +67,8 @@ describe('msnodesqlv8', function () {
     it('prepared statement in transaction', done => TESTS['prepared statement in transaction'](done))
     it('transaction with rollback', done => TESTS['transaction with rollback'](done))
     it.skip('transaction with commit (temporarily disabled because of issues introduced in 0.5.3)', done => TESTS['transaction with commit'](done))
+    it('transaction throws on bad isolation level', done => TESTS['transaction throws on bad isolation level'](done))
+    it('transaction accepts good isolation levels', done => TESTS['transaction accepts good isolation levels'](done))
     it('cancel request', done => TESTS['cancel request'](done))
     it('request timeout', done => TESTS['request timeout'](done))
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))

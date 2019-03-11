@@ -2,6 +2,7 @@
 
 const assert = require('assert')
 const stream = require('stream')
+const ISOLATION_LEVELS = require('../../lib/isolationlevel')
 
 process.on('unhandledRejection', (reason, p) => {
   console.log('Unhandled Rejection at: Promise', p, 'reason:', reason)
@@ -588,6 +589,30 @@ module.exports = (sql, driver) => {
       tran.on('begin', () => { tbegin = true })
       tran.on('commit', () => { tcommit = true })
       tran.on('rollback', () => { trollback = true })
+    },
+
+    'transaction throws on bad isolation level' (done) {
+      let tran = new TestTransaction()
+      tran.begin('bad isolation level').then(() => {
+        assert.fail('promise should not have resolved')
+        done()
+      }).catch(err => {
+        assert.ok(err)
+        assert.strictEqual(err.message, 'Invalid isolation level.')
+        done()
+      })
+    },
+
+    'transaction accepts good isolation levels' (done) {
+      const promises = Object.keys(ISOLATION_LEVELS).map(level => {
+        let tran = new TestTransaction()
+        return tran.begin(ISOLATION_LEVELS[level]).then(() => {
+          return tran.request().query('SELECT 1 AS num')
+        })
+      })
+      Promise.all(promises).then(() => done()).catch(err => {
+        done(err)
+      })
     },
 
     'transaction with error' (done) {

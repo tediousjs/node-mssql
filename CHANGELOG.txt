@@ -1,6 +1,7 @@
 v6.0.0 (2019-0?-??)
 -------------------
 [new] Added `healthy` flag to the pool to help determine if the pool is safe to use or not ([#816](https://github.com/tediousjs/node-mssql/pull/816))
+[new] Invalid isolation levels passed to transactions will now throw an error
 [change] Upgraded tedious to v6 ([#818](https://github.com/tediousjs/node-mssql/pull/818))
 [change] Remove references to deprecated `TYPES.Null` from tedious
 [change] `options.encrypt` is now set to true by default
