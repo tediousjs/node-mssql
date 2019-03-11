@@ -315,6 +315,32 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'query with duplicate parameters throws' (done) {
+      const req = new TestRequest()
+      try {
+        req.input('in', sql.Int, null)
+        req.output('in', sql.Int)
+      } catch (err) {
+        assert.ok(err)
+        assert.strictEqual(err.code, 'EDUPEPARAM')
+        done()
+        return
+      }
+      assert.fail('failed to throw on duplicate paramter')
+      done()
+    },
+
+    'query parameters can be replaced' (done) {
+      const req = new TestRequest()
+      req.input('in', sql.Int, null)
+      req.replaceInput('in', sql.VarChar, 'test')
+      req.output('out', sql.VarChar)
+      req.replaceOutput('out', sql.Int)
+      assert.strictEqual(req.parameters.in.type, sql.VarChar().type)
+      assert.strictEqual(req.parameters.out.type, sql.Int().type)
+      done()
+    },
+
     'query with error' (done) {
       const req = new TestRequest()
       req.query('select * from notexistingtable', err => {
@@ -466,6 +492,32 @@ module.exports = (sql, driver) => {
           ps.unprepare(() => done(err))
         })
       }).catch(done)
+    },
+
+    'prepared statement with duplicate parameters throws' (done) {
+      const req = new TestPreparedStatement()
+      try {
+        req.input('in', sql.Int, null)
+        req.output('in', sql.Int)
+      } catch (err) {
+        assert.ok(err)
+        assert.strictEqual(err.code, 'EDUPEPARAM')
+        done()
+        return
+      }
+      assert.fail('failed to throw on duplicate paramter')
+      done()
+    },
+
+    'prepared statement parameters can be replaced' (done) {
+      const req = new TestPreparedStatement()
+      req.input('in', sql.Int, null)
+      req.replaceInput('in', sql.VarChar, 'test')
+      req.output('out', sql.VarChar)
+      req.replaceOutput('out', sql.Int)
+      assert.strictEqual(req.parameters.in.type, sql.VarChar().type)
+      assert.strictEqual(req.parameters.out.type, sql.Int().type)
+      done()
     },
 
     'prepared statement with affected rows' (done) {
