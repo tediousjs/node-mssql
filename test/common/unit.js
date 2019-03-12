@@ -75,7 +75,7 @@ describe('Connection String', () => {
     return done()
   })
 
-  return it('Connection String #7 (connection timeout)', done => {
+  it('Connection String #7 (connection timeout)', done => {
     let cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd;Connection Timeout=30')
     assert.strictEqual(cfg.user, 'testuser')
     assert.strictEqual(cfg.password, 'testpwd')
@@ -83,6 +83,18 @@ describe('Connection String', () => {
     assert.strictEqual(cfg.server, '192.168.0.1')
     assert.strictEqual(cfg.port, undefined)
     assert.strictEqual(cfg.connectionTimeout, 30000)
+
+    return done()
+  })
+
+  it('Connection String #8 (url encoding)', done => {
+    let cfg = cs.resolve('mssql://username:password%23@localhost:1433/database?encrypt=true')
+    assert.strictEqual(cfg.user, 'username')
+    assert.strictEqual(cfg.password, 'password#')
+    assert.strictEqual(cfg.database, 'database')
+    assert.strictEqual(cfg.server, 'localhost')
+    assert.strictEqual(cfg.port, 1433)
+    assert.strictEqual(cfg.options.encrypt, true)
 
     return done()
   })
