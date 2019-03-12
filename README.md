@@ -69,7 +69,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [pipe](#pipe-stream)
 * [query](#query-command-callback)
 * [batch](#batch-batch-callback)
-* [bulk](#bulk-table-callback)
+* [bulk](#bulk-table-options-callback)
 * [cancel](#cancel)
 
 ### Transactions

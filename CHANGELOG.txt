@@ -5,6 +5,7 @@ v6.0.0 (2019-0?-??)
 [new] Duplicate parameter names in queries/stored procedures will now throw an error
 [new] `replaceInput` and `replaceOutput` functions added to `Request` and `PreparedStatement` to facilitate replacing existing parameters
 [new] Calls to the global `connect` function will return the global connection if it exists
+[new] Bulk table inserts now attempt to coerce Date objects out of non Date values
 [change] Closing the global connection by reference will now cleanup the internally managed globalConnection
 [change] Upgraded tedious to v6 ([#818](https://github.com/tediousjs/node-mssql/pull/818))
 [change] Remove references to deprecated `TYPES.Null` from tedious
