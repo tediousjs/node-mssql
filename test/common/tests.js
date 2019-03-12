@@ -1010,47 +1010,97 @@ module.exports = (sql, driver) => {
       })
     },
 
-    'streaming off' (done, driver) {
-      let config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
-      config.driver = driver
-      config.requestTimeout = 60000
+    'streaming off' (done) {
+      const req = new TestRequest()
+      req.query('select * from streaming').then(response => {
+        const { recordset } = response
 
-      sql.connect(config, function (err) {
-        if (err) { return done(err) }
+        assert.strictEqual(recordset.length, 32768)
 
-        const req = new TestRequest()
-        req.query('select * from streaming', function (err, recordset) {
-          if (err) { return done(err) }
+        done()
+      }).catch(done)
+    },
 
-          console.log(`Got ${recordset.length} rows.`)
+    'streaming on' (done) {
+      let rows = 0
 
-          done()
-        })
+      const req = new TestRequest()
+      req.stream = true
+      req.query('select * from streaming')
+      req.on('error', err => {
+        done(err)
+      })
+
+      req.on('row', row => rows++)
+
+      req.on('done', function () {
+        assert.strictEqual(rows, 32768)
+        done()
       })
     },
 
-    'streaming on' (done, driver) {
-      let config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
-      config.driver = driver
-      config.requestTimeout = 60000
-
+    'streaming pause' (done) {
       let rows = 0
 
-      sql.connect(config, function (err) {
-        if (err) { return done(err) }
+      const req = new TestRequest()
+      req.stream = true
+      req.query('select * from streaming')
+      req.on('error', (err) => {
+        if (err.code !== 'ECANCEL') {
+          done(err)
+        }
+      })
 
-        const req = new TestRequest()
-        req.stream = true
-        req.query('select * from streaming')
-        req.on('error', err => console.error(err))
+      req.on('row', row => {
+        rows++
+        if (rows >= 10) {
+          req.pause()
+          // cancel the request in 1 second to give time for any more rows to come in
+          setTimeout(() => {
+            req.cancel()
+          }, 1000)
+        }
+      })
 
-        req.on('row', row => rows++)
+      req.on('done', function () {
+        assert.strictEqual(rows, 10)
+        done()
+      })
+    },
 
-        req.on('done', function () {
-          console.log(`Got ${rows} rows.`)
+    'streaming resume' (done) {
+      let rows = 0
+      let started = false
 
-          done()
-        })
+      const req = new TestRequest()
+      req.stream = true
+      req.pause()
+      req.query('select * from streaming')
+      req.on('error', (err) => {
+        if (err.code !== 'ECANCEL') {
+          done(err)
+        }
+      })
+
+      // start the request after 1 seecond
+      setTimeout(() => {
+        assert.ok(!started)
+        assert.strictEqual(rows, 0)
+        started = true
+        req.resume()
+      }, 1000)
+
+      req.on('row', row => {
+        rows++
+        if (rows >= 10) {
+          req.pause()
+          req.cancel()
+        }
+      })
+
+      req.on('done', function () {
+        assert.strictEqual(rows, 10)
+        done()
       })
     },
 

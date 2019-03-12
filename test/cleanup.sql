@@ -24,8 +24,8 @@ if exists (select * from sys.tables where name = 'tran_test')
 	
 if exists (select * from sys.tables where name = 'bulk_table')
 	exec('drop table [dbo].[bulk_table]')
-	
-/*
+
+
 if exists (select * from sys.tables where name = 'streaming')
 	exec('drop table [dbo].[streaming]')
-*/
+
