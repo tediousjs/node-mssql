@@ -718,6 +718,51 @@ module.exports = (sql, driver) => {
       req.cancel()
     },
 
+    'connection healthy works' (config, done) {
+      const pool = new sql.ConnectionPool(config)
+      assert.ok(!pool.healthy)
+      pool.connect().then(() => {
+        assert.ok(pool.healthy)
+        return pool.close()
+      }).then(() => {
+        assert.ok(!pool.healthy)
+        done()
+      })
+    },
+
+    'healthy connection goes bad' (config, done) {
+      const pool = new sql.ConnectionPool(Object.assign({}, config, {
+        pool: {
+          min: 0,
+          max: 1
+        }
+      }))
+      const ogCreate = pool._poolCreate.bind(pool)
+      assert.ok(!pool.healthy)
+      pool.connect().then(() => {
+        assert.ok(pool.healthy)
+        pool._poolCreate = () => {
+          return Promise.reject(new sql.ConnectionError('Synthetic error'))
+        }
+        return pool.acquire().then(() => {
+          assert.fail('acquire resolved unexpectedly')
+        }).catch(() => {
+          assert.ok(pool.pool.numUsed() + pool.pool.numFree() <= 0)
+          assert.ok(!pool.healthy)
+        })
+      }).then(() => {
+        pool._poolCreate = ogCreate
+        return pool.acquire().then(() => {
+          assert.ok(pool.healthy)
+        })
+      }).then(() => {
+        return pool.close()
+      }).then(() => {
+        assert.ok(!pool.healthy)
+        done()
+      }).catch(done)
+    },
+
     'request timeout' (done, driver, message) {
       const config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
       config.driver = driver

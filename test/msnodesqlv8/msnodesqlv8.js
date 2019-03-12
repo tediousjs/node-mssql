@@ -74,6 +74,8 @@ describe('msnodesqlv8', function () {
     it('transaction throws on bad isolation level', done => TESTS['transaction throws on bad isolation level'](done))
     it('transaction accepts good isolation levels', done => TESTS['transaction accepts good isolation levels'](done))
     it('cancel request', done => TESTS['cancel request'](done))
+    it('connection healthy works', done => TESTS['connection healthy works'](config(), done))
+    it('healthy connection goes bad', done => TESTS['healthy connection goes bad'](config(), done))
     it('request timeout', done => TESTS['request timeout'](done))
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))
     it.skip('chunked json support (requires SQL Server 2016)', done => TESTS['chunked json support'](done))
