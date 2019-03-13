@@ -181,10 +181,22 @@ describe('msnodesqlv8', function () {
   })
 
   describe('msnodesqlv8 stress', function () {
+    this.timeout(600000)
+    before((done) => {
+      let cfg = config()
+      cfg.options.abortTransactionOnError = true
+      cfg.requestTimeout = 60000
+      sql.connect(cfg, done)
+    })
+
     it.skip('concurrent connections', done => TESTS['concurrent connections'](done))
     it.skip('concurrent requests', done => TESTS['concurrent requests'](done))
-    it.skip('streaming off', done => TESTS['streaming off'](done, 'msnodesqlv8'))
-    it.skip('streaming on', done => TESTS['streaming on'](done, 'msnodesqlv8'))
+    it.skip('streaming off', done => TESTS['streaming off'](done))
+    it.skip('streaming on', done => TESTS['streaming on'](done))
+    it.skip('streaming pause', done => TESTS['streaming pause'](done))
+    it.skip('streaming resume', done => TESTS['streaming resume'](done))
+
+    after(done => sql.close(done))
   })
 
   describe('tvp', function () {

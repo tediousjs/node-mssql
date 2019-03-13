@@ -227,21 +227,23 @@ describe('tedious', () => {
     })
   })
 
-  describe.skip('Stress', () => {
-    it('concurrent connections', done => TESTS['concurrent connections'](done))
-    it('concurrent requests', done => TESTS['concurrent requests'](done))
-
-    it('streaming off', (done) => {
-      this.timeout(600000)
-
-      TESTS['streaming off'](done, 'tedious')
+  describe('Stress', function stress () {
+    this.timeout(600000)
+    before((done) => {
+      let cfg = config()
+      cfg.options.abortTransactionOnError = true
+      cfg.requestTimeout = 60000
+      sql.connect(cfg, done)
     })
 
-    it('streaming on', (done) => {
-      this.timeout(600000)
+    it.skip('concurrent connections', done => TESTS['concurrent connections'](done))
+    it.skip('concurrent requests', done => TESTS['concurrent requests'](done))
+    it('streaming off', done => TESTS['streaming off'](done))
+    it('streaming on', done => TESTS['streaming on'](done))
+    it('streaming pause', done => TESTS['streaming pause'](done))
+    it('streaming resume', done => TESTS['streaming resume'](done))
 
-      TESTS['streaming on'](done, 'tedious')
-    })
+    after(done => sql.close(done))
   })
 
   describe('tvp', function () {
