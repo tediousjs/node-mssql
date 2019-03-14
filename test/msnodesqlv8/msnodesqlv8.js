@@ -110,7 +110,7 @@ describe('msnodesqlv8', function () {
     })
 
     it('bulk load (table)', done => TESTS['bulk load']('bulk_table', done))
-    it.skip('bulk load (temporary table) (not supported by msnodesqlv8)', done => TESTS['bulk load']('#anohter_bulk_table', done))
+    it('bulk load (temporary table)', done => TESTS['bulk load']('#anohter_bulk_table', done))
     it('bulk converts dates', done => TESTS['bulk converts dates'](done))
 
     after(done => sql.close(done))
