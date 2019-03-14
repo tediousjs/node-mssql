@@ -469,6 +469,31 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'bulk converts dates' (done) {
+      let t = new sql.Table('#bulkconverts')
+      t.create = true
+      t.columns.add('a', sql.Int, { nullable: false })
+      t.columns.add('b', sql.DateTime2, { nullable: true })
+      t.rows.add(1, new Date('2019-03-12T11:06:59.000Z'))
+      t.rows.add(2, '2019-03-12T11:06:59.000Z')
+      t.rows.add(3, 1552388819000)
+
+      let req = new TestRequest()
+      req.bulk(t).then(result => {
+        assert.strictEqual(result.rowsAffected, 3)
+
+        req = new sql.Request()
+        return req.batch(`select * from #bulkconverts`).then(result => {
+          assert.strictEqual(result.recordset.length, 3)
+          for (let i = 0; i < result.recordset.length; i++) {
+            assert.strictEqual(result.recordset[i].b.toISOString(), '2019-03-12T11:06:59.000Z')
+          }
+
+          done()
+        })
+      }).catch(done)
+    },
+
     'prepared statement' (done) {
       const ps = new TestPreparedStatement()
       ps.input('num', sql.Int)

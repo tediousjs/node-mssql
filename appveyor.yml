@@ -9,7 +9,7 @@ environment:
 install:
   - ps: Install-Product node $env:nodejs_version
   - npm install
-  - npm install msnodesqlv8@0.6.6
+  - npm install msnodesqlv8@0.6.12
 
 cache:
   - node_modules
