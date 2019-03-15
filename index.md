@@ -19,6 +19,7 @@ const sql = require('mssql')
 
 async () => {
     try {
+        // make sure that any items are correctly URL encoded in the connection string
         await sql.connect('mssql://username:password@localhost/database')
         const result = await sql.query`select * from mytable where id = ${value}`
         console.dir(result)
@@ -29,6 +30,8 @@ async () => {
 ```
 
 If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#configuration) to learn more.
+
+Parts of the connection URI should be correctly URL encoded so that the URI can be parsed correctly.
 
 ## Documentation
 
@@ -66,7 +69,7 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 * [pipe](#pipe-stream)
 * [query](#query-command-callback)
 * [batch](#batch-batch-callback)
-* [bulk](#bulk-table-callback)
+* [bulk](#bulk-table-options-callback)
 * [cancel](#cancel)
 
 ### Transactions
