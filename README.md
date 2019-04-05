@@ -154,32 +154,49 @@ sql.on('error', err => {
 
 ### Promises
 
+#### Queries
+
 ```javascript
 const sql = require('mssql')
+
+sql.on('error', err => {
+    // ... error handler
+})
 
 sql.connect(config).then(pool => {
     // Query
     
     return pool.request()
-    .input('input_parameter', sql.Int, value)
-    .query('select * from mytable where id = @input_parameter')
+        .input('input_parameter', sql.Int, value)
+        .query('select * from mytable where id = @input_parameter')
 }).then(result => {
     console.dir(result)
+}).catch(err => {
+  // ... error checks
+});
+```
+
+#### Stored procedures
+
+```js
+const sql = require('mssql')
+
+sql.on('error', err => {
+    // ... error handler
+})
+
+sql.connect(config).then(pool => {
     
     // Stored procedure
     
     return pool.request()
-    .input('input_parameter', sql.Int, value)
-    .output('output_parameter', sql.VarChar(50))
-    .execute('procedure_name')
+        .input('input_parameter', sql.Int, value)
+        .output('output_parameter', sql.VarChar(50))
+        .execute('procedure_name')
 }).then(result => {
     console.dir(result)
 }).catch(err => {
     // ... error checks
-})
-
-sql.on('error', err => {
-    // ... error handler
 })
 ```
 
@@ -308,14 +325,15 @@ established before returning. From that point, you're able to acquire connection
 const sql = require('mssql')
 
 // async/await style:
-const pool1 = new sql.ConnectionPool(config).connect();
+const pool1 = new sql.ConnectionPool(config);
+const pool1Connect = pool1.connect();
 
 pool1.on('error', err => {
     // ... error handler
 })
 
 async function messageHandler() {
-    await pool1; // ensures that the pool has been created
+    await pool1Connect; // ensures that the pool has been created
     try {
     	const request = pool1.request(); // or: new sql.Request(pool1)
     	const result = request.query('select 1 as number')
@@ -327,16 +345,15 @@ async function messageHandler() {
 }
 
 // promise style:
-const pool2 = new sql.ConnectionPool(config, err => {
-    // ... error checks
-}).connect();
+const pool2 = new sql.ConnectionPool(config)
+const pool2Connect = pool2.connect()
 
 pool2.on('error', err => {
     // ... error handler
 })
 
 function runStoredProcedure() {
-    return pool2.then((pool) => {
+    return pool2Connect.then((pool) => {
 		pool.request() // or: new sql.Request(pool2)
 		.input('input_parameter', sql.Int, 10)
 		.output('output_parameter', sql.VarChar(50))
@@ -344,7 +361,9 @@ function runStoredProcedure() {
 			// ... error checks
 			console.dir(result)
 		})
-    });
+    }).catch(err => {
+        // ... error handler
+    })
 }
 ```
 
