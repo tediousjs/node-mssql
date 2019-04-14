@@ -75,7 +75,7 @@ describe('Connection String', () => {
     return done()
   })
 
-  return it('Connection String #7 (connection timeout)', done => {
+  it('Connection String #7 (connection timeout)', done => {
     let cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd;Connection Timeout=30')
     assert.strictEqual(cfg.user, 'testuser')
     assert.strictEqual(cfg.password, 'testpwd')
@@ -83,6 +83,20 @@ describe('Connection String', () => {
     assert.strictEqual(cfg.server, '192.168.0.1')
     assert.strictEqual(cfg.port, undefined)
     assert.strictEqual(cfg.connectionTimeout, 30000)
+
+    return done()
+  })
+
+  it('Pulls out read only ApplicationIntent', done => {
+    const cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd;Connection Timeout=30;ApplicationIntent=ReadOnly')
+    assert.strictEqual(cfg.options.readOnlyIntent, true)
+
+    return done()
+  })
+
+  it('Pulls out read write ApplicationIntent', done => {
+    const cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd;Connection Timeout=30;ApplicationIntent=ReadWrite')
+    assert.strictEqual(cfg.options.readOnlyIntent, false)
 
     return done()
   })
