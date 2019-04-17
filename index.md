@@ -19,6 +19,7 @@ const sql = require('mssql')
 
 async () => {
     try {
+        // make sure that any items are correctly URL encoded in the connection string
         await sql.connect('mssql://username:password@localhost/database')
         const result = await sql.query`select * from mytable where id = ${value}`
         console.dir(result)
@@ -29,6 +30,8 @@ async () => {
 ```
 
 If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#configuration) to learn more.
+
+Parts of the connection URI should be correctly URL encoded so that the URI can be parsed correctly.
 
 ## Documentation
 
@@ -66,7 +69,7 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 * [pipe](#pipe-stream)
 * [query](#query-command-callback)
 * [batch](#batch-batch-callback)
-* [bulk](#bulk-table-callback)
+* [bulk](#bulk-table-options-callback)
 * [cancel](#cancel)
 
 ### Transactions
@@ -99,6 +102,7 @@ If you're on Windows Azure, add `?encrypt=true` to your connection string. See [
 * [SQL injection](#sql-injection)
 * [Known Issues](#known-issues)
 * [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
+* [4.x to 5.x changes](#4x-to-5x-changes)
 * [3.x to 4.x changes](#3x-to-4x-changes)
 * [3.x Documentation](https://github.com/tediousjs/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md)
 
@@ -112,10 +116,6 @@ const config = {
     password: '...',
     server: 'localhost', // You can use 'localhost\\instance' to connect to named instance
     database: '...',
-
-    options: {
-        encrypt: true // Use this if you're on Windows Azure
-    }
 }
 ```
 
@@ -154,32 +154,49 @@ sql.on('error', err => {
 
 ### Promises
 
+#### Queries
+
 ```javascript
 const sql = require('mssql')
+
+sql.on('error', err => {
+    // ... error handler
+})
 
 sql.connect(config).then(pool => {
     // Query
     
     return pool.request()
-    .input('input_parameter', sql.Int, value)
-    .query('select * from mytable where id = @input_parameter')
+        .input('input_parameter', sql.Int, value)
+        .query('select * from mytable where id = @input_parameter')
 }).then(result => {
     console.dir(result)
+}).catch(err => {
+  // ... error checks
+});
+```
+
+#### Stored procedures
+
+```js
+const sql = require('mssql')
+
+sql.on('error', err => {
+    // ... error handler
+})
+
+sql.connect(config).then(pool => {
     
     // Stored procedure
     
     return pool.request()
-    .input('input_parameter', sql.Int, value)
-    .output('output_parameter', sql.VarChar(50))
-    .execute('procedure_name')
+        .input('input_parameter', sql.Int, value)
+        .output('output_parameter', sql.VarChar(50))
+        .execute('procedure_name')
 }).then(result => {
     console.dir(result)
 }).catch(err => {
     // ... error checks
-})
-
-sql.on('error', err => {
-    // ... error handler
 })
 ```
 
@@ -308,14 +325,15 @@ established before returning. From that point, you're able to acquire connection
 const sql = require('mssql')
 
 // async/await style:
-const pool1 = new sql.ConnectionPool(config).connect();
+const pool1 = new sql.ConnectionPool(config);
+const pool1Connect = pool1.connect();
 
 pool1.on('error', err => {
     // ... error handler
 })
 
 async function messageHandler() {
-    await pool1; // ensures that the pool has been created
+    await pool1Connect; // ensures that the pool has been created
     try {
     	const request = pool1.request(); // or: new sql.Request(pool1)
     	const result = request.query('select 1 as number')
@@ -327,16 +345,15 @@ async function messageHandler() {
 }
 
 // promise style:
-const pool2 = new sql.ConnectionPool(config, err => {
-    // ... error checks
-}).connect();
+const pool2 = new sql.ConnectionPool(config)
+const pool2Connect = pool2.connect()
 
 pool2.on('error', err => {
     // ... error handler
 })
 
 function runStoredProcedure() {
-    return pool2.then((pool) => {
+    return pool2Connect.then((pool) => {
 		pool.request() // or: new sql.Request(pool2)
 		.input('input_parameter', sql.Int, 10)
 		.output('output_parameter', sql.VarChar(50))
@@ -344,7 +361,9 @@ function runStoredProcedure() {
 			// ... error checks
 			console.dir(result)
 		})
-    });
+    }).catch(err => {
+        // ... error handler
+    })
 }
 ```
 
@@ -397,7 +416,7 @@ const config = {
 - **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
 
-Complete list of pool options can be found [here](https://github.com/coopernurse/node-pool).
+Complete list of pool options can be found [here](https://github.com/vincit/tarn.js/#usage).
 
 ### Formats
 
@@ -434,7 +453,7 @@ require('mssql').connect(...config, beforeConnect: conn => {
 ```
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1434 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
-- **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `false`).
+- **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `true`).
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_1`, `7_2`, `7_3_A`, `7_3_B`, `7_4`).
 - **options.appName** - Application name used for SQL server logging.
 - **options.abortTransactionOnError** - A boolean determining whether to rollback a transaction automatically if any error is encountered during the given transaction's execution. This sets the value for `XACT_ABORT` during the initial SQL phase of a connection.
@@ -626,6 +645,8 @@ __Errors__ (synchronous)
 - EINJECT (`RequestError`) - SQL injection warning.
 
 ---------------------------------------
+
+NB: Do not use parameters `@p{n}` as these are used by the internal drivers and cause a conflict.
 
 ### output (name, type, [value])
 
@@ -1557,6 +1578,14 @@ request.query('select @myval as myval', (err, result) => {
 
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
 - msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
+
+## 4.x to 5.x changes
+
+- Moved pool library from `node-pool` to `tarn.js`
+- `ConnectionPool.pool.size` deprecated, use `ConnectionPool.size` instead
+- `ConnectionPool.pool.available` deprecated, use `ConnectionPool.available` instead
+- `ConnectionPool.pool.pending` deprecated, use `ConnectionPool.pending` instead
+- `ConnectionPool.pool.borrowed` deprecated, use `ConnectionPool.borrowed` instead
 
 ## 3.x to 4.x changes
 
