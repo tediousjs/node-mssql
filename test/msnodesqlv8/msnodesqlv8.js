@@ -194,8 +194,8 @@ describe('msnodesqlv8', function () {
     it.skip('concurrent requests', done => TESTS['concurrent requests'](done))
     it.skip('streaming off', done => TESTS['streaming off'](done))
     it.skip('streaming on', done => TESTS['streaming on'](done))
-    it.skip('streaming pause', done => TESTS['streaming pause'](done))
-    it.skip('streaming resume', done => TESTS['streaming resume'](done))
+    it('streaming pause', done => TESTS['streaming pause'](done))
+    it('streaming resume', done => TESTS['streaming resume'](done))
 
     after(done => sql.close(done))
   })
