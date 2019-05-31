@@ -1289,13 +1289,10 @@ module.exports = (sql, driver) => {
           // cancel the request in 1 second to give time for any more rows to come in
           setTimeout(() => {
             req.cancel()
+            assert.strictEqual(rows, 10)
+            done()
           }, 1000)
         }
-      })
-
-      req.on('done', function () {
-        assert.strictEqual(rows, 10)
-        done()
       })
     },
 
@@ -1326,12 +1323,9 @@ module.exports = (sql, driver) => {
         if (rows >= 10) {
           req.pause()
           req.cancel()
+          assert.strictEqual(rows, 10)
+          done()
         }
-      })
-
-      req.on('done', function () {
-        assert.strictEqual(rows, 10)
-        done()
       })
     },
 
