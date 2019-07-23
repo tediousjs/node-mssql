@@ -1319,6 +1319,7 @@ module.exports = (sql, driver) => {
       }, 1000)
 
       req.on('row', row => {
+        assert.ok(started, 'row event received before stream resumed')
         rows++
         if (rows >= 10) {
           req.pause()
