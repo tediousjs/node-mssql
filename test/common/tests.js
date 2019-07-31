@@ -1278,6 +1278,7 @@ module.exports = (sql, driver) => {
       req.query('select * from streaming')
       req.on('error', (err) => {
         if (err.code !== 'ECANCEL') {
+          req.cancel()
           done(err)
         }
       })
@@ -1299,6 +1300,7 @@ module.exports = (sql, driver) => {
     'streaming resume' (done) {
       let rows = 0
       let started = false
+      let timeout
 
       const req = new TestRequest()
       req.stream = true
@@ -1306,12 +1308,14 @@ module.exports = (sql, driver) => {
       req.query('select * from streaming')
       req.on('error', (err) => {
         if (err.code !== 'ECANCEL') {
+          req.cancel()
+          clearTimeout(timeout)
           done(err)
         }
       })
 
-      // start the request after 1 seecond
-      setTimeout(() => {
+      // start the request after 1 second
+      timeout = setTimeout(() => {
         assert.ok(!started)
         assert.strictEqual(rows, 0)
         started = true
