@@ -220,7 +220,7 @@ describe('msnodesqlv8', function () {
     after(() => sql.close())
   })
 
-  after(done =>
+  after('cleanup', done =>
     sql.connect(config(), function (err) {
       if (err) return done(err)
 
