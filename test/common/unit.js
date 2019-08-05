@@ -197,6 +197,11 @@ describe('Unit', () => {
     t.columns.add('c', sql.TinyInt, { nullable: false, primary: true })
     assert.strictEqual(t.declare(), 'create table [#mytemptable] ([a] int, [b] tinyint null, [c] tinyint not null, constraint PK_mytemptable primary key (a, c))')
 
+    t = new sql.Table('MyTable')
+    t.columns.add('name', sql.NVarChar, {
+      length: Infinity
+    })
+    assert.strictEqual(t.columns[0].length, Infinity)
     return done()
   })
 
