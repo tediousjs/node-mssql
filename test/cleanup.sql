@@ -25,6 +25,17 @@ if exists (select * from sys.tables where name = 'tran_test')
 if exists (select * from sys.tables where name = 'bulk_table')
 	exec('drop table [dbo].[bulk_table]')
 
+if exists (select * from sys.tables where name = 'bulk_table2')
+	exec('drop table [dbo].[bulk_table2]')
+
+if exists (select * from sys.tables where name = 'bulk_table3')
+	exec('drop table [dbo].[bulk_table3]')
+
+if exists (select * from sys.tables where name = 'bulk_table4')
+	exec('drop table [dbo].[bulk_table4]')
+
+if exists (select * from sys.tables where name = 'bulk_table5')
+	exec('drop table [dbo].[bulk_table5]')
 
 if exists (select * from sys.tables where name = 'streaming')
 	exec('drop table [dbo].[streaming]')

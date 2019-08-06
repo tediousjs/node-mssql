@@ -123,9 +123,9 @@ describe('tedious', () => {
     it('bulk load with varchar-max field (table)', done => TESTS['bulk load with varchar-max field']('bulk_table2', done))
     it('bulk load (temporary table)', done => TESTS['bulk load']('#anohter_bulk_table', done))
     it('bulk converts dates', done => TESTS['bulk converts dates'](done))
-    it('bulk insert with length option as undefined throws', done => TESTS['bulk insert with length option as undefined throws'](done))
-    it('bulk insert with length option as string throws', done => TESTS['bulk insert with length option as string throws'](done))
-
+    it('bulk insert with length option as undefined throws (table)', done => TESTS['bulk insert with length option as undefined throws']('bulk_table3', done))
+    it('bulk insert with length option as string other than max throws (table)', done => TESTS['bulk insert with length option as string other than max throws']('bulk_table4', done))
+    it('bulk insert with length as max (table)', done => TESTS['bulk insert with length as max']('bulk_table5', done))
     after(done => sql.close(done))
   })
 

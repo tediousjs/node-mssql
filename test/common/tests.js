@@ -518,12 +518,12 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
-    'bulk insert with length option as string throws' (done) {
+    'bulk insert with length option as string other than max throws' (name, done) {
       const req = new TestRequest()
-      let table = new sql.Table('demo')
+      let table = new sql.Table(name)
       table.create = true
       table.columns.add('name', sql.NVarChar, {
-        length: 'max'
+        length: 'random'
       })
 
       table.rows.add(table.rows, ['JP1016'])
@@ -531,16 +531,16 @@ module.exports = (sql, driver) => {
         assert.fail('it should throw error while insertion length with non-supported values')
         done()
       }).catch(err => {
-        assert.strictEqual(err.message, 'Invalid column type from bcp client for colid 1.')
+        assert.strictEqual(err.message, "Incorrect syntax near 'random'.")
         assert.strictEqual(err.code, 'EREQUEST')
         assert.strictEqual(err.name, 'RequestError')
         done()
       })
     },
 
-    'bulk insert with length option as undefined throws' (done) {
+    'bulk insert with length option as undefined throws' (name, done) {
       const req = new TestRequest()
-      let table = new sql.Table('demo')
+      let table = new sql.Table(name)
       table.create = true
       table.columns.add('name', sql.NVarChar, {
         length: undefined
@@ -556,6 +556,26 @@ module.exports = (sql, driver) => {
         assert.strictEqual(err.name, 'RequestError')
         done()
       })
+    },
+
+    'bulk insert with length as max' (name, done) {
+      let t = new sql.Table(name)
+      t.create = true
+      t.columns.add('a', sql.NVarChar, {
+        length: 'max'
+      })
+
+      t.rows.add('JP1016')
+      let req = new TestRequest()
+      req.bulk(t).then(result => {
+        assert.strictEqual(result.rowsAffected, 1)
+
+        req = new sql.Request()
+        req.batch(`select * from ${name}`).then(result => {
+          assert.strictEqual(result.recordset[0].a, 'JP1016')
+          done()
+        }).catch(done)
+      }).catch(done)
     },
 
     'prepared statement' (done) {
