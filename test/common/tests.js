@@ -532,8 +532,8 @@ module.exports = (sql, driver) => {
         done()
       }).catch(err => {
         assert.strictEqual(err instanceof sql.RequestError, true)
-        assert.strictEqual(err.message, 'An unknown error has occurred. This is likely because the schema of the BulkLoad does not match the schema of the table you are attempting to insert into.')
-        assert.strictEqual(err.code, 'UNKNOWN')
+        assert.strictEqual(err.message, 'Invalid column type from bcp client for colid 1.')
+        assert.strictEqual(err.code, 'EREQUEST')
         assert.strictEqual(err.name, 'RequestError')
         done()
       })
@@ -553,8 +553,8 @@ module.exports = (sql, driver) => {
         done()
       }).catch(err => {
         assert.strictEqual(err instanceof sql.RequestError, true)
-        assert.strictEqual(err.message, 'An unknown error has occurred. This is likely because the schema of the BulkLoad does not match the schema of the table you are attempting to insert into.')
-        assert.strictEqual(err.code, 'UNKNOWN')
+        assert.strictEqual(err.message, 'Invalid column type from bcp client for colid 1.')
+        assert.strictEqual(err.code, 'EREQUEST')
         assert.strictEqual(err.name, 'RequestError')
         done()
       })
