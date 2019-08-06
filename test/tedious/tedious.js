@@ -120,8 +120,11 @@ describe('tedious', () => {
     })
 
     it('bulk load (table)', done => TESTS['bulk load']('bulk_table', done))
+    it('bulk load with varchar-max field (table)', done => TESTS['bulk load with varchar-max field']('bulk_table2', done))
     it('bulk load (temporary table)', done => TESTS['bulk load']('#anohter_bulk_table', done))
     it('bulk converts dates', done => TESTS['bulk converts dates'](done))
+    it('bulk insert with length option as undefined throws', done => TESTS['bulk insert with length option as undefined throws'](done))
+    it('bulk insert with length option as string throws', done => TESTS['bulk insert with length option as string throws'](done))
 
     after(done => sql.close(done))
   })

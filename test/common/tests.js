@@ -469,7 +469,27 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
-    'bulk converts dates' (done) {
+    'bulk load with varchar-max field'(name, done) {
+      let t = new sql.Table(name)
+      t.create = true
+      t.columns.add('a', sql.NVarChar, {
+        length: Infinity
+      })
+
+      t.rows.add('JP1016')
+      let req = new TestRequest()
+      req.bulk(t).then(result => {
+        assert.strictEqual(result.rowsAffected, 1)
+
+        req = new sql.Request()
+        req.batch(`select * from ${name}`).then(result => {
+          assert.strictEqual(result.recordset[0].a, 'JP1016')
+          done()
+        }).catch(done)
+      }).catch(done)
+    },
+
+    'bulk converts dates'(done) {
       let t = new sql.Table('#bulkconverts')
       t.create = true
       t.columns.add('a', sql.Int, { nullable: false })
@@ -494,7 +514,73 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
-    'prepared statement' (done) {
+    'bulk throws errors for string datatypes'(done) {
+      let t = new sql.Table('#bulkconverts')
+      t.create = true
+      t.columns.add('a', sql.Int, {
+        nullable: false
+      })
+      t.columns.add('b', sql.DateTime2, {
+        nullable: true
+      })
+      t.rows.add(1, new Date('2019-03-12T11:06:59.000Z'))
+      t.rows.add(2, '2019-03-12T11:06:59.000Z')
+      t.rows.add(3, 1552388819000)
+
+      let req = new TestRequest()
+      req.bulk(t).then(result => {
+        assert.strictEqual(result.rowsAffected, 3)
+
+        req = new sql.Request()
+        return req.batch(`select * from #bulkconverts`).then(result => {
+          assert.strictEqual(result.recordset.length, 3)
+          for (let i = 0; i < result.recordset.length; i++) {
+            assert.strictEqual(result.recordset[i].b.toISOString(), '2019-03-12T11:06:59.000Z')
+          }
+
+          done()
+        })
+      }).catch(done)
+    },
+
+    'bulk insert with length option as string throws'(done) {
+      const req = new TestRequest()
+      let table = new sql.Table('demo')
+      table.create = true
+      table.columns.add('name', sql.NVarChar, {
+        length: 'max'
+      })
+
+      table.rows.add(table.rows, ['JP1016'])
+      req.bulk(table, err => {
+        assert.strictEqual(err instanceof sql.RequestError, true)
+        assert.strictEqual(err.message, 'An unknown error has occurred. This is likely because the schema of the BulkLoad does not match the schema of the table you are attempting to insert into.')
+        assert.strictEqual(err.code, 'UNKNOWN')
+        assert.strictEqual(err.name, 'RequestError')
+        done()
+      })
+    },
+
+    'bulk insert with length option as undefined throws'(done) {
+      const req = new TestRequest()
+      let table = new sql.Table('demo')
+      table.create = true
+      table.columns.add('name', sql.NVarChar, {
+        length: undefined
+      })
+
+      table.rows.add(table.rows, ['JP1016'])
+      req.bulk(table, err => {
+        assert.strictEqual(err instanceof sql.RequestError, true)
+        assert.strictEqual(err.message, 'An unknown error has occurred. This is likely because the schema of the BulkLoad does not match the schema of the table you are attempting to insert into.')
+        assert.strictEqual(err.code, 'UNKNOWN')
+        assert.strictEqual(err.name, 'RequestError')
+        done()
+      })
+    },
+
+
+    'prepared statement'(done) {
       const ps = new TestPreparedStatement()
       ps.input('num', sql.Int)
       ps.input('num2', sql.Decimal(5, 2))
