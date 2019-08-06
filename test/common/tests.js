@@ -469,7 +469,7 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
-    'bulk load with varchar-max field'(name, done) {
+    'bulk load with varchar-max field' (name, done) {
       let t = new sql.Table(name)
       t.create = true
       t.columns.add('a', sql.NVarChar, {
@@ -489,7 +489,7 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
-    'bulk converts dates'(done) {
+    'bulk converts dates' (done) {
       let t = new sql.Table('#bulkconverts')
       t.create = true
       t.columns.add('a', sql.Int, { nullable: false })
@@ -514,7 +514,7 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
-    'bulk throws errors for string datatypes'(done) {
+    'bulk throws errors for string datatypes' (done) {
       let t = new sql.Table('#bulkconverts')
       t.create = true
       t.columns.add('a', sql.Int, {
@@ -543,7 +543,7 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
-    'bulk insert with length option as string throws'(done) {
+    'bulk insert with length option as string throws' (done) {
       const req = new TestRequest()
       let table = new sql.Table('demo')
       table.create = true
@@ -561,7 +561,7 @@ module.exports = (sql, driver) => {
       })
     },
 
-    'bulk insert with length option as undefined throws'(done) {
+    'bulk insert with length option as undefined throws' (done) {
       const req = new TestRequest()
       let table = new sql.Table('demo')
       table.create = true
@@ -579,8 +579,7 @@ module.exports = (sql, driver) => {
       })
     },
 
-
-    'prepared statement'(done) {
+    'prepared statement' (done) {
       const ps = new TestPreparedStatement()
       ps.input('num', sql.Int)
       ps.input('num2', sql.Decimal(5, 2))
