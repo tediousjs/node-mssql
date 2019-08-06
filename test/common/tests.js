@@ -528,10 +528,9 @@ module.exports = (sql, driver) => {
 
       table.rows.add(table.rows, ['JP1016'])
       req.bulk(table).then(() => {
-        assert.fail('it should throw error while insertion')
+        assert.fail('it should throw error while insertion length with non-supported values')
         done()
       }).catch(err => {
-        assert.strictEqual(err instanceof sql.RequestError, true)
         assert.strictEqual(err.message, 'Invalid column type from bcp client for colid 1.')
         assert.strictEqual(err.code, 'EREQUEST')
         assert.strictEqual(err.name, 'RequestError')
@@ -549,10 +548,9 @@ module.exports = (sql, driver) => {
 
       table.rows.add(table.rows, ['JP1016'])
       req.bulk(table).then(() => {
-        assert.fail('it should throw error while insertion')
+        assert.fail('it should throw error while insertion length with non-supported values')
         done()
       }).catch(err => {
-        assert.strictEqual(err instanceof sql.RequestError, true)
         assert.strictEqual(err.message, 'Invalid column type from bcp client for colid 1.')
         assert.strictEqual(err.code, 'EREQUEST')
         assert.strictEqual(err.name, 'RequestError')
