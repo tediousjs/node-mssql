@@ -1278,6 +1278,7 @@ module.exports = (sql, driver) => {
       req.query('select * from streaming')
       req.on('error', (err) => {
         if (err.code !== 'ECANCEL') {
+          req.cancel()
           done(err)
         }
       })
@@ -1289,19 +1290,17 @@ module.exports = (sql, driver) => {
           // cancel the request in 1 second to give time for any more rows to come in
           setTimeout(() => {
             req.cancel()
+            assert.strictEqual(rows, 10)
+            done()
           }, 1000)
         }
-      })
-
-      req.on('done', function () {
-        assert.strictEqual(rows, 10)
-        done()
       })
     },
 
     'streaming resume' (done) {
       let rows = 0
       let started = false
+      let timeout
 
       const req = new TestRequest()
       req.stream = true
@@ -1309,12 +1308,14 @@ module.exports = (sql, driver) => {
       req.query('select * from streaming')
       req.on('error', (err) => {
         if (err.code !== 'ECANCEL') {
+          req.cancel()
+          clearTimeout(timeout)
           done(err)
         }
       })
 
-      // start the request after 1 seecond
-      setTimeout(() => {
+      // start the request after 1 second
+      timeout = setTimeout(() => {
         assert.ok(!started)
         assert.strictEqual(rows, 0)
         started = true
@@ -1322,16 +1323,14 @@ module.exports = (sql, driver) => {
       }, 1000)
 
       req.on('row', row => {
+        assert.ok(started, 'row event received before stream resumed')
         rows++
         if (rows >= 10) {
           req.pause()
           req.cancel()
+          assert.strictEqual(rows, 10)
+          done()
         }
-      })
-
-      req.on('done', function () {
-        assert.strictEqual(rows, 10)
-        done()
       })
     },
 

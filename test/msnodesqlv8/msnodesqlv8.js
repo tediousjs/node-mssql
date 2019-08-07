@@ -16,6 +16,15 @@ const config = function () {
 let connection1 = null
 let connection2 = null
 
+function itNode10 () {
+  const [major] = process.version.split('.')
+  if (major.substr(1) >= 10) {
+    it(...arguments)
+  } else {
+    it.skip(...arguments)
+  }
+}
+
 describe('msnodesqlv8', function () {
   before(done =>
     sql.connect(config(), function (err) {
@@ -63,14 +72,14 @@ describe('msnodesqlv8', function () {
     it('query with pipe', done => TESTS['query with pipe'](done))
     it('batch', done => TESTS['batch'](done))
     it('batch (stream)', done => TESTS['batch'](done, true))
-    it.skip('create procedure batch (temporarily disabled because of issues introduced in 0.5.3)', done => TESTS['create procedure batch'](done))
+    it('create procedure batch', done => TESTS['create procedure batch'](done))
     it('prepared statement', done => TESTS['prepared statement'](done))
     it('prepared statement with duplicate parameters throws', done => TESTS['prepared statement with duplicate parameters throws'](done))
     it('prepared statement parameters can be replaced', done => TESTS['prepared statement parameters can be replaced'](done))
     it('prepared statement with affected rows', done => TESTS['prepared statement with affected rows'](done))
     it('prepared statement in transaction', done => TESTS['prepared statement in transaction'](done))
     it('transaction with rollback', done => TESTS['transaction with rollback'](done))
-    it.skip('transaction with commit (temporarily disabled because of issues introduced in 0.5.3)', done => TESTS['transaction with commit'](done))
+    it('transaction with commit', done => TESTS['transaction with commit'](done))
     it('transaction throws on bad isolation level', done => TESTS['transaction throws on bad isolation level'](done))
     it('transaction accepts good isolation levels', done => TESTS['transaction accepts good isolation levels'](done))
     it('cancel request', done => TESTS['cancel request'](done))
@@ -194,8 +203,8 @@ describe('msnodesqlv8', function () {
     it.skip('concurrent requests', done => TESTS['concurrent requests'](done))
     it.skip('streaming off', done => TESTS['streaming off'](done))
     it.skip('streaming on', done => TESTS['streaming on'](done))
-    it.skip('streaming pause', done => TESTS['streaming pause'](done))
-    it.skip('streaming resume', done => TESTS['streaming resume'](done))
+    itNode10('streaming pause', done => TESTS['streaming pause'](done))
+    itNode10('streaming resume', done => TESTS['streaming resume'](done))
 
     after(done => sql.close(done))
   })
@@ -211,7 +220,7 @@ describe('msnodesqlv8', function () {
     after(() => sql.close())
   })
 
-  after(done =>
+  after('cleanup', done =>
     sql.connect(config(), function (err) {
       if (err) return done(err)
 

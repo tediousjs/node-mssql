@@ -9,7 +9,7 @@ environment:
 install:
   - ps: Install-Product node $env:nodejs_version
   - npm install
-  - npm install msnodesqlv8@0.6.12
+  - IF "%nodejs_version%" == "10" (npm install msnodesqlv8@0.8.2) ELSE (npm install msnodesqlv8@0.6.12)
 
 cache:
   - node_modules
