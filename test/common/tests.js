@@ -469,11 +469,35 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'bulk load with varchar-max field' (name, done) {
+      let t = new sql.Table(name)
+      t.create = true
+      t.columns.add('a', sql.NVarChar, {
+        length: Infinity
+      })
+
+      t.rows.add('JP1016')
+      let req = new TestRequest()
+      req.bulk(t).then(result => {
+        assert.strictEqual(result.rowsAffected, 1)
+
+        req = new sql.Request()
+        req.batch(`select * from ${name}`).then(result => {
+          assert.strictEqual(result.recordset[0].a, 'JP1016')
+          done()
+        }).catch(done)
+      }).catch(done)
+    },
+
     'bulk converts dates' (done) {
       let t = new sql.Table('#bulkconverts')
       t.create = true
-      t.columns.add('a', sql.Int, { nullable: false })
-      t.columns.add('b', sql.DateTime2, { nullable: true })
+      t.columns.add('a', sql.Int, {
+        nullable: false
+      })
+      t.columns.add('b', sql.DateTime2, {
+        nullable: true
+      })
       t.rows.add(1, new Date('2019-03-12T11:06:59.000Z'))
       t.rows.add(2, '2019-03-12T11:06:59.000Z')
       t.rows.add(3, 1552388819000)
@@ -491,6 +515,66 @@ module.exports = (sql, driver) => {
 
           done()
         })
+      }).catch(done)
+    },
+
+    'bulk insert with length option as string other than max throws' (name, done) {
+      const req = new TestRequest()
+      let table = new sql.Table(name)
+      table.create = true
+      table.columns.add('name', sql.NVarChar, {
+        length: 'random'
+      })
+
+      table.rows.add(table.rows, ['JP1016'])
+      req.bulk(table).then(() => {
+        assert.fail('it should throw error while insertion length with non-supported values')
+        done()
+      }).catch(err => {
+        assert.strictEqual(err.message, "Incorrect syntax near 'random'.")
+        assert.strictEqual(err.code, 'EREQUEST')
+        assert.strictEqual(err.name, 'RequestError')
+        done()
+      })
+    },
+
+    'bulk insert with length option as undefined throws' (name, done) {
+      const req = new TestRequest()
+      let table = new sql.Table(name)
+      table.create = true
+      table.columns.add('name', sql.NVarChar, {
+        length: undefined
+      })
+
+      table.rows.add(table.rows, ['JP1016'])
+      req.bulk(table).then(() => {
+        assert.fail('it should throw error while insertion length with non-supported values')
+        done()
+      }).catch(err => {
+        assert.strictEqual(err.message, 'Invalid column type from bcp client for colid 1.')
+        assert.strictEqual(err.code, 'EREQUEST')
+        assert.strictEqual(err.name, 'RequestError')
+        done()
+      })
+    },
+
+    'bulk insert with length as max' (name, done) {
+      let t = new sql.Table(name)
+      t.create = true
+      t.columns.add('a', sql.NVarChar, {
+        length: 'max'
+      })
+
+      t.rows.add('JP1016')
+      let req = new TestRequest()
+      req.bulk(t).then(result => {
+        assert.strictEqual(result.rowsAffected, 1)
+
+        req = new sql.Request()
+        req.batch(`select * from ${name}`).then(result => {
+          assert.strictEqual(result.recordset[0].a, 'JP1016')
+          done()
+        }).catch(done)
       }).catch(done)
     },
 
