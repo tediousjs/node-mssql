@@ -23,7 +23,7 @@ module.exports = (sql, driver) => {
     },
 
     'array params' (done) {
-      let values = [1, 2, 3]
+      const values = [1, 2, 3]
       sql.query`select 1 as col where 1 in (${values});`.then(result => {
         assert.strictEqual(result.recordset[0].col, 1)
 

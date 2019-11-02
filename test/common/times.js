@@ -117,7 +117,7 @@ module.exports = (sql, driver) => {
     },
 
     'datetime as parameter' (utc, done) {
-      let date = new Date(Date.UTC(2014, 1, 14, 22, 59, 59))
+      const date = new Date(Date.UTC(2014, 1, 14, 22, 59, 59))
 
       const req = new sql.Request()
       req.input('dt1', sql.DateTime, date)
@@ -150,7 +150,7 @@ module.exports = (sql, driver) => {
     },
 
     'datetime2 as parameter' (utc, done) {
-      let date = new Date(2014, 1, 14, 22, 59, 59, 999)
+      const date = new Date(2014, 1, 14, 22, 59, 59, 999)
       date.nanosecondDelta = 0.0009999
 
       const req = new sql.Request()
@@ -226,7 +226,7 @@ module.exports = (sql, driver) => {
     },
 
     'smalldatetime as parameter' (utc, done) {
-      let date = new Date(2014, 1, 14, 22, 59)
+      const date = new Date(2014, 1, 14, 22, 59)
 
       const req = new sql.Request()
       req.input('dt1', sql.SmallDateTime, date)

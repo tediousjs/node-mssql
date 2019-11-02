@@ -8,7 +8,7 @@ const TESTS = require('../common/tests.js')(sql, 'msnodesqlv8')
 const TIMES = require('../common/times.js')(sql, 'msnodesqlv8')
 
 const config = function () {
-  let cfg = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
+  const cfg = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
   cfg.driver = 'msnodesqlv8'
   return cfg
 }
@@ -46,7 +46,7 @@ describe('msnodesqlv8', function () {
 
   describe('basic test suite', function () {
     before(function (done) {
-      let cfg = config()
+      const cfg = config()
       sql.connect(cfg, done)
     })
 
@@ -70,8 +70,8 @@ describe('msnodesqlv8', function () {
     it.skip('query with multiple errors (not supported by msnodesqlv8)', done => TESTS['query with multiple errors'](done))
     it.skip('query with raiseerror (not supported by msnodesqlv8)', done => TESTS['query with raiseerror'](done))
     it('query with pipe', done => TESTS['query with pipe'](done))
-    it('batch', done => TESTS['batch'](done))
-    it('batch (stream)', done => TESTS['batch'](done, true))
+    it('batch', done => TESTS.batch(done))
+    it('batch (stream)', done => TESTS.batch(done, true))
     it('create procedure batch', done => TESTS['create procedure batch'](done))
     it('prepared statement', done => TESTS['prepared statement'](done))
     it('prepared statement with duplicate parameters throws', done => TESTS['prepared statement with duplicate parameters throws'](done))
@@ -97,7 +97,7 @@ describe('msnodesqlv8', function () {
     before(function (done) {
       if (process.env.MSSQL_VERSION !== '2016') return this.skip()
 
-      let cfg = config()
+      const cfg = config()
       cfg.parseJSON = true
       sql.connect(cfg, done)
     })
@@ -113,7 +113,7 @@ describe('msnodesqlv8', function () {
       sql.connect(config(), function (err) {
         if (err) return done(err)
 
-        let req = new sql.Request()
+        const req = new sql.Request()
         req.query('delete from bulk_table', done)
       })
     })
@@ -130,17 +130,17 @@ describe('msnodesqlv8', function () {
       sql.connect(config(), done)
     })
 
-    it('time', done => TIMES['time'](true, done))
+    it('time', done => TIMES.time(true, done))
     it('time as parameter', done => TIMES['time as parameter'](true, done))
-    it('date', done => TIMES['date'](true, done))
+    it('date', done => TIMES.date(true, done))
     it('date as parameter', done => TIMES['date as parameter'](true, done))
-    it('datetime', done => TIMES['datetime'](true, done))
+    it('datetime', done => TIMES.datetime(true, done))
     it('datetime as parameter', done => TIMES['datetime as parameter'](true, done))
-    it('datetime2', done => TIMES['datetime2'](true, done))
+    it('datetime2', done => TIMES.datetime2(true, done))
     it('datetime2 as parameter', done => TIMES['datetime2 as parameter'](true, done))
-    it('datetimeoffset', done => TIMES['datetimeoffset'](true, done))// https://github.com/WindowsAzure/node-sqlserver/issues/160
+    it('datetimeoffset', done => TIMES.datetimeoffset(true, done))// https://github.com/WindowsAzure/node-sqlserver/issues/160
     it('datetimeoffset as parameter', done => TIMES['datetimeoffset as parameter'](true, done)) // https://github.com/WindowsAzure/node-sqlserver/issues/160
-    it('smalldatetime', done => TIMES['smalldatetime'](true, done))
+    it('smalldatetime', done => TIMES.smalldatetime(true, done))
     it('smalldatetime as parameter', done => TIMES['smalldatetime as parameter'](true, done))
 
     after(() => sql.close())
@@ -167,14 +167,14 @@ describe('msnodesqlv8', function () {
 
   describe('msnodesqlv8 connection errors', function () {
     it('login failed', done => TESTS['login failed'](done, /Login failed for user '(.*)'\./))
-    it.skip('timeout (not supported by msnodesqlv8)', done => TESTS['timeout'](done))
+    it.skip('timeout (not supported by msnodesqlv8)', done => TESTS.timeout(done))
     it.skip('network error (not supported by msnodesqlv8)', done => TESTS['network error'](done))
   })
 
   describe('msnodesqlv8 connection pooling', function () {
     before(done => {
       connection1 = new sql.ConnectionPool(config(), function () {
-        let cfg = config()
+        const cfg = config()
         cfg.pool = { max: 1 }
         connection2 = new sql.ConnectionPool(cfg, done)
       })
@@ -182,7 +182,7 @@ describe('msnodesqlv8', function () {
 
     it('max 10', done => TESTS['max 10'](done, connection1))
     it('max 1', done => TESTS['max 1'](done, connection2))
-    it.skip('interruption (not supported by msnodesqlv8)', done => TESTS['interruption'](done, connection1, connection2))
+    it.skip('interruption (not supported by msnodesqlv8)', done => TESTS.interruption(done, connection1, connection2))
 
     after(function () {
       connection1.close()
@@ -193,7 +193,7 @@ describe('msnodesqlv8', function () {
   describe('msnodesqlv8 stress', function () {
     this.timeout(600000)
     before((done) => {
-      let cfg = config()
+      const cfg = config()
       cfg.options.abortTransactionOnError = true
       cfg.requestTimeout = 60000
       sql.connect(cfg, done)
@@ -224,7 +224,7 @@ describe('msnodesqlv8', function () {
     sql.connect(config(), function (err) {
       if (err) return done(err)
 
-      let req = new sql.Request()
+      const req = new sql.Request()
       req.query(require('fs').readFileSync(`${__dirname}/../cleanup.sql`, 'utf8'), function (err) {
         if (err) return done(err)
 

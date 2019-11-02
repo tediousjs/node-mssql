@@ -444,7 +444,7 @@ module.exports = (sql, driver) => {
     },
 
     'bulk load' (name, done) {
-      let t = new sql.Table(name)
+      const t = new sql.Table(name)
       t.create = true
       t.columns.add('a', sql.Int, { nullable: false })
       t.columns.add('b', sql.VarChar(50), { nullable: true })
@@ -470,7 +470,7 @@ module.exports = (sql, driver) => {
     },
 
     'bulk load with varchar-max field' (name, done) {
-      let t = new sql.Table(name)
+      const t = new sql.Table(name)
       t.create = true
       t.columns.add('a', sql.NVarChar, {
         length: Infinity
@@ -490,7 +490,7 @@ module.exports = (sql, driver) => {
     },
 
     'bulk converts dates' (done) {
-      let t = new sql.Table('#bulkconverts')
+      const t = new sql.Table('#bulkconverts')
       t.create = true
       t.columns.add('a', sql.Int, {
         nullable: false
@@ -507,7 +507,7 @@ module.exports = (sql, driver) => {
         assert.strictEqual(result.rowsAffected, 3)
 
         req = new sql.Request()
-        return req.batch(`select * from #bulkconverts`).then(result => {
+        return req.batch('select * from #bulkconverts').then(result => {
           assert.strictEqual(result.recordset.length, 3)
           for (let i = 0; i < result.recordset.length; i++) {
             assert.strictEqual(result.recordset[i].b.toISOString(), '2019-03-12T11:06:59.000Z')
@@ -520,7 +520,7 @@ module.exports = (sql, driver) => {
 
     'bulk insert with length option as string other than max throws' (name, done) {
       const req = new TestRequest()
-      let table = new sql.Table(name)
+      const table = new sql.Table(name)
       table.create = true
       table.columns.add('name', sql.NVarChar, {
         length: 'random'
@@ -540,7 +540,7 @@ module.exports = (sql, driver) => {
 
     'bulk insert with length option as undefined throws' (name, done) {
       const req = new TestRequest()
-      let table = new sql.Table(name)
+      const table = new sql.Table(name)
       table.create = true
       table.columns.add('name', sql.NVarChar, {
         length: undefined
@@ -559,7 +559,7 @@ module.exports = (sql, driver) => {
     },
 
     'bulk insert with length as max' (name, done) {
-      let t = new sql.Table(name)
+      const t = new sql.Table(name)
       t.create = true
       t.columns.add('a', sql.NVarChar, {
         length: 'max'
@@ -630,7 +630,7 @@ module.exports = (sql, driver) => {
     },
 
     'prepared statement with affected rows' (done) {
-      let ps = new TestPreparedStatement()
+      const ps = new TestPreparedStatement()
       ps.input('data', sql.VarChar(50))
       ps.prepare('insert into prepstm_test values (@data);insert into prepstm_test values (@data);delete from prepstm_test;').then(result => {
         ps.execute({ data: 'abc' }).then(result => {
@@ -642,9 +642,9 @@ module.exports = (sql, driver) => {
     },
 
     'prepared statement in transaction' (done) {
-      let tran = new TestTransaction()
+      const tran = new TestTransaction()
       tran.begin().then(() => {
-        let ps = new TestPreparedStatement(tran)
+        const ps = new TestPreparedStatement(tran)
         ps.input('num', sql.Int)
         ps.prepare('select @num as number').then(() => {
           assert.ok(tran._acquiredConnection === ps._acquiredConnection)
@@ -714,7 +714,7 @@ module.exports = (sql, driver) => {
       var tcommit = false
       var trollback = false
 
-      let tran = new TestTransaction()
+      const tran = new TestTransaction()
       tran.begin().then(() => {
         let req = tran.request()
         req.query('insert into tran_test values (\'test data\')').then(result => {
@@ -753,7 +753,7 @@ module.exports = (sql, driver) => {
     },
 
     'transaction throws on bad isolation level' (done) {
-      let tran = new TestTransaction()
+      const tran = new TestTransaction()
       tran.begin('bad isolation level').then(() => {
         assert.fail('promise should not have resolved')
         done()
@@ -766,7 +766,7 @@ module.exports = (sql, driver) => {
 
     'transaction accepts good isolation levels' (done) {
       const promises = Object.keys(ISOLATION_LEVELS).map(level => {
-        let tran = new TestTransaction()
+        const tran = new TestTransaction()
         return tran.begin(ISOLATION_LEVELS[level]).then(() => {
           return tran.request().query('SELECT 1 AS num')
         })
@@ -777,11 +777,11 @@ module.exports = (sql, driver) => {
     },
 
     'transaction with error' (done) {
-      let tran = new TestTransaction()
+      const tran = new TestTransaction()
       tran.begin().then(() => {
         let rollbackHandled = false
 
-        let req = tran.request()
+        const req = tran.request()
         req.query('insert into tran_test values (\'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasd\')').catch(err => {
           assert.ok(err)
           assert.strictEqual(err.message, 'String or binary data would be truncated.')
@@ -805,9 +805,9 @@ module.exports = (sql, driver) => {
     },
 
     'transaction with synchronous error' (done) {
-      let tran = new TestTransaction()
+      const tran = new TestTransaction()
       tran.begin().then(() => {
-        let req = tran.request()
+        const req = tran.request()
         req.input('date', sql.TinyInt, 1561651515615)
 
         req.execute('someStoreProc').catch(() => {
@@ -901,8 +901,8 @@ module.exports = (sql, driver) => {
     'json parser' (done) {
       const req = new TestRequest()
       req.query("select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for json path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for json path;with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for json auto;").then(result => {
-        assert.deepStrictEqual(result.recordsets[0][0], [{ 'a': { 'b': { 'c': 1, 'd': 2 }, 'x': 3, 'y': 4 } }])
-        assert.deepStrictEqual(result.recordsets[1][0], [{ 'a': { 'b': { 'c': 5, 'd': 6 }, 'x': 7, 'y': 8 } }])
+        assert.deepStrictEqual(result.recordsets[0][0], [{ a: { b: { c: 1, d: 2 }, x: 3, y: 4 } }])
+        assert.deepStrictEqual(result.recordsets[1][0], [{ a: { b: { c: 5, d: 6 }, x: 7, y: 8 } }])
         assert.strictEqual(result.recordsets[2][0].length, 1000)
 
         done()
@@ -1114,12 +1114,12 @@ module.exports = (sql, driver) => {
 
     'interruption' (done, connection1, connection2) {
       let i = 0
-      let go = function () {
+      const go = function () {
         if (i++ >= 1) {
           return done(new Error('Stack overflow.'))
         }
 
-        let r3 = new sql.Request(connection2)
+        const r3 = new sql.Request(connection2)
         r3.query('select 1', function (err, result) {
           if (err) return done(err)
 
@@ -1132,11 +1132,11 @@ module.exports = (sql, driver) => {
         })
       }
 
-      let r1 = new sql.Request(connection2)
+      const r1 = new sql.Request(connection2)
       r1.query('select @@spid as session', function (err, result) {
         if (err) return done(err)
 
-        let r2 = new sql.Request(connection1)
+        const r2 = new sql.Request(connection1)
         r2.query(`kill ${result.recordset[0].session}`, function (err, result) {
           if (err) return done(err)
 
@@ -1149,13 +1149,13 @@ module.exports = (sql, driver) => {
       console.log('')
 
       let conns = []
-      let peak = 500
+      const peak = 500
       let curr = 0
 
       let mem = process.memoryUsage()
       console.log('rss: %s, heapTotal: %s, heapUsed: %s', mem.rss / 1024 / 1024, mem.heapTotal / 1024 / 1024, mem.heapUsed / 1024 / 1024)
 
-      let connected = function (err) {
+      const connected = function (err) {
         if (err) {
           console.error(err.stack)
           process.exit()
@@ -1197,23 +1197,23 @@ module.exports = (sql, driver) => {
     'concurrent requests' (done, driver) {
       console.log('')
 
-      let config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
+      const config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
       config.driver = driver
       config.pool = { min: 0, max: 50 }
 
-      let conn = new sql.ConnectionPool(config)
+      const conn = new sql.ConnectionPool(config)
 
       conn.connect(function (err) {
         if (err) { return done(err) }
 
-        let requests = []
-        let peak = 10000
+        const requests = []
+        const peak = 10000
         let curr = 0
 
         let mem = process.memoryUsage()
         console.log('rss: %s, heapTotal: %s, heapUsed: %s', mem.rss / 1024 / 1024, mem.heapTotal / 1024 / 1024, mem.heapUsed / 1024 / 1024)
 
-        let completed = function (err, recordset) {
+        const completed = function (err, recordset) {
           if (err) {
             console.error(err.stack)
             process.exit()
@@ -1300,7 +1300,6 @@ module.exports = (sql, driver) => {
     'streaming resume' (done) {
       let rows = 0
       let started = false
-      let timeout
 
       const req = new TestRequest()
       req.stream = true
@@ -1315,7 +1314,7 @@ module.exports = (sql, driver) => {
       })
 
       // start the request after 1 second
-      timeout = setTimeout(() => {
+      const timeout = setTimeout(() => {
         assert.ok(!started)
         assert.strictEqual(rows, 0)
         started = true
@@ -1335,7 +1334,7 @@ module.exports = (sql, driver) => {
     },
 
     'new Table' (done) {
-      let tvp = new MSSQLTestType()
+      const tvp = new MSSQLTestType()
       tvp.rows.add('asdf', 15)
 
       const req = new TestRequest()
@@ -1352,7 +1351,7 @@ module.exports = (sql, driver) => {
     'Recordset.toTable()' (done) {
       const req = new TestRequest()
       req.query('select \'asdf\' as a, 15 as b').then(result => {
-        let tvp = result.recordset.toTable('dbo.MSSQLTestType')
+        const tvp = result.recordset.toTable('dbo.MSSQLTestType')
 
         const req2 = new TestRequest()
         req2.input('tvp', tvp)
@@ -1369,9 +1368,9 @@ module.exports = (sql, driver) => {
 }
 
 function __range__ (left, right, inclusive) {
-  let range = []
-  let ascending = left < right
-  let end = !inclusive ? right : ascending ? right + 1 : right - 1
+  const range = []
+  const ascending = left < right
+  const end = !inclusive ? right : ascending ? right + 1 : right - 1
   for (let i = left; ascending ? i < end : i > end; ascending ? i++ : i--) {
     range.push(i)
   }
