@@ -204,6 +204,7 @@ describe('msnodesqlv8', function () {
     it.skip('streaming off', done => TESTS['streaming off'](done))
     it.skip('streaming on', done => TESTS['streaming on'](done))
     itNode10('streaming pause', done => TESTS['streaming pause'](done))
+    itNode10('a cancelled stream emits done event', done => TESTS['a cancelled stream emits done event'](done))
     itNode10('streaming resume', done => TESTS['streaming resume'](done))
 
     after(done => sql.close(done))

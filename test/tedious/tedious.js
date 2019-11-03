@@ -245,6 +245,7 @@ describe('tedious', () => {
     it('streaming off', done => TESTS['streaming off'](done))
     it('streaming on', done => TESTS['streaming on'](done))
     it('streaming pause', done => TESTS['streaming pause'](done))
+    it('a cancelled stream emits done event', done => TESTS['a cancelled stream emits done event'](done))
     it('streaming resume', done => TESTS['streaming resume'](done))
 
     after(done => sql.close(done))
