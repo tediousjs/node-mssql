@@ -87,7 +87,6 @@ describe('msnodesqlv8', function () {
     it('healthy connection goes bad', done => TESTS['healthy connection goes bad'](config(), done))
     it('request timeout', done => TESTS['request timeout'](done))
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))
-    it.skip('chunked json support (requires SQL Server 2016)', done => TESTS['chunked json support'](done))
     it('chunked xml support', done => TESTS['chunked xml support'](done))
 
     after(() => sql.close())
@@ -95,15 +94,18 @@ describe('msnodesqlv8', function () {
 
   describe('json support (requires SQL Server 2016)', () => {
     before(function (done) {
-      if (process.env.MSSQL_VERSION !== '2016') return this.skip()
-
-      const cfg = config()
-      cfg.parseJSON = true
-      sql.connect(cfg, done)
+      if (process.env.MSSQL_VERSION === '2016') {
+        const cfg = config()
+        cfg.parseJSON = true
+        sql.connect(cfg, done)
+      } else {
+        this.skip()
+      }
     })
 
     it('parser', done => TESTS['json parser'](done))
     it('empty json', done => TESTS['empty json'](done))
+    it('chunked json support', done => TESTS['chunked json support'](done))
 
     after(done => sql.close(done))
   })

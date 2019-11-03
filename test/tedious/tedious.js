@@ -88,7 +88,6 @@ describe('tedious', () => {
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))
     it('type validation', done => TESTS['type validation']('query', done))
     it('type validation (batch)', done => TESTS['type validation']('batch', done))
-    it.skip('chunked json support (requires SQL Server 2016)', done => TESTS['chunked json support'](done))
     it('chunked xml support', done => TESTS['chunked xml support'](done))
 
     after(done => sql.close(done))
@@ -96,15 +95,18 @@ describe('tedious', () => {
 
   describe('json support (requires SQL Server 2016)', () => {
     before(function (done) {
-      if (process.env.MSSQL_VERSION !== '2016') return this.skip()
-
-      const cfg = config()
-      cfg.parseJSON = true
-      sql.connect(cfg, done)
+      if (process.env.MSSQL_VERSION === '2016') {
+        const cfg = config()
+        cfg.parseJSON = true
+        sql.connect(cfg, done)
+      } else {
+        this.skip()
+      }
     })
 
     it('parser', done => TESTS['json parser'](done))
     it('empty json', done => TESTS['empty json'](done))
+    it('chunked json support', done => TESTS['chunked json support'](done))
 
     after(done => sql.close(done))
   })
