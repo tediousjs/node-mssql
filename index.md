@@ -220,7 +220,9 @@ sql.on('error', err => {
 })
 ```
 
-All values are automatically sanitized against sql injection.
+All values are automatically sanitized against sql injection. 
+This is because it is rendered as prepared statement, and thus all limitations imposed in MS SQL on parameters apply.
+e.g. Column names cannot be passed/set in statements using variables.
 
 ### Callbacks
 
