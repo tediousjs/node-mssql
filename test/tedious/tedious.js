@@ -14,7 +14,7 @@ if (parseInt(process.version.match(/^v(\d+)\./)[1]) > 0) {
 }
 
 const config = function () {
-  let cfg = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
+  const cfg = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
   cfg.driver = 'tedious'
   return cfg
 }
@@ -43,7 +43,7 @@ describe('tedious', () => {
 
   describe('basic test suite', () => {
     before((done) => {
-      let cfg = config()
+      const cfg = config()
       cfg.options.abortTransactionOnError = true
       sql.connect(cfg, done)
     })
@@ -68,7 +68,7 @@ describe('tedious', () => {
     it('query with multiple errors', done => TESTS['query with multiple errors'](done))
     it('query with raiseerror', done => TESTS['query with raiseerror'](done))
     it('query with pipe', done => TESTS['query with pipe'](done))
-    it('batch', done => TESTS['batch'](done))
+    it('batch', done => TESTS.batch(done))
     it('create procedure batch', done => TESTS['create procedure batch'](done))
     it('prepared statement', done => TESTS['prepared statement'](done))
     it('prepared statement with duplicate parameters throws', done => TESTS['prepared statement with duplicate parameters throws'](done))
@@ -88,7 +88,6 @@ describe('tedious', () => {
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))
     it('type validation', done => TESTS['type validation']('query', done))
     it('type validation (batch)', done => TESTS['type validation']('batch', done))
-    it.skip('chunked json support (requires SQL Server 2016)', done => TESTS['chunked json support'](done))
     it('chunked xml support', done => TESTS['chunked xml support'](done))
 
     after(done => sql.close(done))
@@ -96,15 +95,18 @@ describe('tedious', () => {
 
   describe('json support (requires SQL Server 2016)', () => {
     before(function (done) {
-      if (process.env.MSSQL_VERSION !== '2016') return this.skip()
-
-      let cfg = config()
-      cfg.parseJSON = true
-      sql.connect(cfg, done)
+      if (process.env.MSSQL_VERSION === '2016') {
+        const cfg = config()
+        cfg.parseJSON = true
+        sql.connect(cfg, done)
+      } else {
+        this.skip()
+      }
     })
 
     it('parser', done => TESTS['json parser'](done))
     it('empty json', done => TESTS['empty json'](done))
+    it('chunked json support', done => TESTS['chunked json support'](done))
 
     after(done => sql.close(done))
   })
@@ -136,17 +138,17 @@ describe('tedious', () => {
       sql.connect(cfg, done)
     })
 
-    it('time', done => TIMES['time'](false, done))
+    it('time', done => TIMES.time(false, done))
     it('time as parameter', done => TIMES['time as parameter'](false, done))
-    it('date', done => TIMES['date'](false, done))
+    it('date', done => TIMES.date(false, done))
     it('date as parameter', done => TIMES['date as parameter'](false, done))
-    it('datetime', done => TIMES['datetime'](false, done))
+    it('datetime', done => TIMES.datetime(false, done))
     it('datetime as parameter', done => TIMES['datetime as parameter'](false, done))
-    it('datetime2', done => TIMES['datetime2'](false, done))
+    it('datetime2', done => TIMES.datetime2(false, done))
     it('datetime2 as parameter', done => TIMES['datetime2 as parameter'](false, done))
-    it('datetimeoffset', done => TIMES['datetimeoffset'](false, done))
+    it('datetimeoffset', done => TIMES.datetimeoffset(false, done))
     it('datetimeoffset as parameter', done => TIMES['datetimeoffset as parameter'](false, done))
-    it('smalldatetime', done => TIMES['smalldatetime'](false, done))
+    it('smalldatetime', done => TIMES.smalldatetime(false, done))
     it('smalldatetime as parameter', done => TIMES['smalldatetime as parameter'](false, done))
 
     return after(done => sql.close(done))
@@ -159,17 +161,17 @@ describe('tedious', () => {
       sql.connect(cfg, done)
     })
 
-    it('time', done => TIMES['time'](true, done))
+    it('time', done => TIMES.time(true, done))
     it('time as parameter', done => TIMES['time as parameter'](true, done))
-    it('date', done => TIMES['date'](true, done))
+    it('date', done => TIMES.date(true, done))
     it('date as parameter', done => TIMES['date as parameter'](true, done))
-    it('datetime', done => TIMES['datetime'](true, done))
+    it('datetime', done => TIMES.datetime(true, done))
     it('datetime as parameter', done => TIMES['datetime as parameter'](true, done))
-    it('datetime2', done => TIMES['datetime2'](true, done))
+    it('datetime2', done => TIMES.datetime2(true, done))
     it('datetime2 as parameter', done => TIMES['datetime2 as parameter'](true, done))
-    it('datetimeoffset', done => TIMES['datetimeoffset'](true, done))
+    it('datetimeoffset', done => TIMES.datetimeoffset(true, done))
     it('datetimeoffset as parameter', done => TIMES['datetimeoffset as parameter'](true, done))
-    it('smalldatetime', done => TIMES['smalldatetime'](true, done))
+    it('smalldatetime', done => TIMES.smalldatetime(true, done))
     it('smalldatetime as parameter', done => TIMES['smalldatetime as parameter'](true, done))
 
     after(done => sql.close(done))
@@ -180,8 +182,8 @@ describe('tedious', () => {
       sql.connect(config(), done)
     })
 
-    it('query', done => TEMPLATE_STRING['query'](done))
-    it('batch', done => TEMPLATE_STRING['batch'](done))
+    it('query', done => TEMPLATE_STRING.query(done))
+    it('batch', done => TEMPLATE_STRING.batch(done))
     it('array params', done => TEMPLATE_STRING['array params'](done))
 
     after(done => sql.close(done))
@@ -208,14 +210,14 @@ describe('tedious', () => {
 
   describe('connection errors', function () {
     it('login failed', done => TESTS['login failed'](done, /Login failed for user '(.*)'/))
-    it('timeout', done => TESTS['timeout'](done, /Failed to connect to 10.0.0.1:1433 in 1000ms/))
+    it('timeout', done => TESTS.timeout(done, /Failed to connect to 10.0.0.1:1433 in 1000ms/))
     it('network error', done => TESTS['network error'](done, /Failed to connect to \.\.\.:1433 - getaddrinfo ENOTFOUND/))
   })
 
   describe('connection pooling', () => {
     before(done => {
       connection1 = new sql.ConnectionPool(config(), () => {
-        let cfg = config()
+        const cfg = config()
         cfg.pool = { max: 1 }
         connection2 = new sql.ConnectionPool(cfg, done)
       })
@@ -223,7 +225,7 @@ describe('tedious', () => {
 
     it('max 10', done => TESTS['max 10'](done, connection1))
     it('max 1', done => TESTS['max 1'](done, connection2))
-    it('interruption', done => TESTS['interruption'](done, connection1, connection2))
+    it('interruption', done => TESTS.interruption(done, connection1, connection2))
 
     after(() => {
       connection1.close()
@@ -234,7 +236,7 @@ describe('tedious', () => {
   describe('Stress', function stress () {
     this.timeout(600000)
     before((done) => {
-      let cfg = config()
+      const cfg = config()
       cfg.options.abortTransactionOnError = true
       cfg.requestTimeout = 60000
       sql.connect(cfg, done)
@@ -245,6 +247,7 @@ describe('tedious', () => {
     it('streaming off', done => TESTS['streaming off'](done))
     it('streaming on', done => TESTS['streaming on'](done))
     it('streaming pause', done => TESTS['streaming pause'](done))
+    it('a cancelled stream emits done event', done => TESTS['a cancelled stream emits done event'](done))
     it('streaming resume', done => TESTS['streaming resume'](done))
 
     after(done => sql.close(done))
@@ -268,10 +271,10 @@ describe('tedious', () => {
     }
 
     it.skip('query (todo)', function (done) {
-      let tvp = new MSSQLTestType()
+      const tvp = new MSSQLTestType()
       tvp.rows.add('asdf', 15)
 
-      let r = new sql.Request()
+      const r = new sql.Request()
       r.input('tvp', tvp)
       r.verbose = true
       r.query('select * from @tvp', function (err, result) {
@@ -286,10 +289,10 @@ describe('tedious', () => {
     })
 
     it.skip('prepared statement (todo)', function (done) {
-      let tvp = new MSSQLTestType()
+      const tvp = new MSSQLTestType()
       tvp.rows.add('asdf', 15)
 
-      let ps = new sql.PreparedStatement()
+      const ps = new sql.PreparedStatement()
       ps.input('tvp', sql.TVP('MSSQLTestType'))
       ps.prepare('select * from @tvp', function (err) {
         if (err) { return done(err) }
@@ -313,7 +316,7 @@ describe('tedious', () => {
     sql.connect(config(), function (err) {
       if (err) return done(err)
 
-      let req = new sql.Request()
+      const req = new sql.Request()
       req.query(require('fs').readFileSync(`${__dirname}/../cleanup.sql`, 'utf8'), function (err) {
         if (err) return done(err)
 

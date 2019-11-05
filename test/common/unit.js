@@ -8,7 +8,7 @@ const cs = require('../../lib/connectionstring')
 
 describe('Connection String', () => {
   it('Connection String #1', done => {
-    let cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd')
+    const cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd')
 
     assert.strictEqual(cfg.user, 'testuser')
     assert.strictEqual(cfg.password, 'testpwd')
@@ -20,7 +20,7 @@ describe('Connection String', () => {
   })
 
   it('Connection String #2', done => {
-    let cfg = cs.resolve('Server=tcp:192.168.0.1,1433;Database=testdb;User Id=testuser;Password=testpwd')
+    const cfg = cs.resolve('Server=tcp:192.168.0.1,1433;Database=testdb;User Id=testuser;Password=testpwd')
 
     assert.strictEqual(cfg.user, 'testuser')
     assert.strictEqual(cfg.password, 'testpwd')
@@ -32,7 +32,7 @@ describe('Connection String', () => {
   })
 
   it('Connection String #3', done => {
-    let cfg = cs.resolve("Server=192.168.0.1;Database=testdb;User Id={testuser};Password='t;estpwd'", 'msnodesqlv8')
+    const cfg = cs.resolve("Server=192.168.0.1;Database=testdb;User Id={testuser};Password='t;estpwd'", 'msnodesqlv8')
 
     assert.strictEqual(cfg.connectionString, "Server=192.168.0.1;Database=testdb;User Id={testuser};Password='t;estpwd';Driver={SQL Server Native Client 11.0}")
 
@@ -40,7 +40,7 @@ describe('Connection String', () => {
   })
 
   it('Connection String #4', done => {
-    let cfg = cs.resolve('mssql://username:password@localhost:1433/database?encrypt=true&stream=true&domain=mydomain&requestTimeout=30000')
+    const cfg = cs.resolve('mssql://username:password@localhost:1433/database?encrypt=true&stream=true&domain=mydomain&requestTimeout=30000')
 
     assert.strictEqual(cfg.user, 'username')
     assert.strictEqual(cfg.password, 'password')
@@ -55,7 +55,7 @@ describe('Connection String', () => {
   })
 
   it('Connection String #5', done => {
-    let cfg = cs.resolve('mssql://username:password@localhost/INSTANCE/database?encrypt=true&stream=true&domain=mydomain', 'msnodesqlv8')
+    const cfg = cs.resolve('mssql://username:password@localhost/INSTANCE/database?encrypt=true&stream=true&domain=mydomain', 'msnodesqlv8')
 
     assert.strictEqual(cfg.connectionString, 'server={localhost\\INSTANCE};uid={mydomain\\username};pwd={password};database={database};encrypt={true};driver={SQL Server Native Client 11.0}')
 
@@ -63,7 +63,7 @@ describe('Connection String', () => {
   })
 
   it('Connection String #6 (multiSubnetFailover)', done => {
-    let cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd;MultiSubnetFailover=True')
+    const cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd;MultiSubnetFailover=True')
 
     assert.strictEqual(cfg.options.multiSubnetFailover, true)
     assert.strictEqual(cfg.user, 'testuser')
@@ -76,7 +76,7 @@ describe('Connection String', () => {
   })
 
   it('Connection String #7 (connection timeout)', done => {
-    let cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd;Connection Timeout=30')
+    const cfg = cs.resolve('Server=192.168.0.1;Database=testdb;User Id=testuser;Password=testpwd;Connection Timeout=30')
     assert.strictEqual(cfg.user, 'testuser')
     assert.strictEqual(cfg.password, 'testpwd')
     assert.strictEqual(cfg.database, 'testdb')
@@ -88,7 +88,7 @@ describe('Connection String', () => {
   })
 
   it('Connection String #8 (url encoding)', done => {
-    let cfg = cs.resolve('mssql://username:password%23@localhost:1433/database?encrypt=true')
+    const cfg = cs.resolve('mssql://username:password%23@localhost:1433/database?encrypt=true')
     assert.strictEqual(cfg.user, 'username')
     assert.strictEqual(cfg.password, 'password#')
     assert.strictEqual(cfg.database, 'database')
@@ -169,8 +169,8 @@ describe('Unit', () => {
     assert.strictEqual(t.path, '[#temporary]')
     assert.strictEqual(t.temporary, true)
 
-    let rs = [
-      { 'a': { 'b': { 'c': 1, 'd': 2 }, 'x': 3, 'y': 4 } }
+    const rs = [
+      { a: { b: { c: 1, d: 2 }, x: 3, y: 4 } }
     ]
     rs.columns = {
       'JSON_F52E2B61-18A1-11d1-B105-00805F49916B': {

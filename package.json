@@ -28,11 +28,11 @@
   "dependencies": {
     "debug": "^4",
     "tarn": "^1.1.5",
-    "tedious": "^6.3.0"
+    "tedious": "^6.6.2"
   },
   "devDependencies": {
-    "mocha": "^6.2.0",
-    "standard": "^12"
+    "mocha": "^6.2.2",
+    "standard": "^14"
   },
   "engines": {
     "node": ">=6"
