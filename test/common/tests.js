@@ -827,6 +827,17 @@ module.exports = (sql, driver) => {
       req.cancel()
     },
 
+    'repeat calls to connect resolve' (config, done) {
+      const pool = new sql.ConnectionPool(config)
+      Promise.all([pool.connect(), pool.connect()])
+        .then(([pool1, pool2]) => {
+          assert.strictEqual(pool, pool1)
+          assert.strictEqual(pool, pool2)
+          done()
+        })
+        .catch(done)
+    },
+
     'connection healthy works' (config, done) {
       const pool = new sql.ConnectionPool(config)
       assert.ok(!pool.healthy)
@@ -836,7 +847,7 @@ module.exports = (sql, driver) => {
       }).then(() => {
         assert.ok(!pool.healthy)
         done()
-      })
+      }).catch(done)
     },
 
     'healthy connection goes bad' (config, done) {
