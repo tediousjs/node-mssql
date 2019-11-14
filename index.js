@@ -1,1 +1,1 @@
-module.exports = require('./lib/tedious.js')
+module.exports = require('./lib/tedious')
