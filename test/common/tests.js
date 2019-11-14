@@ -769,6 +769,10 @@ module.exports = (sql, driver) => {
         const tran = new TestTransaction()
         return tran.begin(ISOLATION_LEVELS[level]).then(() => {
           return tran.request().query('SELECT 1 AS num')
+            .catch(err => {
+              return tran.abort().then(() => Promise.reject(err))
+            })
+            .then(() => tran.commit())
         })
       })
       Promise.all(promises).then(() => done()).catch(err => {
@@ -864,16 +868,24 @@ module.exports = (sql, driver) => {
         pool._poolCreate = () => {
           return Promise.reject(new sql.ConnectionError('Synthetic error'))
         }
-        return pool.acquire().then(() => {
-          assert.fail('acquire resolved unexpectedly')
+        return pool.acquire().then((conn) => {
+          try {
+            assert.fail('acquire resolved unexpectedly')
+          } finally {
+            pool.release(conn)
+          }
         }).catch(() => {
           assert.ok(pool.pool.numUsed() + pool.pool.numFree() <= 0)
           assert.ok(!pool.healthy)
         })
       }).then(() => {
         pool._poolCreate = ogCreate
-        return pool.acquire().then(() => {
-          assert.ok(pool.healthy)
+        return pool.acquire().then((conn) => {
+          try {
+            assert.ok(pool.healthy)
+          } finally {
+            pool.release(conn)
+          }
         })
       }).then(() => {
         return pool.close()
