@@ -1361,6 +1361,32 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'a cancelled paused stream emits done event' (done) {
+      let rows = 0
+
+      const req = new TestRequest()
+      req.stream = true
+      req.query('select * from streaming')
+      req.on('error', (err) => {
+        if (err.code !== 'ECANCEL') {
+          req.cancel()
+          done(err)
+        }
+      })
+
+      req.on('done', () => {
+        done()
+      })
+
+      req.on('row', row => {
+        rows++
+        if (rows >= 10) {
+          req.pause()
+          req.cancel()
+        }
+      })
+    },
+
     'streaming resume' (done) {
       let rows = 0
       let started = false
