@@ -83,6 +83,7 @@ describe('tedious', () => {
     it('transaction with synchronous error', done => TESTS['transaction with synchronous error'](done))
     it('cancel request', done => TESTS['cancel request'](done, /Canceled./))
     it('allows repeat calls to connect', done => TESTS['repeat calls to connect resolve'](config(), done))
+    it('calls to connect then close then connect resolve', done => TESTS['calls to connect then close then connect resolve'](config(), done))
     it('connection healthy works', done => TESTS['connection healthy works'](config(), done))
     it('healthy connection goes bad', done => TESTS['healthy connection goes bad'](config(), done))
     it('request timeout', done => TESTS['request timeout'](done, 'tedious', /Timeout: Request failed to complete in 1000ms/))

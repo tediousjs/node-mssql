@@ -842,6 +842,23 @@ module.exports = (sql, driver) => {
         .catch(done)
     },
 
+    'calls to connect then close then connect resolve' (config, done) {
+      const pool = new sql.ConnectionPool(config)
+      let poolClosed = false
+      // these will run in parallel
+      pool.connect().catch(done)
+      pool.close().then(() => { poolClosed = true }).catch(done)
+      assert.ok(!pool.connecting)
+      assert.ok(!pool.connected)
+      // this will be called whilst
+      pool.connect().then(connected => {
+        assert.ok(poolClosed)
+        return connected.query('SELECT 1')
+      }).then(() => {
+        done()
+      }).catch(done)
+    },
+
     'connection healthy works' (config, done) {
       const pool = new sql.ConnectionPool(config)
       assert.ok(!pool.healthy)
