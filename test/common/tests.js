@@ -1497,6 +1497,18 @@ module.exports = (sql, driver) => {
           done()
         }).catch(done)
       }).catch(done)
+    },
+
+    'Recordset.toTable() from existing' (done) {
+      const req = new TestRequest()
+      req.query('select a, b, c from tvp_test').then(result => {
+        const tvp = result.recordset.toTable('#tvp_test')
+
+        assert.strictEqual(tvp.columns[0].identity, true)
+        assert.strictEqual(tvp.columns[1].nullable, true)
+        assert.strictEqual(tvp.columns[2].readOnly, true)
+        done()
+      }).catch(done)
     }
   }
 }
