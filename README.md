@@ -1581,6 +1581,24 @@ request.query('select @myval as myval', (err, result) => {
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
 - msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
 
+## 5.x to 6.x changes
+
+- Upgraded `tarn.js` so `_poolDestroy` can take advantage of being a promise
+- `ConnectionPool.close()` now returns a promise / callbacks will be executed once closing of the pool is complete; you must make
+sure that connections are properly released back to the pool otherwise the pool may fail to close.
+- It is safe to pass read-only config objects to the library; config objects are now cloned
+- `options.encrypt` is now `true` by default
+- `TYPES.Null` has now been removed
+- Upgraded tedious driver to v6 and upgraded support for msnodesqlv8]
+- You can now close the global connection by reference and this will clean up the global connection, eg: `const conn = sql.connect(); conn.close()` will be the same as `sql.close()`
+- Bulk table inserts will attempt to coerce dates from non-Date objects if the column type is expecting a date
+- Repeat calls to the global connect function (`sql.connect()`) will return the current global connection if it exists (rather than throwing an error)
+- Attempting to add a parameter to queries / stored procedures will now throw an error; use `replaceInput` and `replaceOutput` instead
+- Invalid isolation levels passed to `Transaction`s will now throw an error
+- `ConnectionPool` now reports if it is healthy or not (`ConnectionPool.healthy`) which can be used to determine if the pool is able
+to create new connections or not
+- Pause/Resume support for streamed results has been added to the msnodesqlv8 driver
+
 ## 4.x to 5.x changes
 
 - Moved pool library from `node-pool` to `tarn.js`
