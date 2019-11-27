@@ -1,5 +1,13 @@
-v6.0.0 (2019-0?-??)
+v6.0.1 (2019-11-15)
 -------------------
+[fix] Fix an issue with connection strings where usernames have url encoded values ([#945](https://github.com/tediousjs/node-mssql/pull/945)
+
+v6.0.0 (2019-11-05)
+-------------------
+[fix] Fixed bug when trying to bulk insert columns that were `NVarChar(MAX)` ([#901](https://github.com/tediousjs/node-mssql/pull/901))
+[fix] Fixed an issue where Object prototype pollution could cause errors ([#879](https://github.com/tediousjs/node-mssql/pull/879))
+[fix] Fixed an issue where Request.input didn't validate against 0 parameters being passed ([#885](https://github.com/tediousjs/node-mssql/pull/885))
+[new] Implement pause/resume for msnodesqlv8 driver ([#877](https://github.com/tediousjs/node-mssql/pull/877))
 [new] Added `healthy` flag to the pool to help determine if the pool is safe to use or not ([#816](https://github.com/tediousjs/node-mssql/pull/816))
 [new] Invalid isolation levels passed to transactions will now throw an error
 [new] Duplicate parameter names in queries/stored procedures will now throw an error
@@ -7,13 +15,35 @@ v6.0.0 (2019-0?-??)
 [new] Calls to the global `connect` function will return the global connection if it exists
 [new] Bulk table inserts now attempt to coerce Date objects out of non Date values
 [change] Closing the global connection by reference will now cleanup the internally managed globalConnection
-[change] Upgraded tedious to v6 ([#818](https://github.com/tediousjs/node-mssql/pull/818))
+[change] Upgraded tedious to v6 ([#818](https://github.com/tediousjs/node-mssql/pull/818) and [#933](https://github.com/tediousjs/node-mssql/pull/933))
+[change] Upgraded msnodesqlv8 support to v0.7 ([#877](https://github.com/tediousjs/node-mssql/pull/877))
 [change] Remove references to deprecated `TYPES.Null` from tedious
 [change] `options.encrypt` is now set to true by default
 [change] Upgraded `debug` dependency to v4
 [change] Config objects are cloned so that the original object is not modified
 [change] Replaced pool library (`generic-pool`) with `tarn.js` ([#808](https://github.com/tediousjs/node-mssql/pull/808))
 [removed] Backoff try strategy for creating connections removed, `tarn.js` built-in retry strategy used instead
+
+v5.1.0 (2019-04-17)
+-------------------
+[new] Add readOnlyIntent to connection string parser ([#853](https://github.com/tediousjs/node-mssql/pull/853))
+
+v5.0.6 (2019-04-17)
+-------------------
+[fix] Ensure callbacks don't block the event loop by executing them with `setImmediate` ([#855](https://github.com/tediousjs/node-mssql/pull/855))
+
+v5.0.5 (2019-03-28)
+-------------------
+[fix] Fix an issue where connections that error can deplete the pool ([#842](https://github.com/tediousjs/node-mssql/pull/842))
+
+v5.0.4 (2019-03-27)
+-------------------
+[fix] Fix a bug where msnodesqlv8 driver could execute callbacks twice ([#834](https://github.com/tediousjs/node-mssql/pull/834))
+[fix] npm audit fix on vulnerable dependencies
+
+v5.0.3 (2019-03-13)
+-------------------
+[fix] Fix a bug with streamed requests that start paused ([#833](https://github.com/tediousjs/node-mssql/pull/833))
 
 v5.0.2 (2019-03-09)
 -------------------
@@ -31,6 +61,14 @@ v5.0.0 (2019-03-07)
 [change] Updated to latest Tedious 4.1.1
 [removed] Node.js < 6 is no longer supported
 [removed] Support dropped for deprecated tedious configuration values and types
+
+v4.3.7 (2019-03-29)
+-------------------
+[fix] Fix an issue where connections that error can deplete the pool ([#842](https://github.com/tediousjs/node-mssql/pull/842))
+
+v4.3.6 (2019-03-27)
+-------------------
+[fix] Fix a bug where msnodesqlv8 driver could execute callbacks twice ([#834](https://github.com/tediousjs/node-mssql/pull/834))
 
 v4.3.5 (2019-03-09)
 -------------------
