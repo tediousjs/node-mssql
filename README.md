@@ -17,7 +17,7 @@ Supported TDS drivers:
 ```javascript
 const sql = require('mssql')
 
-async () => {
+(async () => {
     try {
         // make sure that any items are correctly URL encoded in the connection string
         await sql.connect('mssql://username:password@localhost/database')
@@ -26,7 +26,7 @@ async () => {
     } catch (err) {
         // ... error checks
     }
-}
+})();
 ```
 
 If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#configuration) to learn more.
