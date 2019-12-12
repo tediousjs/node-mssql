@@ -27,7 +27,6 @@
   "license": "MIT",
   "dependencies": {
     "debug": "^4",
-    "msnodesqlv8": "^0.8.6",
     "tarn": "^1.1.5",
     "tedious": "^6.6.2"
   },
