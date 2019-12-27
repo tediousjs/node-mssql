@@ -273,4 +273,11 @@ describe('Unit', () => {
       command: 'select * from myTable where id in (@param1_0, @param1_1, @param1_2)'
     })
   })
+
+  it('tagged template literal request', () => {
+    const req = new sql.Request()
+    const sqlstr = req.template`select * from myTable where id = ${123}`
+    assert.strictEqual(sqlstr, 'select * from myTable where id = @param1')
+    assert.strictEqual(req.parameters.param1.value, 123)
+  })
 })
