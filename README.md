@@ -251,6 +251,14 @@ sql.connect(config, err => {
 
         console.dir(result)
     })
+
+    // Using template literal
+
+    const request = new sql.Request()
+    request.query(request.template`select * from mytable where id = ${value}`, (err, result) => {
+        // ... error checks
+        console.dir(result)
+    })
 })
 
 sql.on('error', err => {
