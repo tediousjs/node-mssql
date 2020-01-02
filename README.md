@@ -56,6 +56,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 
 ### Connections
 
+* [Pool Management](#pool-management)
 * [ConnectionPool](#connections-1)
 * [connect](#connect-callback)
 * [close](#close)
@@ -324,6 +325,105 @@ function processRows() {
   request.resume();
 }
 ```
+
+## Pool Management
+
+An important conecpt to understand when using this library is [Connection Pooling](https://en.wikipedia.org/wiki/Connection_pool)
+as this library uses connection pooling extensively.
+
+As one Node JS process is able to handle multiple requests at once, we can take advantage of this long running process
+to create a pool of database connections for reuse; this saves overhead of connecting to the database for each request
+(as would be the case in something like PHP, where one process handles one request).
+
+With the advantages of pooling comes some added complexities, but these are mostly just conceptual and once you understand
+how the pooling is working, it is simple to make use of it efficiently and effectively.
+
+### The Global Connection (Pool)
+
+To assist with pool management in your application there is the global `connect()` function that is available for use. As of
+v6 of this library a developer can make repeated calls to this function to obtain the global connection pool. This means you
+do not need to keep track of the pool in your application (as used to be the case). If the global pool is already connected,
+it will resolve to the connected pool. For example:
+
+```js
+const sql = require('mssql')
+
+// run a query against the global connection pool
+function runQuery(query) {
+  // sql.connect() will return the existing global pool if it exists or create a new one if it doesn't
+  return sql.connect().then((pool) => {
+    return pool.query(query)
+  })
+}
+
+```
+
+Here we obtain the global connection pool by running `sql.connect()` and we then run the query against the pool.
+We also do *not* close the pool after the query is executed and that is because other queries may need to be run against
+this pool and closing it will add an overhead to running the query. We should only ever close the pool when our application
+is finished. For example, if we are running some kind of CLI tool or a CRON job:
+
+```js
+const sql = require('mssql')
+
+(() => {
+  sql.connect().then(pool => {
+    return pool.query('SELECT 1')
+  }).then(result => {
+    // do something with result
+  }).then(() => {
+    return sql.close()
+  })
+})()
+```
+
+Here the connection will be closed and the node process will exit once the queries and other application logic has completed.
+You should aim to only close the pool once in your application, when it is exiting or you know your application will never make
+another SQL query.
+
+### Advanced Pool Management
+
+In some instances you will not want to use the connection pool, you may have multiple databases to connect to or you may have
+one pool for read-only operations and another pool for read-write. In this instance you will need to implement your own pool
+management.
+
+That could look something like this:
+
+```js
+const { ConnectionPool } = require('mssql')
+const POOLS = {}
+
+function createPool(config, name) {
+  if (getPool(name)) {
+    throw new Error('Pool with this name already exists')
+  }
+  return POOLS[name] = (new ConnectionPool(config)).connect()
+}
+
+function closePool(name) {
+  if (Object.prototype.hasOwnProperty.apply(POOLS, name)) {
+    const pool = POOLS[name];
+    delete POOLS[name];
+    return pool.close()
+  }
+}
+
+function getPool(name) {
+  if (Object.prototype.hasOwnProperty.apply(POOLS, name)) {
+    return POOLS[name]
+  }
+}
+
+module.exports = {
+  closePool,
+  createPool,
+  getPool
+}
+```
+
+This helper file can then be used in your application to create, fetch and close your pools. As with the global pools, you
+should aim to only close a pool when you know it will never be needed by the application again; typically this will be when
+your application is shutting down.
 
 ## Connection Pools
 
