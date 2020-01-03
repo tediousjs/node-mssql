@@ -446,7 +446,7 @@ async function messageHandler() {
     await pool1Connect; // ensures that the pool has been created
     try {
     	const request = pool1.request(); // or: new sql.Request(pool1)
-    	const result = request.query('select 1 as number')
+    	const result = await request.query('select 1 as number')
     	console.dir(result)
     	return result;
 	} catch (err) {
