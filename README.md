@@ -328,7 +328,7 @@ function processRows() {
 
 ## Pool Management
 
-An important conecpt to understand when using this library is [Connection Pooling](https://en.wikipedia.org/wiki/Connection_pool)
+An important concept to understand when using this library is [Connection Pooling](https://en.wikipedia.org/wiki/Connection_pool)
 as this library uses connection pooling extensively.
 
 As one Node JS process is able to handle multiple requests at once, we can take advantage of this long running process
