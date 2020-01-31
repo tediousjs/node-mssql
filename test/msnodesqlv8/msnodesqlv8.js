@@ -84,7 +84,7 @@ describe('msnodesqlv8', function () {
     it('transaction accepts good isolation levels', done => TESTS['transaction accepts good isolation levels'](done))
     it('cancel request', done => TESTS['cancel request'](done))
     it('allows repeat calls to connect', done => TESTS['repeat calls to connect resolve'](config(), done))
-    it('calls to connect then close then connect resolve', done => TESTS['calls to connect then close then connect resolve'](config(), done))
+    it('calls to close during connection throw', done => TESTS['calls to close during connection throw'](config(), done))
     it('connection healthy works', done => TESTS['connection healthy works'](config(), done))
     it('healthy connection goes bad', done => TESTS['healthy connection goes bad'](config(), done))
     it('request timeout', done => TESTS['request timeout'](done))
