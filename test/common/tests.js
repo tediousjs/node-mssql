@@ -898,6 +898,22 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'repeat calls to connect resolve in order' (connect, done) {
+      Promise.all([
+        connect().then((pool) => {
+          assert.ok(pool.connected, 'Pool not connected')
+          return Date.now()
+        }),
+        connect().then((pool) => {
+          assert.ok(pool.connected, 'Pool not connected')
+          return Date.now()
+        })
+      ]).then(([time1, time2]) => {
+        assert.ok(time1 <= time2, 'Connections did not resolve in order')
+        done()
+      }).catch(done)
+    },
+
     'json parser' (done) {
       const req = new TestRequest()
       req.query("select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for json path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for json path;with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for json auto;").then(result => {

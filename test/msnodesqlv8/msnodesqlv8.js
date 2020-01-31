@@ -1,6 +1,6 @@
 'use strict'
 
-/* globals describe, it, before, after */
+/* globals describe, it, before, after, afterEach */
 
 const sql = require('../../msnodesqlv8')
 
@@ -90,6 +90,11 @@ describe('msnodesqlv8', function () {
     it('chunked xml support', done => TESTS['chunked xml support'](done))
 
     after(() => sql.close())
+  })
+
+  describe('global connection', () => {
+    it('repeat calls to connect resolve in order', done => TESTS['repeat calls to connect resolve in order'](sql.connect.bind(sql, config()), done))
+    afterEach(done => sql.close(done))
   })
 
   describe('json support (requires SQL Server 2016)', () => {
