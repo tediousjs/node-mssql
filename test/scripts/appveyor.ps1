@@ -22,7 +22,8 @@ $config = @{
 	database = "master";
 	requestTimeout = 30000;
 	options = @{
-		abortTransactionOnError = $true
+		abortTransactionOnError = $true;
+		encrypt = $false;
 	}
 } | ConvertTo-Json -Depth 3;
 
