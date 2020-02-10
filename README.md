@@ -480,6 +480,14 @@ function runStoredProcedure() {
 Awaiting or `.then`ing the pool creation is a safe way to ensure that the pool is always ready, without knowing where it
 is needed first. In practice, once the pool is created then there will be no delay for the next operation.
 
+As of v6.1.0 you can make repeat calls to `ConnectionPool.connect()` and `ConnectonPool.close()` without an error being
+thrown, allowing for the safe use of `mssql.connect().then(...)` throughout your code as well as making multiple calls to
+close when your application is shutting down.
+
+The ability to call `connect()` repeatedly is intended to make pool management easier, however it is still recommended
+to follow the example above where `connect()` is called once and using the original resolved connection promise.
+Repeatedly calling `connect()` when running queries risks running into problems when `close()` is called on the pool.
+
 **ES6 Tagged template literals**
 
 ```javascript
@@ -493,6 +501,83 @@ new sql.ConnectionPool(config).connect().then(pool => {
 ```
 
 All values are automatically sanitized against sql injection.
+
+### Managing connection pools
+
+Most applications will only need a single `ConnectionPool` that can be shared throughout the code. To aid the sharing
+of a single pool this library exposes a set of functions to access a single global connection. eg:
+
+```js
+// as part of your application's boot process
+
+const sql = require('mssql')
+const poolPromise = sql.connect()
+
+// during your applications runtime
+
+poolPromise.then(() => {
+  return sql.query('SELECT 1')
+}).then(result => {
+  console.dir(result)
+})
+
+// when your application exits
+poolPromise.then(() => {
+  return sql.close()
+})
+```
+
+If you require multiple pools per application (perhaps you have many DBs you need to connect to or you want a read-only
+pool), then you will need to manage your pools yourself. The best way to do this is to create a shared library file that
+can hold references to the pools for you. For example:
+
+```js
+const sql = require('mssql')
+
+const pools = {}
+
+// manage a set of pools by name (config will be required to create the pool)
+// a pool will be removed when it is closed
+async function getPool(name, config) {
+  if (!Object.prototype.hasOwnProperty.call(pools, name)) {
+    const pool = new sql.ConnectionPool(config)
+    const close = pool.close.bind(pool)
+    pool.close = (...args) => {
+      delete pools[name]
+      return close(...args)
+    }
+    await pool.connect()
+    pools[name] = pool
+  }
+  return pools[name]
+}
+
+// close all pools
+function closeAll() {
+  return Promise.all(Object.values(pools).map((pool) => {
+    return pool.close()
+  }))
+}
+
+module.exports = {
+  closeAll,
+  getPool
+}
+```
+
+You can then use this library file in your code to get a connected pool when you need it:
+
+```js
+const { getPool } = require('./path/to/file')
+
+// run a query
+async function runQuery(query, config) {
+  // pool will always be connected when the promise has resolved - may reject if the connection config is invalid
+  const pool = await getPool('default', config)
+  const result = await pool.request().query(query)
+  return result
+}
+```
 
 ## Configuration
 

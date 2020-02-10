@@ -769,6 +769,10 @@ module.exports = (sql, driver) => {
         const tran = new TestTransaction()
         return tran.begin(ISOLATION_LEVELS[level]).then(() => {
           return tran.request().query('SELECT 1 AS num')
+            .catch(err => {
+              return tran.abort().then(() => Promise.reject(err))
+            })
+            .then(() => tran.commit())
         })
       })
       Promise.all(promises).then(() => done()).catch(err => {
@@ -827,6 +831,30 @@ module.exports = (sql, driver) => {
       req.cancel()
     },
 
+    'repeat calls to connect resolve' (config, done) {
+      const pool = new sql.ConnectionPool(config)
+      Promise.all([pool.connect(), pool.connect()])
+        .then(([pool1, pool2]) => {
+          assert.strictEqual(pool, pool1)
+          assert.strictEqual(pool, pool2)
+          done()
+        })
+        .catch(done)
+    },
+
+    'calls to close during connection throw' (config, done) {
+      const pool = new sql.ConnectionPool(config)
+      Promise.all([
+        pool.connect(),
+        pool.close().catch((err) => {
+          assert.strictEqual(err.message, 'Cannot close a pool while it is connecting')
+        })
+      ]).then(() => {
+        assert.ok(pool.connected)
+        done()
+      }).catch(done)
+    },
+
     'connection healthy works' (config, done) {
       const pool = new sql.ConnectionPool(config)
       assert.ok(!pool.healthy)
@@ -836,7 +864,7 @@ module.exports = (sql, driver) => {
       }).then(() => {
         assert.ok(!pool.healthy)
         done()
-      })
+      }).catch(done)
     },
 
     'healthy connection goes bad' (config, done) {
@@ -853,16 +881,24 @@ module.exports = (sql, driver) => {
         pool._poolCreate = () => {
           return Promise.reject(new sql.ConnectionError('Synthetic error'))
         }
-        return pool.acquire().then(() => {
-          assert.fail('acquire resolved unexpectedly')
+        return pool.acquire().then((conn) => {
+          try {
+            assert.fail('acquire resolved unexpectedly')
+          } finally {
+            pool.release(conn)
+          }
         }).catch(() => {
           assert.ok(pool.pool.numUsed() + pool.pool.numFree() <= 0)
           assert.ok(!pool.healthy)
         })
       }).then(() => {
         pool._poolCreate = ogCreate
-        return pool.acquire().then(() => {
-          assert.ok(pool.healthy)
+        return pool.acquire().then((conn) => {
+          try {
+            assert.ok(pool.healthy)
+          } finally {
+            pool.release(conn)
+          }
         })
       }).then(() => {
         return pool.close()
@@ -1333,6 +1369,32 @@ module.exports = (sql, driver) => {
       req.on('row', row => {
         rows++
         if (rows >= 10) {
+          req.cancel()
+        }
+      })
+    },
+
+    'a cancelled paused stream emits done event' (done) {
+      let rows = 0
+
+      const req = new TestRequest()
+      req.stream = true
+      req.query('select * from streaming')
+      req.on('error', (err) => {
+        if (err.code !== 'ECANCEL') {
+          req.cancel()
+          done(err)
+        }
+      })
+
+      req.on('done', () => {
+        done()
+      })
+
+      req.on('row', row => {
+        rows++
+        if (rows >= 10) {
+          req.pause()
           req.cancel()
         }
       })
