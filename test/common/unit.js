@@ -272,6 +272,11 @@ describe('Unit', () => {
       input: [['param1_0', 1], ['param1_1', 2], ['param1_2', 3]],
       command: 'select * from myTable where id in (@param1_0, @param1_1, @param1_2)'
     })
+
+    assert.deepStrictEqual(query`select * from myTable where id in (${[]})`, {
+      input: [],
+      command: 'select * from myTable where id in ()'
+    })
   })
 
   it('tagged template literal request', () => {
