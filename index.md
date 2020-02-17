@@ -56,6 +56,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 
 ### Connections
 
+* [Pool Management](#pool-management)
 * [ConnectionPool](#connections-1)
 * [connect](#connect-callback)
 * [close](#close)
@@ -250,6 +251,14 @@ sql.connect(config, err => {
 
         console.dir(result)
     })
+
+    // Using template literal
+
+    const request = new sql.Request()
+    request.query(request.template`select * from mytable where id = ${value}`, (err, result) => {
+        // ... error checks
+        console.dir(result)
+    })
 })
 
 sql.on('error', err => {
@@ -317,6 +326,105 @@ function processRows() {
 }
 ```
 
+## Pool Management
+
+An important concept to understand when using this library is [Connection Pooling](https://en.wikipedia.org/wiki/Connection_pool)
+as this library uses connection pooling extensively.
+
+As one Node JS process is able to handle multiple requests at once, we can take advantage of this long running process
+to create a pool of database connections for reuse; this saves overhead of connecting to the database for each request
+(as would be the case in something like PHP, where one process handles one request).
+
+With the advantages of pooling comes some added complexities, but these are mostly just conceptual and once you understand
+how the pooling is working, it is simple to make use of it efficiently and effectively.
+
+### The Global Connection (Pool)
+
+To assist with pool management in your application there is the global `connect()` function that is available for use. As of
+v6 of this library a developer can make repeated calls to this function to obtain the global connection pool. This means you
+do not need to keep track of the pool in your application (as used to be the case). If the global pool is already connected,
+it will resolve to the connected pool. For example:
+
+```js
+const sql = require('mssql')
+
+// run a query against the global connection pool
+function runQuery(query) {
+  // sql.connect() will return the existing global pool if it exists or create a new one if it doesn't
+  return sql.connect().then((pool) => {
+    return pool.query(query)
+  })
+}
+
+```
+
+Here we obtain the global connection pool by running `sql.connect()` and we then run the query against the pool.
+We also do *not* close the pool after the query is executed and that is because other queries may need to be run against
+this pool and closing it will add an overhead to running the query. We should only ever close the pool when our application
+is finished. For example, if we are running some kind of CLI tool or a CRON job:
+
+```js
+const sql = require('mssql')
+
+(() => {
+  sql.connect().then(pool => {
+    return pool.query('SELECT 1')
+  }).then(result => {
+    // do something with result
+  }).then(() => {
+    return sql.close()
+  })
+})()
+```
+
+Here the connection will be closed and the node process will exit once the queries and other application logic has completed.
+You should aim to only close the pool once in your application, when it is exiting or you know your application will never make
+another SQL query.
+
+### Advanced Pool Management
+
+In some instances you will not want to use the connection pool, you may have multiple databases to connect to or you may have
+one pool for read-only operations and another pool for read-write. In this instance you will need to implement your own pool
+management.
+
+That could look something like this:
+
+```js
+const { ConnectionPool } = require('mssql')
+const POOLS = {}
+
+function createPool(config, name) {
+  if (getPool(name)) {
+    throw new Error('Pool with this name already exists')
+  }
+  return POOLS[name] = (new ConnectionPool(config)).connect()
+}
+
+function closePool(name) {
+  if (Object.prototype.hasOwnProperty.apply(POOLS, name)) {
+    const pool = POOLS[name];
+    delete POOLS[name];
+    return pool.close()
+  }
+}
+
+function getPool(name) {
+  if (Object.prototype.hasOwnProperty.apply(POOLS, name)) {
+    return POOLS[name]
+  }
+}
+
+module.exports = {
+  closePool,
+  createPool,
+  getPool
+}
+```
+
+This helper file can then be used in your application to create, fetch and close your pools. As with the global pools, you
+should aim to only close a pool when you know it will never be needed by the application again; typically this will be when
+your application is shutting down.
+
 ## Connection Pools
 
 Using a single connection pool for your application/service is recommended.
@@ -337,13 +445,13 @@ pool1.on('error', err => {
 async function messageHandler() {
     await pool1Connect; // ensures that the pool has been created
     try {
-    	const request = pool1.request(); // or: new sql.Request(pool1)
-    	const result = request.query('select 1 as number')
-    	console.dir(result)
-    	return result;
-	} catch (err) {
+        const request = pool1.request(); // or: new sql.Request(pool1)
+        const result = await request.query('select 1 as number')
+        console.dir(result)
+        return result;
+    } catch (err) {
         console.error('SQL error', err);
-	}
+    }
 }
 
 // promise style:
@@ -356,13 +464,13 @@ pool2.on('error', err => {
 
 function runStoredProcedure() {
     return pool2Connect.then((pool) => {
-		pool.request() // or: new sql.Request(pool2)
-		.input('input_parameter', sql.Int, 10)
-		.output('output_parameter', sql.VarChar(50))
-		.execute('procedure_name', (err, result) => {
-			// ... error checks
-			console.dir(result)
-		})
+        pool.request() // or: new sql.Request(pool2)
+        .input('input_parameter', sql.Int, 10)
+        .output('output_parameter', sql.VarChar(50))
+        .execute('procedure_name', (err, result) => {
+            // ... error checks
+            console.dir(result)
+        })
     }).catch(err => {
         // ... error handler
     })
@@ -371,6 +479,14 @@ function runStoredProcedure() {
 
 Awaiting or `.then`ing the pool creation is a safe way to ensure that the pool is always ready, without knowing where it
 is needed first. In practice, once the pool is created then there will be no delay for the next operation.
+
+As of v6.1.0 you can make repeat calls to `ConnectionPool.connect()` and `ConnectonPool.close()` without an error being
+thrown, allowing for the safe use of `mssql.connect().then(...)` throughout your code as well as making multiple calls to
+close when your application is shutting down.
+
+The ability to call `connect()` repeatedly is intended to make pool management easier, however it is still recommended
+to follow the example above where `connect()` is called once and using the original resolved connection promise.
+Repeatedly calling `connect()` when running queries risks running into problems when `close()` is called on the pool.
 
 **ES6 Tagged template literals**
 
@@ -385,6 +501,83 @@ new sql.ConnectionPool(config).connect().then(pool => {
 ```
 
 All values are automatically sanitized against sql injection.
+
+### Managing connection pools
+
+Most applications will only need a single `ConnectionPool` that can be shared throughout the code. To aid the sharing
+of a single pool this library exposes a set of functions to access a single global connection. eg:
+
+```js
+// as part of your application's boot process
+
+const sql = require('mssql')
+const poolPromise = sql.connect()
+
+// during your applications runtime
+
+poolPromise.then(() => {
+  return sql.query('SELECT 1')
+}).then(result => {
+  console.dir(result)
+})
+
+// when your application exits
+poolPromise.then(() => {
+  return sql.close()
+})
+```
+
+If you require multiple pools per application (perhaps you have many DBs you need to connect to or you want a read-only
+pool), then you will need to manage your pools yourself. The best way to do this is to create a shared library file that
+can hold references to the pools for you. For example:
+
+```js
+const sql = require('mssql')
+
+const pools = {}
+
+// manage a set of pools by name (config will be required to create the pool)
+// a pool will be removed when it is closed
+async function getPool(name, config) {
+  if (!Object.prototype.hasOwnProperty.call(pools, name)) {
+    const pool = new sql.ConnectionPool(config)
+    const close = pool.close.bind(pool)
+    pool.close = (...args) => {
+      delete pools[name]
+      return close(...args)
+    }
+    await pool.connect()
+    pools[name] = pool
+  }
+  return pools[name]
+}
+
+// close all pools
+function closeAll() {
+  return Promise.all(Object.values(pools).map((pool) => {
+    return pool.close()
+  }))
+}
+
+module.exports = {
+  closeAll,
+  getPool
+}
+```
+
+You can then use this library file in your code to get a connected pool when you need it:
+
+```js
+const { getPool } = require('./path/to/file')
+
+// run a query
+async function runQuery(query, config) {
+  // pool will always be connected when the promise has resolved - may reject if the connection config is invalid
+  const pool = await getPool('default', config)
+  const result = await pool.request().query(query)
+  return result
+}
+```
 
 ## Configuration
 
@@ -1580,6 +1773,24 @@ request.query('select @myval as myval', (err, result) => {
 
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
 - msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
+
+## 5.x to 6.x changes
+
+- Upgraded `tarn.js` so `_poolDestroy` can take advantage of being a promise
+- `ConnectionPool.close()` now returns a promise / callbacks will be executed once closing of the pool is complete; you must make
+sure that connections are properly released back to the pool otherwise the pool may fail to close.
+- It is safe to pass read-only config objects to the library; config objects are now cloned
+- `options.encrypt` is now `true` by default
+- `TYPES.Null` has now been removed
+- Upgraded tedious driver to v6 and upgraded support for msnodesqlv8]
+- You can now close the global connection by reference and this will clean up the global connection, eg: `const conn = sql.connect(); conn.close()` will be the same as `sql.close()`
+- Bulk table inserts will attempt to coerce dates from non-Date objects if the column type is expecting a date
+- Repeat calls to the global connect function (`sql.connect()`) will return the current global connection if it exists (rather than throwing an error)
+- Attempting to add a parameter to queries / stored procedures will now throw an error; use `replaceInput` and `replaceOutput` instead
+- Invalid isolation levels passed to `Transaction`s will now throw an error
+- `ConnectionPool` now reports if it is healthy or not (`ConnectionPool.healthy`) which can be used to determine if the pool is able
+to create new connections or not
+- Pause/Resume support for streamed results has been added to the msnodesqlv8 driver
 
 ## 4.x to 5.x changes
 
