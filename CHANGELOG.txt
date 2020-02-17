@@ -1,3 +1,12 @@
+v6.1.0 (2020-02-17)
+-------------------
+[new] Add `Request.template` helper for providing templated strings to queries ([#960](https://github.com/tediousjs/node-mssql/pull/960))
+[new] Repeat calls to `ConnectionPool.connect()` resolve ([#941](https://github.com/tediousjs/node-mssql/pull/941))
+[new] Stored procedure params are now logged to debug log ([#979](https://github.com/tediousjs/node-mssql/pull/979))
+[fix] Repeat calls to `mssql.connect()` will now resolve correctly ([#986](https://github.com/tediousjs/node-mssql/pull/986))
+[fix] Connections are encrypted by default as documented ([#977](https://github.com/tediousjs/node-mssql/pull/977))
+[fix] Tagged template literal queries with empty array values now work ([#990](https://github.com/tediousjs/node-mssql/pull/990))
+
 v6.0.1 (2019-11-15)
 -------------------
 [fix] Fix an issue with connection strings where usernames have url encoded values ([#945](https://github.com/tediousjs/node-mssql/pull/945)
