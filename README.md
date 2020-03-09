@@ -103,6 +103,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [SQL injection](#sql-injection)
 * [Known Issues](#known-issues)
 * [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
+* [5.x to 6.x changes](#5x-to-6x-changes)
 * [4.x to 5.x changes](#4x-to-5x-changes)
 * [3.x to 4.x changes](#3x-to-4x-changes)
 * [3.x Documentation](https://github.com/tediousjs/node-mssql/blob/1893969195045a250f0fdeeb2de7f30dcf6689ad/README.md)
