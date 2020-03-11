@@ -28,7 +28,7 @@
   "dependencies": {
     "debug": "^4",
     "tarn": "^1.1.5",
-    "tedious": "^6.6.2"
+    "tedious": "^8.0.1"
   },
   "devDependencies": {
     "mocha": "^6.2.2",
