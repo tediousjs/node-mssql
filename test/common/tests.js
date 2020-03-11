@@ -3,6 +3,7 @@
 const assert = require('assert')
 const stream = require('stream')
 const ISOLATION_LEVELS = require('../../lib/isolationlevel')
+const BaseTransaction = require('../../lib/base/transaction')
 
 process.on('unhandledRejection', (reason, p) => {
   console.log('Unhandled Rejection at: Promise', p, 'reason:', reason)
@@ -781,14 +782,15 @@ module.exports = (sql, driver) => {
     },
 
     'transaction uses default isolation level' (done) {
-      const originalIsolationLevel = TestTransaction.defaultIsolationLevel
+      const originalIsolationLevel = BaseTransaction.defaultIsolationLevel
       assert.strictEqual(originalIsolationLevel, ISOLATION_LEVELS.READ_COMMITTED)
-      TestTransaction.defaultIsolationLevel = ISOLATION_LEVELS.READ_UNCOMMITTED
+      BaseTransaction.defaultIsolationLevel = ISOLATION_LEVELS.READ_UNCOMMITTED
       const tran = new TestTransaction()
       assert.strictEqual(tran.isolationLevel, ISOLATION_LEVELS.READ_UNCOMMITTED)
 
       // Reset to originalIsolationLevel
-      TestTransaction.defaultIsolationLevel = originalIsolationLevel
+      BaseTransaction.defaultIsolationLevel = originalIsolationLevel
+      done()
     },
 
     'transaction with error' (done) {
