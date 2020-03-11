@@ -780,6 +780,17 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'transaction uses default isolation level' (done) {
+      const originalIsolationLevel = TestTransaction.defaultIsolationLevel
+      assert.strictEqual(originalIsolationLevel, ISOLATION_LEVELS.READ_COMMITTED)
+      TestTransaction.defaultIsolationLevel = ISOLATION_LEVELS.READ_UNCOMMITTED
+      const tran = new TestTransaction()
+      assert.strictEqual(tran.isolationLevel, ISOLATION_LEVELS.READ_UNCOMMITTED)
+
+      // Reset to originalIsolationLevel
+      TestTransaction.defaultIsolationLevel = originalIsolationLevel
+    },
+
     'transaction with error' (done) {
       const tran = new TestTransaction()
       tran.begin().then(() => {
