@@ -1,3 +1,16 @@
+v4.3.8 (2020-03-13)
+-------------------
+[fix] Bump acorn dependency for security fix
+
+v4.3.7 (2019-03-28)
+-------------------
+[fix] connections that throw errors do not deplete the pool
+
+v4.3.6 (2019-03-27)
+-------------------
+[fix] Prevent double complete callbacks on msnodesqlv8 driver
+[fix] Bump js-yaml dependency for security fix
+
 v4.3.5 (2019-03-09)
 -------------------
 [change] Remove references to deprecated `TYPES.Null` from tedious
