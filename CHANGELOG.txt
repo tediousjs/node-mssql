@@ -1,3 +1,9 @@
+v6.2.0 (2020-03-13)
+-------------------
+[new] Set default isolationLevel for all transactions ([#1005](https://github.com/tediousjs/node-mssql/pull/1005))
+[new] sql.Date now is coerced into a date object ([#1007](https://github.com/tediousjs/node-mssql/pull/1007))
+[fix] Bump acorn dependency for security fix
+
 v6.1.0 (2020-02-17)
 -------------------
 [new] Add `Request.template` helper for providing templated strings to queries ([#960](https://github.com/tediousjs/node-mssql/pull/960))
