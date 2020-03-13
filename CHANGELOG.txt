@@ -1,3 +1,11 @@
+v5.1.1 (2020-03-13)
+-------------------
+[fix] Bump acorn dependency for security fix
+
+v5.1.0 (2019-04-17)
+-------------------
+[new] Add readOnlyIntent to connection string parser ([#853](https://github.com/tediousjs/node-mssql/pull/853))
+
 v5.0.2 (2019-03-09)
 -------------------
 [change] Remove references to deprecated `TYPES.Null` from tedious
@@ -14,6 +22,19 @@ v5.0.0 (2019-03-07)
 [change] Updated to latest Tedious 4.1.1
 [removed] Node.js < 6 is no longer supported
 [removed] Support dropped for deprecated tedious configuration values and types
+
+v4.3.8 (2020-03-13)
+-------------------
+[fix] Bump acorn dependency for security fix
+
+v4.3.7 (2019-03-28)
+-------------------
+[fix] connections that throw errors do not deplete the pool
+
+v4.3.6 (2019-03-27)
+-------------------
+[fix] Prevent double complete callbacks on msnodesqlv8 driver
+[fix] Bump js-yaml dependency for security fix
 
 v4.3.5 (2019-03-09)
 -------------------
