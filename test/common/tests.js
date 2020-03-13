@@ -499,9 +499,12 @@ module.exports = (sql, driver) => {
       t.columns.add('b', sql.DateTime2, {
         nullable: true
       })
-      t.rows.add(1, new Date('2019-03-12T11:06:59.000Z'))
-      t.rows.add(2, '2019-03-12T11:06:59.000Z')
-      t.rows.add(3, 1552388819000)
+      t.columns.add('c', sql.Date, {
+        nullable: true
+      })
+      t.rows.add(1, new Date('2019-03-12T11:06:59.000Z'), new Date('2019-03-13'))
+      t.rows.add(2, '2019-03-12T11:06:59.000Z', '2019-03-13T00:00:00.000Z')
+      t.rows.add(3, 1552388819000, 1552499543000)
 
       let req = new TestRequest()
       req.bulk(t).then(result => {
@@ -512,6 +515,7 @@ module.exports = (sql, driver) => {
           assert.strictEqual(result.recordset.length, 3)
           for (let i = 0; i < result.recordset.length; i++) {
             assert.strictEqual(result.recordset[i].b.toISOString(), '2019-03-12T11:06:59.000Z')
+            assert.strictEqual(result.recordset[i].c.toISOString(), '2019-03-13T00:00:00.000Z')
           }
 
           done()
