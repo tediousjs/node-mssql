@@ -82,6 +82,7 @@ describe('msnodesqlv8', function () {
     it('transaction with commit', done => TESTS['transaction with commit'](done))
     it('transaction throws on bad isolation level', done => TESTS['transaction throws on bad isolation level'](done))
     it('transaction accepts good isolation levels', done => TESTS['transaction accepts good isolation levels'](done))
+    it('transaction uses default isolation level', done => TESTS['transaction uses default isolation level'](done))
     it('cancel request', done => TESTS['cancel request'](done))
     it('allows repeat calls to connect', done => TESTS['repeat calls to connect resolve'](config(), done))
     it('calls to close during connection throw', done => TESTS['calls to close during connection throw'](config(), done))
