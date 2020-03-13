@@ -1,3 +1,7 @@
+v7.0.0 (2020-??-??)
+-------------------
+[change] Updated to latest Tedious 8.0.1
+
 v6.2.0 (2020-03-13)
 -------------------
 [new] Set default isolationLevel for all transactions ([#1005](https://github.com/tediousjs/node-mssql/pull/1005))
