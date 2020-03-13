@@ -1,3 +1,9 @@
+v6.2.0 (2020-03-13)
+-------------------
+[new] Set default isolationLevel for all transactions ([#1005](https://github.com/tediousjs/node-mssql/pull/1005))
+[new] sql.Date now is coerced into a date object ([#1007](https://github.com/tediousjs/node-mssql/pull/1007))
+[fix] Bump acorn dependency for security fix
+
 v6.1.0 (2020-02-17)
 -------------------
 [new] Add `Request.template` helper for providing templated strings to queries ([#960](https://github.com/tediousjs/node-mssql/pull/960))
@@ -32,6 +38,10 @@ v6.0.0 (2019-11-05)
 [change] Config objects are cloned so that the original object is not modified
 [change] Replaced pool library (`generic-pool`) with `tarn.js` ([#808](https://github.com/tediousjs/node-mssql/pull/808))
 [removed] Backoff try strategy for creating connections removed, `tarn.js` built-in retry strategy used instead
+
+v5.1.1 (2020-03-13)
+-------------------
+[fix] Bump acorn dependency for security fix
 
 v5.1.0 (2019-04-17)
 -------------------
@@ -71,6 +81,10 @@ v5.0.0 (2019-03-07)
 [removed] Node.js < 6 is no longer supported
 [removed] Support dropped for deprecated tedious configuration values and types
 
+v4.3.8 (2020-03-13)
+-------------------
+[fix] Bump acorn dependency for security fix
+
 v4.3.7 (2019-03-29)
 -------------------
 [fix] Fix an issue where connections that error can deplete the pool ([#842](https://github.com/tediousjs/node-mssql/pull/842))
@@ -78,6 +92,7 @@ v4.3.7 (2019-03-29)
 v4.3.6 (2019-03-27)
 -------------------
 [fix] Fix a bug where msnodesqlv8 driver could execute callbacks twice ([#834](https://github.com/tediousjs/node-mssql/pull/834))
+[fix] Bump js-yaml dependency for security fix
 
 v4.3.5 (2019-03-09)
 -------------------
