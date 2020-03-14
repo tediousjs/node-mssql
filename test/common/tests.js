@@ -610,7 +610,7 @@ module.exports = (sql, driver) => {
 
     'prepared statement that fails to prepare throws' (done) {
       const req = new TestPreparedStatement()
-      req.prepare('SELECT col FROM missingtable')
+      req.prepare('some nonsense')
         .then(() => {
           return req.unprepare()
         })
