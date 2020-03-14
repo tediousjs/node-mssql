@@ -608,6 +608,20 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'prepared statement that fails to prepare throws' (done) {
+      const req = new TestPreparedStatement()
+      req.prepare('some nonsense')
+        .then(() => {
+          return req.unprepare()
+        })
+        .then(() => {
+          done(new Error('Unexpectedly prepared bad statement'))
+        })
+        .catch(() => {
+          done()
+        })
+    },
+
     'prepared statement with duplicate parameters throws' (done) {
       const req = new TestPreparedStatement()
       try {
