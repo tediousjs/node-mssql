@@ -642,7 +642,7 @@ Default driver, actively maintained and production ready. Platform independent, 
 
 - **beforeConnect(conn)** - Function, which is invoked before opening the connection. The parameter `conn` is the configured tedious `Connection`. It can be used for attaching event handlers like in this example:
 ```js
-require('mssql').connect(...config, beforeConnect: conn => {
+require('mssql').connect({...config, beforeConnect: conn => {
   conn.once('connect', err => { err ? console.error(err) : console.log('mssql connected')})
   conn.once('end', err => { err ? console.error(err) : console.log('mssql disconnected')})
 }})
