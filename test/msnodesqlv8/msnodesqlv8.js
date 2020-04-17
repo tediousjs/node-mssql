@@ -228,6 +228,7 @@ describe('msnodesqlv8', function () {
 
     it('new Table', done => TESTS['new Table'](done))
     it('Recordset.toTable()', done => TESTS['Recordset.toTable()'](done))
+    it('Recordset.toTable() from existing', done => TESTS['Recordset.toTable() from existing'](done))
 
     after(() => sql.close())
   })
