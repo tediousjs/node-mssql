@@ -94,6 +94,12 @@ begin
 
 end')
 
+exec('create table [dbo].[tvp_test] (
+	a int not null identity,
+	b varchar(50) null,
+	c as ''id is '' + cast(a as varchar(10)) persisted
+)')
+
 exec('create table [dbo].[prepstm_test] (
 	data varchar(50) not null
 )')

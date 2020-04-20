@@ -74,6 +74,7 @@ describe('msnodesqlv8', function () {
     it('batch (stream)', done => TESTS.batch(done, true))
     it('create procedure batch', done => TESTS['create procedure batch'](done))
     it('prepared statement', done => TESTS['prepared statement'](done))
+    it('prepared statement that fails to prepare throws', done => TESTS['prepared statement that fails to prepare throws'](done))
     it('prepared statement with duplicate parameters throws', done => TESTS['prepared statement with duplicate parameters throws'](done))
     it('prepared statement parameters can be replaced', done => TESTS['prepared statement parameters can be replaced'](done))
     it('prepared statement with affected rows', done => TESTS['prepared statement with affected rows'](done))
@@ -227,6 +228,7 @@ describe('msnodesqlv8', function () {
 
     it('new Table', done => TESTS['new Table'](done))
     it('Recordset.toTable()', done => TESTS['Recordset.toTable()'](done))
+    it('Recordset.toTable() from existing', done => TESTS['Recordset.toTable() from existing'](done))
 
     after(() => sql.close())
   })

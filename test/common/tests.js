@@ -608,6 +608,20 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'prepared statement that fails to prepare throws' (done) {
+      const req = new TestPreparedStatement()
+      req.prepare('some nonsense')
+        .then(() => {
+          return req.unprepare()
+        })
+        .then(() => {
+          done(new Error('Unexpectedly prepared bad statement'))
+        })
+        .catch(() => {
+          done()
+        })
+    },
+
     'prepared statement with duplicate parameters throws' (done) {
       const req = new TestPreparedStatement()
       try {
@@ -1482,6 +1496,23 @@ module.exports = (sql, driver) => {
 
           done()
         }).catch(done)
+      }).catch(done)
+    },
+
+    'Recordset.toTable() from existing' (done) {
+      const req = new TestRequest()
+      req.query('select a, b, c from tvp_test').then(result => {
+        const tvp = result.recordset.toTable('#tvp_test')
+
+        assert.strictEqual(tvp.columns[1].nullable, true, 'the nullable property is not set as true')
+
+        // note: msnodesqlv8 does not provide the identity and readOnly column metadata
+        if (driver !== 'msnodesqlv8') {
+          assert.strictEqual(tvp.columns[0].identity, true, 'the identity property is not set as true')
+          assert.strictEqual(tvp.columns[2].readOnly, true, 'the readOnly property is not set as true')
+        }
+
+        done()
       }).catch(done)
     }
   }
