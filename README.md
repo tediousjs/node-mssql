@@ -103,6 +103,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [SQL injection](#sql-injection)
 * [Known Issues](#known-issues)
 * [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
+* [6.x to 7.x changes (pre-release)](#6x-to-7x-changes-pre-release)
 * [5.x to 6.x changes](#5x-to-6x-changes)
 * [4.x to 5.x changes](#4x-to-5x-changes)
 * [3.x to 4.x changes](#3x-to-4x-changes)
@@ -1774,6 +1775,11 @@ request.query('select @myval as myval', (err, result) => {
 
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
 - msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
+
+## 6.x to 7.x changes (pre-release)
+
+- Upgraded tedious version to v8
+- Requests in stream mode that pipe into other streams no longer pass errors up the stream chain
 
 ## 5.x to 6.x changes
 
