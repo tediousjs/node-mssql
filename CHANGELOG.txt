@@ -1,6 +1,6 @@
 v7.0.0 (2020-??-??)
 -------------------
-[change] Updated to latest Tedious 8.0.1
+[change] Updated to latest Tedious 8
 [change] Piped streams no longer have errors forwarded on to them ([1028](https://github.com/tediousjs/node-mssql/pull/1028))
 
 v6.2.0 (2020-03-13)
