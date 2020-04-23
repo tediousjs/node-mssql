@@ -1780,6 +1780,7 @@ request.query('select @myval as myval', (err, result) => {
 
 - Upgraded tedious version to v8
 - Requests in stream mode that pipe into other streams no longer pass errors up the stream chain
+- tedious config option `trustServerCertificate` defaults to `false` if not supplied
 
 ## 5.x to 6.x changes
 
