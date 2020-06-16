@@ -21,7 +21,7 @@ async () => {
     try {
         // make sure that any items are correctly URL encoded in the connection string
         await sql.connect('mssql://username:password@localhost/database')
-        const result = await sql.query`select * from mytable where id = ${value}`
+        const result = await sql.query(`select * from mytable where id = ${value}`)
         console.dir(result)
     } catch (err) {
         // ... error checks
@@ -211,7 +211,7 @@ Native Promise is used by default. You can easily change this with `sql.Promise 
 const sql = require('mssql')
 
 sql.connect(config).then(() => {
-    return sql.query`select * from mytable where id = ${value}`
+    return sql.query(`select * from mytable where id = ${value}`)
 }).then(result => {
     console.dir(result)
 }).catch(err => {
@@ -257,7 +257,7 @@ sql.connect(config, err => {
     // Using template literal
 
     const request = new sql.Request()
-    request.query(request.template`select * from mytable where id = ${value}`, (err, result) => {
+    request.query(request.template(`select * from mytable where id = ${value}`), (err, result) => {
         // ... error checks
         console.dir(result)
     })
@@ -494,7 +494,7 @@ Repeatedly calling `connect()` when running queries risks running into problems 
 
 ```javascript
 new sql.ConnectionPool(config).connect().then(pool => {
-    return pool.query`select * from mytable where id = ${value}`
+    return pool.query(`select * from mytable where id = ${value}`)
 }).then(result => {
     console.dir(result)
 }).catch(err => {
