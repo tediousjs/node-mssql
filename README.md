@@ -94,6 +94,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [CLI](#cli)
 * [Geography and Geometry](#geography-and-geometry)
 * [Table-Valued Parameter](#table-valued-parameter-tvp)
+* [Response Schema](#response-schema)
 * [Affected Rows](#affected-rows)
 * [JSON support](#json-support)
 * [Errors](#errors)
@@ -1505,6 +1506,31 @@ request.execute('MyCustomStoredProcedure', (err, result) => {
 ```
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`. You can optionally specify table type name in the first argument.
+
+## Response Schema
+
+An object returned from a `sucessful` basic query would look like the following.
+```javascript
+{
+	recordsets: [
+		[
+			{
+				COL1: "some content",
+				COL2: "some more content"
+			}
+		]
+	],
+	recordset: [
+		{
+			COL1: "some content",
+			COL2: "some more content"
+		}
+	],
+	output: {},
+	rowsAffected: [1]
+}
+
+```
 
 ## Affected Rows
 
