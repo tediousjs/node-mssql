@@ -228,6 +228,43 @@ All values are automatically sanitized against sql injection.
 This is because it is rendered as prepared statement, and thus all limitations imposed in MS SQL on parameters apply.
 e.g. Column names cannot be passed/set in statements using variables.
 
+#### Using tagged templates and dynamic SQL
+
+You can combine the `request.template` method and `request.query` to safely escape dynamic SQL statements.
+
+In the following we will filter and paginate a result set based on user input. The filter is conditional based on the presence of the user input value and if provided, is safely escaped using the `request.template` function. If not provided, it's not added to the query. In addition we are dynamically specifying columns.
+
+```js
+// lets assume some unsafe values passed by user data
+const unsafe = {
+    emails : ["test@test.com", "another@test.com"],
+    rows : 10,
+    skip : 0
+};
+// lets assume some safe values, these values are developer-provided and do not need sanitization
+const safe = {
+    columns : ["id", "title" ]
+};
+const request = new sql.Request();
+const result = await request.query(`
+    SELECT * FROM (
+        SELECT
+            ROW_NUMBER() OVER (ORDER BY id ASC) as row,
+            ${safe.columns.join(", ")}
+        FROM titles
+        WHERE
+            1 = 1
+            ${
+                unsafe.emails !== undefined ? request.template`AND email IN (${unsafe.emails})` : ""
+            }
+    ) as rows
+    WHERE
+        ${request.template`row > ${unsafe.skip} AND row <= ${unsafe.skip + unsafe.rows}`}
+`);
+```
+
+**NOTE**: When using this technique you must call `query` with the function syntax `query()` and you must call `template` with the template tag syntax ``` template`` ```. The string passed to `query()` will perform no escaping, so ensure you are wrapping all unsafe elements in `template`.
+
 ### Callbacks
 
 ```javascript
