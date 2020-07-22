@@ -27,15 +27,15 @@
   "license": "MIT",
   "dependencies": {
     "debug": "^4",
-    "tarn": "^1.1.5",
+    "tarn": "^3",
     "tedious": "^9"
   },
   "devDependencies": {
-    "mocha": "^6.2.2",
+    "mocha": "^8",
     "standard": "^14.3.4"
   },
   "engines": {
-    "node": ">=6"
+    "node": ">=10"
   },
   "files": [
     "lib/",
