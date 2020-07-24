@@ -1,3 +1,11 @@
+v6.2.2 (2020-xx-xx)
+-------------------
+[fix] Avoid using deprecated `.inspect` on Objects ([#1071](https://github.com/tediousjs/node-mssql/pull/1071))
+
+v6.2.1 (2020-07-22)
+-------------------
+[fix] Bump various dependencies for security fixes
+
 v6.2.0 (2020-03-13)
 -------------------
 [new] Set default isolationLevel for all transactions ([#1005](https://github.com/tediousjs/node-mssql/pull/1005))
