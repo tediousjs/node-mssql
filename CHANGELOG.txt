@@ -1,3 +1,7 @@
+v5.1.3 (2020-xx-xx)
+-------------------
+[fix] Avoid using deprecated `.inspect` on Objects ([#1071](https://github.com/tediousjs/node-mssql/pull/1071))
+
 v5.1.2 (2020-07-22)
 -------------------
 [fix] Bump various dependencies for security fixes
