@@ -3,6 +3,7 @@ v7.0.0 (2020-??-??)
 [change] Updated to latest Tedious 9
 [change] Piped streams no longer have errors forwarded on to them ([1028](https://github.com/tediousjs/node-mssql/pull/1028))
 [change] tedious config option `trustServerCertificate` defaults to `false` if not supplied ([1030](https://github.com/tediousjs/node-mssql/pull/1030))
+[fix] Avoid using deprecated `.inspect` on Objects ([#1071](https://github.com/tediousjs/node-mssql/pull/1071))
 
 v6.2.2 (2020-xx-xx)
 -------------------
