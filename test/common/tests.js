@@ -457,7 +457,7 @@ module.exports = (sql, driver) => {
       req.on('row', () => {
         readRowCount += 1
       })
-      req.query(`select * from streaming order by text offset 0 rows fetch first ${rowCountLimit} rows only`)
+      req.query(`select top ${rowCountLimit} * from streaming order by text`)
       req.pipe(blockingTransformStream).pipe(wstream)
     },
 
