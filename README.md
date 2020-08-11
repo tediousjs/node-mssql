@@ -874,10 +874,6 @@ __Errors__ (synchronous)
 
 Convert request to a Node.js ReadableStream
 
-__Arguments__
-
-- **stream** - Writable stream in object mode.
-
 __Example__
 
 ```javascript
