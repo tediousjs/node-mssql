@@ -67,6 +67,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [execute](#execute-procedure-callback)
 * [input](#input-name-type-value)
 * [output](#output-name-type-value)
+* [toReadableStream](#to-readable-stream)
 * [pipe](#pipe-stream)
 * [query](#query-command-callback)
 * [batch](#batch-batch-callback)
@@ -868,6 +869,25 @@ __Errors__ (synchronous)
 - EINJECT (`RequestError`) - SQL injection warning.
 
 ---------------------------------------
+
+### toReadableStream
+
+Convert request to a Node.js ReadableStream
+
+__Arguments__
+
+- **stream** - Writable stream in object mode.
+
+__Example__
+
+```javascript
+const { pipeline } = require('stream')
+const request = new sql.Request()
+const readableStream = request.toReadableStream()
+pipeline(readableStream, transformStream, writableStream)
+request.query('select * from mytable')
+```
+
 
 ### pipe (stream)
 

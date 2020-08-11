@@ -60,6 +60,7 @@ describe('msnodesqlv8', function () {
     it('query with error', done => TESTS['query with error'](done))
     it.skip('query with multiple errors (not supported by msnodesqlv8)', done => TESTS['query with multiple errors'](done))
     it.skip('query with raiseerror (not supported by msnodesqlv8)', done => TESTS['query with raiseerror'](done))
+    it('query with toReadableStream', done => TESTS['query with toReadableStream'](done))
     it('query with pipe', done => TESTS['query with pipe'](done))
     it('query with pipe and back pressure', (done) => TESTS['query with pipe and back pressure'](done))
     it('batch', done => TESTS.batch(done))

@@ -397,6 +397,23 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'query with toReadableStream' (done) {
+      const stream = new WritableStream()
+      stream.on('finish', () => {
+        assert.strictEqual(stream.cache.length, 1)
+        assert.strictEqual(stream.cache[0].text, 'asdf')
+        done()
+      })
+      stream.on('error', err => {
+        done(err)
+      })
+
+      const req = new sql.Request()
+      const readableStream = req.toReadableStream()
+      readableStream.pipe(stream)
+      req.query('select \'asdf\' as text')
+    },
+
     'query with pipe' (done) {
       const stream = new WritableStream()
       stream.on('finish', () => {

@@ -67,6 +67,7 @@ describe('tedious', () => {
     it('query with error', done => TESTS['query with error'](done))
     it('query with multiple errors', done => TESTS['query with multiple errors'](done))
     it('query with raiseerror', done => TESTS['query with raiseerror'](done))
+    it('query with toReadableStream', done => TESTS['query with toReadableStream'](done))
     it('query with pipe', done => TESTS['query with pipe'](done))
     it('query with pipe and back pressure', (done) => TESTS['query with pipe and back pressure'](done))
     it('batch', done => TESTS.batch(done))
