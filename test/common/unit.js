@@ -140,6 +140,9 @@ describe('Unit', () => {
     assert.deepStrictEqual(t.rows[3], [12, 'XCXCDCDSCDSC'])
     assert.strictEqual(t.temporary, false)
 
+    t.rows.clear()
+    assert.strictEqual(t.rows.length, 0)
+
     t = new sql.Table('schm.MyTable')
 
     assert.strictEqual(t.name, 'MyTable')
