@@ -1,6 +1,7 @@
-v6.2.2 (2020-xx-xx)
+v6.2.2 (2020-09-18)
 -------------------
 [fix] Avoid using deprecated `.inspect` on Objects ([#1071](https://github.com/tediousjs/node-mssql/pull/1071))
+[fix] Bump various dependencies for security fixes ([#1102](https://github.com/tediousjs/node-mssql/pull/1102))
 
 v6.2.1 (2020-07-22)
 -------------------
@@ -47,9 +48,10 @@ v6.0.0 (2019-11-05)
 [change] Replaced pool library (`generic-pool`) with `tarn.js` ([#808](https://github.com/tediousjs/node-mssql/pull/808))
 [removed] Backoff try strategy for creating connections removed, `tarn.js` built-in retry strategy used instead
 
-v5.1.3 (2020-xx-xx)
+v5.1.3 (2020-09-18)
 -------------------
 [fix] Avoid using deprecated `.inspect` on Objects ([#1071](https://github.com/tediousjs/node-mssql/pull/1071))
+[fix] Bump various dependencies for security fixes ([#1102](https://github.com/tediousjs/node-mssql/pull/1102))
 
 v5.1.2 (2020-07-22)
 -------------------
