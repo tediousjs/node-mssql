@@ -1,4 +1,4 @@
-v6.2.3 (2020-09-xx)
+v6.2.3 (2020-09-25)
 -------------------
 [fix] Remove reference to global pool on connection error ([#1107](https://github.com/tediousjs/node-mssql/pull/1107))
 [fix] Trailing rows from request streams using msnodesqlv8 driver fail to be emitted ([#1109](https://github.com/tediousjs/node-mssql/pull/1109))
