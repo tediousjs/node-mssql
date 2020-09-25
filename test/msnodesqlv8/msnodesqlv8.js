@@ -206,6 +206,7 @@ describe('msnodesqlv8', function () {
     it('streaming on', done => TESTS['streaming on'](done))
     it('streaming pause', done => TESTS['streaming pause'](done))
     it('streaming resume', done => TESTS['streaming resume'](done))
+    it('streaming trailing rows', done => TESTS['streaming trailing rows'](done))
     it('a cancelled stream emits done event', done => TESTS['a cancelled stream emits done event'](done))
     it('a cancelled paused stream emits done event', done => TESTS['a cancelled paused stream emits done event'](done))
 

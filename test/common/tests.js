@@ -1467,6 +1467,30 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'streaming trailing rows' (done) {
+      let rows = 0
+      const req = new TestRequest()
+      req.stream = true
+      req.query('select top 102 * from streaming')
+      req.on('error', (err) => {
+        if (err.code !== 'ECANCEL') {
+          req.cancel()
+          done(err)
+        }
+      })
+
+      req.on('row', row => {
+        rows++
+        if (rows >= 102) {
+          assert.strictEqual(rows, 102)
+        }
+      })
+      req.on('done', () => {
+        assert.strictEqual(rows, 102)
+        done()
+      })
+    },
+
     'new Table' (done) {
       const tvp = new MSSQLTestType()
       tvp.rows.add('asdf', 15)
