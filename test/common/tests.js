@@ -1467,6 +1467,53 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'streaming trailing rows' (done) {
+      let rows = 0
+      let started = false
+
+      const req = new TestRequest()
+      req.stream = true
+      req.pause()
+      req.query('select top 102 * from streaming')
+      req.on('error', (err) => {
+        if (err.code !== 'ECANCEL') {
+          req.cancel()
+          clearTimeout(timeout)
+          done(err)
+        }
+      })
+
+      // start the request after 1 second
+      const timeout = setTimeout(() => {
+        assert.ok(!started)
+        assert.strictEqual(rows, 0)
+        started = true
+        req.resume()
+      }, 1000)
+
+      const resumeTimeout = () => setTimeout(() => {
+        assert.ok(req.paused);
+        assert.strictEqual(rows % 10, 0)
+        req.resume()
+      }, 200)
+
+      req.on('row', row => {
+        assert.ok(started, 'row event received before stream resumed')
+        rows++
+        if (rows >= 102) {
+          assert.strictEqual(rows, 102)
+        }
+        if (rows % 10 == 0) {
+          req.pause()
+          resumeTimeout()
+        }
+      })
+      req.on('done', () => {
+        assert.strictEqual(rows, 102)
+        done()
+      })
+    },
+
     'new Table' (done) {
       const tvp = new MSSQLTestType()
       tvp.rows.add('asdf', 15)
