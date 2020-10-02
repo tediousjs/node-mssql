@@ -806,7 +806,7 @@ __Arguments__
 
 - **name** - Name of the input parameter without @ char.
 - **type** - SQL data type of input parameter. If you omit type, module automatically decide which SQL data type should be used based on JS data type.
-- **value** - Input parameter value. `undefined` ans `NaN` values are automatically converted to `null` values.
+- **value** - Input parameter value. `undefined` and `NaN` values are automatically converted to `null` values.
 
 __Example__
 
