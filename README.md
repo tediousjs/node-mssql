@@ -6,7 +6,7 @@ Microsoft SQL Server client for Node.js
 
 Supported TDS drivers:
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
-- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (native - Windows only)
+- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (native - Windows/Linux only)
 
 ## Installation
 
@@ -660,7 +660,7 @@ More information about Tedious specific options: http://tediousjs.github.io/tedi
 
 ### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
 
-**Requires Node.js 0.12.x or newer. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
+**Requires Node.js v10+ or newer. Windows/Linux only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
 
 **Extra options:**
 
@@ -806,7 +806,7 @@ __Arguments__
 
 - **name** - Name of the input parameter without @ char.
 - **type** - SQL data type of input parameter. If you omit type, module automatically decide which SQL data type should be used based on JS data type.
-- **value** - Input parameter value. `undefined` ans `NaN` values are automatically converted to `null` values.
+- **value** - Input parameter value. `undefined` and `NaN` values are automatically converted to `null` values.
 
 __Example__
 

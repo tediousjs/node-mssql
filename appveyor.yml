@@ -2,8 +2,6 @@ version: "{build}"
 
 environment:
   matrix:
-    - nodejs_version: "6"
-    - nodejs_version: "8"
     - nodejs_version: "10"
     - nodejs_version: "12"
     - nodejs_version: "14"
@@ -12,7 +10,7 @@ install:
   # https://www.appveyor.com/docs/lang/nodejs-iojs/#installing-any-version-of-nodejs-or-iojs
   - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version) $env:PLATFORM
   - npm install
-  - IF %nodejs_version% GEQ 10 (npm install msnodesqlv8@^1.1) ELSE (npm install msnodesqlv8@^0.6.12)
+  - npm install msnodesqlv8
 
 platform:
   - x86
