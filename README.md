@@ -133,16 +133,16 @@ const sql = require('mssql')
         let result1 = await pool.request()
             .input('input_parameter', sql.Int, value)
             .query('select * from mytable where id = @input_parameter')
-            
+
         console.dir(result1)
-    
+
         // Stored procedure
-        
+
         let result2 = await pool.request()
             .input('input_parameter', sql.Int, value)
             .output('output_parameter', sql.VarChar(50))
             .execute('procedure_name')
-        
+
         console.dir(result2)
     } catch (err) {
         // ... error checks
@@ -167,7 +167,7 @@ sql.on('error', err => {
 
 sql.connect(config).then(pool => {
     // Query
-    
+
     return pool.request()
         .input('input_parameter', sql.Int, value)
         .query('select * from mytable where id = @input_parameter')
@@ -188,9 +188,9 @@ sql.on('error', err => {
 })
 
 sql.connect(config).then(pool => {
-    
+
     // Stored procedure
-    
+
     return pool.request()
         .input('input_parameter', sql.Int, value)
         .output('output_parameter', sql.VarChar(50))
@@ -222,7 +222,7 @@ sql.on('error', err => {
 })
 ```
 
-All values are automatically sanitized against sql injection. 
+All values are automatically sanitized against sql injection.
 This is because it is rendered as prepared statement, and thus all limitations imposed in MS SQL on parameters apply.
 e.g. Column names cannot be passed/set in statements using variables.
 
@@ -430,7 +430,7 @@ your application is shutting down.
 
 Using a single connection pool for your application/service is recommended.
 Instantiating a pool with a callback, or immediately calling `.connect`, is asynchronous to ensure a connection can be
-established before returning. From that point, you're able to acquire connections as normal:  
+established before returning. From that point, you're able to acquire connections as normal:
 
 ```javascript
 const sql = require('mssql')
@@ -1316,7 +1316,7 @@ ps.prepare('select @param as value', err => {
 
         console.log(result.recordset[0].value) // return 12345
         console.log(result.rowsAffected) // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
-        
+
         ps.unprepare(err => {
             // ... error checks
         })
@@ -1349,9 +1349,9 @@ ps.prepare('select @param as value', err => {
 
     request.on('done', result => {
         // Always emitted as the last one
-        
+
         console.log(result.rowsAffected) // Returns number of affected rows in case of INSERT, UPDATE or DELETE statement.
-        
+
         ps.unprepare(err => {
             // ... error checks
         })
@@ -1408,7 +1408,8 @@ Create a `.mssql.json` configuration file (anywhere). Structure of the file is t
     "user": "...",
     "password": "...",
     "server": "localhost",
-    "database": "..."
+    "database": "...",
+    "options": {}
 }
 ```
 

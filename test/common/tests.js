@@ -242,6 +242,32 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    async 'stored procedure calling with invalid type' (done) {
+      try {
+        // previously this would exhaust the connection pool
+        for (let i = 0; i < 100; i++) {
+          let didThrow = false
+          try {
+            let req = new TestRequest()
+            req = req.input('id', sql.UniqueIdentifier, 'invalid-guid')
+            await req.execute('__test6')
+          } catch {
+            didThrow = true
+          }
+          assert.strictEqual(didThrow, true)
+        }
+
+        // ensure a new valid request works
+        let req = new TestRequest()
+        req = req.input('id', sql.UniqueIdentifier, 'ff775ea1-e1d5-42ff-92fa-fd3df0a232dd')
+        const result = await req.execute('__test6')
+        assert.strictEqual(result.returnValue, 1)
+        done()
+      } catch (err) {
+        done(err)
+      }
+    },
+
     'empty query' (done) {
       const req = new TestRequest()
       req.query('').then(result => {
@@ -1538,7 +1564,7 @@ module.exports = (sql, driver) => {
 
         done()
       }).catch(done)
-    }
+    },
   }
 }
 

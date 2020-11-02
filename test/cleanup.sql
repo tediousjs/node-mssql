@@ -10,6 +10,9 @@ if exists (select * from sys.procedures where name = '__test3')
 if exists (select * from sys.procedures where name = '__test5')
 	exec('drop procedure [dbo].[__test5]')
 
+if exists (select * from sys.procedures where name = '__test6')
+	exec('drop procedure [dbo].[__test6]')
+
 if exists (select * from sys.procedures where name = '__test7')
 	exec('drop procedure [dbo].[__test7]')
 
@@ -18,13 +21,13 @@ if exists (select * from sys.types where is_user_defined = 1 and name = 'MSSQLTe
 
 if exists (select * from sys.tables where name = 'prepstm_test')
 	exec('drop table [dbo].[tvp_test]')
-	
+
 if exists (select * from sys.tables where name = 'prepstm_test')
 	exec('drop table [dbo].[prepstm_test]')
-	
+
 if exists (select * from sys.tables where name = 'tran_test')
 	exec('drop table [dbo].[tran_test]')
-	
+
 if exists (select * from sys.tables where name = 'bulk_table')
 	exec('drop table [dbo].[bulk_table]')
 

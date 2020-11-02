@@ -11,33 +11,33 @@ exec('create procedure [dbo].[__test]
 	@out5 char(10) = null output
 as
 begin
-		
+
 	set nocount on;
-	
+
 	declare @table table (a int, b int)
 	insert into @table values (1, 2)
 	insert into @table values (3, 4)
-	
+
 	select * from @table
-	
+
 	select 5 as ''c'', 6 as ''d'', @in2 as ''e'', 111 as ''e'', ''asdf'' as ''e'', null as ''f'', @in3 as ''g''
-	
+
 	select * from @table where a = 11
-	
+
 	set @out = 99
 	set @out2 = @in
 	set @out3 = @in4
 	set @out4 = @in5
 	set @out5 = @in3
-	
+
 	return 11
-	
+
 end')
 
 exec('create procedure [dbo].[__test2]
 as
 begin
-	
+
 	set nocount on
 
 	declare @table table (a int, b int)
@@ -52,7 +52,7 @@ end')
 exec('create procedure [dbo].[__test3]
 as
 begin
-	
+
 	with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for xml auto;
 
 end')
@@ -68,7 +68,7 @@ exec('create procedure [dbo].[__test5]
 	@out2 VARBINARY(MAX) = NULL OUTPUT
 as
 begin
-	
+
 	set nocount on
 
 	select CAST( 123456 AS BINARY(4) ) as ''bin'', @in as ''in'', @in2 as ''in2'', @in3 as ''in3'', @in4 as ''in4'', @in5 as ''in5'', @in6 as ''in6''
@@ -78,6 +78,13 @@ begin
 
 	return 0
 
+end')
+
+exec('create procedure [dbo].[__test6]
+	@id UNIQUEIDENTIFIER
+as
+begin
+	return 1
 end')
 
 exec('create type [dbo].[MSSQLTestType] as table(

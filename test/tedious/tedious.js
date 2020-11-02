@@ -54,6 +54,7 @@ describe('tedious', () => {
     it('binary data', done => TESTS['binary data'](done))
     it('variant data (not yet published)', done => TESTS['variant data'](done))
     it('stored procedure with one empty recordset', done => TESTS['stored procedure with one empty recordset'](done))
+    it('stored procedure calling with invalid type', done => { TESTS['stored procedure calling with invalid type'](done) })
     it('empty query', done => TESTS['empty query'](done))
     it('query with no recordset', done => TESTS['query with no recordset'](done))
     it('query with one recordset', done => TESTS['query with one recordset'](done))
