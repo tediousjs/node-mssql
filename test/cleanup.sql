@@ -13,6 +13,9 @@ if exists (select * from sys.procedures where name = '__test5')
 if exists (select * from sys.procedures where name = '__test7')
 	exec('drop procedure [dbo].[__test7]')
 
+if exists (select * from sys.procedures where name = '__testDuplicateNames')
+	exec('drop procedure [dbo].[__testDuplicateNames]')
+
 if exists (select * from sys.types where is_user_defined = 1 and name = 'MSSQLTestType')
 	exec('drop type [dbo].[MSSQLTestType]')
 
