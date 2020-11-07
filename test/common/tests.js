@@ -60,15 +60,22 @@ module.exports = (sql, driver) => {
             const recordset = []
             recordset.columns = columns
             recordsets.push(recordset)
-            if (this.arrayRowMode) recordsetcolumns.push(columns)
+            if (this.arrayRowMode) {
+              let hasReturnColumn = false
+              for (let i = 0; i < columns.length; i++) {
+                if (columns[i].name === '___return___') {
+                  hasReturnColumn = true
+                  break
+                }
+              }
+              if (!hasReturnColumn) recordsetcolumns.push(columns)
+            }
           })
           this.on('row', row => recordsets[recordsets.length - 1].push(row))
           this.on('error', err => errors.push(err))
           this.on('done', result => {
             if (errors.length) return reject(errors.pop())
-            if (this.arrayRowMode) {
-              result.columns = recordsetcolumns
-            }
+            if (this.arrayRowMode) result.columns = recordsetcolumns
             resolve(Object.assign(result, {
               recordsets,
               recordset: recordsets[0]
