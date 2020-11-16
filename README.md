@@ -1655,6 +1655,102 @@ Results in:
 }
 ```
 
+__Streaming Duplicate Column Names__
+
+When using `arrayRowMode` with `stream` enabled, the output from the `recordset` event (as described in [Streaming](#streaming)) is returned as an array of column metadata, instead of as a keyed object. The order of the column metadata provided by the `recordset` event will match the order of row values when `arrayRowMode` is enabled.
+
+Default behaviour (without `arrayRowMode`):
+```javascript
+const request = new sql.Request()
+request.stream = true
+request.query("select 'asdf' as name, 'qwerty' as other_name, 'jkl' as name")
+request.on('recordset', recordset => console.log(recordset))
+```
+
+
+Results in:
+
+```javascript
+{
+  name: {
+    index: 2,
+    name: 'name',
+    length: 3,
+    type: [sql.VarChar],
+    scale: undefined,
+    precision: undefined,
+    nullable: false,
+    caseSensitive: false,
+    identity: false,
+    readOnly: true
+  },
+  other_name: {
+    index: 1,
+    name: 'other_name',
+    length: 6,
+    type: [sql.VarChar],
+    scale: undefined,
+    precision: undefined,
+    nullable: false,
+    caseSensitive: false,
+    identity: false,
+    readOnly: true
+  }
+}
+```
+
+With `arrayRowMode`:
+```javascript
+const request = new sql.Request()
+request.stream = true
+request.arrayRowMode = true
+request.query("select 'asdf' as name, 'qwerty' as other_name, 'jkl' as name")
+
+request.on('recordset', recordset => console.log(recordset))
+```
+
+Results in:
+```javascript
+[
+  {
+    index: 0,
+    name: 'name',
+    length: 4,
+    type: [sql.VarChar],
+    scale: undefined,
+    precision: undefined,
+    nullable: false,
+    caseSensitive: false,
+    identity: false,
+    readOnly: true
+  },
+  {
+    index: 1,
+    name: 'other_name',
+    length: 6,
+    type: [sql.VarChar],
+    scale: undefined,
+    precision: undefined,
+    nullable: false,
+    caseSensitive: false,
+    identity: false,
+    readOnly: true
+  },
+  {
+    index: 2,
+    name: 'name',
+    length: 3,
+    type: [sql.VarChar],
+    scale: undefined,
+    precision: undefined,
+    nullable: false,
+    caseSensitive: false,
+    identity: false,
+    readOnly: true
+  }
+]
+```
+
 ## Errors
 
 There are 4 types of errors you can handle:
