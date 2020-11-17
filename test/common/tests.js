@@ -51,6 +51,7 @@ module.exports = (sql, driver) => {
         return new Promise((resolve, reject) => {
           const recordsets = []
           const errors = []
+          const recordsetcolumns = []
 
           this.stream = true
           super.execute(method)
@@ -59,11 +60,22 @@ module.exports = (sql, driver) => {
             const recordset = []
             recordset.columns = columns
             recordsets.push(recordset)
+            if (this.arrayRowMode) {
+              let hasReturnColumn = false
+              for (let i = 0; i < columns.length; i++) {
+                if (columns[i].name === '___return___') {
+                  hasReturnColumn = true
+                  break
+                }
+              }
+              if (!hasReturnColumn) recordsetcolumns.push(columns)
+            }
           })
           this.on('row', row => recordsets[recordsets.length - 1].push(row))
           this.on('error', err => errors.push(err))
           this.on('done', result => {
             if (errors.length) return reject(errors.pop())
+            if (this.arrayRowMode) result.columns = recordsetcolumns
             resolve(Object.assign(result, {
               recordsets,
               recordset: recordsets[0]
@@ -242,6 +254,28 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'stored procedure with duplicate output column names' (done) {
+      const req = new TestRequest()
+      req.arrayRowMode = true
+      req.input('in', sql.Int, 1)
+      req.input('in2', sql.Int, 2)
+      req.output('out', sql.Int)
+      req.output('out2', sql.Int)
+      req.execute('__testDuplicateNames').then(result => {
+        assert.strictEqual(result.returnValue, 12)
+        assert.strictEqual(result.recordsets.length, 1)
+        assert.ok(result.recordsets[0][0] instanceof Array)
+        assert.strictEqual(result.recordsets[0][0][0], 1)
+        assert.strictEqual(result.recordsets[0][0][1], 2)
+        assert.strictEqual(result.recordsets[0].columns.length, 2)
+
+        assert.strictEqual(result.output.out, 2)
+        assert.strictEqual(result.output.out2, 1)
+
+        done()
+      }).catch(done)
+    },
+
     'empty query' (done) {
       const req = new TestRequest()
       req.query('').then(result => {
@@ -411,6 +445,18 @@ module.exports = (sql, driver) => {
       const req = new sql.Request()
       req.query('select \'asdf\' as text')
       req.pipe(stream)
+    },
+
+    'query with duplicate output column names' (done) {
+      const req = new TestRequest()
+      req.arrayRowMode = true
+      req.query('select \'asdf\' as name, \'jkl\' as name').then(result => {
+        assert.strictEqual(result.recordset.length, 1)
+        assert.ok(result.recordset[0] instanceof Array)
+        assert.strictEqual(result.recordset[0][0], 'asdf')
+        assert.strictEqual(result.recordset[0][1], 'jkl')
+        done()
+      }).catch(done)
     },
 
     'batch' (done, stream) {
@@ -677,6 +723,25 @@ module.exports = (sql, driver) => {
             }).catch(done)
           }).catch(done)
         }).catch(done)
+      }).catch(done)
+    },
+
+    'prepared statement with duplicate output column names' (done) {
+      const ps = new TestPreparedStatement()
+      ps.arrayRowMode = true
+      ps.input('num', sql.Int)
+      ps.input('num2', sql.Decimal(5, 2))
+      ps.prepare('select @num as number, @num2 as number').then(() => {
+        ps.execute({ num: 555, num2: 666.77 }).then(result => {
+          assert.strictEqual(result.recordset.length, 1)
+          assert.ok(result.recordset[0] instanceof Array)
+          assert.strictEqual(result.recordset[0][0], 555)
+          assert.strictEqual(result.recordset[0][1], 666.77)
+
+          ps.unprepare(done)
+        }).catch(err => {
+          ps.unprepare(() => done(err))
+        })
       }).catch(done)
     },
 
@@ -1487,6 +1552,33 @@ module.exports = (sql, driver) => {
       })
       req.on('done', () => {
         assert.strictEqual(rows, 102)
+        done()
+      })
+    },
+
+    'streaming with duplicate output column names' (done) {
+      const result = []
+      const recordsets = []
+      const req = new TestRequest()
+      req.stream = true
+      req.arrayRowMode = true
+      req.query('select top 2 text, \'test output\' as text from streaming')
+      req.on('error', err => {
+        done(err)
+      })
+
+      req.on('recordset', recordset => recordsets.push(recordset))
+
+      req.on('row', row => result.push(row))
+
+      req.on('done', function () {
+        assert.strictEqual(recordsets.length, 1)
+        assert.ok(recordsets[0] instanceof Array)
+        assert.strictEqual(recordsets[0][0].index, 0)
+        assert.strictEqual(recordsets[0][0].name, 'text')
+        assert.strictEqual(recordsets[0][1].index, 1)
+        assert.strictEqual(recordsets[0][1].name, 'text')
+        assert.strictEqual(result.length, 2)
         done()
       })
     },

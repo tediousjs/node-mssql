@@ -80,6 +80,25 @@ begin
 
 end')
 
+exec('create procedure [dbo].[__testDuplicateNames]
+	@in int,
+	@in2 int,
+	@out int = NULL OUTPUT,
+	@out2 int = NULL OUTPUT
+as
+begin
+		
+	set nocount on
+
+	select @in as ''in_value'', @in2 as ''in_value''
+	
+	set @out = @in2
+	set @out2 = @in
+	
+	return 12
+	
+end')
+
 exec('create type [dbo].[MSSQLTestType] as table(
 	[a] [varchar](50) null,
 	[b] [integer] null
