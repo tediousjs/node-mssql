@@ -397,6 +397,23 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'query with toReadableStream' (done) {
+      const stream = new WritableStream()
+      stream.on('finish', () => {
+        assert.strictEqual(stream.cache.length, 1)
+        assert.strictEqual(stream.cache[0].text, 'asdf')
+        done()
+      })
+      stream.on('error', err => {
+        done(err)
+      })
+
+      const req = new sql.Request()
+      const readableStream = req.toReadableStream()
+      readableStream.pipe(stream)
+      req.query('select \'asdf\' as text')
+    },
+
     'query with pipe' (done) {
       const stream = new WritableStream()
       stream.on('finish', () => {
@@ -411,6 +428,54 @@ module.exports = (sql, driver) => {
       const req = new sql.Request()
       req.query('select \'asdf\' as text')
       req.pipe(stream)
+    },
+
+    'query with pipe and back pressure' (done) {
+      const req = new sql.Request()
+      const rowCountLimit = 2000 // table has 32768 rows
+      const expectedBegEachRowText = 'Lorem ipsum dolor sit amet, consectetur'
+      let readRowCount = 0
+      let transformReadCount = 0
+      const blockingTransformStream = new stream.Transform({
+        readableObjectMode: true,
+        writableObjectMode: true,
+        transform (row, encoding, cb) {
+          transformReadCount += 1
+          if (transformReadCount < rowCountLimit && transformReadCount % 1000 === 0) {
+            // every 1k rows, block for a second to test back pressure but not at end
+            setTimeout(() => {
+              // check that we are paused
+              assert(req._paused, 'request should be paused')
+              cb(null, row)
+            }, 1000)
+          } else {
+            // otherwise go right through
+            cb(null, row)
+          }
+        }
+      })
+      const wstream = new WritableStream()
+      wstream.on('finish', () => {
+        assert.strictEqual(readRowCount, rowCountLimit)
+        assert.strictEqual(transformReadCount, rowCountLimit)
+        assert.strictEqual(wstream.cache.length, rowCountLimit)
+        wstream.cache.forEach(({ text }, idx) =>
+          assert(
+            text.startsWith(expectedBegEachRowText),
+            `row[${idx}] does not start with '${expectedBegEachRowText}' text:${text}`
+          )
+        )
+        done()
+      })
+      wstream.on('error', (err) => {
+        done(err)
+      })
+
+      req.on('row', () => {
+        readRowCount += 1
+      })
+      req.query(`select top ${rowCountLimit} * from streaming order by text`)
+      req.pipe(blockingTransformStream).pipe(wstream)
     },
 
     'batch' (done, stream) {
