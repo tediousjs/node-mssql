@@ -1,5 +1,6 @@
 v7.0.0 (2020-??-??)
 -------------------
+[new] Result sets with duplicate keys can now be handled using `request.arrayRowMode` ([#1130](https://github.com/tediousjs/node-mssql/pull/1130))
 [change] Updated to latest Tedious 9
 [change] Piped streams no longer have errors forwarded on to them ([#1028](https://github.com/tediousjs/node-mssql/pull/1028))
 [change] tedious config option `trustServerCertificate` defaults to `false` if not supplied ([#1030](https://github.com/tediousjs/node-mssql/pull/1030))
@@ -8,6 +9,12 @@ v7.0.0 (2020-??-??)
 [fix] Avoid using deprecated `.inspect` on Objects ([#1071](https://github.com/tediousjs/node-mssql/pull/1071))
 [fix] Bump various dependencies for security fixes ([#1102](https://github.com/tediousjs/node-mssql/pull/1102))
 [fix] Trailing rows from request streams using msnodesqlv8 driver fail to be emitted ([#1109](https://github.com/tediousjs/node-mssql/pull/1109))
+[fix] Issue with geography v2 parsing resolve ([#1138](https://github.com/tediousjs/node-mssql/pull/1138))
+
+v6.3.0 (2020-xx-xx)
+-------------------
+[new] Result sets with duplicate keys can now be handled using `request.arrayRowMode` ([#1130](https://github.com/tediousjs/node-mssql/pull/1130))
+[fix] Issue with geography v2 parsing resolve ([#1138](https://github.com/tediousjs/node-mssql/pull/1138))
 
 v6.2.3 (2020-09-25)
 -------------------

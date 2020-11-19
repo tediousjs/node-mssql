@@ -47,6 +47,7 @@ describe('msnodesqlv8', function () {
     it('binary data', done => TESTS['binary data'](done))
     it('variant data', done => TESTS['variant data'](done))
     it('stored procedure with one empty recordset', done => TESTS['stored procedure with one empty recordset'](done))
+    it('stored procedure with duplicate output column names', done => TESTS['stored procedure with duplicate output column names'](done))
     it('empty query', done => TESTS['empty query'](done))
     it('query with no recordset', done => TESTS['query with no recordset'](done))
     it('query with one recordset', done => TESTS['query with one recordset'](done))
@@ -72,6 +73,7 @@ describe('msnodesqlv8', function () {
     it('prepared statement parameters can be replaced', done => TESTS['prepared statement parameters can be replaced'](done))
     it('prepared statement with affected rows', done => TESTS['prepared statement with affected rows'](done))
     it('prepared statement in transaction', done => TESTS['prepared statement in transaction'](done))
+    it('prepared statement with duplicate output column names', done => TESTS['prepared statement with duplicate output column names'](done))
     it('transaction with rollback', done => TESTS['transaction with rollback'](done))
     it('transaction with commit', done => TESTS['transaction with commit'](done))
     it('transaction throws on bad isolation level', done => TESTS['transaction throws on bad isolation level'](done))
@@ -209,6 +211,7 @@ describe('msnodesqlv8', function () {
     it('streaming pause', done => TESTS['streaming pause'](done))
     it('streaming resume', done => TESTS['streaming resume'](done))
     it('streaming trailing rows', done => TESTS['streaming trailing rows'](done))
+    it('streaming with duplicate output column names', done => TESTS['streaming with duplicate output column names'](done))
     it('a cancelled stream emits done event', done => TESTS['a cancelled stream emits done event'](done))
     it('a cancelled paused stream emits done event', done => TESTS['a cancelled paused stream emits done event'](done))
 

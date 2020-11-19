@@ -5,6 +5,7 @@
 const sql = require('../../')
 const assert = require('assert')
 const cs = require('../../lib/connectionstring')
+const udt = require('../../lib/udt')
 
 describe('Connection String', () => {
   it('Connection String #1', done => {
@@ -284,5 +285,43 @@ describe('Unit', () => {
     const sqlstr = req.template`select * from myTable where id = ${123}`
     assert.strictEqual(sqlstr, 'select * from myTable where id = @param1')
     assert.strictEqual(req.parameters.param1.value, 123)
+  })
+})
+
+describe('Geography Parsing', () => {
+  it('polygon v1', () => {
+    // select geography::STGeomFromText(N'POLYGON((1 1, 3 1, 3 7, 1 1))',4326)
+    const buffer = Buffer.from('E6100000010404000000000000000000F03F000000000000F03F000000000000F03F00000000000008400000000000001C400000000000000840000000000000F03F000000000000F03F01000000020000000001000000FFFFFFFF0000000003', 'hex')
+    const geo = udt.PARSERS.geography(buffer)
+
+    assert.strictEqual(geo.version, 1)
+    assert.strictEqual(geo.srid, 4326)
+    assert.strictEqual(geo.points.length, 4)
+    assert.strictEqual(geo.points[0].y, 1)
+    assert.strictEqual(geo.points[0].x, 1)
+    assert.strictEqual(geo.points[1].y, 3)
+    assert.strictEqual(geo.points[1].x, 1)
+    assert.strictEqual(geo.points[2].y, 3)
+    assert.strictEqual(geo.points[2].x, 7)
+    assert.strictEqual(geo.points[3].y, 1)
+    assert.strictEqual(geo.points[3].x, 1)
+  })
+
+  it('polygon v2', () => {
+    // select geography::STGeomFromText(N'POLYGON((1 1, 3 1, 3 1, 1 1))',4326)
+    const buffer = Buffer.from('E6100000020004000000000000000000F03F000000000000F03F000000000000F03F0000000000000840000000000000F03F0000000000000840000000000000F03F000000000000F03F01000000010000000001000000FFFFFFFF0000000003', 'hex')
+    const geo = udt.PARSERS.geography(buffer)
+
+    assert.strictEqual(geo.version, 2)
+    assert.strictEqual(geo.srid, 4326)
+    assert.strictEqual(geo.points.length, 4)
+    assert.strictEqual(geo.points[0].y, 1)
+    assert.strictEqual(geo.points[0].x, 1)
+    assert.strictEqual(geo.points[1].y, 3)
+    assert.strictEqual(geo.points[1].x, 1)
+    assert.strictEqual(geo.points[2].y, 3)
+    assert.strictEqual(geo.points[2].x, 1)
+    assert.strictEqual(geo.points[3].y, 1)
+    assert.strictEqual(geo.points[3].x, 1)
   })
 })
