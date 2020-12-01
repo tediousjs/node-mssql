@@ -1,7 +1,8 @@
-v6.3.0 (2020-xx-xx)
+v6.3.0 (2020-12-xx)
 -------------------
 [new] Result sets with duplicate keys can now be handled using `request.arrayRowMode` ([#1130](https://github.com/tediousjs/node-mssql/pull/1130))
 [fix] Issue with geography v2 parsing resolve ([#1138](https://github.com/tediousjs/node-mssql/pull/1138))
+[fix] Fixed issue where msnodesqlv8 could sometimes terminate queries before all errors has been emitted causing queries to hang ([#1145](https://github.com/tediousjs/node-mssql/pull/1145))
 
 v6.2.3 (2020-09-25)
 -------------------
