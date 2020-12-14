@@ -6,7 +6,7 @@ Microsoft SQL Server client for Node.js
 
 Supported TDS drivers:
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
-- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (native - Windows/Linux only)
+- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (v1 native - Windows only)
 
 ## Installation
 
@@ -96,6 +96,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [Table-Valued Parameter](#table-valued-parameter-tvp)
 * [Affected Rows](#affected-rows)
 * [JSON support](#json-support)
+* [Handling Duplicate Column Names](#handling-duplicate-column-names)
 * [Errors](#errors)
 * [Informational messages](#informational-messages)
 * [Metadata](#metadata)
@@ -611,6 +612,7 @@ const config = {
 - **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
 - **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
+- **arrayRowMode** - Return row results as a an array instead of a keyed object. Also adds `columns` array. See [Handling Duplicate Column Names](#handling-duplicate-column-names)
 
 Complete list of pool options can be found [here](https://github.com/vincit/tarn.js/#usage).
 
@@ -658,7 +660,7 @@ More information about Tedious specific options: http://tediousjs.github.io/tedi
 
 ### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
 
-**Requires Node.js v10+ or newer. Windows/Linux only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
+**Requires Node.js v10+ or newer. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8@^1`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
 
 **Extra options:**
 
@@ -1565,6 +1567,189 @@ recordset = [ { a: { b: { c: 1, d: 2 }, x: 3, y: 4 } } ]
 **IMPORTANT**: In order for this to work, there must be exactly one column named `JSON_F52E2B61-18A1-11d1-B105-00805F49916B` in the recordset.
 
 More information about JSON support can be found in [official documentation](https://msdn.microsoft.com/en-us/library/dn921882.aspx).
+
+## Handling Duplicate Column Names
+
+If your queries contain output columns with identical names, the default behaviour of `mssql` will only return column metadata for the last column with that name. You will also not always be able to re-assemble the order of output columns requested. 
+
+Default behaviour:
+```javascript
+const request = new sql.Request()
+request
+    .query("select 'asdf' as name, 'qwerty' as other_name, 'jkl' as name")
+    .then(result => {
+        console.log(result)
+    });
+```
+Results in:
+```javascript
+{
+  recordsets: [
+    [ { name: [ 'asdf', 'jkl' ], other_name: 'qwerty' } ]
+  ],
+  recordset: [ { name: [ 'asdf', 'jkl' ], other_name: 'qwerty' } ],
+  output: {},
+  rowsAffected: [ 1 ]
+}
+```
+
+You can use the `arrayRowMode` configuration parameter to return the row values as arrays and add a separate array of column values. `arrayRowMode` can be set globally during the initial connection, or per-request.
+
+```javascript
+const request = new sql.Request()
+request.arrayRowMode = true
+request
+    .query("select 'asdf' as name, 'qwerty' as other_name, 'jkl' as name")
+    .then(result => {
+        console.log(result)
+    });
+```
+
+Results in:
+```javascript
+{
+  recordsets: [ [ [ 'asdf', 'qwerty', 'jkl' ] ] ],
+  recordset: [ [ 'asdf', 'qwerty', 'jkl' ] ],
+  output: {},
+  rowsAffected: [ 1 ],
+  columns: [
+    [
+      {
+        index: 0,
+        name: 'name',
+        length: 4,
+        type: [sql.VarChar],
+        scale: undefined,
+        precision: undefined,
+        nullable: false,
+        caseSensitive: false,
+        identity: false,
+        readOnly: true
+      },
+      {
+        index: 1,
+        name: 'other_name',
+        length: 6,
+        type: [sql.VarChar],
+        scale: undefined,
+        precision: undefined,
+        nullable: false,
+        caseSensitive: false,
+        identity: false,
+        readOnly: true
+      },
+      {
+        index: 2,
+        name: 'name',
+        length: 3,
+        type: [sql.VarChar],
+        scale: undefined,
+        precision: undefined,
+        nullable: false,
+        caseSensitive: false,
+        identity: false,
+        readOnly: true
+      }
+    ]
+  ]
+}
+```
+
+__Streaming Duplicate Column Names__
+
+When using `arrayRowMode` with `stream` enabled, the output from the `recordset` event (as described in [Streaming](#streaming)) is returned as an array of column metadata, instead of as a keyed object. The order of the column metadata provided by the `recordset` event will match the order of row values when `arrayRowMode` is enabled.
+
+Default behaviour (without `arrayRowMode`):
+```javascript
+const request = new sql.Request()
+request.stream = true
+request.query("select 'asdf' as name, 'qwerty' as other_name, 'jkl' as name")
+request.on('recordset', recordset => console.log(recordset))
+```
+
+
+Results in:
+
+```javascript
+{
+  name: {
+    index: 2,
+    name: 'name',
+    length: 3,
+    type: [sql.VarChar],
+    scale: undefined,
+    precision: undefined,
+    nullable: false,
+    caseSensitive: false,
+    identity: false,
+    readOnly: true
+  },
+  other_name: {
+    index: 1,
+    name: 'other_name',
+    length: 6,
+    type: [sql.VarChar],
+    scale: undefined,
+    precision: undefined,
+    nullable: false,
+    caseSensitive: false,
+    identity: false,
+    readOnly: true
+  }
+}
+```
+
+With `arrayRowMode`:
+```javascript
+const request = new sql.Request()
+request.stream = true
+request.arrayRowMode = true
+request.query("select 'asdf' as name, 'qwerty' as other_name, 'jkl' as name")
+
+request.on('recordset', recordset => console.log(recordset))
+```
+
+Results in:
+```javascript
+[
+  {
+    index: 0,
+    name: 'name',
+    length: 4,
+    type: [sql.VarChar],
+    scale: undefined,
+    precision: undefined,
+    nullable: false,
+    caseSensitive: false,
+    identity: false,
+    readOnly: true
+  },
+  {
+    index: 1,
+    name: 'other_name',
+    length: 6,
+    type: [sql.VarChar],
+    scale: undefined,
+    precision: undefined,
+    nullable: false,
+    caseSensitive: false,
+    identity: false,
+    readOnly: true
+  },
+  {
+    index: 2,
+    name: 'name',
+    length: 3,
+    type: [sql.VarChar],
+    scale: undefined,
+    precision: undefined,
+    nullable: false,
+    caseSensitive: false,
+    identity: false,
+    readOnly: true
+  }
+]
+```
 
 ## Errors
 
