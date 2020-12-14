@@ -27,7 +27,7 @@
   "license": "MIT",
   "dependencies": {
     "debug": "^4",
-    "tarn": "^3",
+    "tarn": "^3.0.1",
     "tedious": "^9"
   },
   "devDependencies": {
