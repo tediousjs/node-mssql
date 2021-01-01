@@ -67,6 +67,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [execute](#execute-procedure-callback)
 * [input](#input-name-type-value)
 * [output](#output-name-type-value)
+* [toReadableStream](#to-readable-stream)
 * [pipe](#pipe-stream)
 * [query](#query-command-callback)
 * [batch](#batch-batch-callback)
@@ -94,6 +95,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [CLI](#cli)
 * [Geography and Geometry](#geography-and-geometry)
 * [Table-Valued Parameter](#table-valued-parameter-tvp)
+* [Response Schema](#response-schema)
 * [Affected Rows](#affected-rows)
 * [JSON support](#json-support)
 * [Handling Duplicate Column Names](#handling-duplicate-column-names)
@@ -104,6 +106,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [SQL injection](#sql-injection)
 * [Known Issues](#known-issues)
 * [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
+* [6.x to 7.x changes (pre-release)](#6x-to-7x-changes-pre-release)
 * [5.x to 6.x changes](#5x-to-6x-changes)
 * [4.x to 5.x changes](#4x-to-5x-changes)
 * [3.x to 4.x changes](#3x-to-4x-changes)
@@ -644,7 +647,7 @@ Default driver, actively maintained and production ready. Platform independent, 
 
 - **beforeConnect(conn)** - Function, which is invoked before opening the connection. The parameter `conn` is the configured tedious `Connection`. It can be used for attaching event handlers like in this example:
 ```js
-require('mssql').connect(...config, beforeConnect: conn => {
+require('mssql').connect({...config, beforeConnect: conn => {
   conn.once('connect', err => { err ? console.error(err) : console.log('mssql connected')})
   conn.once('end', err => { err ? console.error(err) : console.log('mssql disconnected')})
 }})
@@ -806,7 +809,7 @@ __Arguments__
 
 - **name** - Name of the input parameter without @ char.
 - **type** - SQL data type of input parameter. If you omit type, module automatically decide which SQL data type should be used based on JS data type.
-- **value** - Input parameter value. `undefined` ans `NaN` values are automatically converted to `null` values.
+- **value** - Input parameter value. `undefined` and `NaN` values are automatically converted to `null` values.
 
 __Example__
 
@@ -868,6 +871,31 @@ __Errors__ (synchronous)
 - EINJECT (`RequestError`) - SQL injection warning.
 
 ---------------------------------------
+
+### toReadableStream
+
+Convert request to a Node.js ReadableStream
+
+__Example__
+
+```javascript
+const { pipeline } = require('stream')
+const request = new sql.Request()
+const readableStream = request.toReadableStream()
+pipeline(readableStream, transformStream, writableStream)
+request.query('select * from mytable')
+```
+
+OR if you wanted to increase the highWaterMark of the read stream to buffer more rows in memory
+
+```javascript
+const { pipeline } = require('stream')
+const request = new sql.Request()
+const readableStream = request.toReadableStream({ highWaterMark: 100 })
+pipeline(readableStream, transformStream, writableStream)
+request.query('select * from mytable')
+```
+
 
 ### pipe (stream)
 
@@ -1507,6 +1535,31 @@ request.execute('MyCustomStoredProcedure', (err, result) => {
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`. You can optionally specify table type name in the first argument.
 
+## Response Schema
+
+An object returned from a `sucessful` basic query would look like the following.
+```javascript
+{
+	recordsets: [
+		[
+			{
+				COL1: "some content",
+				COL2: "some more content"
+			}
+		]
+	],
+	recordset: [
+		{
+			COL1: "some content",
+			COL2: "some more content"
+		}
+	],
+	output: {},
+	rowsAffected: [1]
+}
+
+```
+
 ## Affected Rows
 
 If you're performing `INSERT`, `UPDATE` or `DELETE` in a query, you can read number of affected rows. The `rowsAffected` variable is an array of numbers. Each number represents number of affected rows by a single statement.
@@ -1959,6 +2012,12 @@ request.query('select @myval as myval', (err, result) => {
 
 - msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
 - msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
+
+## 6.x to 7.x changes (pre-release)
+
+- Upgraded tedious version to v8
+- Requests in stream mode that pipe into other streams no longer pass errors up the stream chain
+- tedious config option `trustServerCertificate` defaults to `false` if not supplied
 
 ## 5.x to 6.x changes
 
