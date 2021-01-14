@@ -6,7 +6,7 @@ Microsoft SQL Server client for Node.js
 
 Supported TDS drivers:
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
-- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (v1 native - Windows only)
+- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (v2 native - Windows/Linux only)
 
 ## Installation
 
@@ -67,7 +67,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [execute](#execute-procedure-callback)
 * [input](#input-name-type-value)
 * [output](#output-name-type-value)
-* [toReadableStream](#to-readable-stream)
+* [toReadableStream](#toReadableStream)
 * [pipe](#pipe-stream)
 * [query](#query-command-callback)
 * [batch](#batch-batch-callback)
@@ -663,7 +663,7 @@ More information about Tedious specific options: http://tediousjs.github.io/tedi
 
 ### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
 
-**Requires Node.js v10+ or newer. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8@^1`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
+**Requires Node.js v10+ or newer. Windows/Linux only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8@^2`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
 
 **Extra options:**
 
