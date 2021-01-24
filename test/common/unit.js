@@ -21,13 +21,14 @@ describe('Connection String', () => {
   })
 
   it('Connection String #2', done => {
-    const cfg = cs.resolve('Server=tcp:192.168.0.1,1433;Database=testdb;User Id=testuser;Password=testpwd')
+    const cfg = cs.resolve('Server=tcp:192.168.0.1,1433;Database=testdb;User Id=testuser;Password=testpwd;TrustServerCertificate=true')
 
     assert.strictEqual(cfg.user, 'testuser')
     assert.strictEqual(cfg.password, 'testpwd')
     assert.strictEqual(cfg.database, 'testdb')
     assert.strictEqual(cfg.server, '192.168.0.1')
     assert.strictEqual(cfg.port, 1433)
+    assert.strictEqual(cfg.options.trustServerCertificate, true)
 
     return done()
   })
