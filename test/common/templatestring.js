@@ -1,6 +1,6 @@
 'use strict'
 
-var assert = require('assert')
+const assert = require('assert')
 
 module.exports = (sql, driver) => {
   return {
