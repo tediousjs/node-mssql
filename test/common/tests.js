@@ -2,6 +2,7 @@
 
 const assert = require('assert')
 const stream = require('stream')
+const { join } = require('path')
 const ISOLATION_LEVELS = require('../../lib/isolationlevel')
 const BaseTransaction = require('../../lib/base/transaction')
 
@@ -859,9 +860,9 @@ module.exports = (sql, driver) => {
     },
 
     'transaction with commit' (done) {
-      var tbegin = false
-      var tcommit = false
-      var trollback = false
+      let tbegin = false
+      let tcommit = false
+      let trollback = false
 
       const tran = new TestTransaction()
       tran.begin().then(() => {
@@ -1070,7 +1071,7 @@ module.exports = (sql, driver) => {
     },
 
     'request timeout' (done, driver, message) {
-      const config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
+      const config = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
       config.driver = driver
       config.requestTimeout = 1000 // note: msnodesqlv8 doesn't support timeouts less than 1 second
 
@@ -1208,7 +1209,7 @@ module.exports = (sql, driver) => {
     },
 
     'login failed' (done, message) {
-      const config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
+      const config = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
       config.user = '__notexistinguser__'
 
       // eslint-disable-next-line no-new
@@ -1385,7 +1386,7 @@ module.exports = (sql, driver) => {
         }
       }
 
-      var closed = function () {
+      const closed = function () {
         curr++
         if (curr === peak) {
           conns = []
@@ -1400,8 +1401,8 @@ module.exports = (sql, driver) => {
         }
       }
 
-      __range__(1, peak, true).map((i) => {
-        const c = new sql.ConnectionPool(JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`)))
+      __range__(1, peak, true).forEach((i) => {
+        const c = new sql.ConnectionPool(JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json'))))
         c.connect(connected)
         conns.push(c)
       })
@@ -1410,7 +1411,7 @@ module.exports = (sql, driver) => {
     'concurrent requests' (done, driver) {
       console.log('')
 
-      const config = JSON.parse(require('fs').readFileSync(`${__dirname}/../.mssql.json`))
+      const config = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
       config.driver = driver
       config.pool = { min: 0, max: 50 }
 
@@ -1446,7 +1447,7 @@ module.exports = (sql, driver) => {
           }
         }
 
-        __range__(1, peak, true).map((i) => {
+        __range__(1, peak, true).forEach((i) => {
           const r = new sql.Request(conn)
           r.query("select 123456 as num, 'asdfasdfasdfasdfasdfasdfasdfasdfasdf' as str", completed)
           requests.push(r)

@@ -3,11 +3,12 @@
 /* globals describe, it */
 
 const assert = require('assert')
+const { join } = require('path')
 
 describe.skip('cli', function () {
   it('should stream statement result', function (done) {
     const buffer = []
-    const proc = require('child_process').spawn(`${__dirname}/../../bin/mssql`, ['.'], { cwd: `${__dirname}/..` })
+    const proc = require('child_process').spawn(join(__dirname, '../../bin/mssql'), ['.'], { cwd: join(__dirname, '..') })
     proc.stdin.end('select 1 as xxx')
     proc.stdout.setEncoding('utf8')
     proc.stdout.on('data', data => buffer.push(data))
@@ -21,7 +22,7 @@ describe.skip('cli', function () {
 
   return it('should fail', function (done) {
     const buffer = []
-    const proc = require('child_process').spawn(`${__dirname}/../../bin/mssql`, ['..'], { cwd: `${__dirname}/..` })
+    const proc = require('child_process').spawn(join(__dirname, '../../bin/mssql'), ['..'], { cwd: join(__dirname, '..') })
     proc.stdin.end('select 1 as xxx')
     proc.stderr.setEncoding('utf8')
     proc.stderr.on('data', data => buffer.push(data))

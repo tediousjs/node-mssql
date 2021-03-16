@@ -29,11 +29,11 @@
     "@tediousjs/connection-string": "^0.3.0",
     "debug": "^4",
     "tarn": "^3.0.1",
-    "tedious": "^9.2.3"
+    "tedious": "^11.0.5"
   },
   "devDependencies": {
     "mocha": "^8.3.2",
-    "standard": "^14.3.4"
+    "standard": "^16.0.3"
   },
   "engines": {
     "node": ">=10"
