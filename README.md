@@ -658,6 +658,11 @@ require('mssql').connect({...config, beforeConnect: conn => {
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_1`, `7_2`, `7_3_A`, `7_3_B`, `7_4`).
 - **options.appName** - Application name used for SQL server logging.
 - **options.abortTransactionOnError** - A boolean determining whether to rollback a transaction automatically if any error is encountered during the given transaction's execution. This sets the value for `XACT_ABORT` during the initial SQL phase of a connection.
+- **options.authentication** - An object with authentication settings, according to the [Tedious Documentation](https://tediousjs.github.io/tedious/api-connection.html). Passing this object will override `options.user`, `options.password`, `options.domain` settings.
+- **options.authentication.type** - Type of the authentication method, valid types are `default`, `ntlm`, `azure-active-directory-password`, `azure-active-directory-access-token`, `azure-active-directory-msi-vm`, or `azure-active-directory-msi-app-service`
+- **options.authentication.options** - Options of the authentication required by the `tedious` driver, depends on `options.authentication.type`. For more details, check [Tedious Authentication Interfaces](https://github.com/tediousjs/tedious/blob/master/src/connection.ts#L237)
+
+
 
 More information about Tedious specific options: http://tediousjs.github.io/tedious/api-connection.html
 
