@@ -12,7 +12,7 @@ Supported TDS drivers:
 
     npm install mssql
 
-## Quick Example
+## Short Example: Use Connect String
 
 ```javascript
 const sql = require('mssql')
@@ -32,6 +32,56 @@ async () => {
 If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#configuration) to learn more.
 
 Parts of the connection URI should be correctly URL encoded so that the URI can be parsed correctly.
+
+## Longer Example: Connect via Config Object
+```javascript
+/* mssql_connection_test.js */
+require('dotenv').config()
+const sql = require('mssql');
+
+const mssql_config = {
+  user: process.env['DB_USER'] ,
+  password: process.env['DB_PWD'],
+  database: process.env['DB_NAME'],
+  server: 'localhost',
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  },
+  options: {
+    "enableArithAbort": true,
+    "encrypt": true
+  }
+}
+
+async function mssql_test_connect() {
+  try {
+    await sql.connect(mssql_config);
+    const result = await sql.query `select 1`
+    console.dir(result)
+  } catch (err) {
+      console.warn(`Error connecting to mssql: ${err}`);
+  }
+}
+
+/* Run immediately if called from command line: */
+if (!module.parent) {
+  (async () => {
+    await mssql_test_connect();
+    await sql.close();
+    console.log("Connection Closed")
+  })();
+}
+```
+
+To use: 
+1. setup a .dotenv file with user, password and database name, and install dotenv module to populate process.env
+2. run from the command line: `node mssql_connection_test.js`
+
+This example sets encrypt to true for compatability with Windows Azure, but will also work on a local Docker instance.
+
+The default value for `config.options.enableArithAbort` will change from `false` to `true` in the next major version of `tedious`,so in this example it is set explicitly to avoide the `deprecation` warning.
 
 ## Documentation
 
