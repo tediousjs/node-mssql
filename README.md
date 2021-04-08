@@ -2013,11 +2013,6 @@ request.query('select @myval as myval', (err, result) => {
 - If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/tediousjs/node-mssql/issues/36))
 - If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/tediousjs/node-mssql/issues/68))
 
-### msnodesqlv8
-
-- msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
-- msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
-
 ## 6.x to 7.x changes (pre-release)
 
 - Upgraded tedious version to v8
