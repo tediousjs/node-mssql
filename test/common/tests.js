@@ -385,11 +385,15 @@ module.exports = (sql, driver) => {
         assert.strictEqual(err.message, 'Invalid object name \'notexistingtable\'.')
         assert.strictEqual(err.code, 'EREQUEST')
         assert.strictEqual(err.number, 208)
+        assert.strictEqual(err.lineNumber, 1)
+        assert.strictEqual(err.class, 16)
 
         if (driver !== 'msnodesqlv8') {
-          assert.strictEqual(err.lineNumber, 1)
           assert.strictEqual(err.state, 1)
-          assert.strictEqual(err.class, 16)
+        } else {
+          // ODBC uses different SQLSTATE values
+          // https://docs.microsoft.com/en-us/sql/odbc/reference/appendixes/appendix-a-odbc-error-codes
+          assert.strictEqual(err.state, '42S02')
         }
 
         done()
