@@ -7,6 +7,7 @@ const sql = require('../../msnodesqlv8')
 
 const TESTS = require('../common/tests.js')(sql, 'msnodesqlv8')
 const TIMES = require('../common/times.js')(sql, 'msnodesqlv8')
+const versionHelper = require('../common/versionhelper')
 
 const config = function () {
   const cfg = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
@@ -97,15 +98,17 @@ describe('msnodesqlv8', function () {
     afterEach(done => sql.close(done))
   })
 
-  describe('json support (requires SQL Server 2016)', () => {
+  describe('json support (requires SQL Server 2016 or newer)', () => {
     before(function (done) {
-      if (process.env.MSSQL_VERSION === '2016') {
-        const cfg = config()
-        cfg.parseJSON = true
-        sql.connect(cfg, done)
-      } else {
-        this.skip()
-      }
+      const cfg = config()
+      cfg.parseJSON = true
+      sql.connect(cfg)
+        .then(() => versionHelper.isSQLServer2016OrNewer(sql, done)).then(isSQLServer2016OrNewer => {
+          if (!isSQLServer2016OrNewer) {
+            this.skip()
+          }
+          done()
+        }).catch(done)
     })
 
     it('parser', done => TESTS['json parser'](done))

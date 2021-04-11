@@ -5,6 +5,7 @@ const stream = require('stream')
 const { join } = require('path')
 const ISOLATION_LEVELS = require('../../lib/isolationlevel')
 const BaseTransaction = require('../../lib/base/transaction')
+const versionHelper = require('./versionhelper')
 
 process.on('unhandledRejection', (reason, p) => {
   console.log('Unhandled Rejection at: Promise', p, 'reason:', reason)
@@ -943,29 +944,38 @@ module.exports = (sql, driver) => {
     },
 
     'transaction with error' (done) {
-      const tran = new TestTransaction()
-      tran.begin().then(() => {
-        let rollbackHandled = false
+      let expectedMessage = null
+      versionHelper.isSQLServer2019OrNewer(sql, done).then(isSQLServer2019OrNewer => {
+        const tran = new TestTransaction()
+        tran.begin().then(() => {
+          let rollbackHandled = false
 
-        const req = tran.request()
-        req.query('insert into tran_test values (\'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasd\')').catch(err => {
-          assert.ok(err)
-          assert.strictEqual(err.message, 'String or binary data would be truncated.')
-
-          tran.rollback().catch(err => {
+          const req = tran.request()
+          req.query('insert into tran_test values (\'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasd\')').catch(err => {
             assert.ok(err)
-            assert.strictEqual(err.message, 'Transaction has been aborted.')
 
-            if (!rollbackHandled) { return done(new Error("Rollback event didn't fire.")) }
+            if (isSQLServer2019OrNewer) {
+              expectedMessage = "String or binary data would be truncated in table 'master.dbo.tran_test', column 'data'. Truncated value: 'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfas'."
+            } else {
+              expectedMessage = 'String or binary data would be truncated.'
+            }
+            assert.strictEqual(err.message, expectedMessage)
 
-            done()
+            tran.rollback().catch(err => {
+              assert.ok(err)
+              assert.strictEqual(err.message, 'Transaction has been aborted.')
+
+              if (!rollbackHandled) { return done(new Error("Rollback event didn't fire.")) }
+
+              done()
+            })
           })
-        })
 
-        tran.on('rollback', function (aborted) {
-          assert.strictEqual(aborted, true)
+          tran.on('rollback', function (aborted) {
+            assert.strictEqual(aborted, true)
 
-          rollbackHandled = true
+            rollbackHandled = true
+          })
         })
       }).catch(done)
     },
