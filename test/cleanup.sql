@@ -16,6 +16,9 @@ if exists (select * from sys.procedures where name = '__test7')
 if exists (select * from sys.procedures where name = '__testDuplicateNames')
 	exec('drop procedure [dbo].[__testDuplicateNames]')
 
+if exists (select * from sys.procedures where name = '__testRowsAffected')
+	exec('drop procedure [dbo].[__testRowsAffected]')
+
 if exists (select * from sys.types where is_user_defined = 1 and name = 'MSSQLTestType')
 	exec('drop type [dbo].[MSSQLTestType]')
 
@@ -42,6 +45,9 @@ if exists (select * from sys.tables where name = 'bulk_table4')
 
 if exists (select * from sys.tables where name = 'bulk_table5')
 	exec('drop table [dbo].[bulk_table5]')
+
+if exists (select * from sys.tables where name = 'rowsaffected_test')
+	exec('drop table [dbo].[rowsaffected_test]')
 
 if exists (select * from sys.tables where name = 'streaming')
 	exec('drop table [dbo].[streaming]')

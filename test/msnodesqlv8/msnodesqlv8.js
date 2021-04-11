@@ -211,6 +211,8 @@ describe('msnodesqlv8', function () {
     it('streaming on', done => TESTS['streaming on'](done))
     it('streaming pause', done => TESTS['streaming pause'](done))
     it('streaming resume', done => TESTS['streaming resume'](done))
+    it('streaming rowsaffected', done => TESTS['streaming rowsaffected'](done))
+    it('streaming rowsaffected in stored procedure', done => TESTS['streaming rowsaffected in stored procedure'](done))
     it('streaming trailing rows', done => TESTS['streaming trailing rows'](done))
     it('streaming with duplicate output column names', done => TESTS['streaming with duplicate output column names'](done))
     it('a cancelled stream emits done event', done => TESTS['a cancelled stream emits done event'](done))

@@ -133,10 +133,31 @@ exec('create table [dbo].[bulk_table] (
 	c image null
 )')
 
+exec('create table [dbo].[rowsaffected_test] (
+	a int not null
+)')
+
+;with nums as
+(
+    select 0 AS n
+    union all
+    select n + 1 from nums where n < 6
+)
+insert into rowsaffected_test(a)
+select n from nums
+option (maxrecursion 7);
 
 exec('create table [dbo].[streaming] (
 	text varchar(4000)
 )')
+
+exec('create procedure [dbo].[__testRowsAffected]
+as
+begin
+
+	update rowsaffected_test set a = a
+
+end')
 
 ;with nums as
 (
