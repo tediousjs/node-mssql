@@ -9,6 +9,7 @@ const { join } = require('path')
 const TESTS = require('../common/tests.js')(sql, 'tedious')
 const TIMES = require('../common/times.js')(sql, 'tedious')
 const TEMPLATE_STRING = require('../common/templatestring.js')(sql, 'tedious')
+const versionHelper = require('../common/versionhelper')
 
 if (parseInt(process.version.match(/^v(\d+)\./)[1]) > 0) {
   require('../common/templatestring.js')
@@ -108,15 +109,17 @@ describe('tedious', () => {
     afterEach(done => sql.close(done))
   })
 
-  describe('json support (requires SQL Server 2016)', () => {
+  describe('json support (requires SQL Server 2016 or newer)', () => {
     before(function (done) {
-      if (process.env.MSSQL_VERSION === '2016') {
-        const cfg = config()
-        cfg.parseJSON = true
-        sql.connect(cfg, done)
-      } else {
-        this.skip()
-      }
+      const cfg = config()
+      cfg.parseJSON = true
+      sql.connect(cfg)
+        .then(() => versionHelper.isSQLServer2016OrNewer(sql)).then(isSQLServer2016OrNewer => {
+          if (!isSQLServer2016OrNewer) {
+            this.skip()
+          }
+          done()
+        }).catch(done)
     })
 
     it('parser', done => TESTS['json parser'](done))
