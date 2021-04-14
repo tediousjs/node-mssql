@@ -11,16 +11,14 @@ module.exports = {
   'isSQLServer2016OrNewer' (sql) {
     return this.getSQLServerVersion(sql).then(version => {
       const majorVersion = parseInt(version)
-      if (majorVersion >= 13) return true
-      return false
+      return majorVersion >= 13
     })
   },
 
   'isSQLServer2019OrNewer' (sql) {
     return this.getSQLServerVersion(sql).then(version => {
       const majorVersion = parseInt(version)
-      if (majorVersion >= 15) return true
-      return false
+      return majorVersion >= 15
     })
   }
 }
