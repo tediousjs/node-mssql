@@ -114,7 +114,7 @@ describe('tedious', () => {
       const cfg = config()
       cfg.parseJSON = true
       sql.connect(cfg)
-        .then(() => versionHelper.isSQLServer2016OrNewer(sql, done)).then(isSQLServer2016OrNewer => {
+        .then(() => versionHelper.isSQLServer2016OrNewer(sql)).then(isSQLServer2016OrNewer => {
           if (!isSQLServer2016OrNewer) {
             this.skip()
           }

@@ -945,7 +945,7 @@ module.exports = (sql, driver) => {
 
     'transaction with error' (done) {
       let expectedMessage = null
-      versionHelper.isSQLServer2019OrNewer(sql, done).then(isSQLServer2019OrNewer => {
+      versionHelper.isSQLServer2019OrNewer(sql).then(isSQLServer2019OrNewer => {
         const tran = new TestTransaction()
         tran.begin().then(() => {
           let rollbackHandled = false
