@@ -1,8 +1,10 @@
 v7.0.0 (2021-??-??)
 -------------------
 [new] Result sets with duplicate keys can now be handled using `request.arrayRowMode` ([#1130](https://github.com/tediousjs/node-mssql/pull/1130))
+[new] Requests in stream mode now emit a `rowsaffected` event ([#1213](https://github.com/tediousjs/node-mssql/pull/1213))
+[new] msnodesqlv8 driver now has detailed error support ([#1212](https://github.com/tediousjs/node-mssql/pull/1212))
 [new] Connection validation checks before releasing connections from the pool. This can be turned of via `validateConnection: false` config option ([#1192](https://github.com/tediousjs/node-mssql/pull/1192))
-[change] Updated to latest Tedious 9
+[change] Updated to latest Tedious 11
 [change] Updated tarnjs to v3
 [change] Updated to support latest msnodesqlv8 v2 ([#1157](https://github.com/tediousjs/node-mssql/pull/1157))
 [change] Piped streams no longer have errors forwarded on to them ([#1028](https://github.com/tediousjs/node-mssql/pull/1028))
