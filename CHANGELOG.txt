@@ -14,6 +14,7 @@ v7.0.0 (2021-??-??)
 [fix] Bump various dependencies for security fixes ([#1102](https://github.com/tediousjs/node-mssql/pull/1102))
 [fix] Trailing rows from request streams using msnodesqlv8 driver fail to be emitted ([#1109](https://github.com/tediousjs/node-mssql/pull/1109))
 [fix] Issue with geography v2 parsing resolve ([#1138](https://github.com/tediousjs/node-mssql/pull/1138))
+[fix] Connection config objects are now deep cloned when stored against a connection pool ([#1217](https://github.com/tediousjs/node-mssql/pull/1217))
 
 v6.3.1 (2021-01-01)
 -------------------

@@ -6,6 +6,7 @@ const sql = require('../../')
 const assert = require('assert')
 const cs = require('../../lib/connectionstring')
 const udt = require('../../lib/udt')
+const BasePool = require('../../lib/base/connection-pool')
 
 describe('Connection String', () => {
   it('Connection String #1', done => {
@@ -324,5 +325,16 @@ describe('Geography Parsing', () => {
     assert.strictEqual(geo.points[2].x, 1)
     assert.strictEqual(geo.points[3].y, 1)
     assert.strictEqual(geo.points[3].x, 1)
+  })
+})
+
+describe('config cloning', () => {
+  it('deeply clones configs', () => {
+    const options = {}
+    const pool = new BasePool({
+      server: 'Instance\\Name',
+      options
+    })
+    assert.notDeepStrictEqual(options, pool.config.options)
   })
 })
