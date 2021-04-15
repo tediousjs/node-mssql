@@ -12,7 +12,7 @@ Supported TDS drivers:
 
     npm install mssql
 
-## Quick Example
+## Short Example: Use Connect String
 
 ```javascript
 const sql = require('mssql')
@@ -32,6 +32,40 @@ async () => {
 If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#configuration) to learn more.
 
 Parts of the connection URI should be correctly URL encoded so that the URI can be parsed correctly.
+
+## Longer Example: Connect via Config Object
+
+Assuming you have set the appropriate environment variables, you can construct a config object as follows:
+
+```javascript
+const sql = require('mssql')
+const sqlConfig = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PWD,
+  database: process.env.DB_NAME,
+  server: 'localhost',
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  },
+  options: {
+    encrypt: true, // for azure
+    trustServerCertificate: false // change to true for local dev / self-signed certs
+  }
+}
+
+async () => {
+ try {
+  // make sure that any items are correctly URL encoded in the connection string
+  await sql.connect(sqlConfig)
+  const result = await sql.query`select * from mytable where id = ${value}`
+  console.dir(result)
+ } catch (err) {
+  // ... error checks
+ }
+}
+```
 
 ## Documentation
 
@@ -291,6 +325,11 @@ sql.connect(config, err => {
 
     request.on('row', row => {
         // Emitted for each row in a recordset
+    })
+
+    request.on('rowsaffected', rowCount => {
+        // Emitted for each `INSERT`, `UPDATE` or `DELETE` statement
+        // Requires NOCOUNT to be OFF (default)
     })
 
     request.on('error', err => {
@@ -658,6 +697,11 @@ require('mssql').connect({...config, beforeConnect: conn => {
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_1`, `7_2`, `7_3_A`, `7_3_B`, `7_4`).
 - **options.appName** - Application name used for SQL server logging.
 - **options.abortTransactionOnError** - A boolean determining whether to rollback a transaction automatically if any error is encountered during the given transaction's execution. This sets the value for `XACT_ABORT` during the initial SQL phase of a connection.
+- **options.authentication** - An object with authentication settings, according to the [Tedious Documentation](https://tediousjs.github.io/tedious/api-connection.html). Passing this object will override `options.user`, `options.password`, `options.domain` settings.
+- **options.authentication.type** - Type of the authentication method, valid types are `default`, `ntlm`, `azure-active-directory-password`, `azure-active-directory-access-token`, `azure-active-directory-msi-vm`, or `azure-active-directory-msi-app-service`
+- **options.authentication.options** - Options of the authentication required by the `tedious` driver, depends on `options.authentication.type`. For more details, check [Tedious Authentication Interfaces](https://github.com/tediousjs/tedious/blob/master/src/connection.ts#L237)
+
+
 
 More information about Tedious specific options: http://tediousjs.github.io/tedious/api-connection.html
 
@@ -1584,10 +1628,15 @@ request.query('update myAwesomeTable set awesomness = 100', (err, result) => {
 
 __Example using streaming__
 
+In addition to the rowsAffected attribute on the done event, each statement will emit the number of affected rows as it is completed.
+
 ```javascript
 const request = new sql.Request()
 request.stream = true
 request.query('update myAwesomeTable set awesomness = 100')
+request.on('rowsaffected', rowCount => {
+    console.log(rowCount)
+})
 request.on('done', result => {
     console.log(result.rowsAffected)
 })
@@ -2007,11 +2056,6 @@ request.query('select @myval as myval', (err, result) => {
 
 - If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/tediousjs/node-mssql/issues/36))
 - If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/tediousjs/node-mssql/issues/68))
-
-### msnodesqlv8
-
-- msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
-- msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
 
 ## 6.x to 7.x changes (pre-release)
 
