@@ -293,6 +293,11 @@ sql.connect(config, err => {
         // Emitted for each row in a recordset
     })
 
+    request.on('rowsaffected', rowCount => {
+        // Emitted for each `INSERT`, `UPDATE` or `DELETE` statement
+        // Requires NOCOUNT to be OFF (default)
+    })
+
     request.on('error', err => {
         // May be emitted multiple times
     })
@@ -1589,10 +1594,15 @@ request.query('update myAwesomeTable set awesomness = 100', (err, result) => {
 
 __Example using streaming__
 
+In addition to the rowsAffected attribute on the done event, each statement will emit the number of affected rows as it is completed.
+
 ```javascript
 const request = new sql.Request()
 request.stream = true
 request.query('update myAwesomeTable set awesomness = 100')
+request.on('rowsaffected', rowCount => {
+    console.log(rowCount)
+})
 request.on('done', result => {
     console.log(result.rowsAffected)
 })

@@ -1608,6 +1608,40 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'streaming rowsaffected' (done) {
+      const req = new TestRequest()
+      req.stream = true
+      req.query('update rowsaffected_test set a = a')
+      req.on('error', (err) => {
+        if (err.code !== 'ECANCEL') {
+          req.cancel()
+          done(err)
+        }
+      })
+
+      req.on('rowsaffected', (rowsAffected) => {
+        assert.strictEqual(rowsAffected, 7)
+        done()
+      })
+    },
+
+    'streaming rowsaffected in stored procedure' (done) {
+      const req = new TestRequest()
+      req.stream = true
+      req.execute('__testRowsAffected')
+      req.on('error', (err) => {
+        if (err.code !== 'ECANCEL') {
+          req.cancel()
+          done(err)
+        }
+      })
+
+      req.on('rowsaffected', (rowsAffected) => {
+        assert.strictEqual(rowsAffected, 7)
+        done()
+      })
+    },
+
     'streaming trailing rows' (done) {
       let rows = 0
       const req = new TestRequest()
