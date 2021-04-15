@@ -12,7 +12,7 @@ Supported TDS drivers:
 
     npm install mssql
 
-## Quick Example
+## Short Example: Use Connect String
 
 ```javascript
 const sql = require('mssql')
@@ -32,6 +32,40 @@ async () => {
 If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#configuration) to learn more.
 
 Parts of the connection URI should be correctly URL encoded so that the URI can be parsed correctly.
+
+## Longer Example: Connect via Config Object
+
+Assuming you have set the appropriate environment variables, you can construct a config object as follows:
+
+```javascript
+const sql = require('mssql')
+const sqlConfig = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PWD,
+  database: process.env.DB_NAME,
+  server: 'localhost',
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  },
+  options: {
+    encrypt: true, // for azure
+    trustServerCertificate: false // change to true for local dev / self-signed certs
+  }
+}
+
+async () => {
+ try {
+  // make sure that any items are correctly URL encoded in the connection string
+  await sql.connect(sqlConfig)
+  const result = await sql.query`select * from mytable where id = ${value}`
+  console.dir(result)
+ } catch (err) {
+  // ... error checks
+ }
+}
+```
 
 ## Documentation
 
