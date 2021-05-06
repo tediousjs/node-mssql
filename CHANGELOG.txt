@@ -1,4 +1,4 @@
-v7.0.0 (2021-??-??)
+v7.0.0 (2021-05-06)
 -------------------
 [new] Result sets with duplicate keys can now be handled using `request.arrayRowMode` ([#1130](https://github.com/tediousjs/node-mssql/pull/1130))
 [new] Requests in stream mode now emit a `rowsaffected` event ([#1213](https://github.com/tediousjs/node-mssql/pull/1213))
