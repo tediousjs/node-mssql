@@ -1107,7 +1107,7 @@ module.exports = (sql, driver) => {
         assert.strictEqual(err.message, "Validation failed for parameter 'image'. Invalid buffer.")
 
         done()
-      })
+      }).catch(done)
     },
 
     'repeat calls to connect resolve in order' (connect, done) {
