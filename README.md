@@ -20,7 +20,7 @@ const sql = require('mssql')
 async () => {
     try {
         // make sure that any items are correctly URL encoded in the connection string
-        await sql.connect('mssql://username:password@localhost/database')
+        await sql.connect('Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true')
         const result = await sql.query`select * from mytable where id = ${value}`
         console.dir(result)
     } catch (err) {
@@ -660,20 +660,13 @@ Complete list of pool options can be found [here](https://github.com/vincit/tarn
 
 ### Formats
 
-In addition to configuration object there is an option to pass config as a connection string. Two formats of connection string are supported.
+In addition to configuration object there is an option to pass config as a connection string. Connection strings are supported.
 
 ##### Classic Connection String
 
 ```
 Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
 Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
-```
-
-##### Connection String URI
-
-```
-mssql://username:password@localhost:1433/database?encrypt=true
-mssql://username:password@localhost/INSTANCE/database?encrypt=true&domain=DOMAIN&driver=msnodesqlv8
 ```
 
 ## Drivers
