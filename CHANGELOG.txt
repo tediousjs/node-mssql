@@ -1,3 +1,7 @@
+v5.1.5 (2021-05-13)
+-------------------
+[fix] Bump various dependencies for security fixes
+
 v5.1.4 (2021-01-01)
 -------------------
 [fix] Ensure line endings are unix style (LF)
