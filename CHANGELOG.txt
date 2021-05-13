@@ -1,6 +1,7 @@
-v7.1.0 (2021-??-??)
+v7.1.0 (2021-05-13)
 -------------------
 [new] Add `parseJSON` support to query strings
+[fix] Bump various dependencies for security fixes
 
 v7.0.0 (2021-05-06)
 -------------------
@@ -23,6 +24,10 @@ v7.0.0 (2021-05-06)
 [fix] Issue with geography v2 parsing resolve ([#1138](https://github.com/tediousjs/node-mssql/pull/1138))
 [fix] Connection config objects are now deep cloned when stored against a connection pool ([#1217](https://github.com/tediousjs/node-mssql/pull/1217))
 [removed] Support for connection uri format has been removed (eg: `mssql://user:password@host/?params=values`
+
+v6.3.2 (2021-05-13)
+-------------------
+[fix] Bump various dependencies for security fixes
 
 v6.3.1 (2021-01-01)
 -------------------
@@ -88,6 +93,10 @@ v6.0.0 (2019-11-05)
 [change] Config objects are cloned so that the original object is not modified
 [change] Replaced pool library (`generic-pool`) with `tarn.js` ([#808](https://github.com/tediousjs/node-mssql/pull/808))
 [removed] Backoff try strategy for creating connections removed, `tarn.js` built-in retry strategy used instead
+
+v5.1.5 (2021-05-13)
+-------------------
+[fix] Bump various dependencies for security fixes
 
 v5.1.4 (2021-01-01)
 -------------------
