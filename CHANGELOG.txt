@@ -1,3 +1,7 @@
+v6.3.2 (2021-05-13)
+-------------------
+[fix] Bump various dependencies for security fixes
+
 v6.3.1 (2021-01-01)
 -------------------
 [fix] Ensure line endings are unix style (LF)
@@ -62,6 +66,10 @@ v6.0.0 (2019-11-05)
 [change] Config objects are cloned so that the original object is not modified
 [change] Replaced pool library (`generic-pool`) with `tarn.js` ([#808](https://github.com/tediousjs/node-mssql/pull/808))
 [removed] Backoff try strategy for creating connections removed, `tarn.js` built-in retry strategy used instead
+
+v5.1.5 (2021-05-13)
+-------------------
+[fix] Bump various dependencies for security fixes
 
 v5.1.4 (2021-01-01)
 -------------------
