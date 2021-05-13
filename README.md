@@ -6,7 +6,7 @@ Microsoft SQL Server client for Node.js
 
 Supported TDS drivers:
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
-- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (v2 native - Windows/Linux only)
+- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (v2 native - Windows or Linux/macOS 64 bits only)
 
 ## Installation
 
@@ -707,7 +707,10 @@ More information about Tedious specific options: http://tediousjs.github.io/tedi
 
 ### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
 
-**Requires Node.js v10+ or newer. Windows/Linux only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8@^2`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
+**Requires Node.js v10+ or newer. Windows 32-64 bits or Linux/macOS 64 bits only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8@^2`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
+
+Note: If you use import into your lib to prepare your request (`const { VarChar } = require('mssql')`) you also need to upgrade all your types import into your code (`const { VarChar } = require('mssql/msnodesqlv8')`) or a `connection.on is not a function` error will be thrown.
+
 
 **Extra options:**
 
@@ -726,6 +729,8 @@ Default connection string when connecting to named instance:
 ```
 Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
 ```
+
+Please note that the connection string with this driver is not the same than tedious and use yes/no instead of true/false. You can see more on the [ODBC](https://docs.microsoft.com/fr-fr/dotnet/api/system.data.odbc.odbcconnection.connectionstring?view=dotnet-plat-ext-5.0) documentation.
 
 ## Connections
 
