@@ -1,3 +1,11 @@
+v7.1.1 (2021-06-09)
+-------------------
+[fix] Errors from tedious connection creation now cause connection promise to
+reject ((#1254)[https://github.com/tediousjs/node-mssql/pull/1254])
+[fix] Encrypt and transaction binding settings now respect value parsed from
+connection strings
+((#1252)[https://github.com/tediousjs/node-mssql/pull/1252)
+
 v7.1.0 (2021-05-13)
 -------------------
 [new] Add `parseJSON` support to query strings
