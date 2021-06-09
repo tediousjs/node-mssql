@@ -439,17 +439,20 @@ const POOLS = {}
 
 function createPool(config, name) {
   if (getPool(name)) {
-    throw new Error('Pool with this name already exists')
+    return Promise.reject(new Error('Pool with this name already exists'))
   }
-  return POOLS[name] = (new ConnectionPool(config)).connect()
+  return (new ConnectionPool(config)).connect().then((pool) => {
+    return POOLS[name] = pool
+  })
 }
 
 function closePool(name) {
-  if (Object.prototype.hasOwnProperty.apply(POOLS, name)) {
-    const pool = POOLS[name];
-    delete POOLS[name];
+  const pool = getPool(name)
+  if (pool) {
+    delete POOLS[name]
     return pool.close()
   }
+  return Promise.resolve()
 }
 
 function getPool(name) {
