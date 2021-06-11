@@ -1,10 +1,11 @@
+v7.1.2 (2021-06-10)
+-------------------
+[fix] Request timeout settings now respect value parsed from connection strings ((#1257)[https://github.com/tediousjs/node-mssql/pull/1257)
+
 v7.1.1 (2021-06-09)
 -------------------
-[fix] Errors from tedious connection creation now cause connection promise to
-reject ((#1254)[https://github.com/tediousjs/node-mssql/pull/1254])
-[fix] Encrypt and transaction binding settings now respect value parsed from
-connection strings
-((#1252)[https://github.com/tediousjs/node-mssql/pull/1252)
+[fix] Errors from tedious connection creation now cause connection promise to reject ((#1254)[https://github.com/tediousjs/node-mssql/pull/1254])
+[fix] Encrypt and transaction binding settings now respect value parsed from connection strings ((#1252)[https://github.com/tediousjs/node-mssql/pull/1252)
 
 v7.1.0 (2021-05-13)
 -------------------
@@ -31,7 +32,7 @@ v7.0.0 (2021-05-06)
 [fix] Trailing rows from request streams using msnodesqlv8 driver fail to be emitted ([#1109](https://github.com/tediousjs/node-mssql/pull/1109))
 [fix] Issue with geography v2 parsing resolve ([#1138](https://github.com/tediousjs/node-mssql/pull/1138))
 [fix] Connection config objects are now deep cloned when stored against a connection pool ([#1217](https://github.com/tediousjs/node-mssql/pull/1217))
-[removed] Support for connection uri format has been removed (eg: `mssql://user:password@host/?params=values`
+[removed] Support for connection uri format has been removed (eg: `mssql://user:password@host/?params=values`)
 
 v6.3.2 (2021-05-13)
 -------------------
