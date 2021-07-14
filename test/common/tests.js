@@ -285,7 +285,7 @@ module.exports = (sql, driver) => {
       req.output('out', sql.Int, 1)
       req.execute('__testInputOutputValue').then(result => {
         assert.strictEqual(result.output.out, 2)
-        
+
         done()
       }).catch(done)
     },
