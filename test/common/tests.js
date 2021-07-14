@@ -278,6 +278,18 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'stored procedure with input/output column' (done) {
+      const req = new TestRequest()
+      req.arrayRowMode = true
+      req.input('in', sql.Int, 1)
+      req.output('out', sql.Int, 1)
+      req.execute('__testInputOutputValue').then(result => {
+        assert.strictEqual(result.output.out, 2)
+        
+        done()
+      }).catch(done)
+    },
+
     'empty query' (done) {
       const req = new TestRequest()
       req.query('').then(result => {

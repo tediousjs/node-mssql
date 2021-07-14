@@ -99,6 +99,14 @@ begin
 	
 end')
 
+exec('create procedure [dbo].[__testInputOutputValue]
+	@in int,
+	@out int = NULL OUTPUT
+as
+begin
+	set @out = @out + @in
+end')
+
 exec('create type [dbo].[MSSQLTestType] as table(
 	[a] [varchar](50) null,
 	[b] [integer] null

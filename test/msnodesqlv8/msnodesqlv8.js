@@ -43,6 +43,7 @@ describe('msnodesqlv8', function () {
       sql.connect(cfg, done)
     })
 
+    
     it('stored procedure (exec)', done => TESTS['stored procedure']('execute', done))
     it('stored procedure (batch)', done => TESTS['stored procedure']('batch', done))
     it('user defined types', done => TESTS['user defined types'](done))
@@ -50,6 +51,7 @@ describe('msnodesqlv8', function () {
     it('variant data', done => TESTS['variant data'](done))
     it('stored procedure with one empty recordset', done => TESTS['stored procedure with one empty recordset'](done))
     it('stored procedure with duplicate output column names', done => TESTS['stored procedure with duplicate output column names'](done))
+    it('stored procedure with input/output column', done => TESTS['stored procedure with input/output column'](done))
     it('empty query', done => TESTS['empty query'](done))
     it('query with no recordset', done => TESTS['query with no recordset'](done))
     it('query with one recordset', done => TESTS['query with one recordset'](done))
