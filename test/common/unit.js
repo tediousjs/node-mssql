@@ -371,8 +371,8 @@ describe('Geography Parsing', () => {
   version: 1,
   points: [
     Point { x: 1, y: 1, z: null, m: null },
-    Point { x: 1, y: 3, z: null, m: null },
-    Point { x: 7, y: 3, z: null, m: null },
+    Point { x: 3, y: 1, z: null, m: null },
+    Point { x: 3, y: 7, z: null, m: null },
     Point { x: 1, y: 1, z: null, m: null }
   ],
   figures: [ { attribute: 2, pointOffset: 0 } ],
@@ -383,14 +383,14 @@ describe('Geography Parsing', () => {
     assert.strictEqual(geo.version, 1)
     assert.strictEqual(geo.srid, 4326)
     assert.strictEqual(geo.points.length, 4)
-    assert.strictEqual(geo.points[0].y, 1)
     assert.strictEqual(geo.points[0].x, 1)
-    assert.strictEqual(geo.points[1].y, 3)
-    assert.strictEqual(geo.points[1].x, 1)
-    assert.strictEqual(geo.points[2].y, 3)
-    assert.strictEqual(geo.points[2].x, 7)
-    assert.strictEqual(geo.points[3].y, 1)
+    assert.strictEqual(geo.points[0].y, 1)
+    assert.strictEqual(geo.points[1].x, 3)
+    assert.strictEqual(geo.points[1].y, 1)
+    assert.strictEqual(geo.points[2].x, 3)
+    assert.strictEqual(geo.points[2].y, 7)
     assert.strictEqual(geo.points[3].x, 1)
+    assert.strictEqual(geo.points[3].y, 1)
   })
 
   it('polygon v2', () => {
@@ -404,8 +404,8 @@ describe('Geography Parsing', () => {
   version: 2,
   points: [
     Point { x: 1, y: 1, z: null, m: null },
-    Point { x: 1, y: 3, z: null, m: null },
-    Point { x: 1, y: 3, z: null, m: null },
+    Point { x: 3, y: 1, z: null, m: null },
+    Point { x: 3, y: 1, z: null, m: null },
     Point { x: 1, y: 1, z: null, m: null }
   ],
   figures: [ { attribute: 1, pointOffset: 0 } ],
@@ -416,14 +416,14 @@ describe('Geography Parsing', () => {
     assert.strictEqual(geo.version, 2)
     assert.strictEqual(geo.srid, 4326)
     assert.strictEqual(geo.points.length, 4)
-    assert.strictEqual(geo.points[0].y, 1)
     assert.strictEqual(geo.points[0].x, 1)
-    assert.strictEqual(geo.points[1].y, 3)
-    assert.strictEqual(geo.points[1].x, 1)
-    assert.strictEqual(geo.points[2].y, 3)
-    assert.strictEqual(geo.points[2].x, 1)
-    assert.strictEqual(geo.points[3].y, 1)
+    assert.strictEqual(geo.points[0].y, 1)
+    assert.strictEqual(geo.points[1].x, 3)
+    assert.strictEqual(geo.points[1].y, 1)
+    assert.strictEqual(geo.points[2].x, 3)
+    assert.strictEqual(geo.points[2].y, 1)
     assert.strictEqual(geo.points[3].x, 1)
+    assert.strictEqual(geo.points[3].y, 1)
   })
 })
 
