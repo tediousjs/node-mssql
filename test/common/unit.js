@@ -296,6 +296,21 @@ describe('Geometry Parsing', () => {
     const buffer = Buffer.from('E6100000010404000000000000000000F03F000000000000F03F0000000000000840000000000000F03F00000000000008400000000000001C40000000000000F03F000000000000F03F01000000020000000001000000FFFFFFFF0000000003', 'hex')
     const geom = udt.PARSERS.geometry(buffer)
 
+    /*
+{
+  srid: 4326,
+  version: 1,
+  points: [
+    Point { x: 1, y: 1, z: null, m: null },
+    Point { x: 1, y: 3, z: null, m: null },
+    Point { x: 7, y: 3, z: null, m: null },
+    Point { x: 1, y: 1, z: null, m: null }
+  ],
+  figures: [ { attribute: 2, pointOffset: 0 } ],
+  shapes: [ { parentOffset: -1, figureOffset: 0, type: 3 } ],
+  segments: []
+}
+     */
     assert.strictEqual(geom.version, 1)
     assert.strictEqual(geom.srid, 4326)
     assert.strictEqual(geom.points.length, 4)
@@ -315,6 +330,21 @@ describe('Geometry Parsing', () => {
     const buffer = Buffer.from('E6100000020004000000000000000000F03F000000000000F03F0000000000000840000000000000F03F0000000000000840000000000000F03F000000000000F03F000000000000F03F01000000020000000001000000FFFFFFFF0000000003', 'hex')
     const geom = udt.PARSERS.geometry(buffer)
 
+    /*
+{
+  srid: 4326,
+  version: 2,
+  points: [
+    Point { x: 1, y: 1, z: null, m: null },
+    Point { x: 1, y: 3, z: null, m: null },
+    Point { x: 1, y: 3, z: null, m: null },
+    Point { x: 1, y: 1, z: null, m: null }
+  ],
+  figures: [ { attribute: 1, pointOffset: 0 } ],
+  shapes: [ { parentOffset: -1, figureOffset: 0, type: 3 } ],
+  segments: []
+}
+     */
     assert.strictEqual(geom.version, 2)
     assert.strictEqual(geom.srid, 4326)
     assert.strictEqual(geom.points.length, 4)
@@ -335,6 +365,21 @@ describe('Geography Parsing', () => {
     const buffer = Buffer.from('E6100000010404000000000000000000F03F000000000000F03F000000000000F03F00000000000008400000000000001C400000000000000840000000000000F03F000000000000F03F01000000020000000001000000FFFFFFFF0000000003', 'hex')
     const geo = udt.PARSERS.geography(buffer)
 
+    /*
+{
+  srid: 4326,
+  version: 1,
+  points: [
+    Point { x: 1, y: 1, z: null, m: null },
+    Point { x: 1, y: 3, z: null, m: null },
+    Point { x: 7, y: 3, z: null, m: null },
+    Point { x: 1, y: 1, z: null, m: null }
+  ],
+  figures: [ { attribute: 2, pointOffset: 0 } ],
+  shapes: [ { parentOffset: -1, figureOffset: 0, type: 3 } ],
+  segments: []
+}
+    */
     assert.strictEqual(geo.version, 1)
     assert.strictEqual(geo.srid, 4326)
     assert.strictEqual(geo.points.length, 4)
@@ -353,6 +398,21 @@ describe('Geography Parsing', () => {
     const buffer = Buffer.from('E6100000020004000000000000000000F03F000000000000F03F000000000000F03F0000000000000840000000000000F03F0000000000000840000000000000F03F000000000000F03F01000000010000000001000000FFFFFFFF0000000003', 'hex')
     const geo = udt.PARSERS.geography(buffer)
 
+    /*
+{
+  srid: 4326,
+  version: 2,
+  points: [
+    Point { x: 1, y: 1, z: null, m: null },
+    Point { x: 1, y: 3, z: null, m: null },
+    Point { x: 1, y: 3, z: null, m: null },
+    Point { x: 1, y: 1, z: null, m: null }
+  ],
+  figures: [ { attribute: 1, pointOffset: 0 } ],
+  shapes: [ { parentOffset: -1, figureOffset: 0, type: 3 } ],
+  segments: []
+}
+    */
     assert.strictEqual(geo.version, 2)
     assert.strictEqual(geo.srid, 4326)
     assert.strictEqual(geo.points.length, 4)
