@@ -984,11 +984,15 @@ module.exports = (sql, driver) => {
               if (!rollbackHandled) { return done(new Error("Rollback event didn't fire.")) }
 
               done()
-            })
-          })
+            }).catch(done)
+          }).catch(done)
 
           tran.on('rollback', function (aborted) {
-            assert.strictEqual(aborted, true)
+            try {
+              assert.strictEqual(aborted, true)
+            } catch (err) {
+              done(err)
+            }
 
             rollbackHandled = true
           })
