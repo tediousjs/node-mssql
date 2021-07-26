@@ -290,6 +290,45 @@ describe('Unit', () => {
   })
 })
 
+describe('Geometry Parsing', () => {
+  it('polygon v1', () => {
+    // select geometry::STGeomFromText(N'POLYGON((1 1, 3 1, 3 7, 1 1))',4326)
+    const buffer = Buffer.from('E6100000010404000000000000000000F03F000000000000F03F0000000000000840000000000000F03F00000000000008400000000000001C40000000000000F03F000000000000F03F01000000020000000001000000FFFFFFFF0000000003', 'hex')
+    const geom = udt.PARSERS.geometry(buffer)
+
+    assert.strictEqual(geom.version, 1)
+    assert.strictEqual(geom.srid, 4326)
+    assert.strictEqual(geom.points.length, 4)
+    assert.strictEqual(geom.points[0].x, 1)
+    assert.strictEqual(geom.points[0].y, 1)
+    assert.strictEqual(geom.points[1].x, 3)
+    assert.strictEqual(geom.points[1].y, 1)
+    assert.strictEqual(geom.points[2].x, 3)
+    assert.strictEqual(geom.points[2].y, 7)
+    assert.strictEqual(geom.points[3].x, 1)
+    assert.strictEqual(geom.points[3].y, 1)
+  })
+
+  it('polygon v2', () => {
+    // select geometry::STGeomFromText(N'POLYGON((1 1, 3 1, 3 1, 1 1))',4326)
+    // (then tweak it to switch to v2: s/010/020/, though without any segments, it's kind of a moot point.)
+    const buffer = Buffer.from('E6100000020004000000000000000000F03F000000000000F03F0000000000000840000000000000F03F0000000000000840000000000000F03F000000000000F03F000000000000F03F01000000020000000001000000FFFFFFFF0000000003', 'hex')
+    const geom = udt.PARSERS.geometry(buffer)
+
+    assert.strictEqual(geom.version, 2)
+    assert.strictEqual(geom.srid, 4326)
+    assert.strictEqual(geom.points.length, 4)
+    assert.strictEqual(geom.points[0].x, 1)
+    assert.strictEqual(geom.points[0].y, 1)
+    assert.strictEqual(geom.points[1].x, 3)
+    assert.strictEqual(geom.points[1].y, 1)
+    assert.strictEqual(geom.points[2].x, 3)
+    assert.strictEqual(geom.points[2].y, 1)
+    assert.strictEqual(geom.points[3].x, 1)
+    assert.strictEqual(geom.points[3].y, 1)
+  })
+})
+
 describe('Geography Parsing', () => {
   it('polygon v1', () => {
     // select geography::STGeomFromText(N'POLYGON((1 1, 3 1, 3 7, 1 1))',4326)
