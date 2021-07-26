@@ -3,6 +3,7 @@
 const assert = require('assert')
 const stream = require('stream')
 const { join } = require('path')
+const util = require('util')
 const ISOLATION_LEVELS = require('../../lib/isolationlevel')
 const BaseTransaction = require('../../lib/base/transaction')
 const versionHelper = require('./versionhelper')
@@ -1262,7 +1263,12 @@ module.exports = (sql, driver) => {
         connectionTimeout: 1000,
         pool: { idleTimeoutMillis: 500 }
       }, (err) => {
-        assert.strictEqual((message ? (message.exec(err.message) != null) : (err instanceof sql.ConnectionPoolError)), true)
+        if (message) {
+          const match = message.exec(err.message)
+          assert.notStrictEqual(match, null, util.format('Expected timeout error message to match', message, 'but instead received error message:', err.message))
+        } else {
+          assert.strictEqual(err instanceof sql.ConnectionPoolError, true, util.format('Expected timeout error to be an instance of ConnectionPoolError, but instead received an instance of', Object.getPrototypeOf(err), err))
+        }
         conn.close()
         done()
       })
