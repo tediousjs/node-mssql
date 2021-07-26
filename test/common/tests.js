@@ -971,7 +971,10 @@ module.exports = (sql, driver) => {
             assert.ok(err)
 
             if (isSQLServer2019OrNewer) {
-              expectedMessage = "String or binary data would be truncated in table 'master.dbo.tran_test', column 'data'. Truncated value: 'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfas'."
+              const config = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+              const configDatabase = config.database
+              const databaseName = configDatabase || 'master'
+              expectedMessage = "String or binary data would be truncated in table '" + databaseName + ".dbo.tran_test', column 'data'. Truncated value: 'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfas'."
             } else {
               expectedMessage = 'String or binary data would be truncated.'
             }
