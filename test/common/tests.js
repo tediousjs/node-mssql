@@ -1263,6 +1263,14 @@ module.exports = (sql, driver) => {
         connectionTimeout: 1000,
         pool: { idleTimeoutMillis: 500 }
       }, (err) => {
+        const isRunningUnderCI = process.env.CI && process.env.CI.toLowerCase() === 'true'
+        if (!isRunningUnderCI) {
+          // Skipping outside CI as this test relies on a controlled network environment.
+          // See discussion at: https://github.com/tediousjs/node-mssql/issues/1277#issuecomment-886638039
+          this.skip()
+          return
+        }
+
         const match = message.exec(err.message)
         assert.notStrictEqual(match, null, util.format('Expected timeout error message to match regexp', message, 'but instead received error message:', err.message))
 
