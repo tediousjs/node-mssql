@@ -226,9 +226,19 @@ module.exports = (sql, driver) => {
         assert(result.recordset.columns.geometry.type === sql.Geometry)
         assert.strictEqual(result.recordset.columns.geography.udt.name, 'geography')
         assert.strictEqual(result.recordset.columns.geometry.udt.name, 'geometry')
+      }).then(() =>
+        new TestRequest().query('DECLARE @geo GEOGRAPHY = geography::Point(90, 180, 4326); SELECT @geo AS geo, @geo.Lat AS expectedLat, @geo.Long AS expectedLng')
+      ).then(result => {
+        // Our notion of lat and lng should agree with SQL Server's notion.
+        const record = result.recordset[0]
+        const parsedPoint = record.geo.points[0]
+        assert.strictEqual(parsedPoint.lat, record.expectedLat)
+        assert.strictEqual(parsedPoint.lng, record.expectedLng)
 
-        done()
-      }).catch(done)
+        // Backwards compatibility: Preserve flipped x/y.
+        assert.strictEqual(parsedPoint.x, record.expectedLat)
+        assert.strictEqual(parsedPoint.y, record.expectedLng)
+      }).then(done, done)
     },
 
     'binary data' (done) {
