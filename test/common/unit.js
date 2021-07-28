@@ -370,10 +370,10 @@ describe('Geography Parsing', () => {
   srid: 4326,
   version: 1,
   points: [
-    Point { x: 1, y: 1, z: null, m: null },
-    Point { x: 3, y: 1, z: null, m: null },
-    Point { x: 3, y: 7, z: null, m: null },
-    Point { x: 1, y: 1, z: null, m: null }
+    Point { x: 1, y: 1, z: null, m: null, lat: 1, lng: 1 },
+    Point { x: 1, y: 3, z: null, m: null, lat: 1, lng: 3 },
+    Point { x: 7, y: 3, z: null, m: null, lat: 7, lng: 3 },
+    Point { x: 1, y: 1, z: null, m: null, lat: 1, lng: 1 }
   ],
   figures: [ { attribute: 2, pointOffset: 0 } ],
   shapes: [ { parentOffset: -1, figureOffset: 0, type: 3 } ],
@@ -383,14 +383,25 @@ describe('Geography Parsing', () => {
     assert.strictEqual(geo.version, 1)
     assert.strictEqual(geo.srid, 4326)
     assert.strictEqual(geo.points.length, 4)
-    assert.strictEqual(geo.points[0].x, 1)
+
+    assert.strictEqual(geo.points[0].lng, 1)
+    assert.strictEqual(geo.points[0].lat, 1)
+    assert.strictEqual(geo.points[1].lng, 3)
+    assert.strictEqual(geo.points[1].lat, 1)
+    assert.strictEqual(geo.points[2].lng, 3)
+    assert.strictEqual(geo.points[2].lat, 7)
+    assert.strictEqual(geo.points[3].lng, 1)
+    assert.strictEqual(geo.points[3].lat, 1)
+
+    // Backwards compatibility: Preserve flipped x and y.
     assert.strictEqual(geo.points[0].y, 1)
-    assert.strictEqual(geo.points[1].x, 3)
-    assert.strictEqual(geo.points[1].y, 1)
-    assert.strictEqual(geo.points[2].x, 3)
-    assert.strictEqual(geo.points[2].y, 7)
-    assert.strictEqual(geo.points[3].x, 1)
+    assert.strictEqual(geo.points[0].x, 1)
+    assert.strictEqual(geo.points[1].y, 3)
+    assert.strictEqual(geo.points[1].x, 1)
+    assert.strictEqual(geo.points[2].y, 3)
+    assert.strictEqual(geo.points[2].x, 7)
     assert.strictEqual(geo.points[3].y, 1)
+    assert.strictEqual(geo.points[3].x, 1)
   })
 
   it('polygon v2', () => {
@@ -403,10 +414,10 @@ describe('Geography Parsing', () => {
   srid: 4326,
   version: 2,
   points: [
-    Point { x: 1, y: 1, z: null, m: null },
-    Point { x: 3, y: 1, z: null, m: null },
-    Point { x: 3, y: 1, z: null, m: null },
-    Point { x: 1, y: 1, z: null, m: null }
+    Point { x: 1, y: 1, z: null, m: null, lat: 1, lng: 1 },
+    Point { x: 1, y: 3, z: null, m: null, lat: 1, lng: 3 },
+    Point { x: 1, y: 3, z: null, m: null, lat: 1, lng: 3 },
+    Point { x: 1, y: 1, z: null, m: null, lat: 1, lng: 1 }
   ],
   figures: [ { attribute: 1, pointOffset: 0 } ],
   shapes: [ { parentOffset: -1, figureOffset: 0, type: 3 } ],
@@ -416,14 +427,25 @@ describe('Geography Parsing', () => {
     assert.strictEqual(geo.version, 2)
     assert.strictEqual(geo.srid, 4326)
     assert.strictEqual(geo.points.length, 4)
-    assert.strictEqual(geo.points[0].x, 1)
+
+    assert.strictEqual(geo.points[0].lng, 1)
+    assert.strictEqual(geo.points[0].lat, 1)
+    assert.strictEqual(geo.points[1].lng, 3)
+    assert.strictEqual(geo.points[1].lat, 1)
+    assert.strictEqual(geo.points[2].lng, 3)
+    assert.strictEqual(geo.points[2].lat, 1)
+    assert.strictEqual(geo.points[3].lng, 1)
+    assert.strictEqual(geo.points[3].lat, 1)
+
+    // Backwards compatibility: Preserve flipped x and y.
     assert.strictEqual(geo.points[0].y, 1)
-    assert.strictEqual(geo.points[1].x, 3)
-    assert.strictEqual(geo.points[1].y, 1)
-    assert.strictEqual(geo.points[2].x, 3)
-    assert.strictEqual(geo.points[2].y, 1)
-    assert.strictEqual(geo.points[3].x, 1)
+    assert.strictEqual(geo.points[0].x, 1)
+    assert.strictEqual(geo.points[1].y, 3)
+    assert.strictEqual(geo.points[1].x, 1)
+    assert.strictEqual(geo.points[2].y, 3)
+    assert.strictEqual(geo.points[2].x, 1)
     assert.strictEqual(geo.points[3].y, 1)
+    assert.strictEqual(geo.points[3].x, 1)
   })
 })
 

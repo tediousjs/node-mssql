@@ -178,19 +178,34 @@ module.exports = (sql, driver) => {
         // assert.deepStrictEqual rst[0].geography, sample1
         // assert.deepStrictEqual rst[0].geometry, sample2
 
+        // GEOGRAPHY
         assert.strictEqual(result.recordset[0].geography.srid, 4326)
         assert.strictEqual(result.recordset[0].geography.version, 1)
+
         assert.strictEqual(result.recordset[0].geography.points.length, 2)
-        assert.strictEqual(result.recordset[0].geography.points[0].y, 47.656)
-        assert.strictEqual(result.recordset[0].geography.points[1].x, -122.343)
+        assert.strictEqual(result.recordset[0].geography.points[0].lng, -122.360)
+        assert.strictEqual(result.recordset[0].geography.points[0].lat, 47.656)
+        assert.strictEqual(result.recordset[0].geography.points[1].lng, -122.343)
+        assert.strictEqual(result.recordset[0].geography.points[1].lat, 47.656)
+
+        // Backwards compatibility: Preserve flipped x/y.
+        assert.strictEqual(result.recordset[0].geography.points[0].y, -122.360)
+        assert.strictEqual(result.recordset[0].geography.points[0].x, 47.656)
+        assert.strictEqual(result.recordset[0].geography.points[1].y, -122.343)
+        assert.strictEqual(result.recordset[0].geography.points[1].x, 47.656)
+
         assert.strictEqual(result.recordset[0].geography.figures.length, 1)
         assert.strictEqual(result.recordset[0].geography.figures[0].attribute, 0x01)
+
         assert.strictEqual(result.recordset[0].geography.shapes.length, 1)
         assert.strictEqual(result.recordset[0].geography.shapes[0].type, 0x02)
+
         assert.strictEqual(result.recordset[0].geography.segments.length, 0)
 
+        // GEOMETRY
         assert.strictEqual(result.recordset[0].geometry.srid, 0)
         assert.strictEqual(result.recordset[0].geometry.version, 1)
+
         assert.strictEqual(result.recordset[0].geometry.points.length, 3)
         assert.strictEqual(result.recordset[0].geometry.points[0].z, 10.3)
         assert.strictEqual(result.recordset[0].geometry.points[0].m, 12)
@@ -198,10 +213,13 @@ module.exports = (sql, driver) => {
         assert.strictEqual(result.recordset[0].geometry.points[2].y, 180)
         assert(isNaN(result.recordset[0].geometry.points[2].z))
         assert(isNaN(result.recordset[0].geometry.points[2].m))
+
         assert.strictEqual(result.recordset[0].geometry.figures.length, 1)
         assert.strictEqual(result.recordset[0].geometry.figures[0].attribute, 0x01)
+
         assert.strictEqual(result.recordset[0].geometry.shapes.length, 1)
         assert.strictEqual(result.recordset[0].geometry.shapes[0].type, 0x02)
+
         assert.strictEqual(result.recordset[0].geometry.segments.length, 0)
 
         assert(result.recordset.columns.geography.type === sql.Geography)
