@@ -1514,32 +1514,65 @@ If you omit config path argument, mssql will try to load it from current working
 
 ## Geography and Geometry
 
-node-mssql has built-in serializer for Geography and Geometry CLR data types.
+node-mssql has built-in deserializer for Geography and Geometry CLR data types.
+
+### Geography
+
+Geography types can be constructed several different ways. Refer carefully to documentation to verify the coordinate ordering; the ST methods tend to order parameters as longitude (x) then latitude (y), while custom CLR methods tend to prefer to order them as latitude (y) then longitude (x).
+
+The query:
 
 ```sql
-select geography::STGeomFromText('LINESTRING(-122.360 47.656, -122.343 47.656 )', 4326)
-select geometry::STGeomFromText('LINESTRING (100 100 10.3 12, 20 180, 180 180)', 0)
+select geography::STGeomFromText(N'POLYGON((1 1, 3 1, 3 1, 1 1))',4326)
 ```
 
-Results in:
+results in:
 
 ```javascript
-{ srid: 4326,
-  version: 1,
-  points: [ { x: 47.656, y: -122.36 }, { x: 47.656, y: -122.343 } ],
+{
+  srid: 4326,
+  version: 2,
+  points: [
+    Point { lat: 1, lng: 1, z: null, m: null },
+    Point { lat: 1, lng: 3, z: null, m: null },
+    Point { lat: 1, lng: 3, z: null, m: null },
+    Point { lat: 1, lng: 1, z: null, m: null }
+  ],
   figures: [ { attribute: 1, pointOffset: 0 } ],
-  shapes: [ { parentOffset: -1, figureOffset: 0, type: 2 } ],
-  segments: [] }
+  shapes: [ { parentOffset: -1, figureOffset: 0, type: 3 } ],
+  segments: []
+}
+```
 
-{ srid: 0,
+**NOTE:** You will also see `x` and `y` coordinates in parsed Geography points,
+they are not recommended for use. They have thus been omitted from this example.
+For compatibility, they remain flipped (x, the horizontal offset, is instead used for latitude, the vertical), and thus risk misleading you.
+Prefer instead to use the `lat` and `lng` properties.
+
+### Geometry
+
+Geometry types can also be constructed in several ways. Unlike Geographies, they are consistent in always placing x before y. node-mssql decodes the result of this query:
+
+```sql
+select geometry::STGeomFromText(N'POLYGON((1 1, 3 1, 3 7, 1 1))',4326)
+```
+
+into the JavaScript object:
+
+```javascript
+{
+  srid: 4326,
   version: 1,
-  points:
-   [ { x: 100, y: 100, z: 10.3, m: 12 },
-     { x: 20, y: 180, z: NaN, m: NaN },
-     { x: 180, y: 180, z: NaN, m: NaN } ],
-  figures: [ { attribute: 1, pointOffset: 0 } ],
-  shapes: [ { parentOffset: -1, figureOffset: 0, type: 2 } ],
-  segments: [] }
+  points: [
+    Point { x: 1, y: 1, z: null, m: null },
+    Point { x: 1, y: 3, z: null, m: null },
+    Point { x: 7, y: 3, z: null, m: null },
+    Point { x: 1, y: 1, z: null, m: null }
+  ],
+  figures: [ { attribute: 2, pointOffset: 0 } ],
+  shapes: [ { parentOffset: -1, figureOffset: 0, type: 3 } ],
+  segments: []
+}
 ```
 
 ## Table-Valued Parameter (TVP)
