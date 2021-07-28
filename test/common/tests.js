@@ -28,6 +28,10 @@ class WritableStream extends stream.Writable {
   }
 }
 
+const readConfig = () => {
+  return JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+}
+
 module.exports = (sql, driver) => {
   class TestRequest extends sql.Request {
     execute (method) {
@@ -972,7 +976,7 @@ module.exports = (sql, driver) => {
             assert.ok(err)
 
             if (isSQLServer2019OrNewer) {
-              const config = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+              const config = readConfig()
               const configDatabase = config.database
               const databaseName = configDatabase || 'master'
               expectedMessage = "String or binary data would be truncated in table '" + databaseName + ".dbo.tran_test', column 'data'. Truncated value: 'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfas'."
@@ -1105,7 +1109,7 @@ module.exports = (sql, driver) => {
     },
 
     'request timeout' (done, driver, message) {
-      const config = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+      const config = readConfig()
       config.driver = driver
       config.requestTimeout = 1000 // note: msnodesqlv8 doesn't support timeouts less than 1 second
 
@@ -1243,7 +1247,7 @@ module.exports = (sql, driver) => {
     },
 
     'login failed' (done, message) {
-      const config = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+      const config = readConfig()
       config.user = '__notexistinguser__'
 
       // eslint-disable-next-line no-new
@@ -1446,7 +1450,7 @@ module.exports = (sql, driver) => {
       }
 
       __range__(1, peak, true).forEach((i) => {
-        const c = new sql.ConnectionPool(JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json'))))
+        const c = new sql.ConnectionPool(readConfig())
         c.connect(connected)
         conns.push(c)
       })
@@ -1455,7 +1459,7 @@ module.exports = (sql, driver) => {
     'concurrent requests' (done, driver) {
       console.log('')
 
-      const config = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+      const config = readConfig()
       config.driver = driver
       config.pool = { min: 0, max: 50 }
 
