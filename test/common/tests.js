@@ -3,7 +3,7 @@
 const assert = require('assert')
 const stream = require('stream')
 const { join } = require('path')
-const util = require('util')
+const { format } = require('util')
 const ISOLATION_LEVELS = require('../../lib/isolationlevel')
 const BaseTransaction = require('../../lib/base/transaction')
 const versionHelper = require('./versionhelper')
@@ -1272,7 +1272,7 @@ module.exports = (sql, driver) => {
         }
 
         const match = message.exec(err.message)
-        assert.notStrictEqual(match, null, util.format('Expected timeout error message to match regexp', message, 'but instead received error message:', err.message))
+        assert.notStrictEqual(match, null, format('Expected timeout error message to match regexp', message, 'but instead received error message:', err.message))
 
         conn.close()
         done()
