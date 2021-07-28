@@ -29,7 +29,7 @@ class WritableStream extends stream.Writable {
 }
 
 const readConfig = () => {
-  return JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+  return require(join(__dirname, '../.mssql.json'))
 }
 
 module.exports = (sql, driver) => {
