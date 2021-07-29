@@ -1,7 +1,8 @@
-v7.2.0 (2021-??-??)
+v7.2.0 (2021-07-29)
 -------------------
 [new] Update Geography field parsing to provide lat/lng props from Geography Point ((#1282)[https://github.com/tediousjs/node-mssql/pull/1282])
-
+[fix] Handle errors when adding rows to bulk operations ((#1264)[https://github.com/tediousjs/node-mssql/pull/1264])
+[fix] Input/Output parameter passing fix for msnodesqlv8 driver ((#1275)[https://github.com/tediousjs/node-mssql/pull/1275])
 
 v7.1.3 (2021-06-11)
 -------------------
