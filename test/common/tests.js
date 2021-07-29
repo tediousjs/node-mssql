@@ -3,6 +3,7 @@
 const assert = require('assert')
 const stream = require('stream')
 const { join } = require('path')
+const { format } = require('util')
 const ISOLATION_LEVELS = require('../../lib/isolationlevel')
 const BaseTransaction = require('../../lib/base/transaction')
 const versionHelper = require('./versionhelper')
@@ -25,6 +26,10 @@ class WritableStream extends stream.Writable {
     this.cache.push(chunk)
     setImmediate(() => callback(null))
   }
+}
+
+const readConfig = () => {
+  return require(join(__dirname, '../.mssql.json'))
 }
 
 module.exports = (sql, driver) => {
@@ -173,19 +178,34 @@ module.exports = (sql, driver) => {
         // assert.deepStrictEqual rst[0].geography, sample1
         // assert.deepStrictEqual rst[0].geometry, sample2
 
+        // GEOGRAPHY
         assert.strictEqual(result.recordset[0].geography.srid, 4326)
         assert.strictEqual(result.recordset[0].geography.version, 1)
+
         assert.strictEqual(result.recordset[0].geography.points.length, 2)
+        assert.strictEqual(result.recordset[0].geography.points[0].lng, -122.360)
+        assert.strictEqual(result.recordset[0].geography.points[0].lat, 47.656)
+        assert.strictEqual(result.recordset[0].geography.points[1].lng, -122.343)
+        assert.strictEqual(result.recordset[0].geography.points[1].lat, 47.656)
+
+        // Backwards compatibility: Preserve flipped x/y.
+        assert.strictEqual(result.recordset[0].geography.points[0].y, -122.360)
         assert.strictEqual(result.recordset[0].geography.points[0].x, 47.656)
         assert.strictEqual(result.recordset[0].geography.points[1].y, -122.343)
+        assert.strictEqual(result.recordset[0].geography.points[1].x, 47.656)
+
         assert.strictEqual(result.recordset[0].geography.figures.length, 1)
         assert.strictEqual(result.recordset[0].geography.figures[0].attribute, 0x01)
+
         assert.strictEqual(result.recordset[0].geography.shapes.length, 1)
         assert.strictEqual(result.recordset[0].geography.shapes[0].type, 0x02)
+
         assert.strictEqual(result.recordset[0].geography.segments.length, 0)
 
+        // GEOMETRY
         assert.strictEqual(result.recordset[0].geometry.srid, 0)
         assert.strictEqual(result.recordset[0].geometry.version, 1)
+
         assert.strictEqual(result.recordset[0].geometry.points.length, 3)
         assert.strictEqual(result.recordset[0].geometry.points[0].z, 10.3)
         assert.strictEqual(result.recordset[0].geometry.points[0].m, 12)
@@ -193,19 +213,32 @@ module.exports = (sql, driver) => {
         assert.strictEqual(result.recordset[0].geometry.points[2].y, 180)
         assert(isNaN(result.recordset[0].geometry.points[2].z))
         assert(isNaN(result.recordset[0].geometry.points[2].m))
+
         assert.strictEqual(result.recordset[0].geometry.figures.length, 1)
         assert.strictEqual(result.recordset[0].geometry.figures[0].attribute, 0x01)
+
         assert.strictEqual(result.recordset[0].geometry.shapes.length, 1)
         assert.strictEqual(result.recordset[0].geometry.shapes[0].type, 0x02)
+
         assert.strictEqual(result.recordset[0].geometry.segments.length, 0)
 
         assert(result.recordset.columns.geography.type === sql.Geography)
         assert(result.recordset.columns.geometry.type === sql.Geometry)
         assert.strictEqual(result.recordset.columns.geography.udt.name, 'geography')
         assert.strictEqual(result.recordset.columns.geometry.udt.name, 'geometry')
+      }).then(() =>
+        new TestRequest().query('DECLARE @geo GEOGRAPHY = geography::Point(90, 180, 4326); SELECT @geo AS geo, @geo.Lat AS expectedLat, @geo.Long AS expectedLng')
+      ).then(result => {
+        // Our notion of lat and lng should agree with SQL Server's notion.
+        const record = result.recordset[0]
+        const parsedPoint = record.geo.points[0]
+        assert.strictEqual(parsedPoint.lat, record.expectedLat)
+        assert.strictEqual(parsedPoint.lng, record.expectedLng)
 
-        done()
-      }).catch(done)
+        // Backwards compatibility: Preserve flipped x/y.
+        assert.strictEqual(parsedPoint.x, record.expectedLat)
+        assert.strictEqual(parsedPoint.y, record.expectedLng)
+      }).then(done, done)
     },
 
     'binary data' (done) {
@@ -971,7 +1004,10 @@ module.exports = (sql, driver) => {
             assert.ok(err)
 
             if (isSQLServer2019OrNewer) {
-              expectedMessage = "String or binary data would be truncated in table 'master.dbo.tran_test', column 'data'. Truncated value: 'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfas'."
+              const config = readConfig()
+              const configDatabase = config.database
+              const databaseName = configDatabase || 'master'
+              expectedMessage = "String or binary data would be truncated in table '" + databaseName + ".dbo.tran_test', column 'data'. Truncated value: 'asdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfas'."
             } else {
               expectedMessage = 'String or binary data would be truncated.'
             }
@@ -984,11 +1020,15 @@ module.exports = (sql, driver) => {
               if (!rollbackHandled) { return done(new Error("Rollback event didn't fire.")) }
 
               done()
-            })
-          })
+            }).catch(done)
+          }).catch(done)
 
           tran.on('rollback', function (aborted) {
-            assert.strictEqual(aborted, true)
+            try {
+              assert.strictEqual(aborted, true)
+            } catch (err) {
+              done(err)
+            }
 
             rollbackHandled = true
           })
@@ -1097,7 +1137,7 @@ module.exports = (sql, driver) => {
     },
 
     'request timeout' (done, driver, message) {
-      const config = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+      const config = readConfig()
       config.driver = driver
       config.requestTimeout = 1000 // note: msnodesqlv8 doesn't support timeouts less than 1 second
 
@@ -1235,7 +1275,7 @@ module.exports = (sql, driver) => {
     },
 
     'login failed' (done, message) {
-      const config = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+      const config = readConfig()
       config.user = '__notexistinguser__'
 
       // eslint-disable-next-line no-new
@@ -1255,7 +1295,17 @@ module.exports = (sql, driver) => {
         connectionTimeout: 1000,
         pool: { idleTimeoutMillis: 500 }
       }, (err) => {
-        assert.strictEqual((message ? (message.exec(err.message) != null) : (err instanceof sql.ConnectionPoolError)), true)
+        const isRunningUnderCI = process.env.CI && process.env.CI.toLowerCase() === 'true'
+        if (!isRunningUnderCI) {
+          // Skipping outside CI as this test relies on a controlled network environment.
+          // See discussion at: https://github.com/tediousjs/node-mssql/issues/1277#issuecomment-886638039
+          this.skip()
+          return
+        }
+
+        const match = message.exec(err.message)
+        assert.notStrictEqual(match, null, format('Expected timeout error message to match regexp', message, 'but instead received error message:', err.message))
+
         conn.close()
         done()
       })
@@ -1428,7 +1478,7 @@ module.exports = (sql, driver) => {
       }
 
       __range__(1, peak, true).forEach((i) => {
-        const c = new sql.ConnectionPool(JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json'))))
+        const c = new sql.ConnectionPool(readConfig())
         c.connect(connected)
         conns.push(c)
       })
@@ -1437,7 +1487,7 @@ module.exports = (sql, driver) => {
     'concurrent requests' (done, driver) {
       console.log('')
 
-      const config = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+      const config = readConfig()
       config.driver = driver
       config.pool = { min: 0, max: 50 }
 

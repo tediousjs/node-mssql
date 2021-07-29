@@ -178,7 +178,7 @@ describe('msnodesqlv8', function () {
 
   describe('msnodesqlv8 connection errors', function () {
     it('login failed', done => TESTS['login failed'](done, /Login failed for user '(.*)'\./))
-    it.skip('timeout (not supported by msnodesqlv8)', done => TESTS.timeout(done))
+    it.skip('timeout (not supported by msnodesqlv8)', done => TESTS.timeout.call(this, done, /1000ms/))
     it.skip('network error (not supported by msnodesqlv8)', done => TESTS['network error'](done))
   })
 

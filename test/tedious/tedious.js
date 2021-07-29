@@ -229,7 +229,8 @@ describe('tedious', () => {
 
   describe('connection errors', function () {
     it('login failed', done => TESTS['login failed'](done, /Login failed for user '(.*)'/))
-    it('timeout', done => TESTS.timeout(done, /Failed to connect to 10.0.0.1:1433 in 1000ms/))
+    // call(this) to enable the test to skip itself.
+    it('timeout', function (done) { TESTS.timeout.call(this, done, /Failed to connect to 10.0.0.1:1433 in 1000ms/) })
     it('network error', done => TESTS['network error'](done, /Failed to connect to \.\.\.:1433 - getaddrinfo ENOTFOUND/))
   })
 
