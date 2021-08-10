@@ -3,7 +3,7 @@
     "name": "Patrik Simek",
     "url": "https://patriksimek.cz"
   },
-  "name": "@jovercao/mssql",
+  "name": "mssql",
   "description": "Microsoft SQL Server client for Node.js.",
   "keywords": [
     "database",
@@ -56,8 +56,5 @@
   },
   "bin": {
     "mssql": "./bin/mssql"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }
