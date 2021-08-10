@@ -1841,12 +1841,13 @@ module.exports = (sql, driver) => {
 
     '@Connection transaction commit' (done) {
       const connection = new TestConnection()
+      const trans = connection.transaction()
       connection.open().then(() => {
-        return connection.beginTrans()
+        return trans.begin()
       }).then(() => {
-        return connection.query('select a, b, c from tvp_test')
+        return new sql.Request(trans).query('select a, b, c from tvp_test')
       }).then(result => {
-        return connection.commit()
+        return trans.commit()
       }).then(() => {
         return connection.close()
       }).then(() => {
@@ -1858,12 +1859,13 @@ module.exports = (sql, driver) => {
 
     '@Connection transaction rollback' (done) {
       const connection = new TestConnection()
+      const trans = connection.transaction()
       connection.open().then(() => {
-        return connection.beginTrans()
+        return trans.begin()
       }).then(() => {
-        return connection.query('select a, b, c from tvp_test')
+        new sql.Request(trans).query('select a, b, c from tvp_test')
       }).then(result => {
-        return connection.rollback()
+        return trans.rollback()
       }).then(() => {
         return connection.close()
       }).then(() => {
@@ -1872,6 +1874,40 @@ module.exports = (sql, driver) => {
         done(err)
       })
     }
+
+    // '@Connection transaction commit' (done) {
+    //   const connection = new TestConnection()
+    //   connection.open().then(() => {
+    //     return connection.beginTrans()
+    //   }).then(() => {
+    //     return connection.query('select a, b, c from tvp_test')
+    //   }).then(result => {
+    //     return connection.commit()
+    //   }).then(() => {
+    //     return connection.close()
+    //   }).then(() => {
+    //     done()
+    //   }).catch((err) => {
+    //     done(err)
+    //   })
+    // },
+
+    // '@Connection transaction rollback' (done) {
+    //   const connection = new TestConnection()
+    //   connection.open().then(() => {
+    //     return connection.beginTrans()
+    //   }).then(() => {
+    //     return connection.query('select a, b, c from tvp_test')
+    //   }).then(result => {
+    //     return connection.rollback()
+    //   }).then(() => {
+    //     return connection.close()
+    //   }).then(() => {
+    //     done()
+    //   }).catch((err) => {
+    //     done(err)
+    //   })
+    // }
   }
 }
 
