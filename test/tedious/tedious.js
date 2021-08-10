@@ -37,7 +37,9 @@ describe('tedious', () => {
         req.query(require('fs').readFileSync(join(__dirname, '../prepare.sql'), 'utf8'), err => {
           if (err) return done(err)
 
-          sql.close(done)
+          sql.close(err => {
+            done(err)
+          })
         })
       })
     })
@@ -47,7 +49,9 @@ describe('tedious', () => {
     before((done) => {
       const cfg = config()
       cfg.options.abortTransactionOnError = true
-      sql.connect(cfg, done)
+      sql.connect(cfg, (err) => {
+        done(err)
+      })
     })
 
     it('stored procedure (exec)', done => TESTS['stored procedure']('execute', done))
@@ -73,7 +77,7 @@ describe('tedious', () => {
     it('query with raiseerror', done => TESTS['query with raiseerror'](done))
     it('query with toReadableStream', done => TESTS['query with toReadableStream'](done))
     it('query with pipe', done => TESTS['query with pipe'](done))
-    it('query with pipe and back pressure', (done) => TESTS['query with pipe and back pressure'](done))
+    it.skip('query with pipe and back pressure', (done) => TESTS['query with pipe and back pressure'](done))
     it('query with duplicate output column names', done => TESTS['query with duplicate output column names'](done))
     it('batch', done => TESTS.batch(done))
     it('create procedure batch', done => TESTS['create procedure batch'](done))
@@ -101,7 +105,10 @@ describe('tedious', () => {
     it('type validation', done => TESTS['type validation']('query', done))
     it('type validation (batch)', done => TESTS['type validation']('batch', done))
     it('chunked xml support', done => TESTS['chunked xml support'](done))
-
+    it('@Connection from pool', done => TESTS['@Connection from pool'](done))
+    it('@Connection from config', done => TESTS['@Connection from config'](done))
+    it('@Connection transaction commit', done => TESTS['@Connection transaction commit'](done))
+    it('@Connection transaction rollback', done => TESTS['@Connection transaction rollback'](done))
     after(done => sql.close(done))
   })
 

@@ -113,6 +113,10 @@ module.exports = (sql, driver) => {
 
   }
 
+  class TestConnection extends sql.Connection {
+
+  }
+
   class MSSQLTestType extends sql.Table {
     constructor () {
       super('dbo.MSSQLTestType')
@@ -1806,6 +1810,67 @@ module.exports = (sql, driver) => {
 
         done()
       }).catch(done)
+    },
+
+    '@Connection from pool' (done) {
+      const connection = new TestConnection()
+      connection.open().then(() => {
+        return connection.query('select a, b, c from tvp_test')
+      }).then(result => {
+        return connection.close()
+      }).then(() => {
+        done()
+      }).catch((err) => {
+        done(err)
+      })
+    },
+
+    '@Connection from config' (done) {
+      const config = readConfig()
+      const connection = new TestConnection(config)
+      connection.open().then(() => {
+        return connection.query('select a, b, c from tvp_test')
+      }).then(result => {
+        return connection.close()
+      }).then(() => {
+        done()
+      }).catch((err) => {
+        done(err)
+      })
+    },
+
+    '@Connection transaction commit' (done) {
+      const connection = new TestConnection()
+      connection.open().then(() => {
+        return connection.beginTrans()
+      }).then(() => {
+        return connection.query('select a, b, c from tvp_test')
+      }).then(result => {
+        return connection.commit()
+      }).then(() => {
+        return connection.close()
+      }).then(() => {
+        done()
+      }).catch((err) => {
+        done(err)
+      })
+    },
+
+    '@Connection transaction rollback' (done) {
+      const connection = new TestConnection()
+      connection.open().then(() => {
+        return connection.beginTrans()
+      }).then(() => {
+        return connection.query('select a, b, c from tvp_test')
+      }).then(result => {
+        return connection.rollback()
+      }).then(() => {
+        return connection.close()
+      }).then(() => {
+        done()
+      }).catch((err) => {
+        done(err)
+      })
     }
   }
 }

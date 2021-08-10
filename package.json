@@ -3,7 +3,7 @@
     "name": "Patrik Simek",
     "url": "https://patriksimek.cz"
   },
-  "name": "mssql",
+  "name": "@jover/mssql",
   "description": "Microsoft SQL Server client for Node.js.",
   "keywords": [
     "database",
@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "mocha": "^8.3.2",
+    "msnodesqlv8": "^2.2.0",
     "standard": "^16.0.3"
   },
   "engines": {
@@ -47,10 +48,10 @@
   ],
   "scripts": {
     "test": "npm run lint && npm run test-unit",
-    "lint": "standard",
+    "lint": "eslint",
     "test-unit": "node_modules/.bin/mocha --exit -t 15000 test/common/unit.js",
-    "test-tedious": "node_modules/.bin/mocha --exit -t 15000 test/tedious",
-    "test-msnodesqlv8": "node_modules/.bin/mocha --exit -t 15000 test/msnodesqlv8",
+    "test-tedious": "node_modules/.bin/mocha --exit -t 0 test/tedious",
+    "test-msnodesqlv8": "node_modules/.bin/mocha --exit -t 0 test/msnodesqlv8",
     "test-cli": "node_modules/.bin/mocha --exit -t 15000 test/common/cli.js"
   },
   "bin": {

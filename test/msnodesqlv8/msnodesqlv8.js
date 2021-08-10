@@ -90,6 +90,10 @@ describe('msnodesqlv8', function () {
     it('request timeout', done => TESTS['request timeout'](done))
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))
     it('chunked xml support', done => TESTS['chunked xml support'](done))
+    it('@Connection from pool', done => TESTS['@Connection from pool'](done))
+    it('@Connection from config', done => TESTS['@Connection from config'](done))
+    it('@Connection transaction commit', done => TESTS['@Connection transaction commit'](done))
+    it('@Connection transaction rollback', done => TESTS['@Connection transaction rollback'](done))
 
     after(() => sql.close())
   })
