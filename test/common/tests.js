@@ -113,6 +113,10 @@ module.exports = (sql, driver) => {
 
   }
 
+  class TestConnection extends sql.Connection {
+
+  }
+
   class MSSQLTestType extends sql.Table {
     constructor () {
       super('dbo.MSSQLTestType')
@@ -1806,6 +1810,103 @@ module.exports = (sql, driver) => {
 
         done()
       }).catch(done)
+    },
+
+    '@Connection from pool' (done) {
+      const connection = new TestConnection()
+      connection.connect().then(() => {
+        return connection.query('select a, b, c from tvp_test')
+      }).then(result => {
+        return connection.close()
+      }).then(() => {
+        done()
+      }).catch((err) => {
+        done(err)
+      })
+    },
+
+    '@Connection from config' (done) {
+      const config = readConfig()
+      const connection = new TestConnection(config)
+      connection.connect().then(() => {
+        return connection.query('select a, b, c from tvp_test')
+      }).then(result => {
+        return connection.close()
+      }).then(() => {
+        done()
+      }).catch((err) => {
+        done(err)
+      })
+    },
+
+    '@Connection with transaction commit' (done) {
+      const connection = new TestConnection()
+      const trans = connection.transaction()
+      connection.connect().then(() => {
+        return trans.begin()
+      }).then(() => {
+        return new sql.Request(trans).query('select a, b, c from tvp_test')
+      }).then(result => {
+        return trans.commit()
+      }).then(() => {
+        return connection.close()
+      }).then(() => {
+        done()
+      }).catch((err) => {
+        done(err)
+      })
+    },
+
+    '@Connection with transaction rollback' (done) {
+      const connection = new TestConnection()
+      const trans = connection.transaction()
+      connection.connect().then(() => {
+        return trans.begin()
+      }).then(() => {
+        return new sql.Request(trans).query('select a, b, c from tvp_test')
+      }).then(result => {
+        return trans.rollback()
+      }).then(() => {
+        return connection.close()
+      }).then(() => {
+        done()
+      }).catch((err) => {
+        done(err)
+      })
+    },
+
+    '@Connection commit transaction selfly' (done) {
+      const connection = new TestConnection()
+      connection.open().then(() => {
+        return connection.beginTrans()
+      }).then(() => {
+        return connection.query('select a, b, c from tvp_test')
+      }).then(result => {
+        return connection.commit()
+      }).then(() => {
+        return connection.close()
+      }).then(() => {
+        done()
+      }).catch((err) => {
+        done(err)
+      })
+    },
+
+    '@Connection rollback transaction selfly' (done) {
+      const connection = new TestConnection()
+      connection.open().then(() => {
+        return connection.beginTrans()
+      }).then(() => {
+        return connection.query('select a, b, c from tvp_test')
+      }).then(result => {
+        return connection.rollback()
+      }).then(() => {
+        return connection.close()
+      }).then(() => {
+        done()
+      }).catch((err) => {
+        done(err)
+      })
     }
   }
 }
