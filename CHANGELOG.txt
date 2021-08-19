@@ -1,3 +1,7 @@
+v7.2.1 (2021-08-19)
+-------------------
+[fix] Fix issue with bulk insert of dates ((#1298)[https://github.com/tediousjs/node-mssql/pull/1298])
+
 v7.2.0 (2021-07-29)
 -------------------
 [new] Update Geography field parsing to provide lat/lng props from Geography Point ((#1282)[https://github.com/tediousjs/node-mssql/pull/1282])
