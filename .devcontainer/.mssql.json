@@ -1,0 +1,12 @@
+{
+  "user": "sa",
+  "password": "yourStrong(!)Password",
+  "server": "mssql",
+  "port": 1433,
+  "database": "master",
+  "requestTimeout": 30000,
+  "options": {
+    "abortTransactionOnError": true,
+    "encrypt": false
+  }
+}
