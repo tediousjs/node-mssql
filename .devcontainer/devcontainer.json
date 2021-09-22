@@ -1,0 +1,23 @@
+{
+  "name": "tediousjs/node-mssql",
+
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+
+  "workspaceFolder": "/workspace",
+
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+
+  "extensions": [
+    "ms-mssql.mssql",
+    "dbaeumer.vscode-eslint"
+  ],
+
+  "postCreateCommand": "npm install",
+
+  "containerEnv": {
+    "EDITOR": "code --wait"
+  }
+}

@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  app:
+    image: "mcr.microsoft.com/vscode/devcontainers/javascript-node:14"
+
+    volumes:
+      - "..:/workspace:cached"
+      - "./.mssql.json:/workspace/test/.mssql.json"
+
+    # Overrides default command so things don't shut down after the process ends.
+    command: "sleep infinity"
+
+    depends_on:
+      - mssql
+
+  mssql:
+    image: "mcr.microsoft.com/mssql/server:2019-latest"
+
+    restart: unless-stopped
+
+    environment:
+      - "ACCEPT_EULA=Y"
+      - "SA_PASSWORD=yourStrong(!)Password"
