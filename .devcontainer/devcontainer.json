@@ -15,7 +15,7 @@
     "dbaeumer.vscode-eslint"
   ],
 
-  "postCreateCommand": "npm install",
+  "postCreateCommand": "cp -n .devcontainer/.mssql.json test/.mssql.json && npm install",
 
   "containerEnv": {
     "EDITOR": "code --wait"
