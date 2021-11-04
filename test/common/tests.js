@@ -718,7 +718,7 @@ module.exports = (sql, driver) => {
         assert.fail('it should throw error while insertion length with non-supported values')
         done()
       }).catch(err => {
-        assert.strictEqual(err.message, 'Invalid column type from bcp client for colid 1.')
+        assert.strictEqual(err.message, 'Invalid string.')
         assert.strictEqual(err.code, 'EREQUEST')
         assert.strictEqual(err.name, 'RequestError')
         done()
