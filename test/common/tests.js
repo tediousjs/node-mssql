@@ -702,7 +702,7 @@ module.exports = (sql, driver) => {
         assert.strictEqual(err.code, 'EREQUEST')
         assert.strictEqual(err.name, 'RequestError')
         done()
-      })
+      }).catch(done)
     },
 
     'bulk insert with length option as undefined throws' (name, done) {
@@ -716,13 +716,12 @@ module.exports = (sql, driver) => {
       table.rows.add(table.rows, ['JP1016'])
       req.bulk(table).then(() => {
         assert.fail('it should throw error while insertion length with non-supported values')
-        done()
       }).catch(err => {
-        assert.strictEqual(err.message, 'Invalid column type from bcp client for colid 1.')
+        assert.strictEqual(err.message, 'Invalid string.')
         assert.strictEqual(err.code, 'EREQUEST')
         assert.strictEqual(err.name, 'RequestError')
         done()
-      })
+      }).catch(done)
     },
 
     'bulk insert with length as max' (name, done) {
@@ -779,9 +778,12 @@ module.exports = (sql, driver) => {
         .then(() => {
           done(new Error('Unexpectedly prepared bad statement'))
         })
-        .catch(() => {
+        .catch((err) => {
+          // assert the error is as expected
+          assert.ok(err)
+          assert.strictEqual(err.code, 'EREQUEST')
           done()
-        })
+        }).catch(done)
     },
 
     'prepared statement with duplicate parameters throws' (done) {
