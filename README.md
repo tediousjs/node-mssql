@@ -527,7 +527,7 @@ function runStoredProcedure() {
 Awaiting or `.then`ing the pool creation is a safe way to ensure that the pool is always ready, without knowing where it
 is needed first. In practice, once the pool is created then there will be no delay for the next operation.
 
-As of v6.1.0 you can make repeat calls to `ConnectionPool.connect()` and `ConnectonPool.close()` without an error being
+As of v6.1.0 you can make repeat calls to `ConnectionPool.connect()` and `ConnectionPool.close()` without an error being
 thrown, allowing for the safe use of `mssql.connect().then(...)` throughout your code as well as making multiple calls to
 close when your application is shutting down.
 
