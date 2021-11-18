@@ -1,3 +1,8 @@
+v6.4.0 (2021-11-18)
+-------------------
+[new] Transaction/PreparedStatements expose the config from their parent connection
+[fix] Fix inherited request configs from the pool. Specifically stream and arrayRowMode now inherit accurately from the connection config ([#1338](https://github.com/tediousjs/node-mssql/pull/1338))
+
 v6.3.2 (2021-05-13)
 -------------------
 [fix] Bump various dependencies for security fixes
