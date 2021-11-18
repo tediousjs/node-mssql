@@ -2,6 +2,7 @@ v8.0.0 (2021-??-??)
 -------------------
 [change] Updated to latest Tedious 14 ((#1318)[https://github.com/tediousjs/node-mssql/pull/1318])
 [change] Errors for bad bulk load parameters have slightly different error messages ((#1318)[https://github.com/tediousjs/node-mssql/pull/1318])
+[change] Options provided to the driver via the config.options object will not be overridden with other values if set explicitly ((#1340)[https://github.com/tediousjs/node-mssql/pull/1340])
 
 v7.2.1 (2021-08-19)
 -------------------
