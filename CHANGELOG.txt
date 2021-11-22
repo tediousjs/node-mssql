@@ -4,6 +4,7 @@ v8.0.0 (2021-??-??)
 [change] Updated to latest Tedious 14 ((#1312)[https://github.com/tediousjs/node-mssql/pull/1312])
 [change] Errors for bad bulk load parameters have slightly different error messages ((#1318)[https://github.com/tediousjs/node-mssql/pull/1318])
 [change] Options provided to the driver via the config.options object will not be overridden with other values if set explicitly ((#1340)[https://github.com/tediousjs/node-mssql/pull/1340])
+[change] Duplicate column names will now be presented as an array even if the values are empty ((#1240)[https://github.com/tediousjs/node-mssql/pull/1240])
 
 v7.2.1 (2021-08-19)
 -------------------
