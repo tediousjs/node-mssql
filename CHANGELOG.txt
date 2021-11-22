@@ -1,5 +1,6 @@
 v8.0.0 (2021-??-??)
 -------------------
+[new] Add table.rows.clear() method to allow for chunking updates ([#1094](https://github.com/tediousjs/node-mssql/pull/1094))
 [change] msnodesqlv8 driver detects os platform and attempts to pick correct connections string for it ((#1318)[https://github.com/tediousjs/node-mssql/pull/1318])
 [change] Updated to latest Tedious 14 ((#1312)[https://github.com/tediousjs/node-mssql/pull/1312])
 [change] Errors for bad bulk load parameters have slightly different error messages ((#1318)[https://github.com/tediousjs/node-mssql/pull/1318])
@@ -255,7 +256,7 @@ v4.0.4 (2017-04-25)
 
 v4.0.3 (2017-04-25)
 -------------------
-[fix] Fixed broken CLI & debugging
+[fix] Fixed broken CLI & debugging
 
 v4.0.2 (2017-04-19)
 -------------------
@@ -276,7 +277,7 @@ v4.0.0 (2017-04-01)
 [change] Removed verbose and debug mode
 [change] Removed 'driver' from options
 [change] Removed Transaction and Prepared Statement queues
-[change] Removed 'multiple' directive
+[change] Removed 'multiple' directive
 [change] Connection renamed to ConnectionPool
 [change] Updated to latest Tedious 2.0.0
 

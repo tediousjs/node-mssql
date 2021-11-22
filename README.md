@@ -1616,6 +1616,20 @@ request.execute('MyCustomStoredProcedure', (err, result) => {
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`. You can optionally specify table type name in the first argument.
 
+You can clear the table rows for easier batching by using `table.rows.clear()`
+
+```js
+const tvp = new sql.Table() // You can optionally specify table type name in the first argument.
+
+// Columns must correspond with type we have created in database.
+tvp.columns.add('a', sql.VarChar(50))
+tvp.columns.add('b', sql.Int)
+
+// Add rows
+tvp.rows.add('hello tvp', 777) // Values are in same order as columns.
+tvp.rows.clear()
+```
+
 ## Response Schema
 
 An object returned from a `sucessful` basic query would look like the following.
