@@ -27,9 +27,9 @@
   "license": "MIT",
   "dependencies": {
     "@tediousjs/connection-string": "^0.3.0",
-    "debug": "^4.3.2",
+    "debug": "^4.3.3",
     "rfdc": "^1.3.0",
-    "tarn": "^3.0.1",
+    "tarn": "^3.0.2",
     "tedious": "^14.0.0"
   },
   "devDependencies": {
