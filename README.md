@@ -76,7 +76,7 @@ async () => {
 * [ES6 Tagged template literals](#es6-tagged-template-literals)
 * [Callbacks](#callbacks)
 * [Streaming](#streaming)
-* [Connection Pools](#advanced-pool-management)
+* [Connection Pools](#connection-pools)
 
 ### Configuration
 
@@ -370,7 +370,7 @@ function processRows() {
 }
 ```
 
-## Pool Management
+## Connection Pools
 
 An important concept to understand when using this library is [Connection Pooling](https://en.wikipedia.org/wiki/Connection_pool) as this library uses connection pooling extensively. As one Node JS process is able to handle multiple requests at once, we can take advantage of this long running process to create a pool of database connections for reuse; this saves overhead of connecting to the database for each request
 (as would be the case in something like PHP, where one process handles one request).
@@ -379,15 +379,18 @@ With the advantages of pooling comes some added complexities, but these are most
 
 ### The Global Connection Pool
 
-To assist with pool management in your application there is the `sql.connect()` function that you use to connect to the global connection pool. You can make repeated calls to this function, and if the global pool is already connected, it will resolve to the connected pool. The following example obtains the global connection pool by running `sql.connect()`, and then runs the query against the pool.
+To assist with pool management in your application there is the `sql.connect()` function that is used to connect to the global connection pool. You can make repeated calls to this function, and if the global pool is already connected, it will resolve to the connected pool. The following example obtains the global connection pool by running `sql.connect()`, and then runs the query against the pool.
+
+NB: It's important to note that there can only be one global connection pool connected at a time. Providing a different connection config to the `connect()` function will not create a new connection if it is already connected.
 
 ```js
 const sql = require('mssql')
+const config = { ... }
 
 // run a query against the global connection pool
 function runQuery(query) {
   // sql.connect() will return the existing global pool if it exists or create a new one if it doesn't
-  return sql.connect().then((pool) => {
+  return sql.connect(config).then((pool) => {
     return pool.query(query)
   })
 }
@@ -399,104 +402,50 @@ Also notice that we do *not* close the global pool by calling `sql.close()` afte
 
 ### Global Pool Single Instance
 
-The ability to call `connect()` and `close()` repeatedly on the global pool is intended to make pool management easier, however it is generally recommended to follow a singleton design when possible, where `connect()` is called **once**, and the resulting global pool connection promise is re-used throughout the entire application. Repeatedly calling `connect()` can cause connection issues (e.g. `ECONNCLOSED`) or other anomalies in some circumstances like Express applications or Azure Functions/Azure SQL Server, depending on:
+The ability to call `connect()` and `close()` repeatedly on the global pool is intended to make pool management easier, however it is better to maintain your own reference to the pool, where `connect()` is called **once**, and the resulting global pool's connection promise is re-used throughout the entire application.
 
-* Your specific implementation
-* Usage with other libraries
-* The databases (and their versions) that you are connecting to
-
-In use-cases where you are able to maintain a single instance of a class to manage your database connectivity, use the following example as a guide. This class creates an instance variable to store a reference to the global connection pool, and queries reference this instance variable for fetching the global connection pool.
+For example, in Express applications, the following approach uses a single global pool instance added to the `app.locals` so the application has access to it when needed. The server start is then chained inside the `connect()` promise.
 
 ```js
-const sql = require('mssql');
-
-class CustomConnector {
-    constructor(config) {
-        this.globalPool = null;
-        this.config = config;
-    }
-
-    // call immediately after constructor to create singleton global pool
-    async init() {
-        this.globalPool = await sql.connect(this.config);
-    }
-
-    async runQuery(query) {
-        // references previously connected global pool from instance variable
-        const result = await this.globalPool.request().query(query);
-        return result;
-    }
-}
-
-async function startApp() {
-    const config = {
-        user: '...',
-        password: '...',
-        server: 'localhost',
-        database: '...',
-        pool: {
-            max: 10,
-            min: 0,
-            idleTimeoutMillis: 30000
-        }
-    }
-    // customConnector is the only instance of this class used in the application
-    const customConnector = new CustomConnector(config);
-    await customConnector.init();
-    const queryResult = await customConnector.runQuery('SELECT TOP 10 * FROM table_name');
-}
-```
-
-To extend this example and make it more scaleable, you could include a check for failed connections and then call `sql.connect()` again to refresh the `globalPool` instance variable.
-
-For Express applications, the following example uses a single global pool instance constant that is passed into the routes. The server start is then chained inside the `connect()` promise.
-
-```js
-const express = require('express');
-const sql = require('mssql');
-const config  = {/*...*/};
+const express = require('express')
+const sql = require('mssql')
+const config  = {/*...*/}
 //instantiate a connection pool
-const globalPool = new sql.Connection(config);
+const appPool = new sql.ConnectionPool(config)
 //require route handlers and use the same connection pool everywhere
-const route1 = require('./routes/route1')(globalPool);
-const app = express();
-app.get('/path', route1.get);
+const route1 = require('./routes/route1')
+const app = express()
+app.get('/path', route1)
 
 //connect the pool and start the web server when done
-globalPool.connect().then(function() {
+appPool.connect().then(function(pool) {
+  app.locals.db = pool;
   const server = app.listen(3000, function () {
-    const host = server.address().address;
-    const port = server.address().port;
-    console.log('Example app listening at http://%s:%s', host, port);
-  });
+    const host = server.address().address
+    const port = server.address().port
+    console.log('Example app listening at http://%s:%s', host, port)
+  })
 }).catch(function(err) {
-  console.error('Error creating connection pool', err);
+  console.error('Error creating connection pool', err)
 });
 ```
 
-Then the route uses the passed global connection pool object.
+Then the route uses the connection pool in the `app.locals` object:
 
 ```js
 // ./routes/route1.js
 const sql = require('mssql');
 
-module.exports = function(globalPool) {
-  const me = {
-    get: function(req, res, next) {
-      const request = new sql.Request(globalPool);
-      request.query('SELECT TOP 10 * FROM table_name', function(err, recordset) {
-        if (err) {
-          console.error(err);
-          res.status(500).send(err.message);
-          return;
-        }
-        res.status(200).json(recordset);
-      });
+module.exports = function(req, res) {
+  req.locals.db.query('SELECT TOP 10 * FROM table_name', function(err, recordset) {
+    if (err) {
+      console.error(err)
+      res.status(500).send('SERVER ERROR')
+      return
     }
-  };
-
-  return me;
-};
+    res.status(200).json({ message: 'success' })
+  })
+}
 ```
 
 ### Advanced Pool Management
@@ -509,50 +458,55 @@ For some use-cases you may want to implement your own connection pool management
 The following code is an example of a custom connection pool implementation.
 
 ```js
-// CustomPoolManager.js
-const { ConnectionPool } = require('mssql')
-const POOLS = {}
-
-async function createPool(config, name) {
-  if (getPool(name)) {
-    return Promise.reject(new Error('Pool with this name already exists'))
-  }
-  const pool = new ConnectionPool(config)
-  await pool.connect()
-  return POOLS[name] = pool
-}
-
-async function closePool(name) {
-  const pool = getPool(name)
-  if (pool) {
-    delete POOLS[name]
-    await pool.close()
-  }
-}
-
-function getPool(name) {
-  if (Object.prototype.hasOwnProperty.apply(POOLS, name)) {
-    return POOLS[name]
-  }
-}
+// pool-manager.js
+const mssql = require('mssql')
+const pools = new Map();
 
 module.exports = {
-  closePool,
-  createPool,
-  getPool
-}
+ /**
+  * Get or create a pool. If a pool doesn't exist the config must be provided.
+  * If the pool does exist the config is ignored (even if it was different to the one provided
+  * when creating the pool)
+  *
+  * @param {string} name
+  * @param {{}} [config]
+  * @return {Promise.<mssql.ConnectionPool>}
+  */
+ get: (name, config) => {
+  if (!pools.has(name)) {
+   if (!config) {
+    throw new Error('Pool does not exist');
+   }
+   const pool = new mssql.ConnectionPool(config);
+   // automatically remove the pool from the cache if `pool.close()` is called
+   const close = pool.close.bind(pool);
+   pool.close = (...args) => {
+    pools.delete(name);
+    return close(...args);
+   }
+   pools.set(name, pool.connect());
+  }
+  return pools.get(name);
+ },
+ /**
+  * Closes all the pools and removes them from the store
+  *
+  * @return {Promise<mssql.ConnectionPool[]>}
+  */
+ closeAll: () => Promise.all(Array.from(pools.values()).map((connect) => {
+  return connect.then((pool) => pool.close());
+ })),
+};
 ```
 
 This file can then be used in your application to create, fetch, and close pools.
 
 ```js
-const { getPool } = require('./CustomPoolManager.js')
+const { get } = require('./pool-manager')
 
-async function runQuery(query) {
-  // pool will always be connected when the promise has resolved - may reject if the connection config is invalid
-  const pool = getPool('default')
-  const result = await pool.request().query(query)
-  return result
+async function example() {
+  const pool = await get('default')
+  return pool.request().query('SELECT 1')
 }
 ```
 
@@ -1865,7 +1819,7 @@ Name | Code | Message
 `ConnectionError` | ENOTOPEN | Connection not yet open.
 `ConnectionError` | EINSTLOOKUP | Instance lookup failed.
 `ConnectionError` | ESOCKET | Socket error.
-`ConnectionError` | ECONNCLOSED | Connection is closed. See [global pool single instance](#global-pool-single-instance).
+`ConnectionError` | ECONNCLOSED | Connection is closed.
 `TransactionError` | ENOTBEGUN | Transaction has not begun.
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
 `TransactionError` | EREQINPROG | Can't commit/rollback transaction. There is a request in progress.
