@@ -123,6 +123,19 @@ module.exports = (sql, driver) => {
   }
 
   return {
+    'value handler' (done) {
+      let callCount = 0
+      const callArgs = []
+      // assign a "spy" to the valuehandler for varchar
+      sql.valueHandler.set(sql.TYPES.VarChar, function () { callCount++; callArgs.push(arguments); return arguments[0].toUpperCase() })
+      sql.query('SELECT TOP 1 * FROM [streaming]  ').then((result) => {
+        assert.strictEqual(callCount, 1)
+        assert.strictEqual(result.recordset.length, 1)
+        assert.notStrictEqual(result.recordset[0], callArgs[0])
+        assert.notStrictEqual(result.recordset[0], callArgs[0][0].toUpperCase())
+        done()
+      }).catch(done)
+    },
     'stored procedure' (mode, done) {
       const req = new TestRequest()
       req.input('in', sql.Int, null)

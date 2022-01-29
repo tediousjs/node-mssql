@@ -1,6 +1,6 @@
 'use strict'
 
-/* globals describe, it */
+/* globals describe, it, afterEach */
 
 const sql = require('../../')
 const assert = require('assert')
@@ -350,5 +350,39 @@ describe('config cloning', () => {
       options
     })
     assert.notDeepStrictEqual(options, pool.config.options)
+  })
+})
+
+describe('value handlers', () => {
+  afterEach('reset valueHandler', () => {
+    sql.valueHandler.clear()
+  })
+  it('can set a value handler', () => {
+    assert.strictEqual(sql.valueHandler instanceof Map, true)
+    assert.strictEqual(sql.valueHandler.size, 0)
+    sql.valueHandler.set(sql.TYPES.Int, (value) => value.toUpperCase())
+    assert.strictEqual(sql.valueHandler.size, 1)
+    assert.strictEqual(sql.valueHandler.has(sql.TYPES.Int), true)
+  })
+  it('can delete a value handler', () => {
+    assert.strictEqual(sql.valueHandler instanceof Map, true)
+    assert.strictEqual(sql.valueHandler.size, 0)
+    sql.valueHandler.set(sql.TYPES.Int, (value) => value.toUpperCase())
+    assert.strictEqual(sql.valueHandler.size, 1)
+    assert.strictEqual(sql.valueHandler.has(sql.TYPES.Int), true)
+    sql.valueHandler.delete(sql.TYPES.Int)
+    assert.strictEqual(sql.valueHandler.has(sql.TYPES.Int), false)
+    assert.strictEqual(sql.valueHandler.size, 0)
+  })
+  it('can reset all value handlers', () => {
+    assert.strictEqual(sql.valueHandler instanceof Map, true)
+    assert.strictEqual(sql.valueHandler.size, 0)
+    sql.valueHandler.set(sql.TYPES.Int, (value) => value.toUpperCase())
+    sql.valueHandler.set(sql.TYPES.BigInt, (value) => value.toUpperCase())
+    assert.strictEqual(sql.valueHandler.size, 2)
+    assert.strictEqual(sql.valueHandler.has(sql.TYPES.Int), true)
+    assert.strictEqual(sql.valueHandler.has(sql.TYPES.BigInt), true)
+    sql.valueHandler.clear()
+    assert.strictEqual(sql.valueHandler.size, 0)
   })
 })
