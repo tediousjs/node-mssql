@@ -42,6 +42,7 @@ describe('tedious', () => {
       })
     })
   )
+  afterEach(() => sql.valueHandler.clear())
 
   describe('basic test suite', () => {
     before((done) => {
@@ -50,6 +51,7 @@ describe('tedious', () => {
       sql.connect(cfg, done)
     })
 
+    it('value handler', done => TESTS['value handler'](done))
     it('stored procedure (exec)', done => TESTS['stored procedure']('execute', done))
     it('stored procedure (batch)', done => TESTS['stored procedure']('batch', done))
     it('user defined types', done => TESTS['user defined types'](done))
