@@ -2013,6 +2013,11 @@ request.query('select @myval as myval', (err, result) => {
 - If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/tediousjs/node-mssql/issues/36))
 - If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/tediousjs/node-mssql/issues/68))
 
+## 7.x to 8.x changes
+
+- Upgraded to tedious version 14
+- Removed internal library for connection string parsing. Connection strings can be resolved using the static method `parseConnectionString` on ConnectionPool
+
 ## 6.x to 7.x changes
 
 - Upgraded tedious version to v11
