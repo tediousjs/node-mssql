@@ -1,4 +1,4 @@
-v8.0.0 (2022-??-??)
+v8.0.0 (2022-01-30)
 -------------------
 [new] Add table.rows.clear() method to allow for chunking updates ([#1094](https://github.com/tediousjs/node-mssql/pull/1094))
 [new] Add valueHandler map to store callbacks that are used to process row values ([#1356](https://github.com/tediousjs/node-mssql/pull/1356))
