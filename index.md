@@ -6,13 +6,13 @@ Microsoft SQL Server client for Node.js
 
 Supported TDS drivers:
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
-- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (v1 native - Windows only)
+- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (v2 native - Windows or Linux/macOS 64 bits only)
 
 ## Installation
 
     npm install mssql
 
-## Quick Example
+## Short Example: Use Connect String
 
 ```javascript
 const sql = require('mssql')
@@ -20,7 +20,7 @@ const sql = require('mssql')
 async () => {
     try {
         // make sure that any items are correctly URL encoded in the connection string
-        await sql.connect('mssql://username:password@localhost/database')
+        await sql.connect('Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true')
         const result = await sql.query`select * from mytable where id = ${value}`
         console.dir(result)
     } catch (err) {
@@ -32,6 +32,40 @@ async () => {
 If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#configuration) to learn more.
 
 Parts of the connection URI should be correctly URL encoded so that the URI can be parsed correctly.
+
+## Longer Example: Connect via Config Object
+
+Assuming you have set the appropriate environment variables, you can construct a config object as follows:
+
+```javascript
+const sql = require('mssql')
+const sqlConfig = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PWD,
+  database: process.env.DB_NAME,
+  server: 'localhost',
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  },
+  options: {
+    encrypt: true, // for azure
+    trustServerCertificate: false // change to true for local dev / self-signed certs
+  }
+}
+
+async () => {
+ try {
+  // make sure that any items are correctly URL encoded in the connection string
+  await sql.connect(sqlConfig)
+  const result = await sql.query`select * from mytable where id = ${value}`
+  console.dir(result)
+ } catch (err) {
+  // ... error checks
+ }
+}
+```
 
 ## Documentation
 
@@ -67,6 +101,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [execute](#execute-procedure-callback)
 * [input](#input-name-type-value)
 * [output](#output-name-type-value)
+* [toReadableStream](#toReadableStream)
 * [pipe](#pipe-stream)
 * [query](#query-command-callback)
 * [batch](#batch-batch-callback)
@@ -94,6 +129,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [CLI](#cli)
 * [Geography and Geometry](#geography-and-geometry)
 * [Table-Valued Parameter](#table-valued-parameter-tvp)
+* [Response Schema](#response-schema)
 * [Affected Rows](#affected-rows)
 * [JSON support](#json-support)
 * [Handling Duplicate Column Names](#handling-duplicate-column-names)
@@ -104,6 +140,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [SQL injection](#sql-injection)
 * [Known Issues](#known-issues)
 * [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
+* [6.x to 7.x changes](#6x-to-7x-changes)
 * [5.x to 6.x changes](#5x-to-6x-changes)
 * [4.x to 5.x changes](#4x-to-5x-changes)
 * [3.x to 4.x changes](#3x-to-4x-changes)
@@ -290,6 +327,11 @@ sql.connect(config, err => {
         // Emitted for each row in a recordset
     })
 
+    request.on('rowsaffected', rowCount => {
+        // Emitted for each `INSERT`, `UPDATE` or `DELETE` statement
+        // Requires NOCOUNT to be OFF (default)
+    })
+
     request.on('error', err => {
         // May be emitted multiple times
     })
@@ -328,260 +370,168 @@ function processRows() {
 }
 ```
 
-## Pool Management
+## Connection Pools
 
-An important concept to understand when using this library is [Connection Pooling](https://en.wikipedia.org/wiki/Connection_pool)
-as this library uses connection pooling extensively.
-
-As one Node JS process is able to handle multiple requests at once, we can take advantage of this long running process
-to create a pool of database connections for reuse; this saves overhead of connecting to the database for each request
+An important concept to understand when using this library is [Connection Pooling](https://en.wikipedia.org/wiki/Connection_pool) as this library uses connection pooling extensively. As one Node JS process is able to handle multiple requests at once, we can take advantage of this long running process to create a pool of database connections for reuse; this saves overhead of connecting to the database for each request
 (as would be the case in something like PHP, where one process handles one request).
 
-With the advantages of pooling comes some added complexities, but these are mostly just conceptual and once you understand
-how the pooling is working, it is simple to make use of it efficiently and effectively.
+With the advantages of pooling comes some added complexities, but these are mostly just conceptual and once you understand how the pooling is working, it is simple to make use of it efficiently and effectively.
 
-### The Global Connection (Pool)
+### The Global Connection Pool
 
-To assist with pool management in your application there is the global `connect()` function that is available for use. As of
-v6 of this library a developer can make repeated calls to this function to obtain the global connection pool. This means you
-do not need to keep track of the pool in your application (as used to be the case). If the global pool is already connected,
-it will resolve to the connected pool. For example:
+To assist with pool management in your application there is the `sql.connect()` function that is used to connect to the global connection pool. You can make repeated calls to this function, and if the global pool is already connected, it will resolve to the connected pool. The following example obtains the global connection pool by running `sql.connect()`, and then runs the query against the pool.
+
+NB: It's important to note that there can only be one global connection pool connected at a time. Providing a different connection config to the `connect()` function will not create a new connection if it is already connected.
 
 ```js
 const sql = require('mssql')
+const config = { ... }
 
 // run a query against the global connection pool
 function runQuery(query) {
   // sql.connect() will return the existing global pool if it exists or create a new one if it doesn't
-  return sql.connect().then((pool) => {
+  return sql.connect(config).then((pool) => {
     return pool.query(query)
   })
 }
-
 ```
 
-Here we obtain the global connection pool by running `sql.connect()` and we then run the query against the pool.
-We also do *not* close the pool after the query is executed and that is because other queries may need to be run against
-this pool and closing it will add an overhead to running the query. We should only ever close the pool when our application
-is finished. For example, if we are running some kind of CLI tool or a CRON job:
+Awaiting or `.then`-ing the pool creation is a safe way to ensure that the pool is always ready, without knowing where it is needed first. In practice, once the pool is created then there will be no delay for the next `connect()` call.
+
+Also notice that we do *not* close the global pool by calling `sql.close()` after the query is executed, because other queries may need to be run against this pool and closing it will add additional overhead to running subsequent queries. You should only ever close the global pool if you're certain the application is finished. Or for example, if you are running some kind of CLI tool or a CRON job you can close the pool at the end of the script.
+
+### Global Pool Single Instance
+
+The ability to call `connect()` and `close()` repeatedly on the global pool is intended to make pool management easier, however it is better to maintain your own reference to the pool, where `connect()` is called **once**, and the resulting global pool's connection promise is re-used throughout the entire application.
+
+For example, in Express applications, the following approach uses a single global pool instance added to the `app.locals` so the application has access to it when needed. The server start is then chained inside the `connect()` promise.
 
 ```js
+const express = require('express')
 const sql = require('mssql')
+const config  = {/*...*/}
+//instantiate a connection pool
+const appPool = new sql.ConnectionPool(config)
+//require route handlers and use the same connection pool everywhere
+const route1 = require('./routes/route1')
+const app = express()
+app.get('/path', route1)
 
-(() => {
-  sql.connect().then(pool => {
-    return pool.query('SELECT 1')
-  }).then(result => {
-    // do something with result
-  }).then(() => {
-    return sql.close()
+//connect the pool and start the web server when done
+appPool.connect().then(function(pool) {
+  app.locals.db = pool;
+  const server = app.listen(3000, function () {
+    const host = server.address().address
+    const port = server.address().port
+    console.log('Example app listening at http://%s:%s', host, port)
   })
-})()
+}).catch(function(err) {
+  console.error('Error creating connection pool', err)
+});
 ```
 
-Here the connection will be closed and the node process will exit once the queries and other application logic has completed.
-You should aim to only close the pool once in your application, when it is exiting or you know your application will never make
-another SQL query.
+Then the route uses the connection pool in the `app.locals` object:
+
+```js
+// ./routes/route1.js
+const sql = require('mssql');
+
+module.exports = function(req, res) {
+  req.locals.db.query('SELECT TOP 10 * FROM table_name', function(err, recordset) {
+    if (err) {
+      console.error(err)
+      res.status(500).send('SERVER ERROR')
+      return
+    }
+    res.status(200).json({ message: 'success' })
+  })
+}
+```
 
 ### Advanced Pool Management
 
-In some instances you will not want to use the connection pool, you may have multiple databases to connect to or you may have
-one pool for read-only operations and another pool for read-write. In this instance you will need to implement your own pool
-management.
+For some use-cases you may want to implement your own connection pool management, rather than using the global connection pool. Reasons for doing this include:
 
-That could look something like this:
+* Supporting connections to multiple databases
+* Creation of separate pools for read vs read/write operations
+
+The following code is an example of a custom connection pool implementation.
 
 ```js
-const { ConnectionPool } = require('mssql')
-const POOLS = {}
-
-function createPool(config, name) {
-  if (getPool(name)) {
-    throw new Error('Pool with this name already exists')
-  }
-  return POOLS[name] = (new ConnectionPool(config)).connect()
-}
-
-function closePool(name) {
-  if (Object.prototype.hasOwnProperty.apply(POOLS, name)) {
-    const pool = POOLS[name];
-    delete POOLS[name];
-    return pool.close()
-  }
-}
-
-function getPool(name) {
-  if (Object.prototype.hasOwnProperty.apply(POOLS, name)) {
-    return POOLS[name]
-  }
-}
+// pool-manager.js
+const mssql = require('mssql')
+const pools = new Map();
 
 module.exports = {
-  closePool,
-  createPool,
-  getPool
-}
-```
-
-This helper file can then be used in your application to create, fetch and close your pools. As with the global pools, you
-should aim to only close a pool when you know it will never be needed by the application again; typically this will be when
-your application is shutting down.
-
-## Connection Pools
-
-Using a single connection pool for your application/service is recommended.
-Instantiating a pool with a callback, or immediately calling `.connect`, is asynchronous to ensure a connection can be
-established before returning. From that point, you're able to acquire connections as normal:  
-
-```javascript
-const sql = require('mssql')
-
-// async/await style:
-const pool1 = new sql.ConnectionPool(config);
-const pool1Connect = pool1.connect();
-
-pool1.on('error', err => {
-    // ... error handler
-})
-
-async function messageHandler() {
-    await pool1Connect; // ensures that the pool has been created
-    try {
-        const request = pool1.request(); // or: new sql.Request(pool1)
-        const result = await request.query('select 1 as number')
-        console.dir(result)
-        return result;
-    } catch (err) {
-        console.error('SQL error', err);
-    }
-}
-
-// promise style:
-const pool2 = new sql.ConnectionPool(config)
-const pool2Connect = pool2.connect()
-
-pool2.on('error', err => {
-    // ... error handler
-})
-
-function runStoredProcedure() {
-    return pool2Connect.then((pool) => {
-        pool.request() // or: new sql.Request(pool2)
-        .input('input_parameter', sql.Int, 10)
-        .output('output_parameter', sql.VarChar(50))
-        .execute('procedure_name', (err, result) => {
-            // ... error checks
-            console.dir(result)
-        })
-    }).catch(err => {
-        // ... error handler
-    })
-}
-```
-
-Awaiting or `.then`ing the pool creation is a safe way to ensure that the pool is always ready, without knowing where it
-is needed first. In practice, once the pool is created then there will be no delay for the next operation.
-
-As of v6.1.0 you can make repeat calls to `ConnectionPool.connect()` and `ConnectonPool.close()` without an error being
-thrown, allowing for the safe use of `mssql.connect().then(...)` throughout your code as well as making multiple calls to
-close when your application is shutting down.
-
-The ability to call `connect()` repeatedly is intended to make pool management easier, however it is still recommended
-to follow the example above where `connect()` is called once and using the original resolved connection promise.
-Repeatedly calling `connect()` when running queries risks running into problems when `close()` is called on the pool.
-
-**ES6 Tagged template literals**
-
-```javascript
-new sql.ConnectionPool(config).connect().then(pool => {
-    return pool.query`select * from mytable where id = ${value}`
-}).then(result => {
-    console.dir(result)
-}).catch(err => {
-    // ... error checks
-})
-```
-
-All values are automatically sanitized against sql injection.
-
-### Managing connection pools
-
-Most applications will only need a single `ConnectionPool` that can be shared throughout the code. To aid the sharing
-of a single pool this library exposes a set of functions to access a single global connection. eg:
-
-```js
-// as part of your application's boot process
-
-const sql = require('mssql')
-const poolPromise = sql.connect()
-
-// during your applications runtime
-
-poolPromise.then(() => {
-  return sql.query('SELECT 1')
-}).then(result => {
-  console.dir(result)
-})
-
-// when your application exits
-poolPromise.then(() => {
-  return sql.close()
-})
-```
-
-If you require multiple pools per application (perhaps you have many DBs you need to connect to or you want a read-only
-pool), then you will need to manage your pools yourself. The best way to do this is to create a shared library file that
-can hold references to the pools for you. For example:
-
-```js
-const sql = require('mssql')
-
-const pools = {}
-
-// manage a set of pools by name (config will be required to create the pool)
-// a pool will be removed when it is closed
-async function getPool(name, config) {
-  if (!Object.prototype.hasOwnProperty.call(pools, name)) {
-    const pool = new sql.ConnectionPool(config)
-    const close = pool.close.bind(pool)
-    pool.close = (...args) => {
-      delete pools[name]
-      return close(...args)
-    }
-    await pool.connect()
-    pools[name] = pool
+ /**
+  * Get or create a pool. If a pool doesn't exist the config must be provided.
+  * If the pool does exist the config is ignored (even if it was different to the one provided
+  * when creating the pool)
+  *
+  * @param {string} name
+  * @param {{}} [config]
+  * @return {Promise.<mssql.ConnectionPool>}
+  */
+ get: (name, config) => {
+  if (!pools.has(name)) {
+   if (!config) {
+    throw new Error('Pool does not exist');
+   }
+   const pool = new mssql.ConnectionPool(config);
+   // automatically remove the pool from the cache if `pool.close()` is called
+   const close = pool.close.bind(pool);
+   pool.close = (...args) => {
+    pools.delete(name);
+    return close(...args);
+   }
+   pools.set(name, pool.connect());
   }
-  return pools[name]
-}
+  return pools.get(name);
+ },
+ /**
+  * Closes all the pools and removes them from the store
+  *
+  * @return {Promise<mssql.ConnectionPool[]>}
+  */
+ closeAll: () => Promise.all(Array.from(pools.values()).map((connect) => {
+  return connect.then((pool) => pool.close());
+ })),
+};
+```
 
-// close all pools
-function closeAll() {
-  return Promise.all(Object.values(pools).map((pool) => {
-    return pool.close()
-  }))
-}
+This file can then be used in your application to create, fetch, and close pools.
 
-module.exports = {
-  closeAll,
-  getPool
+```js
+const { get } = require('./pool-manager')
+
+async function example() {
+  const pool = await get('default')
+  return pool.request().query('SELECT 1')
 }
 ```
 
-You can then use this library file in your code to get a connected pool when you need it:
+Similar to the global connection pool, you should aim to only close a pool when you know it will never be needed by the application again. Typically this will only be when your application is shutting down.
+
+### Result value manipulation
+
+In some instances it is desirable to manipulate the record data as it is returned from the database, this may be to cast it as a particular object (eg: `moment` object instead of `Date`) or similar.
+
+In v8.0.0+ it is possible to register per-datatype handlers:
 
 ```js
-const { getPool } = require('./path/to/file')
+const sql = require('mssql')
 
-// run a query
-async function runQuery(query, config) {
-  // pool will always be connected when the promise has resolved - may reject if the connection config is invalid
-  const pool = await getPool('default', config)
-  const result = await pool.request().query(query)
-  return result
-}
+// in this example all integer values will return 1 more than their actual value in the database
+sql.valueHandler.set(sql.TYPES.Int, (value) => value + 1)
+
+sql.query('SELECT * FROM [example]').then((result) => {
+  // all `int` columns will return a manipulated value as per the callback above
+})
 ```
 
 ## Configuration
+
+The following is an example configuration object:
 
 ```javascript
 const config = {
@@ -618,20 +568,13 @@ Complete list of pool options can be found [here](https://github.com/vincit/tarn
 
 ### Formats
 
-In addition to configuration object there is an option to pass config as a connection string. Two formats of connection string are supported.
+In addition to configuration object there is an option to pass config as a connection string. Connection strings are supported.
 
 ##### Classic Connection String
 
 ```
 Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
 Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
-```
-
-##### Connection String URI
-
-```
-mssql://username:password@localhost:1433/database?encrypt=true
-mssql://username:password@localhost/INSTANCE/database?encrypt=true&domain=DOMAIN&driver=msnodesqlv8
 ```
 
 ## Drivers
@@ -644,7 +587,7 @@ Default driver, actively maintained and production ready. Platform independent, 
 
 - **beforeConnect(conn)** - Function, which is invoked before opening the connection. The parameter `conn` is the configured tedious `Connection`. It can be used for attaching event handlers like in this example:
 ```js
-require('mssql').connect(...config, beforeConnect: conn => {
+require('mssql').connect({...config, beforeConnect: conn => {
   conn.once('connect', err => { err ? console.error(err) : console.log('mssql connected')})
   conn.once('end', err => { err ? console.error(err) : console.log('mssql disconnected')})
 }})
@@ -656,11 +599,22 @@ require('mssql').connect(...config, beforeConnect: conn => {
 - **options.appName** - Application name used for SQL server logging.
 - **options.abortTransactionOnError** - A boolean determining whether to rollback a transaction automatically if any error is encountered during the given transaction's execution. This sets the value for `XACT_ABORT` during the initial SQL phase of a connection.
 
+**Authentication:**
+
+On top of the extra options, an `authentication` property can be added to the pool config option
+
+- **authentication** - An object with authentication settings, according to the [Tedious Documentation](https://tediousjs.github.io/tedious/api-connection.html). Passing this object will override `user`, `password`, `domain` settings.
+- **authentication.type** - Type of the authentication method, valid types are `default`, `ntlm`, `azure-active-directory-password`, `azure-active-directory-access-token`, `azure-active-directory-msi-vm`, or `azure-active-directory-msi-app-service`
+- **authentication.options** - Options of the authentication required by the `tedious` driver, depends on `authentication.type`. For more details, check [Tedious Authentication Interfaces](https://github.com/tediousjs/tedious/blob/v11.1.1/src/connection.ts#L200-L318)
+
 More information about Tedious specific options: http://tediousjs.github.io/tedious/api-connection.html
 
 ### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
 
-**Requires Node.js v10+ or newer. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8@^1`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
+**Requires Node.js v10+ or newer. Windows 32-64 bits or Linux/macOS 64 bits only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8@^2`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
+
+Note: If you use import into your lib to prepare your request (`const { VarChar } = require('mssql')`) you also need to upgrade all your types import into your code (`const { VarChar } = require('mssql/msnodesqlv8')`) or a `connection.on is not a function` error will be thrown.
+
 
 **Extra options:**
 
@@ -679,6 +633,8 @@ Default connection string when connecting to named instance:
 ```
 Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
 ```
+
+Please note that the connection string with this driver is not the same than tedious and use yes/no instead of true/false. You can see more on the [ODBC](https://docs.microsoft.com/fr-fr/dotnet/api/system.data.odbc.odbcconnection.connectionstring?view=dotnet-plat-ext-5.0) documentation.
 
 ## Connections
 
@@ -806,7 +762,7 @@ __Arguments__
 
 - **name** - Name of the input parameter without @ char.
 - **type** - SQL data type of input parameter. If you omit type, module automatically decide which SQL data type should be used based on JS data type.
-- **value** - Input parameter value. `undefined` ans `NaN` values are automatically converted to `null` values.
+- **value** - Input parameter value. `undefined` and `NaN` values are automatically converted to `null` values.
 
 __Example__
 
@@ -868,6 +824,31 @@ __Errors__ (synchronous)
 - EINJECT (`RequestError`) - SQL injection warning.
 
 ---------------------------------------
+
+### toReadableStream
+
+Convert request to a Node.js ReadableStream
+
+__Example__
+
+```javascript
+const { pipeline } = require('stream')
+const request = new sql.Request()
+const readableStream = request.toReadableStream()
+pipeline(readableStream, transformStream, writableStream)
+request.query('select * from mytable')
+```
+
+OR if you wanted to increase the highWaterMark of the read stream to buffer more rows in memory
+
+```javascript
+const { pipeline } = require('stream')
+const request = new sql.Request()
+const readableStream = request.toReadableStream({ highWaterMark: 100 })
+pipeline(readableStream, transformStream, writableStream)
+request.query('select * from mytable')
+```
+
 
 ### pipe (stream)
 
@@ -1438,32 +1419,65 @@ If you omit config path argument, mssql will try to load it from current working
 
 ## Geography and Geometry
 
-node-mssql has built-in serializer for Geography and Geometry CLR data types.
+node-mssql has built-in deserializer for Geography and Geometry CLR data types.
+
+### Geography
+
+Geography types can be constructed several different ways. Refer carefully to documentation to verify the coordinate ordering; the ST methods tend to order parameters as longitude (x) then latitude (y), while custom CLR methods tend to prefer to order them as latitude (y) then longitude (x).
+
+The query:
 
 ```sql
-select geography::STGeomFromText('LINESTRING(-122.360 47.656, -122.343 47.656 )', 4326)
-select geometry::STGeomFromText('LINESTRING (100 100 10.3 12, 20 180, 180 180)', 0)
+select geography::STGeomFromText(N'POLYGON((1 1, 3 1, 3 1, 1 1))',4326)
 ```
 
-Results in:
+results in:
 
 ```javascript
-{ srid: 4326,
-  version: 1,
-  points: [ { x: 47.656, y: -122.36 }, { x: 47.656, y: -122.343 } ],
+{
+  srid: 4326,
+  version: 2,
+  points: [
+    Point { lat: 1, lng: 1, z: null, m: null },
+    Point { lat: 1, lng: 3, z: null, m: null },
+    Point { lat: 1, lng: 3, z: null, m: null },
+    Point { lat: 1, lng: 1, z: null, m: null }
+  ],
   figures: [ { attribute: 1, pointOffset: 0 } ],
-  shapes: [ { parentOffset: -1, figureOffset: 0, type: 2 } ],
-  segments: [] }
+  shapes: [ { parentOffset: -1, figureOffset: 0, type: 3 } ],
+  segments: []
+}
+```
 
-{ srid: 0,
+**NOTE:** You will also see `x` and `y` coordinates in parsed Geography points,
+they are not recommended for use. They have thus been omitted from this example.
+For compatibility, they remain flipped (x, the horizontal offset, is instead used for latitude, the vertical), and thus risk misleading you.
+Prefer instead to use the `lat` and `lng` properties.
+
+### Geometry
+
+Geometry types can also be constructed in several ways. Unlike Geographies, they are consistent in always placing x before y. node-mssql decodes the result of this query:
+
+```sql
+select geometry::STGeomFromText(N'POLYGON((1 1, 3 1, 3 7, 1 1))',4326)
+```
+
+into the JavaScript object:
+
+```javascript
+{
+  srid: 4326,
   version: 1,
-  points:
-   [ { x: 100, y: 100, z: 10.3, m: 12 },
-     { x: 20, y: 180, z: NaN, m: NaN },
-     { x: 180, y: 180, z: NaN, m: NaN } ],
-  figures: [ { attribute: 1, pointOffset: 0 } ],
-  shapes: [ { parentOffset: -1, figureOffset: 0, type: 2 } ],
-  segments: [] }
+  points: [
+    Point { x: 1, y: 1, z: null, m: null },
+    Point { x: 1, y: 3, z: null, m: null },
+    Point { x: 7, y: 3, z: null, m: null },
+    Point { x: 1, y: 1, z: null, m: null }
+  ],
+  figures: [ { attribute: 2, pointOffset: 0 } ],
+  shapes: [ { parentOffset: -1, figureOffset: 0, type: 3 } ],
+  segments: []
+}
 ```
 
 ## Table-Valued Parameter (TVP)
@@ -1507,6 +1521,45 @@ request.execute('MyCustomStoredProcedure', (err, result) => {
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`. You can optionally specify table type name in the first argument.
 
+You can clear the table rows for easier batching by using `table.rows.clear()`
+
+```js
+const tvp = new sql.Table() // You can optionally specify table type name in the first argument.
+
+// Columns must correspond with type we have created in database.
+tvp.columns.add('a', sql.VarChar(50))
+tvp.columns.add('b', sql.Int)
+
+// Add rows
+tvp.rows.add('hello tvp', 777) // Values are in same order as columns.
+tvp.rows.clear()
+```
+
+## Response Schema
+
+An object returned from a `sucessful` basic query would look like the following.
+```javascript
+{
+	recordsets: [
+		[
+			{
+				COL1: "some content",
+				COL2: "some more content"
+			}
+		]
+	],
+	recordset: [
+		{
+			COL1: "some content",
+			COL2: "some more content"
+		}
+	],
+	output: {},
+	rowsAffected: [1]
+}
+
+```
+
 ## Affected Rows
 
 If you're performing `INSERT`, `UPDATE` or `DELETE` in a query, you can read number of affected rows. The `rowsAffected` variable is an array of numbers. Each number represents number of affected rows by a single statement.
@@ -1531,10 +1584,15 @@ request.query('update myAwesomeTable set awesomness = 100', (err, result) => {
 
 __Example using streaming__
 
+In addition to the rowsAffected attribute on the done event, each statement will emit the number of affected rows as it is completed.
+
 ```javascript
 const request = new sql.Request()
 request.stream = true
 request.query('update myAwesomeTable set awesomness = 100')
+request.on('rowsaffected', rowCount => {
+    console.log(rowCount)
+})
 request.on('done', result => {
     console.log(result.rowsAffected)
 })
@@ -1955,10 +2013,15 @@ request.query('select @myval as myval', (err, result) => {
 - If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/tediousjs/node-mssql/issues/36))
 - If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/tediousjs/node-mssql/issues/68))
 
-### msnodesqlv8
+## 6.x to 7.x changes
 
-- msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
-- msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
+- Upgraded tedious version to v11
+- Upgraded msnodesqlv8 version support to v2
+- Upgraded tarn.js version to v3
+- Requests in stream mode that pipe into other streams no longer pass errors up the stream chain
+- Request.pipe now pipes a true node stream for better support of backpressure
+- tedious config option `trustServerCertificate` defaults to `false` if not supplied
+- Dropped support for Node < 10
 
 ## 5.x to 6.x changes
 
