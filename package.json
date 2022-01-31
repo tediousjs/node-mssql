@@ -26,7 +26,7 @@
   "repository": "github:tediousjs/node-mssql",
   "license": "MIT",
   "dependencies": {
-    "debug": "^4.3.2",
+    "debug": "^4.3.3",
     "tarn": "^1.1.5",
     "tedious": "^6.7.1"
   },
