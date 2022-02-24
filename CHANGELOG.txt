@@ -1,3 +1,17 @@
+Unreleased changes
+-------------------
+[fix] nodemsqlv8 driver tests working against Node 10 ([#1368](https://github.com/tediousjs/node-mssql/pull/1368))
+
+v8.0.2 (2022-02-07)
+-------------------
+Merge up missing fixes from v7.3.0
+[new] Transaction/PreparedStatements expose the config from their parent connection ([#1338](https://github.com/tediousjs/node-mssql/pull/1338))
+[fix] Fix inherited request configs from the pool. Specifically stream and arrayRowMode now inherit accurately from the connection config ([#1338](https://github.com/tediousjs/node-mssql/pull/1338))
+
+v8.0.1 (2022-01-30)
+-------------------
+Re-release of v8.0.0
+
 v8.0.0 (2022-01-30)
 -------------------
 [new] Add table.rows.clear() method to allow for chunking updates ([#1094](https://github.com/tediousjs/node-mssql/pull/1094))
@@ -17,7 +31,7 @@ v7.3.1 (2022-02-24)
 
 v7.3.0 (2021-11-18)
 -------------------
-[new] Transaction/PreparedStatements expose the config from their parent connection
+[new] Transaction/PreparedStatements expose the config from their parent connection ([#1338](https://github.com/tediousjs/node-mssql/pull/1338))
 [fix] Fix inherited request configs from the pool. Specifically stream and arrayRowMode now inherit accurately from the connection config ([#1338](https://github.com/tediousjs/node-mssql/pull/1338))
 
 v7.2.1 (2021-08-19)
