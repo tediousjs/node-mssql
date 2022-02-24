@@ -1,4 +1,4 @@
-v6.4.1 (2022-02-??)
+v6.4.1 (2022-02-24)
 -------------------
 [fix] Bump debug dependency ([#1361](https://github.com/tediousjs/node-mssql/pull/1361))
 
