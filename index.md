@@ -6,13 +6,13 @@ Microsoft SQL Server client for Node.js
 
 Supported TDS drivers:
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
-- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (v1 native - Windows only)
+- [Microsoft / Contributors Node V8 Driver for Node.js for SQL Server][msnodesqlv8-url] (v2 native - Windows or Linux/macOS 64 bits only)
 
 ## Installation
 
     npm install mssql
 
-## Quick Example
+## Short Example: Use Connect String
 
 ```javascript
 const sql = require('mssql')
@@ -20,7 +20,7 @@ const sql = require('mssql')
 async () => {
     try {
         // make sure that any items are correctly URL encoded in the connection string
-        await sql.connect('mssql://username:password@localhost/database')
+        await sql.connect('Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true')
         const result = await sql.query`select * from mytable where id = ${value}`
         console.dir(result)
     } catch (err) {
@@ -32,6 +32,40 @@ async () => {
 If you're on Windows Azure, add `?encrypt=true` to your connection string. See [docs](#configuration) to learn more.
 
 Parts of the connection URI should be correctly URL encoded so that the URI can be parsed correctly.
+
+## Longer Example: Connect via Config Object
+
+Assuming you have set the appropriate environment variables, you can construct a config object as follows:
+
+```javascript
+const sql = require('mssql')
+const sqlConfig = {
+  user: process.env.DB_USER,
+  password: process.env.DB_PWD,
+  database: process.env.DB_NAME,
+  server: 'localhost',
+  pool: {
+    max: 10,
+    min: 0,
+    idleTimeoutMillis: 30000
+  },
+  options: {
+    encrypt: true, // for azure
+    trustServerCertificate: false // change to true for local dev / self-signed certs
+  }
+}
+
+async () => {
+ try {
+  // make sure that any items are correctly URL encoded in the connection string
+  await sql.connect(sqlConfig)
+  const result = await sql.query`select * from mytable where id = ${value}`
+  console.dir(result)
+ } catch (err) {
+  // ... error checks
+ }
+}
+```
 
 ## Documentation
 
@@ -67,6 +101,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [execute](#execute-procedure-callback)
 * [input](#input-name-type-value)
 * [output](#output-name-type-value)
+* [toReadableStream](#toReadableStream)
 * [pipe](#pipe-stream)
 * [query](#query-command-callback)
 * [batch](#batch-batch-callback)
@@ -94,6 +129,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [CLI](#cli)
 * [Geography and Geometry](#geography-and-geometry)
 * [Table-Valued Parameter](#table-valued-parameter-tvp)
+* [Response Schema](#response-schema)
 * [Affected Rows](#affected-rows)
 * [JSON support](#json-support)
 * [Handling Duplicate Column Names](#handling-duplicate-column-names)
@@ -104,6 +140,7 @@ Parts of the connection URI should be correctly URL encoded so that the URI can 
 * [SQL injection](#sql-injection)
 * [Known Issues](#known-issues)
 * [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
+* [6.x to 7.x changes](#6x-to-7x-changes)
 * [5.x to 6.x changes](#5x-to-6x-changes)
 * [4.x to 5.x changes](#4x-to-5x-changes)
 * [3.x to 4.x changes](#3x-to-4x-changes)
@@ -290,6 +327,11 @@ sql.connect(config, err => {
         // Emitted for each row in a recordset
     })
 
+    request.on('rowsaffected', rowCount => {
+        // Emitted for each `INSERT`, `UPDATE` or `DELETE` statement
+        // Requires NOCOUNT to be OFF (default)
+    })
+
     request.on('error', err => {
         // May be emitted multiple times
     })
@@ -397,17 +439,20 @@ const POOLS = {}
 
 function createPool(config, name) {
   if (getPool(name)) {
-    throw new Error('Pool with this name already exists')
+    return Promise.reject(new Error('Pool with this name already exists'))
   }
-  return POOLS[name] = (new ConnectionPool(config)).connect()
+  return (new ConnectionPool(config)).connect().then((pool) => {
+    return POOLS[name] = pool
+  })
 }
 
 function closePool(name) {
-  if (Object.prototype.hasOwnProperty.apply(POOLS, name)) {
-    const pool = POOLS[name];
-    delete POOLS[name];
+  const pool = getPool(name)
+  if (pool) {
+    delete POOLS[name]
     return pool.close()
   }
+  return Promise.resolve()
 }
 
 function getPool(name) {
@@ -618,20 +663,13 @@ Complete list of pool options can be found [here](https://github.com/vincit/tarn
 
 ### Formats
 
-In addition to configuration object there is an option to pass config as a connection string. Two formats of connection string are supported.
+In addition to configuration object there is an option to pass config as a connection string. Connection strings are supported.
 
 ##### Classic Connection String
 
 ```
 Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
 Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
-```
-
-##### Connection String URI
-
-```
-mssql://username:password@localhost:1433/database?encrypt=true
-mssql://username:password@localhost/INSTANCE/database?encrypt=true&domain=DOMAIN&driver=msnodesqlv8
 ```
 
 ## Drivers
@@ -644,7 +682,7 @@ Default driver, actively maintained and production ready. Platform independent, 
 
 - **beforeConnect(conn)** - Function, which is invoked before opening the connection. The parameter `conn` is the configured tedious `Connection`. It can be used for attaching event handlers like in this example:
 ```js
-require('mssql').connect(...config, beforeConnect: conn => {
+require('mssql').connect({...config, beforeConnect: conn => {
   conn.once('connect', err => { err ? console.error(err) : console.log('mssql connected')})
   conn.once('end', err => { err ? console.error(err) : console.log('mssql disconnected')})
 }})
@@ -656,11 +694,22 @@ require('mssql').connect(...config, beforeConnect: conn => {
 - **options.appName** - Application name used for SQL server logging.
 - **options.abortTransactionOnError** - A boolean determining whether to rollback a transaction automatically if any error is encountered during the given transaction's execution. This sets the value for `XACT_ABORT` during the initial SQL phase of a connection.
 
+**Authentication:**
+
+On top of the extra options, an `authentication` property can be added to the pool config option
+
+- **authentication** - An object with authentication settings, according to the [Tedious Documentation](https://tediousjs.github.io/tedious/api-connection.html). Passing this object will override `user`, `password`, `domain` settings.
+- **authentication.type** - Type of the authentication method, valid types are `default`, `ntlm`, `azure-active-directory-password`, `azure-active-directory-access-token`, `azure-active-directory-msi-vm`, or `azure-active-directory-msi-app-service`
+- **authentication.options** - Options of the authentication required by the `tedious` driver, depends on `authentication.type`. For more details, check [Tedious Authentication Interfaces](https://github.com/tediousjs/tedious/blob/v11.1.1/src/connection.ts#L200-L318)
+
 More information about Tedious specific options: http://tediousjs.github.io/tedious/api-connection.html
 
 ### Microsoft / Contributors Node V8 Driver for Node.js for SQL Server
 
-**Requires Node.js v10+ or newer. Windows only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8@^1`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
+**Requires Node.js v10+ or newer. Windows 32-64 bits or Linux/macOS 64 bits only.** This driver is not part of the default package and must be installed separately by `npm install msnodesqlv8@^2`. To use this driver, use this require syntax: `const sql = require('mssql/msnodesqlv8')`.
+
+Note: If you use import into your lib to prepare your request (`const { VarChar } = require('mssql')`) you also need to upgrade all your types import into your code (`const { VarChar } = require('mssql/msnodesqlv8')`) or a `connection.on is not a function` error will be thrown.
+
 
 **Extra options:**
 
@@ -679,6 +728,8 @@ Default connection string when connecting to named instance:
 ```
 Driver={SQL Server Native Client 11.0};Server={#{server}\\#{instance}};Database={#{database}};Uid={#{user}};Pwd={#{password}};Trusted_Connection={#{trusted}};
 ```
+
+Please note that the connection string with this driver is not the same than tedious and use yes/no instead of true/false. You can see more on the [ODBC](https://docs.microsoft.com/fr-fr/dotnet/api/system.data.odbc.odbcconnection.connectionstring?view=dotnet-plat-ext-5.0) documentation.
 
 ## Connections
 
@@ -806,7 +857,7 @@ __Arguments__
 
 - **name** - Name of the input parameter without @ char.
 - **type** - SQL data type of input parameter. If you omit type, module automatically decide which SQL data type should be used based on JS data type.
-- **value** - Input parameter value. `undefined` ans `NaN` values are automatically converted to `null` values.
+- **value** - Input parameter value. `undefined` and `NaN` values are automatically converted to `null` values.
 
 __Example__
 
@@ -868,6 +919,31 @@ __Errors__ (synchronous)
 - EINJECT (`RequestError`) - SQL injection warning.
 
 ---------------------------------------
+
+### toReadableStream
+
+Convert request to a Node.js ReadableStream
+
+__Example__
+
+```javascript
+const { pipeline } = require('stream')
+const request = new sql.Request()
+const readableStream = request.toReadableStream()
+pipeline(readableStream, transformStream, writableStream)
+request.query('select * from mytable')
+```
+
+OR if you wanted to increase the highWaterMark of the read stream to buffer more rows in memory
+
+```javascript
+const { pipeline } = require('stream')
+const request = new sql.Request()
+const readableStream = request.toReadableStream({ highWaterMark: 100 })
+pipeline(readableStream, transformStream, writableStream)
+request.query('select * from mytable')
+```
+
 
 ### pipe (stream)
 
@@ -1438,32 +1514,65 @@ If you omit config path argument, mssql will try to load it from current working
 
 ## Geography and Geometry
 
-node-mssql has built-in serializer for Geography and Geometry CLR data types.
+node-mssql has built-in deserializer for Geography and Geometry CLR data types.
+
+### Geography
+
+Geography types can be constructed several different ways. Refer carefully to documentation to verify the coordinate ordering; the ST methods tend to order parameters as longitude (x) then latitude (y), while custom CLR methods tend to prefer to order them as latitude (y) then longitude (x).
+
+The query:
 
 ```sql
-select geography::STGeomFromText('LINESTRING(-122.360 47.656, -122.343 47.656 )', 4326)
-select geometry::STGeomFromText('LINESTRING (100 100 10.3 12, 20 180, 180 180)', 0)
+select geography::STGeomFromText(N'POLYGON((1 1, 3 1, 3 1, 1 1))',4326)
 ```
 
-Results in:
+results in:
 
 ```javascript
-{ srid: 4326,
-  version: 1,
-  points: [ { x: 47.656, y: -122.36 }, { x: 47.656, y: -122.343 } ],
+{
+  srid: 4326,
+  version: 2,
+  points: [
+    Point { lat: 1, lng: 1, z: null, m: null },
+    Point { lat: 1, lng: 3, z: null, m: null },
+    Point { lat: 1, lng: 3, z: null, m: null },
+    Point { lat: 1, lng: 1, z: null, m: null }
+  ],
   figures: [ { attribute: 1, pointOffset: 0 } ],
-  shapes: [ { parentOffset: -1, figureOffset: 0, type: 2 } ],
-  segments: [] }
+  shapes: [ { parentOffset: -1, figureOffset: 0, type: 3 } ],
+  segments: []
+}
+```
 
-{ srid: 0,
+**NOTE:** You will also see `x` and `y` coordinates in parsed Geography points,
+they are not recommended for use. They have thus been omitted from this example.
+For compatibility, they remain flipped (x, the horizontal offset, is instead used for latitude, the vertical), and thus risk misleading you.
+Prefer instead to use the `lat` and `lng` properties.
+
+### Geometry
+
+Geometry types can also be constructed in several ways. Unlike Geographies, they are consistent in always placing x before y. node-mssql decodes the result of this query:
+
+```sql
+select geometry::STGeomFromText(N'POLYGON((1 1, 3 1, 3 7, 1 1))',4326)
+```
+
+into the JavaScript object:
+
+```javascript
+{
+  srid: 4326,
   version: 1,
-  points:
-   [ { x: 100, y: 100, z: 10.3, m: 12 },
-     { x: 20, y: 180, z: NaN, m: NaN },
-     { x: 180, y: 180, z: NaN, m: NaN } ],
-  figures: [ { attribute: 1, pointOffset: 0 } ],
-  shapes: [ { parentOffset: -1, figureOffset: 0, type: 2 } ],
-  segments: [] }
+  points: [
+    Point { x: 1, y: 1, z: null, m: null },
+    Point { x: 1, y: 3, z: null, m: null },
+    Point { x: 7, y: 3, z: null, m: null },
+    Point { x: 1, y: 1, z: null, m: null }
+  ],
+  figures: [ { attribute: 2, pointOffset: 0 } ],
+  shapes: [ { parentOffset: -1, figureOffset: 0, type: 3 } ],
+  segments: []
+}
 ```
 
 ## Table-Valued Parameter (TVP)
@@ -1507,6 +1616,31 @@ request.execute('MyCustomStoredProcedure', (err, result) => {
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`. You can optionally specify table type name in the first argument.
 
+## Response Schema
+
+An object returned from a `sucessful` basic query would look like the following.
+```javascript
+{
+	recordsets: [
+		[
+			{
+				COL1: "some content",
+				COL2: "some more content"
+			}
+		]
+	],
+	recordset: [
+		{
+			COL1: "some content",
+			COL2: "some more content"
+		}
+	],
+	output: {},
+	rowsAffected: [1]
+}
+
+```
+
 ## Affected Rows
 
 If you're performing `INSERT`, `UPDATE` or `DELETE` in a query, you can read number of affected rows. The `rowsAffected` variable is an array of numbers. Each number represents number of affected rows by a single statement.
@@ -1531,10 +1665,15 @@ request.query('update myAwesomeTable set awesomness = 100', (err, result) => {
 
 __Example using streaming__
 
+In addition to the rowsAffected attribute on the done event, each statement will emit the number of affected rows as it is completed.
+
 ```javascript
 const request = new sql.Request()
 request.stream = true
 request.query('update myAwesomeTable set awesomness = 100')
+request.on('rowsaffected', rowCount => {
+    console.log(rowCount)
+})
 request.on('done', result => {
     console.log(result.rowsAffected)
 })
@@ -1955,10 +2094,15 @@ request.query('select @myval as myval', (err, result) => {
 - If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/tediousjs/node-mssql/issues/36))
 - If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/tediousjs/node-mssql/issues/68))
 
-### msnodesqlv8
+## 6.x to 7.x changes
 
-- msnodesqlv8 has problem with errors during transactions - [reported](https://github.com/tediousjs/node-mssql/issues/77).
-- msnodesqlv8 doesn't support [detailed SQL errors](#detailed-sql-errors).
+- Upgraded tedious version to v11
+- Upgraded msnodesqlv8 version support to v2
+- Upgraded tarn.js version to v3
+- Requests in stream mode that pipe into other streams no longer pass errors up the stream chain
+- Request.pipe now pipes a true node stream for better support of backpressure
+- tedious config option `trustServerCertificate` defaults to `false` if not supplied
+- Dropped support for Node < 10
 
 ## 5.x to 6.x changes
 
