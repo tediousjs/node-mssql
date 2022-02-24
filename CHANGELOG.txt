@@ -1,3 +1,7 @@
+v6.4.1 (2022-02-??)
+-------------------
+[fix] Bump debug dependency ([#1361](https://github.com/tediousjs/node-mssql/pull/1361))
+
 v6.4.0 (2021-11-18)
 -------------------
 [new] Transaction/PreparedStatements expose the config from their parent connection
