@@ -1,3 +1,7 @@
+Unreleased
+-------------------
+[fix] nodemsqlv8 driver tests working against Node 10 ([#1368](https://github.com/tediousjs/node-mssql/pull/1368))
+
 v7.3.1 (2022-02-24)
 -------------------
 [fix] Bump debug dependency ([#1361](https://github.com/tediousjs/node-mssql/pull/1361))
