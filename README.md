@@ -1380,7 +1380,7 @@ __Errors__
 
 ## CLI
 
-Before you can start using CLI, you must install `mssql` globally with `npm install mssql -g`. Once you do that you will be able to execute `mssql` command.
+If you want to add the MSSQL CLI tool to your path, you must install it globally with `npm install -g mssql`.
 
 __Setup__
 
@@ -1416,6 +1416,18 @@ Results in:
 ```
 
 If you omit config path argument, mssql will try to load it from current working directory.
+
+__Overriding config settings__
+
+You can override some config settings via CLI options (`--user`, `--password`, `--server`, `--database`, `--port`).
+
+```shell
+echo "select * from mytable" | mssql /path/to/config --database anotherdatabase
+```
+Results in:
+```json
+[[{"username":"onotheruser","password":"quiteeasy"}]]
+```
 
 ## Geography and Geometry
 
