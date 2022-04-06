@@ -1,5 +1,6 @@
 Unreleased changes
 -------------------
+[new] MSSQL CLI tool now accepts some options to allow overriding config file ((#1381](https://github.com/tediousjs/node-mssql/pull/1381))
 [fix] nodemsqlv8 driver tests working against Node 10 ([#1368](https://github.com/tediousjs/node-mssql/pull/1368))
 
 v8.0.2 (2022-02-07)

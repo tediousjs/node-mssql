@@ -14,6 +14,7 @@ IF NOT DEFINED VERSIONS_TO_TEST (
   FOR %%S IN ( %VERSIONS_TO_TEST% ) DO (
     echo Testing %%S
     CALL powershell %cd%\test\scripts\appveyor-setupsql.ps1 %%S
+    CALL npm run-script test-cli || SET EXITVAL=1
     CALL npm run-script test-tedious || SET EXITVAL=1
     CALL npm run-script test-msnodesqlv8 || SET EXITVAL=1
     CALL net stop MSSQL$%%S
