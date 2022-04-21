@@ -562,7 +562,7 @@ const config = {
 - **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
 - **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
-- **arrayRowMode** - Return row results as a an array instead of a keyed object. Also adds `columns` array. See [Handling Duplicate Column Names](#handling-duplicate-column-names)
+- **arrayRowMode** - Return row results as a an array instead of a keyed object. Also adds `columns` array. (default: `false`) See [Handling Duplicate Column Names](#handling-duplicate-column-names)
 
 Complete list of pool options can be found [here](https://github.com/vincit/tarn.js/#usage).
 
