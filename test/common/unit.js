@@ -198,7 +198,7 @@ describe('Unit', () => {
     t.columns.add('a', sql.Int, { primary: true })
     t.columns.add('b', sql.TinyInt, { nullable: true })
     t.columns.add('c', sql.TinyInt, { nullable: false, primary: true })
-    assert.strictEqual(t.declare(), 'create table [#mytemptable] ([a] int, [b] tinyint null, [c] tinyint not null, constraint PK_mytemptable primary key (a, c))')
+    assert.strictEqual(t.declare(), 'create table [#mytemptable] ([a] int, [b] tinyint null, [c] tinyint not null, constraint PK_mytemptable primary key ([a], [c]))')
 
     t = new sql.Table('MyTable')
     t.columns.add('name', sql.NVarChar, {
