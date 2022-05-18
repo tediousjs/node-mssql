@@ -42,8 +42,8 @@
   "files": [
     "lib/",
     "bin/",
-    "*.js",
-    "*.md"
+    "tedious.js",
+    "index.js"
   ],
   "scripts": {
     "test": "npm run lint && npm run test-unit",
