@@ -1,4 +1,12 @@
-v7.3.2 (2022-02-24)
+v7.3.4 (2022-05-18)
+-------------------
+[fix] msnodesqlv8.js file was missing from previous release
+
+v7.3.3 (2022-05-18)
+-------------------
+Duplicate tag
+
+v7.3.2 (2022-05-18)
 -------------------
 [fix] nodemsqlv8 driver tests working against Node 10 ([#1368](https://github.com/tediousjs/node-mssql/pull/1368))
 [fix] quote identifiers in table primary keys ([#1394](https://github.com/tediousjs/node-mssql/pull/1394))
