@@ -42,6 +42,7 @@
   "files": [
     "lib/",
     "bin/",
+    "msnodesqlv8.js",
     "tedious.js",
     "index.js"
   ],
