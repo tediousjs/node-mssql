@@ -21,7 +21,7 @@
     "azure",
     "node-mssql"
   ],
-  "version": "7.3.4",
+  "version": "7.3.5",
   "main": "index.js",
   "repository": "github:tediousjs/node-mssql",
   "license": "MIT",
