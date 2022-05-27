@@ -1,3 +1,7 @@
+v8.1.2 (2022-05-27)
+-------------------
+[fix] quote identifiers in table constraint declaration ([#1397](https://github.com/tediousjs/node-mssql/pull/1397))
+
 v8.1.1 (2022-05-18)
 -------------------
 [fix] quote identifiers in table primary keys ([#1394](https://github.com/tediousjs/node-mssql/pull/1394))
@@ -29,6 +33,10 @@ v8.0.0 (2022-01-30)
 [change] Update tarn pool dependency ((#1344)[https://github.com/tediousjs/node-mssql/pull/1344])
 [removed] Remove connection string parser helpers ((#1342)[https://github.com/tediousjs/node-mssql/pull/1342])
 [removed] Remove deprecated pool properties ((#1359)[https://github.com/tediousjs/node-mssql/pull/1359])
+
+v7.3.5 (2022-05-27)
+-------------------
+[fix] quote identifiers in table constraint declaration ([#1397](https://github.com/tediousjs/node-mssql/pull/1397))
 
 v7.3.4 (2022-05-18)
 -------------------
