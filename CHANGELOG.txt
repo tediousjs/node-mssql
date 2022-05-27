@@ -1,3 +1,7 @@
+v7.3.5 (2022-05-27)
+-------------------
+[fix] quote identifiers in table constraint declaration ([#1397](https://github.com/tediousjs/node-mssql/pull/1397))
+
 v7.3.4 (2022-05-18)
 -------------------
 [fix] msnodesqlv8.js file was missing from previous release
