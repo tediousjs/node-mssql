@@ -1,5 +1,15 @@
 # node-mssql
 
+Update 2022-07-12: mssql@7.0.0+ merged my Node.js compatible pipe and toReadableStream feature into the v7.0.0 and above. So this repo is now deprecated. Use `mssql` from npm (https://github.com/tediousjs/node-mssql)
+
+------
+
+Microsoft SQL Server client for Node.js with Node.js compatible pipe supporting back pressure
+
+This fork improves the Node.js stream compatibility of it's pipe capability supporting back pressure. Once the changes are accepted back into the original repo this repo will be deprecated.
+
+
+
 Microsoft SQL Server client for Node.js
 
 [![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Travis CI][travis-image]][travis-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
