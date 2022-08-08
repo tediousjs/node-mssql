@@ -1,6 +1,7 @@
 Unreleased
 -------------------
 [fix] requestTimeout correctly resolved ([#1398](https://github.com/tediousjs/node-mssql/pull/1398))
+[fix] Forcibly deny use of `useColumnNames` tedious config option that can be passed in the config object ([#1416](https://github.com/tediousjs/node-mssql/pull/1416))
 
 v8.1.2 (2022-05-27)
 -------------------
