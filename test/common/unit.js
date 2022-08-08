@@ -138,7 +138,7 @@ describe('Unit', () => {
       const input = []
 
       return {
-        input: input,
+        input,
         command: sql.Request.prototype._template.call({
           input () { input.push(Array.prototype.slice.call(arguments)) }
         }, strings, values)
@@ -157,7 +157,7 @@ describe('Unit', () => {
       const strings = values.shift()
       const input = []
       return {
-        input: input,
+        input,
         command: sql.Request.prototype._template.call({
           input () { input.push(Array.prototype.slice.call(arguments)) }
         }, strings, values)
