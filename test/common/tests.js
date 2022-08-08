@@ -7,6 +7,7 @@ const { format } = require('util')
 const ISOLATION_LEVELS = require('../../lib/isolationlevel')
 const BaseTransaction = require('../../lib/base/transaction')
 const versionHelper = require('./versionhelper')
+const { ConnectionPool } = require('../../lib/base')
 
 process.on('unhandledRejection', (reason, p) => {
   console.log('Unhandled Rejection at: Promise', p, 'reason:', reason)
@@ -123,6 +124,31 @@ module.exports = (sql, driver) => {
   }
 
   return {
+    'config validation' (done) {
+      const config = {
+        ...readConfig()
+      }
+      Object.assign(config.options, {
+        useColumnNames: false
+      })
+      try {
+        // eslint-disable-next-line no-new
+        new ConnectionPool(config)
+      } catch (e) {
+        assert.strictEqual(e.message, 'Invalid options `useColumnNames`, use `arrayRowMode` instead')
+      }
+      // eslint-disable-next-line no-new
+      new ConnectionPool(config, (err) => {
+        try {
+          assert.strictEqual(err.message, 'Invalid options `useColumnNames`, use `arrayRowMode` instead')
+        } catch (e) {
+          done(e)
+          return
+        }
+        done()
+      })
+      delete config.options.useColumnNames
+    },
     'value handler' (done) {
       let callCount = 0
       const callArgs = []
