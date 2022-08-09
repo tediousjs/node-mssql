@@ -5,16 +5,15 @@ image:
   - Visual Studio 2019
 environment:
   matrix:
-    - nodejs_version: "10"
-    - nodejs_version: "12"
     - nodejs_version: "14"
     - nodejs_version: "16"
+    - nodejs_version: "18"
 
 install:
   # https://www.appveyor.com/docs/lang/nodejs-iojs/#installing-any-version-of-nodejs-or-iojs
   - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version) $env:PLATFORM
   - npm install
-  - IF %nodejs_version% GTR 10 (npm install msnodesqlv8@^2) ELSE (npm install msnodesqlv8@2.4.4)
+  - npm install msnodesqlv8@^2
 
 platform:
   - x86

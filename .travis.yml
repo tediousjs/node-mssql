@@ -1,9 +1,9 @@
 language: node_js
-sudo: false
+dist: focal
 node_js:
-  - "10"
-  - "12"
   - "14"
+  - "16"
+  - "18"
 
 jobs:
   include:
