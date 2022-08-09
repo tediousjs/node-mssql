@@ -1,4 +1,4 @@
-v9.0.0 (2022-??-??)
+v9.0.0 (2022-08-10)
 -------------------
 [change] Upgrade tedious to v15 ([#1417](https://github.com/tediousjs/node-mssql/pull/1417))
 [removed] Removed NodeJS 10 & 12 support ([#1417](https://github.com/tediousjs/node-mssql/pull/1417))
