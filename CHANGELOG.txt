@@ -1,7 +1,15 @@
+v9.0.1 (2022-08-18)
+-------------------
+[fix] fix regression in requestTimout option not accepting `0` as a value ([#1421](https://github.com/tediousjs/node-mssql/pull/1421))
+
 v9.0.0 (2022-08-10)
 -------------------
 [change] Upgrade tedious to v15 ([#1417](https://github.com/tediousjs/node-mssql/pull/1417))
 [removed] Removed NodeJS 10 & 12 support ([#1417](https://github.com/tediousjs/node-mssql/pull/1417))
+
+v8.1.4 (2022-08-18)
+-------------------
+[fix] fix regression in requestTimout option not accepting `0` as a value ([#1421](https://github.com/tediousjs/node-mssql/pull/1421))
 
 v8.1.3 (2022-08-08)
 -------------------
