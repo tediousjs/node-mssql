@@ -1,4 +1,4 @@
-v8.1.4 (2022-08-??)
+v8.1.4 (2022-08-18)
 -------------------
 [fix] fix regression in requestTimout option not accepting `0` as a value ([#1421](https://github.com/tediousjs/node-mssql/pull/1421))
 
