@@ -93,6 +93,11 @@ describe('msnodesqlv8', function () {
     it('request timeout', done => TESTS['request timeout'](done))
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))
     it('chunked xml support', done => TESTS['chunked xml support'](done))
+    it('force ODBC connection healthy works', (done) => {
+      const cfg = config()
+      cfg.options.driver = 'ODBC Driver 17 for SQL Server'
+      TESTS['connection healthy works'](cfg, done)
+    })
 
     after(() => sql.close())
   })
