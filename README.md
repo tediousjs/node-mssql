@@ -437,7 +437,7 @@ Then the route uses the connection pool in the `app.locals` object:
 const sql = require('mssql');
 
 module.exports = function(req, res) {
-  req.locals.db.query('SELECT TOP 10 * FROM table_name', function(err, recordset) {
+  req.app.locals.db.query('SELECT TOP 10 * FROM table_name', function(err, recordset) {
     if (err) {
       console.error(err)
       res.status(500).send('SERVER ERROR')
