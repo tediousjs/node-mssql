@@ -1,3 +1,7 @@
+v9.?.? (2022-??-??)
+-------------------
+[new] Add support for AAD authentication via connection string ((#1436)[https://github.com/tediousjs/node-mssql/pull/1436])
+
 v9.0.1 (2022-08-18)
 -------------------
 [fix] fix regression in requestTimout option not accepting `0` as a value ([#1421](https://github.com/tediousjs/node-mssql/pull/1421))
