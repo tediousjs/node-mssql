@@ -1,6 +1,7 @@
-v9.?.? (2022-??-??)
+v9.1.0 (2023-01-17)
 -------------------
 [new] Add support for AAD authentication via connection string ((#1436)[https://github.com/tediousjs/node-mssql/pull/1436])
+[docs] Update express example ((#1433)[https://github.com/tediousjs/node-mssql/pull/1433])
 
 v9.0.1 (2022-08-18)
 -------------------
