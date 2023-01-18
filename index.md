@@ -571,34 +571,10 @@ Complete list of pool options can be found [here](https://github.com/vincit/tarn
 In addition to configuration object there is an option to pass config as a connection string. Connection strings are supported.
 
 ##### Classic Connection String
-###### Standard configuration using tedious driver
 
 ```
 Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
-```
-###### Standard configuration using msnodesqlv8 driver
-```
 Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
-```
-
-##### Azure Active Directory Authentication Connection String
-
-Several types of Azure Authentication are supported:
-###### Authentication using Default Azure Credentials
-```
-Server=*.database.windows.net;Database=database;Authentication=azure-active-directory-default;ClientID=clientid;Encrypt=true
-```
-###### Authentication using Active Directory Password
-```
-Server=*.database.windows.net;Database=database;Authentication=azure-active-directory-password;User Id=username;Password=password;ClientID=clientid;TenantID=tenantid;Encrypt=true
-```
-###### Authentication using Access Token
-```
-Server=*.database.windows.net;Database=database;Authentication=azure-active-directory-access-token;Token=token;Encrypt=true
-```
-###### Authentication using Service Principal
-```
-Server=*.database.windows.net;Database=database;Authentication=azure-active-directory-service-principal-secret;ClientID=clientid;ClientSecret=clientsecret;TenantID=tenantid;Encrypt=true
 ```
 
 ## Drivers
