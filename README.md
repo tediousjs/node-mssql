@@ -140,6 +140,8 @@ async () => {
 * [SQL injection](#sql-injection)
 * [Known Issues](#known-issues)
 * [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
+* [8.x to 9.x changes](#8x-to-9x-changes)
+* [7.x to 8.x changes](#7x-to-8x-changes)
 * [6.x to 7.x changes](#6x-to-7x-changes)
 * [5.x to 6.x changes](#5x-to-6x-changes)
 * [4.x to 5.x changes](#4x-to-5x-changes)
@@ -2025,7 +2027,7 @@ request.query('select @myval as myval', (err, result) => {
 - If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/tediousjs/node-mssql/issues/36))
 - If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/tediousjs/node-mssql/issues/68))
 
-## 8.x to 7.x changes
+## 8.x to 9.x changes
 
 - Upgraded to tedious version 15
 - Dropped support for Node version < 12
