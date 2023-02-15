@@ -2030,7 +2030,7 @@ request.query('select @myval as myval', (err, result) => {
 ## 8.x to 9.x changes
 
 - Upgraded to tedious version 15
-- Dropped support for Node version < 12
+- Dropped support for Node version <= 12
 
 ## 7.x to 8.x changes
 
