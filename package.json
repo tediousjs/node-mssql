@@ -34,7 +34,14 @@
     "tedious": "^15.0.1"
   },
   "devDependencies": {
+    "@commitlint/cli": "^17.6.6",
+    "@commitlint/config-conventional": "^17.6.6",
+    "@semantic-release/commit-analyzer": "^10.0.1",
+    "@semantic-release/github": "^9.0.3",
+    "@semantic-release/npm": "^10.0.4",
+    "@semantic-release/release-notes-generator": "^11.0.4",
     "mocha": "^10.0.0",
+    "semantic-release": "^21.0.7",
     "standard": "^17.0.0"
   },
   "engines": {
@@ -47,6 +54,7 @@
     "msnodesqlv8.js"
   ],
   "scripts": {
+    "commitlint": "commitlint --from origin/master --to HEAD",
     "test": "npm run lint && npm run test-unit",
     "lint": "standard",
     "test-unit": "mocha --exit -t 15000 test/common/unit.js",
