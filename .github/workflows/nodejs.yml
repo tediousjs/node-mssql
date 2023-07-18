@@ -191,6 +191,7 @@ jobs:
         run: npm run test-msnodesqlv8
   release:
     name: Release
+    concurrency: release
     if: ${{ github.event_name == 'push' && github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     needs:
