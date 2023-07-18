@@ -1,5 +1,9 @@
 version: "{build}"
 
+branches:
+  except:
+    - '/^dependabot\/.*/'
+
 image:
   - Visual Studio 2015
 environment:
