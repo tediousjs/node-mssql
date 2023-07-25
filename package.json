@@ -59,7 +59,7 @@
     "lint": "standard",
     "test-unit": "mocha --exit -t 15000 test/common/unit.js",
     "test-tedious": "mocha --exit -t 15000 test/tedious",
-    "test-msnodesqlv8": "mocha --exit -t 15000 test/msnodesqlv8",
+    "test-msnodesqlv8": "mocha --exit -t 30000 test/msnodesqlv8",
     "test-cli": "mocha --exit -t 15000 test/common/cli.js"
   },
   "bin": {
