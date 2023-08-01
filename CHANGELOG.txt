@@ -1,4 +1,9 @@
-v9.1.1 (2023-01-??)
+v9.1.2 (2023-08-01)
+-------------------
+[fix] Support more named instance formats ([#1520](https://github.com/tediousjs/node-mssql/pull/1520))
+[refactor] Stop using deprecated regex symbols ([#1520](https://github.com/tediousjs/node-mssql/pull/1520))
+
+v9.1.1 (2023-01-19)
 -------------------
 [revert] Add support for AAD authentication via connection string ((#1436)[https://github.com/tediousjs/node-mssql/pull/1436])
 
