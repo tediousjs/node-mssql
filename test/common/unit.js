@@ -386,3 +386,39 @@ describe('value handlers', () => {
     assert.strictEqual(sql.valueHandler.size, 0)
   })
 })
+
+describe('connection string parser', () => {
+  it('parses named instance and port', () => {
+    const config = BasePool.parseConnectionString('Data source=instance\\database,1234')
+    assert.deepStrictEqual(config, {
+      options: {
+        instanceName: 'database'
+      },
+      pool: {},
+      port: 1234,
+      server: 'instance'
+    })
+  })
+  it('parses named instance and port (with instance port)', () => {
+    const config = BasePool.parseConnectionString('Data source=instance,1234\\database')
+    assert.deepStrictEqual(config, {
+      options: {
+        instanceName: 'database'
+      },
+      pool: {},
+      port: 1234,
+      server: 'instance'
+    })
+  })
+  it('parses named instance', () => {
+    const config = BasePool.parseConnectionString('Data source=instance\\database')
+    assert.deepStrictEqual(config, {
+      options: {
+        instanceName: 'database'
+      },
+      pool: {},
+      port: 1433,
+      server: 'instance'
+    })
+  })
+})
