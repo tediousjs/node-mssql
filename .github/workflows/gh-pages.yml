@@ -27,7 +27,7 @@ jobs:
       - name: Update gh-pages branch with latest docs
         run: |
           cd "$GITHUB_WORKSPACE/pages"
-          cp "$GITHUB_WORKSPACE/release/README.md" ./docs/index.md
+          cp "$GITHUB_WORKSPACE/release/README.md" ./index.md
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add .
