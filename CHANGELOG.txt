@@ -1,3 +1,7 @@
+v9.1.3 (2023-??-??)
+-------------------
+[fix] Escape values that are added to the msnodesqlv8 connection string that we construct ((#1479)[https://github.com/tediousjs/node-mssql/pull/1479])
+
 v9.1.2 (2023-08-01)
 -------------------
 [fix] Support more named instance formats ([#1520](https://github.com/tediousjs/node-mssql/pull/1520))
