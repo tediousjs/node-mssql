@@ -192,7 +192,7 @@ jobs:
   release:
     name: Release
     concurrency: release
-    if: ${{ github.event_name == 'push' && github.actor != 'dependabot[bot]' }}
+    if: ${{ github.repository_owner == 'tediousjs' && github.event_name == 'push' && github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     needs:
       - commitlint
