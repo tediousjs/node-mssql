@@ -9,3 +9,15 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    groups:
+      release-tools:
+        patterns:
+          - "@commitlint/*"
+          - "semantic-release"
+          - "@semantic-release/*"
+      test-tools:
+        patterns:
+          - "mocha"
+      lint-tools:
+        patterns:
+          - "standard"
