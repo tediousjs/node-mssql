@@ -68,7 +68,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04]
-        node: [14.x, 16.x, 18.x]
+        node: [16.x, 18.x, 20.x]
         sqlserver: [2017, 2019, 2022]
     steps:
       - name: Checkout code
@@ -115,7 +115,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-2019, windows-2022]
-        node: [14.x, 16.x, 18.x]
+        node: [16.x, 18.x, 20.x]
         sqlserver: [2008, 2012, 2014, 2016, 2017, 2019, 2022]
         # These sqlserver versions don't work on windows-2022 (at the moment)
         exclude:
