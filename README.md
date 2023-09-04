@@ -574,10 +574,49 @@ In addition to configuration object there is an option to pass config as a conne
 
 ##### Classic Connection String
 
+###### Standard configuration using tedious driver
+
 ```
 Server=localhost,1433;Database=database;User Id=username;Password=password;Encrypt=true
+```
+###### Standard configuration using msnodesqlv8 driver
+```
 Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
 ```
+
+##### Azure Active Directory Authentication Connection String
+
+Several types of Azure Authentication are supported:
+
+###### Authentication using Active Directory Integrated
+```
+Server=*.database.windows.net;Database=database;Authentication=Active Directory Integrated;Client secret=clientsecret;Client Id=clientid;Tenant Id=tenantid;Encrypt=true
+```
+Note: Internally, the 'Active Directory Integrated' will change its type depending on the other parameters you add to it. On the example above, it will change to azure-active-directory-service-principal-secret because we supplied a Client Id, Client secret and Tenant Id.
+
+If you want to utilize Authentication tokens (azure-active-directory-access-token) Just remove the unnecessary additional parameters and supply only a token parameter, such as in this example:
+
+```
+Server=*.database.windows.net;Database=database;Authentication=Active Directory Integrated;token=token;Encrypt=true
+```
+
+Finally if you want to utilize managed identity services such as managed identity service app service you can follow this example below:
+```
+Server=*.database.windows.net;Database=database;Authentication=Active Directory Integrated;msi endpoint=msiendpoint;Client Id=clientid;msi secret=msisecret;Encrypt=true
+```
+or if its managed identity service virtual machines, then follow this:
+```
+Server=*.database.windows.net;Database=database;Authentication=Active Directory Integrated;msi endpoint=msiendpoint;Client Id=clientid;Encrypt=true
+```
+
+We can also utilizes Active Directory Password but unlike the previous examples, it is not part of the Active Directory Integrated Authentication.
+
+###### Authentication using Active Directory Password
+```
+Server=*.database.windows.net;Database=database;Authentication=Active Directory Password;User Id=username;Password=password;Client Id=clientid;Tenant Id=tenantid;Encrypt=true
+```
+
+For more reference, you can consult [here](https://tediousjs.github.io/tedious/api-connection.html#function_newConnection). Under the authentication.type parameter.
 
 ## Drivers
 

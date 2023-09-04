@@ -6,6 +6,7 @@ const sql = require('../../')
 const assert = require('assert')
 const udt = require('../../lib/udt')
 const BasePool = require('../../lib/base/connection-pool')
+const ConnectionPool = require('../../lib/tedious/connection-pool')
 
 describe('Unit', () => {
   it('table', done => {
@@ -419,6 +420,319 @@ describe('connection string parser', () => {
       pool: {},
       port: 1433,
       server: 'instance'
+    })
+  })
+})
+
+describe('connection string auth - base', () => {
+  it('parses basic login', () => {
+    const config = BasePool._parseConnectionString('Server=database.test.com;Database=test;User Id=test;Password=admin')
+    assert.deepEqual(config, {
+      database: 'test',
+      options: {},
+      password: 'admin',
+      pool: {},
+      port: 1433,
+      server: 'database.test.com',
+      user: 'test'
+    })
+  })
+
+  it('parses basic login with explicit Sql Password as Authentication', () => {
+    const config = BasePool._parseConnectionString('Authentication=Sql Password;Server=database.test.com;Database=test;User Id=test;Password=admin')
+    assert.deepEqual(config, {
+      authentication_type: 'default',
+      database: 'test',
+      options: {},
+      password: 'admin',
+      pool: {},
+      port: 1433,
+      server: 'database.test.com',
+      user: 'test'
+    })
+  })
+
+  it('parses active directory password', () => {
+    const config = BasePool._parseConnectionString('Server=*.database.windows.net;Database=test;Authentication=Active Directory Password;User Id=username;Password=password;Client Id=clientid;Tenant Id=tenantid;Encrypt=true')
+    assert.deepEqual(config, {
+      authentication_type: 'azure-active-directory-password',
+      database: 'test',
+      options: {
+        encrypt: true
+      },
+      password: 'password',
+      pool: {},
+      port: 1433,
+      server: '*.database.windows.net',
+      user: 'username',
+      clientId: 'clientid',
+      tenantId: 'tenantid'
+    })
+  })
+
+  it('parses active directory integrated token authentication', () => {
+    const config = BasePool._parseConnectionString('Server=*.database.windows.net;Database=test;Authentication=Active Directory Integrated;token=token;Encrypt=true')
+    assert.deepEqual(config, {
+      authentication_type: 'azure-active-directory-access-token',
+      database: 'test',
+      options: {
+        encrypt: true
+      },
+      pool: {},
+      port: 1433,
+      server: '*.database.windows.net',
+      token: 'token'
+    })
+  })
+
+  it('parses active directory integrated client secret authentication', () => {
+    const config = BasePool._parseConnectionString('Server=*.database.windows.net;Database=test;Authentication=Active Directory Integrated;Client secret=clientsecret;Client Id=clientid;Tenant Id=tenantid;Encrypt=true')
+    assert.deepEqual(config, {
+      authentication_type: 'azure-active-directory-service-principal-secret',
+      database: 'test',
+      options: {
+        encrypt: true
+      },
+      pool: {},
+      port: 1433,
+      server: '*.database.windows.net',
+      clientId: 'clientid',
+      tenantId: 'tenantid',
+      clientSecret: 'clientsecret'
+    })
+  })
+
+  it('parses active directory integrated managed service identity app vm', () => {
+    const config = BasePool._parseConnectionString('Server=*.database.windows.net;Database=test;Authentication=Active Directory Integrated;msi endpoint=msiendpoint;Client Id=clientid;Encrypt=true')
+    assert.deepEqual(config, {
+      authentication_type: 'azure-active-directory-msi-vm',
+      database: 'test',
+      options: {
+        encrypt: true
+      },
+      pool: {},
+      port: 1433,
+      server: '*.database.windows.net',
+      clientId: 'clientid',
+      msiEndpoint: 'msiendpoint'
+    })
+  })
+
+  it('parses active directory integrated managed service identity app service', () => {
+    const config = BasePool._parseConnectionString('Server=*.database.windows.net;Database=test;Authentication=Active Directory Integrated;msi endpoint=msiendpoint;Client Id=clientid;msi secret=msisecret;Encrypt=true')
+    assert.deepEqual(config, {
+      authentication_type: 'azure-active-directory-msi-app-service',
+      database: 'test',
+      options: {
+        encrypt: true
+      },
+      pool: {},
+      port: 1433,
+      server: '*.database.windows.net',
+      clientId: 'clientid',
+      msiEndpoint: 'msiendpoint',
+      msiSecret: 'msisecret'
+    })
+  })
+})
+
+describe('connection string auth - tedious', () => {
+  it('parses basic login', () => {
+    const baseConfig = BasePool._parseConnectionString('Server=database.test.com;Database=test;User Id=test;Password=admin')
+    const config = new ConnectionPool(baseConfig)._config()
+    assert.deepEqual(config, {
+      server: 'database.test.com',
+      options: {
+        encrypt: true,
+        trustServerCertificate: false,
+        database: 'test',
+        port: 1433,
+        connectTimeout: 15000,
+        requestTimeout: 15000,
+        tdsVersion: '7_4',
+        rowCollectionOnDone: false,
+        rowCollectionOnRequestCompletion: false,
+        useColumnNames: false,
+        appName: 'node-mssql'
+      },
+      authentication: {
+        type: 'default',
+        options: {
+          userName: 'test',
+          password: 'admin'
+        }
+      }
+    })
+  })
+
+  it('parses basic login with explicit Sql Password as Authentication', () => {
+    const baseConfig = BasePool._parseConnectionString('Authentication=Sql Password;Server=database.test.com;Database=test;User Id=test;Password=admin')
+    const config = new ConnectionPool(baseConfig)._config()
+    assert.deepEqual(config, {
+      server: 'database.test.com',
+      options: {
+        encrypt: true,
+        trustServerCertificate: false,
+        database: 'test',
+        port: 1433,
+        connectTimeout: 15000,
+        requestTimeout: 15000,
+        tdsVersion: '7_4',
+        rowCollectionOnDone: false,
+        rowCollectionOnRequestCompletion: false,
+        useColumnNames: false,
+        appName: 'node-mssql'
+      },
+      authentication: {
+        type: 'default',
+        options: {
+          userName: 'test',
+          password: 'admin'
+        }
+      }
+    })
+  })
+
+  it('parses active directory password', () => {
+    const baseConfig = BasePool._parseConnectionString('Server=*.database.windows.net;Database=test;Authentication=Active Directory Password;User Id=username;Password=password;Client Id=clientid;Tenant Id=tenantid;Encrypt=true')
+    const config = new ConnectionPool(baseConfig)._config()
+    assert.deepEqual(config, {
+      server: '*.database.windows.net',
+      options: {
+        encrypt: true,
+        trustServerCertificate: false,
+        database: 'test',
+        port: 1433,
+        connectTimeout: 15000,
+        requestTimeout: 15000,
+        tdsVersion: '7_4',
+        rowCollectionOnDone: false,
+        rowCollectionOnRequestCompletion: false,
+        useColumnNames: false,
+        appName: 'node-mssql'
+      },
+      authentication: {
+        type: 'azure-active-directory-password',
+        options: {
+          userName: 'username',
+          password: 'password',
+          clientId: 'clientid',
+          tenantId: 'tenantid'
+        }
+      }
+    })
+  })
+
+  it('parses active directory integrated token authentication', () => {
+    const baseConfig = BasePool._parseConnectionString('Server=*.database.windows.net;Database=test;Authentication=Active Directory Integrated;token=token;Encrypt=true')
+    const config = new ConnectionPool(baseConfig)._config()
+    assert.deepEqual(config, {
+      server: '*.database.windows.net',
+      options: {
+        encrypt: true,
+        trustServerCertificate: false,
+        database: 'test',
+        port: 1433,
+        connectTimeout: 15000,
+        requestTimeout: 15000,
+        tdsVersion: '7_4',
+        rowCollectionOnDone: false,
+        rowCollectionOnRequestCompletion: false,
+        useColumnNames: false,
+        appName: 'node-mssql'
+      },
+      authentication: {
+        type: 'azure-active-directory-access-token',
+        options: {
+          token: 'token'
+        }
+      }
+    })
+  })
+
+  it('parses active directory integrated client secret authentication', () => {
+    const baseConfig = BasePool._parseConnectionString('Server=*.database.windows.net;Database=test;Authentication=Active Directory Integrated;Client secret=clientsecret;Client Id=clientid;Tenant Id=tenantid;Encrypt=true')
+    const config = new ConnectionPool(baseConfig)._config()
+    assert.deepEqual(config, {
+      server: '*.database.windows.net',
+      options: {
+        encrypt: true,
+        trustServerCertificate: false,
+        database: 'test',
+        port: 1433,
+        connectTimeout: 15000,
+        requestTimeout: 15000,
+        tdsVersion: '7_4',
+        rowCollectionOnDone: false,
+        rowCollectionOnRequestCompletion: false,
+        useColumnNames: false,
+        appName: 'node-mssql'
+      },
+      authentication: {
+        type: 'azure-active-directory-service-principal-secret',
+        options: {
+          clientId: 'clientid',
+          clientSecret: 'clientsecret',
+          tenantId: 'tenantid'
+        }
+      }
+    })
+  })
+
+  it('parses active directory integrated managed service identity app vm', () => {
+    const baseConfig = BasePool._parseConnectionString('Server=*.database.windows.net;Database=test;Authentication=Active Directory Integrated;msi endpoint=msiendpoint;Client Id=clientid;Encrypt=true')
+    const config = new ConnectionPool(baseConfig)._config()
+    assert.deepEqual(config, {
+      server: '*.database.windows.net',
+      options: {
+        encrypt: true,
+        trustServerCertificate: false,
+        database: 'test',
+        port: 1433,
+        connectTimeout: 15000,
+        requestTimeout: 15000,
+        tdsVersion: '7_4',
+        rowCollectionOnDone: false,
+        rowCollectionOnRequestCompletion: false,
+        useColumnNames: false,
+        appName: 'node-mssql'
+      },
+      authentication: {
+        type: 'azure-active-directory-msi-vm',
+        options: {
+          clientId: 'clientid',
+          msiEndpoint: 'msiendpoint'
+        }
+      }
+    })
+  })
+
+  it('parses active directory integrated managed service identity app service', () => {
+    const baseConfig = BasePool._parseConnectionString('Server=*.database.windows.net;Database=test;Authentication=Active Directory Integrated;msi endpoint=msiendpoint;Client Id=clientid;msi secret=msisecret;Encrypt=true')
+    const config = new ConnectionPool(baseConfig)._config()
+    assert.deepEqual(config, {
+      server: '*.database.windows.net',
+      options: {
+        encrypt: true,
+        trustServerCertificate: false,
+        database: 'test',
+        port: 1433,
+        connectTimeout: 15000,
+        requestTimeout: 15000,
+        tdsVersion: '7_4',
+        rowCollectionOnDone: false,
+        rowCollectionOnRequestCompletion: false,
+        useColumnNames: false,
+        appName: 'node-mssql'
+      },
+      authentication: {
+        type: 'azure-active-directory-msi-app-service',
+        options: {
+          clientId: 'clientid',
+          msiEndpoint: 'msiendpoint',
+          msiSecret: 'msisecret'
+        }
+      }
     })
   })
 })
