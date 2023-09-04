@@ -12,7 +12,7 @@ permissions:
 jobs:
   commitlint:
     name: Lint commits
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -34,7 +34,7 @@ jobs:
         run: npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
   codelint:
     name: Lint code
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -51,63 +51,41 @@ jobs:
         run: npm run lint
   test-linux:
     name: Run tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/${{ matrix.sqlserver == 'edge' && 'azure-sql-edge' || 'mssql/server' }}:${{ matrix.sqlserver == 'edge' && 'latest' || format('{0}-latest', matrix.sqlserver ) }}
+        ports:
+          - 1433:1433
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: ${{ env.MSSQL_PASSWORD }}
     needs:
       - commitlint
       - codelint
     env:
       MSSQL_PASSWORD: 'yourStrong(!)Password'
-      IMAGE_NAME: ${{ matrix.sql-version == 'edge' && 'azure-sql-edge' || 'mssql/server' }}
-      IMAGE_TAG: ${{ matrix.sql-version == 'edge' && 'latest' || format('{0}-latest', matrix.sql-version) }}
     strategy:
       matrix:
-        node-version: [14.x, 16.x, 18.x]
-        sql-version: [2017, 2019, 2022]
+        os: [ubuntu-22.04]
+        node: [14.x, 16.x, 18.x]
+        sqlserver: [2017, 2019, 2022]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           persist-credentials: false
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js ${{ matrix.node }}
         uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ matrix.node }}
           cache: 'npm'
       - name: Install dependencies
         run: npm clean-install
       - name: Run unit tests
         run: npm run test-unit
-      - name: Setup docker cache
-        id: cache-docker
-        uses: actions/cache@v3
-        with:
-          path: .docker
-          key: docker-cache-${{ runner.os }}-${{ matrix.sql-version }}-latest
-      - name: Save docker image
-        if: steps.cache-docker.outputs.cache-hit != 'true'
-        run: |
-          mkdir .docker
-          docker pull "mcr.microsoft.com/$IMAGE_NAME:$IMAGE_TAG"
-          docker image save "mcr.microsoft.com/$IMAGE_NAME:$IMAGE_TAG" -o "./.docker/${{ matrix.sql-version }}.tar"
-      - name: Load docker image
-        if: steps.cache-docker.outputs.cache-hit == 'true'
-        run: docker image load -i "./.docker/${{ matrix.sql-version }}.tar"
-      - name: Start docker container
-        run: docker run --name mssql -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=$MSSQL_PASSWORD" -p 1433:1433 -d "mcr.microsoft.com/$IMAGE_NAME:$IMAGE_TAG"
       - name: Store test config
         run: echo "{\"user\":\"sa\",\"password\":\"$MSSQL_PASSWORD\",\"server\":\"localhost\",\"port\":1433,\"database\":\"master\",\"options\":{\"trustServerCertificate\":true}}" > ./test/.mssql.json
-      - name: Wait for database to be ready
-        run: |
-          set +e
-          ATTEMPT=0
-          while [ $ATTEMPT -le 10 ]; do
-            ATTEMPT=$(( ATTEMPT + 1 ))
-            docker exec mssql /opt/mssql-tools/bin/sqlcmd -S localhost -U "sa" -P "$MSSQL_PASSWORD" -q 'SELECT 1;' | grep '1 rows affected'
-            if [ $? -eq 0 ]; then
-              break
-            fi
-            sleep 1
-          done
       - name: Run tedious tests
         run: npm run test-tedious
       - name: Run cli tests
@@ -125,75 +103,64 @@ jobs:
 #        run: npm install --no-save msnodesqlv8@^2
 #      - name: Run msnodesqlv8 tests
 #        run: npm run test-msnodesqlv8
-      - name: Stop container
-        if: ${{ always() }}
-        run: docker rm -f -v mssql
   test-windows:
-    name: Run tests (Windows)
+    name: Run tests
     needs:
       - commitlint
       - codelint
       - test-linux
-    runs-on: 'windows-latest'
+    runs-on: ${{ matrix.os }}
     env:
       MSSQL_PASSWORD: 'yourStrong(!)Password'
     strategy:
       matrix:
-        arch: [x64, x86]
-        node-version: [14.x, 16.x, 18.x]
-        sql-version: [2017, 2019, 2022]
+        os: [windows-2019, windows-2022]
+        node: [14.x, 16.x, 18.x]
+        sqlserver: [2008, 2012, 2014, 2016, 2017, 2019, 2022]
+        # These sqlserver versions don't work on windows-2022 (at the moment)
+        exclude:
+          - os: windows-2022
+            sqlserver: 2008
+          - os: windows-2022
+            sqlserver: 2012
+          - os: windows-2022
+            sqlserver: 2014
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           persist-credentials: false
-      - name: Setup Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js ${{ matrix.node }}
         uses: actions/setup-node@v3
         with:
-          architecture: ${{ matrix.arch }}
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ matrix.node }}
           cache: 'npm'
       - name: Install dependencies
         run: npm clean-install
       - name: Run unit tests
         run: npm run test-unit
       - name: Setup SQL Server
-        uses: potatoqualitee/mssqlsuite@v1.7
+        uses: tediousjs/setup-sqlserver@v1
         with:
-          install: sqlengine
+          sqlserver-version: ${{ matrix.sqlserver }}
           sa-password: ${{ env.MSSQL_PASSWORD }}
-          version: ${{ matrix.sql-version }}
+          native-client-version: 11
       - name: Store test config
         shell: bash
-        run: echo "{\"user\":\"sa\",\"password\":\"$MSSQL_PASSWORD\",\"server\":\"localhost\",\"port\":1433,\"database\":\"master\",\"options\":{\"trustServerCertificate\":true}}" > ./test/.mssql.json
-      - name: Wait for database to be ready
-        shell: bash
-        run: |
-          set +e
-          ATTEMPT=0
-          while [ $ATTEMPT -le 10 ]; do
-            ATTEMPT=$(( ATTEMPT + 1 ))
-            sqlcmd -S localhost -U "sa" -P "$MSSQL_PASSWORD" -q 'SELECT 1;' | grep '1 rows affected'
-            if [ $? -eq 0 ]; then
-              break
-            fi
-            sleep 1
-          done
+        run: echo "{\"user\":\"sa\",\"password\":\"$MSSQL_PASSWORD\",\"server\":\"localhost\",\"port\":1433,\"database\":\"master\",\"requestTimeout\":30000,\"options\":{\"abortTransactionOnError\":true,\"encrypt\":false}}" > ./test/.mssql.json
       - name: Run tedious tests
         run: npm run test-tedious
       - name: Run cli tests
         run: npm run test-cli
       - name: Install msnodesqlv8
-        if: ${{ matrix.sql-version != '2022' }}
         run: npm install --no-save msnodesqlv8@^2
       - name: Run msnodesqlv8 tests
-        if: ${{ matrix.sql-version != '2022' }}
         run: npm run test-msnodesqlv8
   release:
     name: Release
     concurrency: release
     if: ${{ github.repository_owner == 'tediousjs' && github.event_name == 'push' && github.actor != 'dependabot[bot]' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - commitlint
       - codelint
