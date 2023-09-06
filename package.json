@@ -31,7 +31,7 @@
     "debug": "^4.3.3",
     "rfdc": "^1.3.0",
     "tarn": "^3.0.2",
-    "tedious": "^15.0.1"
+    "tedious": "^16.4.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.6.6",
