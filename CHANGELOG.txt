@@ -1,6 +1,15 @@
-v9.3.1 (2023-09-05)
+v10.0.0 (2023-09-06)
+-------------------
+[change] Upgrade tedious to v16 ([#1547](https://github.com/tediousjs/node-mssql/pull/1547))
+[removed] Removed NodeJS 14 support ([#1547](https://github.com/tediousjs/node-mssql/pull/1547))
+
+v9.3.2 (2023-09-06)
 -------------------
 [fix] Fix bug with msnodesqlv8 connection strings ((#1525)[https://github.com/tediousjs/node-mssql/pull/1525])
+
+v9.3.1 (2023-09-05)
+-------------------
+Revoked - contained breaking changes
 
 v9.3.0 (2023-09-04)
 -------------------
