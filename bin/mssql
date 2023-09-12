@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 const { Command } = require('commander')
 const { version } = require('../package.json')
-const { resolve: resolvePath } = require('path')
-const { constants: { R_OK } } = require('fs')
+const { resolve: resolvePath } = require('node:path')
+const { constants: { R_OK } } = require('node:fs')
 const { ConnectionPool } = require('../')
-const { lstat, access, readFile } = require('fs').promises
+const { lstat, access, readFile } = require('node:fs/promises')
 Buffer.prototype.toJSON = () => {
   return `0x${this.toString('hex')}`
 }

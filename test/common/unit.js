@@ -3,7 +3,7 @@
 /* globals describe, it, afterEach */
 
 const sql = require('../../')
-const assert = require('assert')
+const assert = require('node:assert')
 const udt = require('../../lib/udt')
 const BasePool = require('../../lib/base/connection-pool')
 const ConnectionPool = require('../../lib/tedious/connection-pool')
