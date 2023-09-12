@@ -3,8 +3,8 @@
 /* globals describe, it, before, after, afterEach */
 
 const sql = require('../../tedious.js')
-const assert = require('assert')
-const { join } = require('path')
+const assert = require('node:assert')
+const { join } = require('node:path')
 
 const TESTS = require('../common/tests.js')(sql, 'tedious')
 const TIMES = require('../common/times.js')(sql, 'tedious')
@@ -16,7 +16,7 @@ if (parseInt(process.version.match(/^v(\d+)\./)[1]) > 0) {
 }
 
 const config = function () {
-  const cfg = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+  const cfg = JSON.parse(require('node:fs').readFileSync(join(__dirname, '../.mssql.json')))
   cfg.driver = 'tedious'
   return cfg
 }
@@ -30,11 +30,11 @@ describe('tedious', () => {
       if (err) return done(err)
 
       let req = new sql.Request()
-      req.query(require('fs').readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), err => {
+      req.query(require('node:fs').readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), err => {
         if (err) return done(err)
 
         req = new sql.Request()
-        req.query(require('fs').readFileSync(join(__dirname, '../prepare.sql'), 'utf8'), err => {
+        req.query(require('node:fs').readFileSync(join(__dirname, '../prepare.sql'), 'utf8'), err => {
           if (err) return done(err)
 
           sql.close(done)
@@ -345,7 +345,7 @@ describe('tedious', () => {
       if (err) return done(err)
 
       const req = new sql.Request()
-      req.query(require('fs').readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), function (err) {
+      req.query(require('node:fs').readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), function (err) {
         if (err) return done(err)
 
         sql.close(done)

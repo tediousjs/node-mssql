@@ -1,9 +1,9 @@
 'use strict'
 
-const assert = require('assert')
-const stream = require('stream')
-const { join } = require('path')
-const { format } = require('util')
+const assert = require('node:assert')
+const stream = require('node:stream')
+const { join } = require('node:path')
+const { format } = require('node:util')
 const ISOLATION_LEVELS = require('../../lib/isolationlevel')
 const BaseTransaction = require('../../lib/base/transaction')
 const versionHelper = require('./versionhelper')

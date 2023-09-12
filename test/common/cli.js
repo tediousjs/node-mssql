@@ -2,12 +2,12 @@
 
 /* globals describe, it */
 
-const assert = require('assert')
-const { join } = require('path')
+const assert = require('node:assert')
+const { join } = require('node:path')
 const { spawn } = require('child_process')
 
 const config = function () {
-  const cfg = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+  const cfg = JSON.parse(require('node:fs').readFileSync(join(__dirname, '../.mssql.json')))
   cfg.driver = 'tedious'
   return cfg
 }

@@ -2,7 +2,7 @@
 
 /* globals describe, it, before, after, afterEach */
 
-const { join } = require('path')
+const { join } = require('node:path')
 const sql = require('../../msnodesqlv8')
 
 const TESTS = require('../common/tests.js')(sql, 'msnodesqlv8')
@@ -10,7 +10,7 @@ const TIMES = require('../common/times.js')(sql, 'msnodesqlv8')
 const versionHelper = require('../common/versionhelper')
 
 const config = function () {
-  const cfg = JSON.parse(require('fs').readFileSync(join(__dirname, '../.mssql.json')))
+  const cfg = JSON.parse(require('node:fs').readFileSync(join(__dirname, '../.mssql.json')))
   cfg.driver = 'msnodesqlv8'
   return cfg
 }
@@ -24,11 +24,11 @@ describe('msnodesqlv8', function () {
       if (err) return done(err)
 
       let req = new sql.Request()
-      req.batch(require('fs').readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), function (err) {
+      req.batch(require('node:fs').readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), function (err) {
         if (err) return done(err)
 
         req = new sql.Request()
-        req.batch(require('fs').readFileSync(join(__dirname, '../prepare.sql'), 'utf8'), function (err) {
+        req.batch(require('node:fs').readFileSync(join(__dirname, '../prepare.sql'), 'utf8'), function (err) {
           if (err) return done(err)
 
           sql.close(done)
@@ -245,7 +245,7 @@ describe('msnodesqlv8', function () {
       if (err) return done(err)
 
       const req = new sql.Request()
-      req.query(require('fs').readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), function (err) {
+      req.query(require('node:fs').readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), function (err) {
         if (err) return done(err)
 
         sql.close(done)
