@@ -36,12 +36,12 @@
   "devDependencies": {
     "@commitlint/cli": "^17.6.6",
     "@commitlint/config-conventional": "^17.6.6",
-    "@semantic-release/commit-analyzer": "^10.0.1",
+    "@semantic-release/commit-analyzer": "^11.0.0",
     "@semantic-release/github": "^9.0.3",
-    "@semantic-release/npm": "^10.0.4",
-    "@semantic-release/release-notes-generator": "^11.0.4",
+    "@semantic-release/npm": "^11.0.0",
+    "@semantic-release/release-notes-generator": "^12.0.0",
     "mocha": "^10.0.0",
-    "semantic-release": "^21.0.7",
+    "semantic-release": "^22.0.0",
     "standard": "^17.0.0"
   },
   "engines": {
