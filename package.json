@@ -34,8 +34,8 @@
     "tedious": "^16.4.0"
   },
   "devDependencies": {
-    "@commitlint/cli": "^17.6.6",
-    "@commitlint/config-conventional": "^17.6.6",
+    "@commitlint/cli": "^18.0.0",
+    "@commitlint/config-conventional": "^18.0.0",
     "@semantic-release/commit-analyzer": "^11.0.0",
     "@semantic-release/github": "^9.0.3",
     "@semantic-release/npm": "^11.0.0",
