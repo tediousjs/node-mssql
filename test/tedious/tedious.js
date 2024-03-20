@@ -5,6 +5,7 @@
 const sql = require('../../tedious.js')
 const assert = require('node:assert')
 const { join } = require('node:path')
+const { readFileSync } = require('node:fs')
 
 const TESTS = require('../common/tests.js')(sql, 'tedious')
 const TIMES = require('../common/times.js')(sql, 'tedious')
@@ -16,7 +17,7 @@ if (parseInt(process.version.match(/^v(\d+)\./)[1]) > 0) {
 }
 
 const config = function () {
-  const cfg = JSON.parse(require('node:fs').readFileSync(join(__dirname, '../.mssql.json')))
+  const cfg = JSON.parse(readFileSync(join(__dirname, '../.mssql.json')))
   cfg.driver = 'tedious'
   return cfg
 }
@@ -25,23 +26,22 @@ let connection1 = null
 let connection2 = null
 
 describe('tedious', () => {
-  before(done =>
-    sql.connect(config(), err => {
-      if (err) return done(err)
-
-      let req = new sql.Request()
-      req.query(require('node:fs').readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), err => {
-        if (err) return done(err)
-
-        req = new sql.Request()
-        req.query(require('node:fs').readFileSync(join(__dirname, '../prepare.sql'), 'utf8'), err => {
-          if (err) return done(err)
-
-          sql.close(done)
+  before(done => {
+    try {
+      sql.connect(config())
+        .then(() => {
+          return new sql.Request().query(readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'))
         })
-      })
-    })
-  )
+        .then(() => {
+          return new sql.Request().query(readFileSync(join(__dirname, '../prepare.sql'), 'utf8'))
+        })
+        .catch(done)
+        .then(() => sql.close())
+        .then(() => done())
+    } catch (e) {
+      done(e)
+    }
+  })
   afterEach(() => sql.valueHandler.clear())
 
   describe('basic test suite', () => {
@@ -100,6 +100,8 @@ describe('tedious', () => {
     it('connection healthy works', done => TESTS['connection healthy works'](config(), done))
     it('healthy connection goes bad', done => TESTS['healthy connection goes bad'](config(), done))
     it('request timeout', done => TESTS['request timeout'](done, 'tedious', /Timeout: Request failed to complete in 1000ms/))
+    it('BigInt parameters', done => TESTS['BigInt parameters'](done))
+    it('BigInt casted types', done => TESTS['BigInt casted types'](done))
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))
     it('type validation', done => TESTS['type validation']('query', done))
     it('type validation (batch)', done => TESTS['type validation']('batch', done))
@@ -345,7 +347,7 @@ describe('tedious', () => {
       if (err) return done(err)
 
       const req = new sql.Request()
-      req.query(require('node:fs').readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), function (err) {
+      req.query(readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), function (err) {
         if (err) return done(err)
 
         sql.close(done)
