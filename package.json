@@ -35,14 +35,14 @@
     "tedious": "^18.2.1"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.0.3",
-    "@commitlint/config-conventional": "^19.0.3",
-    "@semantic-release/commit-analyzer": "^13.0.0",
-    "@semantic-release/github": "^10.0.2",
-    "@semantic-release/npm": "^12.0.0",
-    "@semantic-release/release-notes-generator": "^14.0.0",
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "@semantic-release/commit-analyzer": "^11.1.0",
+    "@semantic-release/github": "^9.2.6",
+    "@semantic-release/npm": "^11.0.3",
+    "@semantic-release/release-notes-generator": "^12.1.0",
     "mocha": "^10.0.0",
-    "semantic-release": "^24.0.0",
+    "semantic-release": "^22.0.12",
     "standard": "^17.0.0"
   },
   "engines": {
