@@ -22,7 +22,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 16.x
           cache: 'npm'
       - name: Install dependencies
         run: npm clean-install
@@ -43,7 +43,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 16.x
           cache: 'npm'
       - name: Install dependencies
         run: npm clean-install
@@ -68,7 +68,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-22.04]
-        node: [18.x, 20.x, 22.x]
+        node: [16.x, 18.x, 20.x]
         sqlserver: [2017, 2019, 2022]
     steps:
       - name: Checkout code
@@ -115,7 +115,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-2019, windows-2022]
-        node: [18.x, 20.x, 22.x]
+        node: [16.x, 18.x, 20.x]
         sqlserver: [2008, 2012, 2014, 2016, 2017, 2019, 2022]
         # These sqlserver versions don't work on windows-2022 (at the moment)
         exclude:
@@ -153,10 +153,8 @@ jobs:
       - name: Run cli tests
         run: npm run test-cli
       - name: Install msnodesqlv8
-        if: ${{ matrix.node != '22.x' }}
         run: npm install --no-save msnodesqlv8@^2
       - name: Run msnodesqlv8 tests
-        if: ${{ matrix.node != '22.x' }}
         run: npm run test-msnodesqlv8
   release:
     name: Release
