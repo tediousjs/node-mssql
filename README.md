@@ -12,6 +12,10 @@ Supported TDS drivers:
 
     npm install mssql
 
+## SQL Server prerequisites
+
+This package requires TCP/IP to connect to SQL Server, and you may need to enable this in your installation.
+
 ## Short Example: Use Connect String
 
 ```javascript
