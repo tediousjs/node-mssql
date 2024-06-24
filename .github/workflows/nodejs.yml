@@ -140,7 +140,7 @@ jobs:
       - name: Run unit tests
         run: npm run test-unit
       - name: Setup SQL Server
-        uses: tediousjs/setup-sqlserver@v1
+        uses: tediousjs/setup-sqlserver@v2
         with:
           sqlserver-version: ${{ matrix.sqlserver }}
           sa-password: ${{ env.MSSQL_PASSWORD }}
