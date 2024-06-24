@@ -23,6 +23,10 @@ npm install mssql
 npm install mssql msnodesqlv8
 ```
 
+## SQL Server prerequisites
+
+This package requires TCP/IP to connect to SQL Server, and you may need to enable this in your installation.
+
 ## Short Example: Use Connect String
 
 ```javascript
