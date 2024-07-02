@@ -162,6 +162,11 @@ module.exports = (sql, driver) => {
         done()
       }).catch(done)
     },
+    'bigint inputs' (done) {
+      const req = new TestRequest()
+      req.input('bigintparam', BigInt('4294967294'))
+      done()
+    },
     'stored procedure' (mode, done) {
       const req = new TestRequest()
       req.input('in', sql.Int, null)
