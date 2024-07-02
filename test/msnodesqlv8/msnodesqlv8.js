@@ -46,6 +46,7 @@ describe('msnodesqlv8', function () {
 
     it('config validation', done => TESTS['config validation'](done))
     it('value handler', done => TESTS['value handler'](done))
+    it('bigint inputs', done => TESTS['bigint inputs'](done))
     it('stored procedure (exec)', done => TESTS['stored procedure']('execute', done))
     it('stored procedure (batch)', done => TESTS['stored procedure']('batch', done))
     it('user defined types', done => TESTS['user defined types'](done))
