@@ -52,6 +52,9 @@ if exists (select * from sys.tables where name = 'bulk_table5')
 if exists (select * from sys.tables where name = 'rowsaffected_test')
 	exec('drop table [dbo].[rowsaffected_test]')
 
+if exists (select * from sys.tables where name = 'bignumbers')
+	exec('drop table [dbo].[bignumbers]')
+
 if exists (select * from sys.tables where name = 'streaming')
 	exec('drop table [dbo].[streaming]')
 
