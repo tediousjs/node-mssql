@@ -351,7 +351,7 @@ sql.on('error', err => {
 
 ### Streaming
 
-If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data.
+If you plan to work with large amount of rows, you should always use streaming. Once you enable this, you must listen for events to receive data. Events must be attached before the query completes, but can be attached while in-flight.
 
 ```javascript
 const sql = require('mssql')
@@ -361,7 +361,6 @@ sql.connect(config, err => {
 
     const request = new sql.Request()
     request.stream = true // You can set streaming differently for each request
-    request.query('select * from verylargetable') // or request.execute(procedure)
 
     request.on('recordset', columns => {
         // Emitted once for each recordset in a query
@@ -383,6 +382,8 @@ sql.connect(config, err => {
     request.on('done', result => {
         // Always emitted as the last one
     })
+    
+    request.query('select * from verylargetable') // or request.execute(procedure)
 })
 
 sql.on('error', err => {
