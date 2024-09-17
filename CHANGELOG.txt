@@ -1,3 +1,7 @@
+Unreleased
+-------------------
+[fix] BigInt type in nodemsqlv8 now treated as strings in parity with the tedious drive ([#1387](https://github.com/tediousjs/node-mssql/pull/1387))
+
 v10.0.0 (2023-09-06)
 -------------------
 [change] Upgrade tedious to v16 ([#1547](https://github.com/tediousjs/node-mssql/pull/1547))
@@ -69,7 +73,7 @@ v8.1.1 (2022-05-18)
 
 v8.1.0 (2022-04-06)
 -------------------
-[new] MSSQL CLI tool now accepts some options to allow overriding config file ((#1381](https://github.com/tediousjs/node-mssql/pull/1381))
+[new] MSSQL CLI tool now accepts some options to allow overriding config file ([#1381](https://github.com/tediousjs/node-mssql/pull/1381))
 [fix] nodemsqlv8 driver tests working against Node 10 ([#1368](https://github.com/tediousjs/node-mssql/pull/1368))
 
 v8.0.2 (2022-02-07)
