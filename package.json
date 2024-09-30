@@ -38,7 +38,7 @@
     "@commitlint/cli": "^19.3.0",
     "@commitlint/config-conventional": "^19.2.2",
     "@semantic-release/commit-analyzer": "^11.1.0",
-    "@semantic-release/github": "^9.2.6",
+    "@semantic-release/github": "^11.0.0",
     "@semantic-release/npm": "^11.0.3",
     "@semantic-release/release-notes-generator": "^12.1.0",
     "mocha": "^10.0.0",
