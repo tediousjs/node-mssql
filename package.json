@@ -24,7 +24,14 @@
   "version": "9.1.1",
   "main": "index.js",
   "type": "commonjs",
-  "repository": "github:tediousjs/node-mssql",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tediousjs/node-mssql.git"
+  },
+  "homepage": "https://github.com/tediousjs/node-mssql#readme",
+  "bugs": {
+    "url": "https://github.com/tediousjs/node-mssql/issues"
+  },
   "license": "MIT",
   "dependencies": {
     "@tediousjs/connection-string": "^0.6.0",
@@ -64,6 +71,6 @@
     "test-cli": "mocha --exit -t 15000 test/common/cli.js"
   },
   "bin": {
-    "mssql": "./bin/mssql"
+    "mssql": "bin/mssql"
   }
 }
