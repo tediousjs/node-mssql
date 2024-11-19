@@ -1,5 +1,34 @@
+# Changelog
+
+The changelog is not currently maintained. Please see the [releases](https://github.com/tediousjs/node-mssql/releases) for change details.
+
+v11.0.1 (2024-07-03)
+--------------------
+[fix] handle bigint types separately to int to avoid TypeError with BigInt param ([#1677](https://github.com/tediousjs/node-mssql/pull/1677))
+
+v11.0.0 (2024-06-19)
+--------------------
+[removed] Removed NodeJS 16 support ([#1667](https://github.com/tediousjs/node-mssql/pull/1667))
+[feat] support use of native bigint from tedious ([#1664](https://github.com/tediousjs/node-mssql/pull/1664))
+
+v10.0.4 (2024-06-18)
+--------------------
+[fix] revert accidental upgrade of tedious & bigint support ([#1665](https://github.com/tediousjs/node-mssql/pull/1665))
+
+v10.0.3 (2024-06-18)
+--------------------
+[fix] support use of native bigint from tedious ([#1664](https://github.com/tediousjs/node-mssql/pull/1664))
+
+v10.0.2 (2024-01-16)
+--------------------
+[fix] from now _acquire return always a promise to avoid uncatchable exception ([#1592](https://github.com/tediousjs/node-mssql/pull/1592))
+
+v10.0.1 (2023-09-12)
+--------------------
+[perf] use `node:` prefix to bypass require.cache call for builtins ([#1550](https://github.com/tediousjs/node-mssql/pull/1550))
+
 v10.0.0 (2023-09-06)
--------------------
+--------------------
 [change] Upgrade tedious to v16 ([#1547](https://github.com/tediousjs/node-mssql/pull/1547))
 [removed] Removed NodeJS 14 support ([#1547](https://github.com/tediousjs/node-mssql/pull/1547))
 
