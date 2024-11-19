@@ -8,9 +8,10 @@ const sql = require('../../msnodesqlv8')
 const TESTS = require('../common/tests.js')(sql, 'msnodesqlv8')
 const TIMES = require('../common/times.js')(sql, 'msnodesqlv8')
 const versionHelper = require('../common/versionhelper')
+const { readFileSync } = require('node:fs')
 
 const config = function () {
-  const cfg = JSON.parse(require('node:fs').readFileSync(join(__dirname, '../.mssql.json')))
+  const cfg = JSON.parse(readFileSync(join(__dirname, '../.mssql.json')))
   cfg.driver = 'msnodesqlv8'
   return cfg
 }
@@ -19,23 +20,22 @@ let connection1 = null
 let connection2 = null
 
 describe('msnodesqlv8', function () {
-  before(done =>
-    sql.connect(config(), function (err) {
-      if (err) return done(err)
-
-      let req = new sql.Request()
-      req.batch(require('node:fs').readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), function (err) {
-        if (err) return done(err)
-
-        req = new sql.Request()
-        req.batch(require('node:fs').readFileSync(join(__dirname, '../prepare.sql'), 'utf8'), function (err) {
-          if (err) return done(err)
-
-          sql.close(done)
+  before(done => {
+    try {
+      sql.connect(config())
+        .then(() => {
+          return new sql.Request().query(readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'))
         })
-      })
-    })
-  )
+        .then(() => {
+          return new sql.Request().query(readFileSync(join(__dirname, '../prepare.sql'), 'utf8'))
+        })
+        .catch(done)
+        .then(() => sql.close())
+        .then(() => done())
+    } catch (e) {
+      done(e)
+    }
+  })
   afterEach(() => sql.valueHandler.clear())
 
   describe('basic test suite', function () {
@@ -92,6 +92,8 @@ describe('msnodesqlv8', function () {
     it('connection healthy works', done => TESTS['connection healthy works'](config(), done))
     it('healthy connection goes bad', done => TESTS['healthy connection goes bad'](config(), done))
     it('request timeout', done => TESTS['request timeout'](done))
+    it('BigInt parameters', done => TESTS['BigInt parameters'](done))
+    it('BigInt casted types', done => TESTS['BigInt casted types'](done))
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))
     it('chunked xml support', done => TESTS['chunked xml support'](done))
 
@@ -246,7 +248,7 @@ describe('msnodesqlv8', function () {
       if (err) return done(err)
 
       const req = new sql.Request()
-      req.query(require('node:fs').readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), function (err) {
+      req.query(readFileSync(join(__dirname, '../cleanup.sql'), 'utf8'), function (err) {
         if (err) return done(err)
 
         sql.close(done)

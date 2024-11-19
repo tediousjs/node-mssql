@@ -1281,6 +1281,30 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'BigInt parameters' (done) {
+      const req = new TestRequest()
+      req.input('bignumber', sql.BigInt, '9223372036854775807')
+      req.query('INSERT INTO [dbo].[bignumbers] (bignumber) VALUES (@bignumber)')
+        .then(() => {
+          const req2 = new TestRequest()
+          return req2.query('SELECT * FROM [dbo].[bignumbers]')
+        })
+        .then((result) => {
+          assert.strictEqual(result.recordsets.length, 1)
+          assert.strictEqual(result.recordset[0].bignumber, '9223372036854775807')
+          done()
+        })
+        .catch(done)
+    },
+
+    'BigInt casted types' (done) {
+      const req = new TestRequest()
+      req.query('SELECT cast(9223372036854775807 AS BigInt) as bignumber').then(result => {
+        assert.strictEqual(result.recordset[0].bignumber, '9223372036854775807')
+        done()
+      }).catch(done)
+    },
+
     'dataLength type correction' (done) {
       sql.on('error', err => console.error(err))
       const req = new TestRequest()

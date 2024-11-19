@@ -145,6 +145,10 @@ exec('create table [dbo].[rowsaffected_test] (
 	a int not null
 )')
 
+exec('create table [dbo].[bignumbers] (
+	bignumber bigint
+)')
+
 ;with nums as
 (
     select 0 AS n
