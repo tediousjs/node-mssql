@@ -153,10 +153,16 @@ jobs:
       - name: Run cli tests
         run: npm run test-cli
       - name: Install msnodesqlv8
-        if: ${{ matrix.node != '22.x' }}
+        if: ${{ matrix.node != '22.x' && matrix.node != '24.x' }}
         run: npm install --no-save msnodesqlv8@^2
       - name: Run msnodesqlv8 tests
-        if: ${{ matrix.node != '22.x' }}
+        if: ${{ matrix.node != '22.x' && matrix.node != '24.x' }}
+        run: npm run test-msnodesqlv8
+      - name: Install msnodesqlv8
+        if: ${{ matrix.node == '22.x' || matrix.node == '24.x' }}
+        run: npm install --no-save msnodesqlv8@^4
+      - name: Run msnodesqlv8 tests
+        if: ${{ matrix.node == '22.x' && matrix.node == '24.x' }}
         run: npm run test-msnodesqlv8
   release:
     name: Release
