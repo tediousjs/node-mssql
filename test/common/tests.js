@@ -1323,6 +1323,7 @@ module.exports = (sql, driver) => {
     'login failed' (done, message) {
       const config = readConfig()
       config.user = '__notexistinguser__'
+      config.options.trustedConnection = false
 
       // eslint-disable-next-line no-new
       const conn = new sql.ConnectionPool(config, (err) => {
