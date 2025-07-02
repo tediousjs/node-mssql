@@ -114,7 +114,7 @@ jobs:
       MSSQL_PASSWORD: 'yourStrong(!)Password'
     strategy:
       matrix:
-        os: [windows-2019, windows-2022]
+        os: [windows-2022]
         node: [18.x, 20.x, 22.x, 24.x]
         sqlserver: [2008, 2012, 2014, 2016, 2017, 2019, 2022]
         # These sqlserver versions don't work on windows-2022 (at the moment)
