@@ -145,6 +145,7 @@ jobs:
           sqlserver-version: ${{ matrix.sqlserver }}
           sa-password: ${{ env.MSSQL_PASSWORD }}
           native-client-version: 11
+          odbc-version: 17
       - name: Store test config
         shell: bash
         run: echo "{\"user\":\"sa\",\"password\":\"$MSSQL_PASSWORD\",\"server\":\"localhost\",\"port\":1433,\"database\":\"master\",\"requestTimeout\":30000,\"options\":{\"abortTransactionOnError\":true,\"encrypt\":false}}" > ./test/.mssql.json
