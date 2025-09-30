@@ -114,17 +114,9 @@ jobs:
       MSSQL_PASSWORD: 'yourStrong(!)Password'
     strategy:
       matrix:
-        os: [windows-2022]
+        os: [windows-2022, windows-2025]
         node: [18.x, 20.x, 22.x, 24.x]
-        sqlserver: [2008, 2012, 2014, 2016, 2017, 2019, 2022]
-        # These sqlserver versions don't work on windows-2022 (at the moment)
-        exclude:
-          - os: windows-2022
-            sqlserver: 2008
-          - os: windows-2022
-            sqlserver: 2012
-          - os: windows-2022
-            sqlserver: 2014
+        sqlserver: [2016, 2017, 2019, 2022]
     steps:
       - name: Checkout code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
