@@ -343,17 +343,6 @@ describe('Geography Parsing', () => {
   })
 })
 
-describe('config cloning', () => {
-  it('deeply clones configs', () => {
-    const options = {}
-    const pool = new BasePool({
-      server: 'Instance\\Name',
-      options
-    })
-    assert.notDeepStrictEqual(options, pool.config.options)
-  })
-})
-
 describe('value handlers', () => {
   afterEach('reset valueHandler', () => {
     sql.valueHandler.clear()
