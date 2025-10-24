@@ -80,10 +80,10 @@ program
   .option('--password <password>', 'Password for the database connection')
   .option('--server <server>', 'Server for the database connection')
   .option('--database <database>', 'Database for the database connection')
+  .option('--tds-version <version>', 'TDS version to use for the database connection')
   .option('--port <port>', 'Port for the database connection', parseInt)
   .option('--encrypt', 'Use the encrypt option for this connection', false)
   .option('--trust-server-certificate', 'Trust the server certificate for this connection', false)
-  .option('--tds-version <version>', 'TDS version to use for the database connection', '7_4')
   // .option('--format <format>', 'The output format to use, eg: JSON', 'json')
   .action(async function (configPath, opts) {
     const [config, statement] = await Promise.all([
