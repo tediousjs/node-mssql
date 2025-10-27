@@ -63,7 +63,7 @@ async function resolveConfig (opts, cfgFile) {
     ...cfg,
     options: {
       ...(config.options || {}),
-      ...cfg.options,
+      ...cfg.options
     }
   }
 }
