@@ -35,7 +35,7 @@
   "license": "MIT",
   "dependencies": {
     "@tediousjs/connection-string": "^0.6.0",
-    "commander": "^11.0.0",
+    "commander": "^14.0.2",
     "debug": "^4.3.3",
     "tarn": "^3.0.2",
     "tedious": "^19.0.0"
