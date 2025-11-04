@@ -30,7 +30,8 @@ async function resolveConfig (opts, cfgFile) {
   const cfg = Object.entries({
     options: {
       encrypt: opts.encrypt,
-      trustServerCertificate: opts.trustServerCertificate
+      trustServerCertificate: opts.trustServerCertificate,
+      tdsVersion: opts.tdsVersion
     },
     user: opts.user,
     password: opts.password,
@@ -79,6 +80,7 @@ program
   .option('--password <password>', 'Password for the database connection')
   .option('--server <server>', 'Server for the database connection')
   .option('--database <database>', 'Database for the database connection')
+  .option('--tds-version <version>', 'TDS version to use for the database connection')
   .option('--port <port>', 'Port for the database connection', parseInt)
   .option('--encrypt', 'Use the encrypt option for this connection', false)
   .option('--trust-server-certificate', 'Trust the server certificate for this connection', false)
