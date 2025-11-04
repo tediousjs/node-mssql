@@ -45,10 +45,10 @@
     "@commitlint/config-conventional": "^20.0.0",
     "@semantic-release/commit-analyzer": "^11.1.0",
     "@semantic-release/github": "^9.2.6",
-    "@semantic-release/npm": "^11.0.3",
+    "@semantic-release/npm": "^13.1.1",
     "@semantic-release/release-notes-generator": "^12.1.0",
     "mocha": "^11.0.1",
-    "semantic-release": "^22.0.12",
+    "semantic-release": "^25.0.1",
     "standard": "^17.0.0"
   },
   "engines": {
