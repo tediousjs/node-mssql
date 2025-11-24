@@ -90,19 +90,18 @@ jobs:
         run: npm run test-tedious
       - name: Run cli tests
         run: npm run test-cli
-# The msnodesqlv8 tests fail with a segmentation fault
-#      - name: Install OBDC 17 driver
-#        run: |
-#          sudo curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-#          sudo curl -o /etc/apt/sources.list.d/mssql-release.list https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list
-#          sudo apt-get update
-#          sudo apt-get install -y msodbcsql17
-#        env:
-#          ACCEPT_EULA: Y
-#      - name: Install msnodesqlv8
-#        run: npm install --no-save msnodesqlv8@^2
-#      - name: Run msnodesqlv8 tests
-#        run: npm run test-msnodesqlv8
+      - name: Install OBDC 17 driver
+        run: |
+          sudo curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+          sudo curl -o /etc/apt/sources.list.d/mssql-release.list https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/prod.list
+          sudo apt-get update
+          sudo apt-get install -y msodbcsql17
+        env:
+          ACCEPT_EULA: Y
+      - name: Install msnodesqlv8
+        run: npm install --no-save msnodesqlv8@^2
+      - name: Run msnodesqlv8 tests
+        run: npm run test-msnodesqlv8
   test-windows:
     name: Run tests
     needs:

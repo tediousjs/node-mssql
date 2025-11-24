@@ -95,7 +95,7 @@ const config = {
     trustedConnection: true, // Set to true if using Windows Authentication
     trustServerCertificate: true, // Set to true if using self-signed certificates
   },
-  driver: "msnodesqlv8", // Required if using Windows Authentication
+  // driver: "ODBC Driver 18 for SQL Server", // Uncomment to use specific driver
 };
 
 (async () => {
