@@ -241,6 +241,33 @@ describe('msnodesqlv8', function () {
     after(() => sql.close())
   })
 
+  describe('config().driver tests', function () {
+    it('cfg.driver is undefined', done => {
+      const cfg = config()
+      cfg.driver = undefined
+      sql.connect(config(), done)
+    })
+
+    it('cfg.driver is invalid', done => {
+      const cfg = config()
+      cfg.driver = 'aaTESTING1234'
+
+      sql.connect(config(), function (err) {
+        if (err) {
+          if (err.message === "[unixODBC][Driver Manager]Can't open lib 'aaTESTING1234' : file not found") {
+            return done()
+          }
+
+          return done(new Error('Incorrect error message shown'))
+        }
+
+        return done(new Error('No error message shown'))
+      })
+    })
+
+    afterEach(() => sql.close())
+  })
+
   after('cleanup', done =>
     sql.connect(config(), function (err) {
       if (err) return done(err)
