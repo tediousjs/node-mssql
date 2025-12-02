@@ -241,6 +241,41 @@ describe('msnodesqlv8', function () {
     after(() => sql.close())
   })
 
+  describe('config().driver tests', function () {
+    it('cfg.driver is undefined', done => {
+      const cfg = config()
+      cfg.driver = undefined
+      sql.connect(cfg, done)
+    })
+
+    // Specifically for Windows
+    it('cfg.driver is SQL Server Native Client 11.0', done => {
+      const cfg = config()
+      cfg.driver = 'SQL Server Native Client 11.0'
+      sql.connect(cfg, done)
+    })
+
+    it('cfg.driver is invalid', done => {
+      const cfg = config()
+      cfg.driver = 'aaTESTING1234'
+
+      sql.connect(cfg, function (err) {
+        if (err) {
+          // Specifically for Windows
+          if (err.message === '[Microsoft][ODBC Driver Manager] Data source name not found and no default driver specified') {
+            return done()
+          }
+
+          return done(new Error('Incorrect error message shown'))
+        }
+
+        return done(new Error('No error message shown'))
+      })
+    })
+
+    afterEach(() => sql.close())
+  })
+
   after('cleanup', done =>
     sql.connect(config(), function (err) {
       if (err) return done(err)
