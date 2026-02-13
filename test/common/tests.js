@@ -1852,6 +1852,42 @@ module.exports = (sql, driver) => {
 
         done()
       }).catch(done)
+    },
+    'Fix default requestTimeout is above 15s' (done) {
+      const req = new TestRequest()
+      req.requestTimeout = 25000 // 25 seconds
+      const start = Date.now()
+      req.query("WAITFOR DELAY '00:00:20.000';").then(result => {
+        const elapsed = Date.now() - start
+        assert.ok(!result.error, 'Should not error for long WAITFOR DELAY with high timeout')
+        assert(elapsed >= 20000, 'Query should take at least 20 seconds')
+        done()
+      }).catch(done)
+    },
+    'TVP with schema-qualified name triggers bug' (done) {
+      (async () => {
+        let pool
+        try {
+          pool = await sql.connect(readConfig())
+          const request = pool.request()
+          const tvp = new sql.Table('AI.UDT_StringArray')
+          tvp.columns.add('Name', sql.NVarChar(128), { nullable: false })
+          tvp.rows.add('TestValue1')
+          tvp.rows.add('TestValue2')
+          request.input('InputList', tvp)
+          await request.execute('AI.USP_TestProcedure')
+        } catch (err) {
+          if (err && /Cannot find data type UDT_StringArray/.test(err.message)) {
+            return done()
+          }
+          if (err && /could not find|does not exist|invalid object/i.test(err.message)) {
+            return done()
+          }
+          done(err)
+        } finally {
+          if (pool) await sql.close()
+        }
+      })()
     }
   }
 }

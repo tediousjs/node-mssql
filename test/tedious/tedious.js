@@ -2,6 +2,9 @@
 
 /* globals describe, it, before, after, afterEach */
 
+// Increase Mocha timeout for long-running tests
+this.timeout && this.timeout(30000)
+
 const sql = require('../../tedious.js')
 const assert = require('node:assert')
 const { join } = require('node:path')
@@ -24,7 +27,8 @@ const config = function () {
 let connection1 = null
 let connection2 = null
 
-describe('tedious', () => {
+describe('tedious', function () {
+  this.timeout(30000) // Increase Mocha timeout for all tests in this suite
   before(done =>
     sql.connect(config(), err => {
       if (err) return done(err)
@@ -105,6 +109,8 @@ describe('tedious', () => {
     it('type validation', done => TESTS['type validation']('query', done))
     it('type validation (batch)', done => TESTS['type validation']('batch', done))
     it('chunked xml support', done => TESTS['chunked xml support'](done))
+    it('Fix default requestTimeout is above 15s', done => TESTS['Fix default requestTimeout is above 15s'](done))
+    it('TVP with schema-qualified name triggers bug', done => TESTS['TVP with schema-qualified name triggers bug'](done))
 
     after(done => sql.close(done))
   })
