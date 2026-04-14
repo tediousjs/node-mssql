@@ -724,4 +724,142 @@ describe('connection string auth - tedious', () => {
       }
     })
   })
+
+  describe('TVP declaration with schema', () => {
+    const tds = require('tedious')
+
+    it('documents upstream tedious bug: schema missing from TVP declaration', () => {
+      const tvp = new sql.Table('AI.UDT_StringArray')
+      tvp.columns.add('Name', sql.NVarChar(128), { nullable: false })
+      tvp.rows.add('TestValue1')
+
+      const tvpValue = {
+        name: tvp.name,
+        schema: tvp.schema,
+        columns: [],
+        rows: tvp.rows
+      }
+
+      // tedious's own TVP type does NOT include schema in declaration
+      const req = new tds.Request('SELECT 1')
+      req.addParameter('InputList', tds.TYPES.TVP, tvpValue)
+      const paramsStr = req.makeParamsParameter(req.parameters)
+      assert.strictEqual(paramsStr, '@InputList UDT_StringArray readonly',
+        'tedious itself does not include schema - this documents the upstream bug')
+    })
+
+    it('schema-aware TVP type includes schema in declaration', () => {
+      const tvp = new sql.Table('AI.UDT_StringArray')
+      tvp.columns.add('Name', sql.NVarChar(128), { nullable: false })
+      tvp.rows.add('TestValue1')
+
+      const tvpValue = {
+        name: tvp.name,
+        schema: tvp.schema,
+        columns: [],
+        rows: tvp.rows
+      }
+
+      assert.strictEqual(tvp.name, 'UDT_StringArray')
+      assert.strictEqual(tvp.schema, 'AI')
+
+      // Use the patched SchemaAwareTVP type from lib/tedious/request.js
+      // Since it's not exported, recreate the same pattern to verify behavior
+      const SchemaAwareTVP = Object.create(tds.TYPES.TVP, {
+        declaration: {
+          value: function (parameter) {
+            const value = parameter.value
+            if (value && value.schema) {
+              return value.schema + '.' + value.name + ' readonly'
+            }
+            return value.name + ' readonly'
+          },
+          writable: true,
+          configurable: true
+        }
+      })
+
+      const req = new tds.Request('SELECT 1')
+      req.addParameter('InputList', SchemaAwareTVP, tvpValue)
+      const paramsStr = req.makeParamsParameter(req.parameters)
+      assert.strictEqual(paramsStr, '@InputList AI.UDT_StringArray readonly')
+    })
+
+    it('schema-aware TVP works without schema', () => {
+      const tvp = new sql.Table('UDT_StringArray')
+      tvp.columns.add('Name', sql.NVarChar(128), { nullable: false })
+
+      const tvpValue = {
+        name: tvp.name,
+        schema: tvp.schema,
+        columns: [],
+        rows: tvp.rows
+      }
+
+      assert.strictEqual(tvp.name, 'UDT_StringArray')
+      assert.strictEqual(tvp.schema, null)
+
+      const SchemaAwareTVP = Object.create(tds.TYPES.TVP, {
+        declaration: {
+          value: function (parameter) {
+            const value = parameter.value
+            if (value && value.schema) {
+              return value.schema + '.' + value.name + ' readonly'
+            }
+            return value.name + ' readonly'
+          },
+          writable: true,
+          configurable: true
+        }
+      })
+
+      const req = new tds.Request('SELECT 1')
+      req.addParameter('InputList', SchemaAwareTVP, tvpValue)
+      const paramsStr = req.makeParamsParameter(req.parameters)
+      assert.strictEqual(paramsStr, '@InputList UDT_StringArray readonly')
+    })
+
+    it('schema-aware TVP inherits generateTypeInfo from tedious TVP', () => {
+      const SchemaAwareTVP = Object.create(tds.TYPES.TVP, {
+        declaration: {
+          value: function (parameter) {
+            const value = parameter.value
+            if (value && value.schema) {
+              return value.schema + '.' + value.name + ' readonly'
+            }
+            return value.name + ' readonly'
+          },
+          writable: true,
+          configurable: true
+        }
+      })
+
+      // Verify it inherits all other methods from tedious TVP
+      assert.strictEqual(SchemaAwareTVP.id, tds.TYPES.TVP.id)
+      assert.strictEqual(SchemaAwareTVP.type, tds.TYPES.TVP.type)
+      assert.strictEqual(SchemaAwareTVP.name, tds.TYPES.TVP.name)
+      assert.strictEqual(SchemaAwareTVP.generateTypeInfo, tds.TYPES.TVP.generateTypeInfo)
+      assert.strictEqual(SchemaAwareTVP.generateParameterLength, tds.TYPES.TVP.generateParameterLength)
+      assert.strictEqual(SchemaAwareTVP.generateParameterData, tds.TYPES.TVP.generateParameterData)
+      assert.strictEqual(SchemaAwareTVP.validate, tds.TYPES.TVP.validate)
+      // declaration is overridden
+      assert.notStrictEqual(SchemaAwareTVP.declaration, tds.TYPES.TVP.declaration)
+    })
+  })
+
+  describe('msnodesqlv8 TVP declaration', () => {
+    const { declare, TYPES } = require('../../lib/datatypes')
+
+    it('includes schema in TVP declaration when tvpType is schema-qualified', () => {
+      // msnodesqlv8 uses declare() from datatypes.js, which uses tvpType
+      // When tvpType includes the schema, the declaration is correct
+      const result = declare(TYPES.TVP, { tvpType: 'AI.UDT_StringArray' })
+      assert.strictEqual(result, 'AI.UDT_StringArray readonly')
+    })
+
+    it('works without schema in tvpType', () => {
+      const result = declare(TYPES.TVP, { tvpType: 'UDT_StringArray' })
+      assert.strictEqual(result, 'UDT_StringArray readonly')
+    })
+  })
 })
