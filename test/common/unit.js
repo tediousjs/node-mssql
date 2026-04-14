@@ -123,6 +123,7 @@ describe('Unit', () => {
     sql.Promise = FakePromise
     sql.close().then(() => {
       assert.strictEqual(resolved, true)
+      sql.Promise = Promise
       done()
     })
   })
