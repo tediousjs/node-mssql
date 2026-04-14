@@ -864,6 +864,32 @@ describe('connection string auth - tedious', () => {
     })
   })
 
+  describe('TVP sql_variant validation', () => {
+    it('throws a clear error when a TVP column uses sql_variant', (done) => {
+      const tvp = new sql.Table('dbo.GridFilter')
+      tvp.columns.add('FieldName', sql.NVarChar(128))
+      tvp.columns.add('Value1', sql.Variant)
+
+      const Request = require('../../lib/tedious/request')
+      const fakeConn = { on: () => {}, removeListener: () => {} }
+      const mockPool = {
+        config: {},
+        connected: true,
+        acquire: (req, cb) => cb(null, fakeConn, {}),
+        release: () => {}
+      }
+      const req = new Request(mockPool)
+      req.input('Filters', tvp)
+
+      req.query('SELECT 1', (err) => {
+        assert.ok(err, 'Expected an error')
+        assert.ok(err.message.includes('sql_variant'), `Error message should mention sql_variant, got: ${err.message}`)
+        assert.ok(err.message.includes('Value1'), `Error message should mention column name, got: ${err.message}`)
+        done()
+      })
+    })
+  })
+
   describe('_poolValidate', () => {
     // Reset Promise in case earlier tests replaced it (e.g. FakePromise)
     before(() => { sql.Promise = Promise })
