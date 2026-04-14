@@ -133,6 +133,7 @@ const config = {
 ### Connections
 
 * [Pool Management](#pool-management)
+* [Connection Validation](#connection-validation)
 * [ConnectionPool](#connections-1)
 * [connect](#connect-callback)
 * [close](#close)
@@ -574,6 +575,30 @@ sql.query('SELECT * FROM [example]').then((result) => {
 })
 ```
 
+### Connection Validation
+
+When a connection is acquired from the pool, it can be validated to ensure it is still usable. This is controlled by the `validateConnection` config option.
+
+```javascript
+const config = {
+    server: 'localhost',
+    // ...
+    validateConnection: true // default
+}
+```
+
+The following values are supported:
+
+| Value | Description |
+|---|---|
+| `true` (default) | Executes `SELECT 1` against the connection before handing it to the caller. This is the most thorough check — it verifies end-to-end connectivity — but adds a round-trip query for every pool acquisition. |
+| `'socket'` | Performs a lightweight, synchronous check of the underlying connection state and TCP socket health. No SQL query is executed. This is significantly cheaper at scale and catches most failure modes (closed connections, destroyed sockets, wrong protocol state), but will not detect issues like server-side session invalidation. **Tedious driver only** — with msnodesqlv8, this value falls back to `SELECT 1` behaviour because native ODBC connections do not expose socket-level properties. |
+| `false` | Disables validation entirely. The connection is assumed to be healthy if it has not been flagged as closed or errored. Use this only if your application already handles stale connection errors gracefully. |
+
+#### When to use `'socket'` mode
+
+If your application maintains a large connection pool and you see high volumes of `SELECT 1` queries in your SQL Server monitoring, switching to `'socket'` mode can dramatically reduce overhead. TCP keepalive (enabled by default in tedious at 30-second intervals) will independently detect and close dead connections over time, so the socket-level check provides a good balance between reliability and performance.
+
 ## Configuration
 
 The following is an example configuration object:
@@ -608,6 +633,7 @@ const config = {
 - **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
 - **arrayRowMode** - Return row results as a an array instead of a keyed object. Also adds `columns` array. (default: `false`) See [Handling Duplicate Column Names](#handling-duplicate-column-names)
+- **validateConnection** - Controls how connections are validated when acquired from the pool. See [Connection Validation](#connection-validation) for details. (default: `true`)
 
 Complete list of pool options can be found [here](https://github.com/vincit/tarn.js/#usage).
 
