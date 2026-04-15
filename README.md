@@ -1072,8 +1072,6 @@ __Errors__
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 - EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
 
-You can enable multiple recordsets in queries with the `request.multiple = true` command.
-
 ---------------------------------------
 
 ### bulk (table, [options,] [callback])
