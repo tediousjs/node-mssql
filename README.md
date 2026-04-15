@@ -903,6 +903,13 @@ __JS Data Type To SQL Data Type Map__
 
 Default data type for unknown object is `sql.NVarChar`.
 
+When a `Number` value is provided without an explicit type, the library inspects the value to choose the best SQL type:
+- Integers within the 32-bit signed range → `sql.Int`
+- Integers outside the 32-bit range → `sql.BigInt`
+- Non-integer numbers → `sql.Float`
+
+JavaScript `bigint` primitives follow the same range logic (`sql.Int` for values within the 32-bit signed range, `sql.BigInt` otherwise).
+
 You can define your own type map.
 
 ```javascript
