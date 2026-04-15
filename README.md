@@ -724,7 +724,7 @@ ___
 
 ### MSNodeSQLv8
 
-Alternative driver, requires Node.js v10+ or newer; Windows (32 or 64-bit) or Linux/macOS (64-bit only). It's not part of the default package so it must be [installed](#msnodesqlv8-driver) in addition. Supports [Windows/Trusted Connection authentication](#windows-authentication-example-using-msnodesqlv8).
+Alternative driver for Windows (32 or 64-bit) or Linux/macOS (64-bit only). It's not part of the default package so it must be [installed](#msnodesqlv8-driver) in addition. Supports [Windows/Trusted Connection authentication](#windows-authentication-example-using-msnodesqlv8).
 
 **To use this driver you must use this `require` statement:**
 
