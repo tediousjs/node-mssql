@@ -2,7 +2,7 @@
 
 **Microsoft SQL Server client for Node.js**
 
-[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url]
 
 Supported TDS drivers:
 
@@ -2301,10 +2301,6 @@ to create new connections or not
 [npm-url]: https://www.npmjs.com/package/mssql
 [downloads-image]: https://img.shields.io/npm/dm/mssql.svg?style=flat-square
 [downloads-url]: https://www.npmjs.com/package/mssql
-[david-image]: https://img.shields.io/david/tediousjs/node-mssql.svg?style=flat-square
-[david-url]: https://david-dm.org/tediousjs/node-mssql
-[appveyor-image]: https://ci.appveyor.com/api/projects/status/e5gq1a0ujwams9t7/branch/master?svg=true
-[appveyor-url]: https://ci.appveyor.com/project/tediousjs/node-mssql
 
 [tedious-url]: https://www.npmjs.com/package/tedious
 [msnodesqlv8-url]: https://www.npmjs.com/package/msnodesqlv8
