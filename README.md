@@ -186,6 +186,9 @@ const config = {
 * [Data Types](#data-types)
 * [SQL injection](#sql-injection)
 * [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
+* [11.x to 12.x changes](#11x-to-12x-changes)
+* [10.x to 11.x changes](#10x-to-11x-changes)
+* [9.x to 10.x changes](#9x-to-10x-changes)
 * [8.x to 9.x changes](#8x-to-9x-changes)
 * [7.x to 8.x changes](#7x-to-8x-changes)
 * [6.x to 7.x changes](#6x-to-7x-changes)
@@ -2216,6 +2219,13 @@ request.query('select @myval as myval', (err, result) => {
     console.dir(result)
 })
 ```
+
+## 11.x to 12.x changes
+
+- Config objects are no longer cloned by the library. Mutating a config object after passing it to a `ConnectionPool` results in undefined behaviour.
+- Removed `rfdc` dependency
+- Upgraded to tedious version 19
+- Upgraded `@tediousjs/connection-string` to 0.6.x
 
 ## 10.x to 11.x changes
 
