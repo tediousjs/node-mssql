@@ -144,6 +144,8 @@ const config = {
 * [execute](#execute-procedure-callback)
 * [input](#input-name-type-value)
 * [output](#output-name-type-value)
+* [replaceInput](#replaceinput-name-type-value-1)
+* [replaceOutput](#replaceoutput-name-type-value)
 * [toReadableStream](#toReadableStream)
 * [pipe](#pipe-stream)
 * [query](#query-command-callback)
@@ -950,6 +952,46 @@ request.output('output_parameter', sql.VarChar(50), 'abc')
 __Errors__ (synchronous)
 - EARGS (`RequestError`) - Invalid number of arguments.
 - EINJECT (`RequestError`) - SQL injection warning.
+
+---------------------------------------
+
+### replaceInput (name, type, value)
+
+Replace an existing input parameter on the request. If the parameter was previously added with `input()`, it is removed and re-added with the new type and value. Useful when building queries dynamically or re-using a `Request` object.
+
+__Arguments__
+
+- **name** - Name of the input parameter without @ char.
+- **type** - SQL data type of input parameter.
+- **value** - Input parameter value.
+
+Unlike `input()`, `replaceInput()` requires an explicit SQL type — auto type inference is not supported.
+
+__Example__
+
+```javascript
+request.input('myval', sql.Int, 1)
+request.replaceInput('myval', sql.Int, 2)
+```
+
+---------------------------------------
+
+### replaceOutput (name, type, [value])
+
+Replace an existing output parameter on the request.
+
+__Arguments__
+
+- **name** - Name of the output parameter without @ char.
+- **type** - SQL data type of output parameter.
+- **value** - Output parameter value initial value. Optional.
+
+__Example__
+
+```javascript
+request.output('myval', sql.Int)
+request.replaceOutput('myval', sql.BigInt)
+```
 
 ---------------------------------------
 
