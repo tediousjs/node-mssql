@@ -185,7 +185,6 @@ const config = {
 * [Metadata](#metadata)
 * [Data Types](#data-types)
 * [SQL injection](#sql-injection)
-* [Known Issues](#known-issues)
 * [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
 * [8.x to 9.x changes](#8x-to-9x-changes)
 * [7.x to 8.x changes](#7x-to-8x-changes)
@@ -1125,7 +1124,7 @@ request.query('select 1 as number; select 2 as number', (err, result) => {
 
 ### batch (batch, [callback])
 
-Execute the SQL command. Unlike [query](#query-command-callback), it doesn't use `sp_executesql`, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like `create procedure` which can't be executed with [query](#query-command-callback) or if you're executing statements longer than 4000 chars on SQL Server 2000. Also you should use this if you're plan to work with local temporary tables ([more information here](http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx)).
+Execute the SQL command. Unlike [query](#query-command-callback), it doesn't use `sp_executesql`, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like `create procedure` which can't be executed with [query](#query-command-callback). Also you should use this if you plan to work with local temporary tables ([more information here](http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx)).
 
 NOTE: Table-Valued Parameter (TVP) is not supported in batch.
 
@@ -2217,13 +2216,6 @@ request.query('select @myval as myval', (err, result) => {
     console.dir(result)
 })
 ```
-
-## Known issues
-
-### Tedious
-
-- If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/tediousjs/node-mssql/issues/36))
-- If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/tediousjs/node-mssql/issues/68))
 
 ## 10.x to 11.x changes
 
