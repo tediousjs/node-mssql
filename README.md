@@ -137,6 +137,8 @@ const config = {
 * [ConnectionPool](#connections-1)
 * [connect](#connect-callback)
 * [close](#close)
+* [Pool properties](#pool-properties)
+* [parseConnectionString](#connectionpoolparseconnectionstring-connectionstring)
 
 ### Requests
 
@@ -816,6 +818,36 @@ __Example__
 
 ```javascript
 pool.close()
+```
+
+---------------------------------------
+
+### Pool properties
+
+These properties are available on a connected `ConnectionPool` instance (after `connect()` has resolved):
+
+- **pool.healthy** - `Boolean` - Whether the pool is able to create new connections.
+- **pool.size** - `Number` - Total number of connections in the pool (free + used + pending creation).
+- **pool.available** - `Number` - Number of free connections in the pool.
+- **pool.pending** - `Number` - Number of pending connection acquisition requests.
+- **pool.borrowed** - `Number` - Number of connections currently in use.
+- **pool.connected** - `Boolean` - Whether the pool is connected.
+- **pool.connecting** - `Boolean` - Whether the pool is currently connecting.
+
+---------------------------------------
+
+### ConnectionPool.parseConnectionString (connectionString)
+
+Parses a connection string into a configuration object. This is a static method.
+
+__Arguments__
+
+- **connectionString** - Classic or Azure AD connection string.
+
+__Example__
+
+```javascript
+const config = sql.ConnectionPool.parseConnectionString('Server=localhost,1433;Database=mydb;User Id=sa;Password=pwd')
 ```
 
 ## Request
