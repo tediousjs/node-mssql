@@ -1,6 +1,6 @@
 'use strict'
 
-/* globals describe, it, afterEach */
+/* globals describe, it, before, afterEach */
 
 const sql = require('../../')
 const assert = require('node:assert')
@@ -861,6 +861,109 @@ describe('connection string auth - tedious', () => {
     it('works without schema in tvpType', () => {
       const result = declare(TYPES.TVP, { tvpType: 'UDT_StringArray' })
       assert.strictEqual(result, 'UDT_StringArray readonly')
+    })
+  })
+
+  describe('_poolValidate', () => {
+    // Reset Promise in case earlier tests replaced it (e.g. FakePromise)
+    before(() => { sql.Promise = Promise })
+
+    function createMockConnection (overrides = {}) {
+      return {
+        closed: false,
+        hasError: false,
+        STATE: { LOGGED_IN: 'LoggedIn' },
+        state: { name: 'LoggedIn' },
+        socket: { destroyed: false, writable: true },
+        ...overrides
+      }
+    }
+
+    function createPool (validateConnection) {
+      return new ConnectionPool({ validateConnection })
+    }
+
+    it('returns false for null connection', () => {
+      const pool = createPool(true)
+      assert.strictEqual(pool._poolValidate(null), false)
+    })
+
+    it('returns false for closed connection', () => {
+      const pool = createPool(true)
+      assert.strictEqual(pool._poolValidate(createMockConnection({ closed: true })), false)
+    })
+
+    it('returns false for errored connection', () => {
+      const pool = createPool(true)
+      assert.strictEqual(pool._poolValidate(createMockConnection({ hasError: true })), false)
+    })
+
+    it('returns true without validation when validateConnection is false', () => {
+      const pool = createPool(false)
+      assert.strictEqual(pool._poolValidate(createMockConnection()), true)
+    })
+
+    it('socket mode: returns true for healthy connection', () => {
+      const pool = createPool('socket')
+      const conn = createMockConnection()
+      conn.STATE.LOGGED_IN = conn.state
+      assert.strictEqual(pool._poolValidate(conn), true)
+    })
+
+    it('socket mode: returns false when state is not LOGGED_IN', () => {
+      const pool = createPool('socket')
+      const conn = createMockConnection()
+      conn.state = { name: 'SentLogin7WithStandardLogin' }
+      assert.strictEqual(pool._poolValidate(conn), false)
+    })
+
+    it('socket mode: returns false when socket is destroyed', () => {
+      const pool = createPool('socket')
+      const conn = createMockConnection()
+      conn.STATE.LOGGED_IN = conn.state
+      conn.socket = { destroyed: true, writable: false }
+      assert.strictEqual(pool._poolValidate(conn), false)
+    })
+
+    it('socket mode: returns false when socket is not writable', () => {
+      const pool = createPool('socket')
+      const conn = createMockConnection()
+      conn.STATE.LOGGED_IN = conn.state
+      conn.socket = { destroyed: false, writable: false }
+      assert.strictEqual(pool._poolValidate(conn), false)
+    })
+
+    it('socket mode: returns false when socket is null', () => {
+      const pool = createPool('socket')
+      const conn = createMockConnection()
+      conn.STATE.LOGGED_IN = conn.state
+      conn.socket = null
+      assert.strictEqual(pool._poolValidate(conn), false)
+    })
+
+    it('query mode: returns a promise (SELECT 1)', () => {
+      const pool = createPool(true)
+      const conn = createMockConnection()
+      conn.execSql = (req) => {
+        req.callback(null)
+      }
+      const result = pool._poolValidate(conn)
+      assert.ok(result instanceof Promise || (result && typeof result.then === 'function'))
+      return Promise.resolve(result).then(valid => {
+        assert.strictEqual(valid, true)
+      })
+    })
+
+    it('query mode: resolves false on error', () => {
+      const pool = createPool(true)
+      const conn = createMockConnection()
+      conn.execSql = (req) => {
+        req.callback(new Error('connection lost'))
+      }
+      const result = pool._poolValidate(conn)
+      return Promise.resolve(result).then(valid => {
+        assert.strictEqual(valid, false)
+      })
     })
   })
 })
