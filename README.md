@@ -2,7 +2,7 @@
 
 **Microsoft SQL Server client for Node.js**
 
-[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url] [![Appveyor CI][appveyor-image]][appveyor-url] [![Join the chat at https://gitter.im/patriksimek/node-mssql](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/patriksimek/node-mssql?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![NPM Version][npm-image]][npm-url] [![NPM Downloads][downloads-image]][downloads-url]
 
 Supported TDS drivers:
 
@@ -137,6 +137,8 @@ const config = {
 * [ConnectionPool](#connections-1)
 * [connect](#connect-callback)
 * [close](#close)
+* [Pool properties](#pool-properties)
+* [parseConnectionString](#connectionpoolparseconnectionstring-connectionstring)
 
 ### Requests
 
@@ -144,6 +146,8 @@ const config = {
 * [execute](#execute-procedure-callback)
 * [input](#input-name-type-value)
 * [output](#output-name-type-value)
+* [replaceInput](#replaceinput-name-type-value-1)
+* [replaceOutput](#replaceoutput-name-type-value)
 * [toReadableStream](#toReadableStream)
 * [pipe](#pipe-stream)
 * [query](#query-command-callback)
@@ -181,8 +185,10 @@ const config = {
 * [Metadata](#metadata)
 * [Data Types](#data-types)
 * [SQL injection](#sql-injection)
-* [Known Issues](#known-issues)
 * [Contributing](https://github.com/tediousjs/node-mssql/wiki/Contributing)
+* [11.x to 12.x changes](#11x-to-12x-changes)
+* [10.x to 11.x changes](#10x-to-11x-changes)
+* [9.x to 10.x changes](#9x-to-10x-changes)
 * [8.x to 9.x changes](#8x-to-9x-changes)
 * [7.x to 8.x changes](#7x-to-8x-changes)
 * [6.x to 7.x changes](#6x-to-7x-changes)
@@ -724,7 +730,7 @@ ___
 
 ### MSNodeSQLv8
 
-Alternative driver, requires Node.js v10+ or newer; Windows (32 or 64-bit) or Linux/macOS (64-bit only). It's not part of the default package so it must be [installed](#msnodesqlv8-driver) in addition. Supports [Windows/Trusted Connection authentication](#windows-authentication-example-using-msnodesqlv8).
+Alternative driver for Windows (32 or 64-bit) or Linux/macOS (64-bit only). It's not part of the default package so it must be [installed](#msnodesqlv8-driver) in addition. Supports [Windows/Trusted Connection authentication](#windows-authentication-example-using-msnodesqlv8).
 
 **To use this driver you must use this `require` statement:**
 
@@ -816,6 +822,36 @@ __Example__
 pool.close()
 ```
 
+---------------------------------------
+
+### Pool properties
+
+These properties are available on a connected `ConnectionPool` instance (after `connect()` has resolved):
+
+- **pool.healthy** - `Boolean` - Whether the pool is able to create new connections.
+- **pool.size** - `Number` - Total number of connections in the pool (free + used + pending creation).
+- **pool.available** - `Number` - Number of free connections in the pool.
+- **pool.pending** - `Number` - Number of pending connection acquisition requests.
+- **pool.borrowed** - `Number` - Number of connections currently in use.
+- **pool.connected** - `Boolean` - Whether the pool is connected.
+- **pool.connecting** - `Boolean` - Whether the pool is currently connecting.
+
+---------------------------------------
+
+### ConnectionPool.parseConnectionString (connectionString)
+
+Parses a connection string into a configuration object. This is a static method.
+
+__Arguments__
+
+- **connectionString** - Classic or Azure AD connection string.
+
+__Example__
+
+```javascript
+const config = sql.ConnectionPool.parseConnectionString('Server=localhost,1433;Database=mydb;User Id=sa;Password=pwd')
+```
+
 ## Request
 
 ```javascript
@@ -903,6 +939,13 @@ __JS Data Type To SQL Data Type Map__
 
 Default data type for unknown object is `sql.NVarChar`.
 
+When a `Number` value is provided without an explicit type, the library inspects the value to choose the best SQL type:
+- Integers within the 32-bit signed range → `sql.Int`
+- Integers outside the 32-bit range → `sql.BigInt`
+- Non-integer numbers → `sql.Float`
+
+JavaScript `bigint` primitives follow the same range logic (`sql.Int` for values within the 32-bit signed range, `sql.BigInt` otherwise).
+
 You can define your own type map.
 
 ```javascript
@@ -943,6 +986,46 @@ request.output('output_parameter', sql.VarChar(50), 'abc')
 __Errors__ (synchronous)
 - EARGS (`RequestError`) - Invalid number of arguments.
 - EINJECT (`RequestError`) - SQL injection warning.
+
+---------------------------------------
+
+### replaceInput (name, type, value)
+
+Replace an existing input parameter on the request. If the parameter was previously added with `input()`, it is removed and re-added with the new type and value. Useful when building queries dynamically or re-using a `Request` object.
+
+__Arguments__
+
+- **name** - Name of the input parameter without @ char.
+- **type** - SQL data type of input parameter.
+- **value** - Input parameter value.
+
+Unlike `input()`, `replaceInput()` requires an explicit SQL type — auto type inference is not supported.
+
+__Example__
+
+```javascript
+request.input('myval', sql.Int, 1)
+request.replaceInput('myval', sql.Int, 2)
+```
+
+---------------------------------------
+
+### replaceOutput (name, type, [value])
+
+Replace an existing output parameter on the request.
+
+__Arguments__
+
+- **name** - Name of the output parameter without @ char.
+- **type** - SQL data type of output parameter.
+- **value** - Output parameter value initial value. Optional.
+
+__Example__
+
+```javascript
+request.output('myval', sql.Int)
+request.replaceOutput('myval', sql.BigInt)
+```
 
 ---------------------------------------
 
@@ -1044,7 +1127,7 @@ request.query('select 1 as number; select 2 as number', (err, result) => {
 
 ### batch (batch, [callback])
 
-Execute the SQL command. Unlike [query](#query-command-callback), it doesn't use `sp_executesql`, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like `create procedure` which can't be executed with [query](#query-command-callback) or if you're executing statements longer than 4000 chars on SQL Server 2000. Also you should use this if you're plan to work with local temporary tables ([more information here](http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx)).
+Execute the SQL command. Unlike [query](#query-command-callback), it doesn't use `sp_executesql`, so is not likely that SQL Server will reuse the execution plan it generates for the SQL. Use this only in special cases, for example when you need to execute commands like `create procedure` which can't be executed with [query](#query-command-callback). Also you should use this if you plan to work with local temporary tables ([more information here](http://weblogs.sqlteam.com/mladenp/archive/2006/11/03/17197.aspx)).
 
 NOTE: Table-Valued Parameter (TVP) is not supported in batch.
 
@@ -1071,8 +1154,6 @@ __Errors__
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 - EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
-
-You can enable multiple recordsets in queries with the `request.multiple = true` command.
 
 ---------------------------------------
 
@@ -2139,12 +2220,12 @@ request.query('select @myval as myval', (err, result) => {
 })
 ```
 
-## Known issues
+## 11.x to 12.x changes
 
-### Tedious
-
-- If you're facing problems with connecting SQL Server 2000, try setting the default TDS version to 7.1 with `config.options.tdsVersion = '7_1'` ([issue](https://github.com/tediousjs/node-mssql/issues/36))
-- If you're executing a statement longer than 4000 chars on SQL Server 2000, always use [batch](#batch-batch-callback) instead of [query](#query-command-callback) ([issue](https://github.com/tediousjs/node-mssql/issues/68))
+- Config objects are no longer cloned by the library. Mutating a config object after passing it to a `ConnectionPool` results in undefined behaviour.
+- Removed `rfdc` dependency
+- Upgraded to tedious version 19
+- Upgraded `@tediousjs/connection-string` to 0.6.x
 
 ## 10.x to 11.x changes
 
@@ -2220,10 +2301,6 @@ to create new connections or not
 [npm-url]: https://www.npmjs.com/package/mssql
 [downloads-image]: https://img.shields.io/npm/dm/mssql.svg?style=flat-square
 [downloads-url]: https://www.npmjs.com/package/mssql
-[david-image]: https://img.shields.io/david/tediousjs/node-mssql.svg?style=flat-square
-[david-url]: https://david-dm.org/tediousjs/node-mssql
-[appveyor-image]: https://ci.appveyor.com/api/projects/status/e5gq1a0ujwams9t7/branch/master?svg=true
-[appveyor-url]: https://ci.appveyor.com/project/tediousjs/node-mssql
 
 [tedious-url]: https://www.npmjs.com/package/tedious
 [msnodesqlv8-url]: https://www.npmjs.com/package/msnodesqlv8
