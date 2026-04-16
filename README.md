@@ -2259,7 +2259,9 @@ dc.subscribe(`tracing:${CHANNELS.TRACE_QUERY}:error`, ({ requestId, error }) => 
 | `TRACE_PREPARE` | `mssql:prepare` | `ps.prepare()` |
 | `TRACE_PREPARED_EXECUTE` | `mssql:prepared-execute` | `ps.execute()` |
 
-TracingChannel contexts include identifiers (`requestId`, `connectionId`, `poolId`), operation details (SQL text, procedure name, parameter names), and — on completion — `result` or `error`. Parameter **values** are never included. SQL text is included to support OTel `db.query.text` conventions but may contain inline literals; consumers should consider redaction.
+TracingChannel contexts include identifiers (`requestId`, `poolId`), operation details (SQL text, procedure name, parameter names), and — on completion — `result` or `error`. Parameter **values** are never included. SQL text is included to support OTel `db.query.text` conventions but may contain inline literals; consumers should consider redaction. Connection-level identifiers are available through the `connection:acquire` / `connection:release` point-event channels.
+
+> **Note:** TracingChannel instrumentation is active on the **promise** API. If you use the callback API, TracingChannel events will not fire for those calls. Point-event channels (connection, transaction, pool lifecycle) fire regardless of API style.
 
 ### Point-event channels
 
