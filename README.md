@@ -2268,15 +2268,15 @@ TracingChannel contexts include identifiers (`requestId`, `poolId`), operation d
 These emit single events at state transitions via `dc.subscribe()`:
 
 ```js
-dc.subscribe(CHANNELS.CONNECTION_RELEASE, ({ connectionId, poolId, duration }) => {
-  console.log(`Pool ${poolId}: connection ${connectionId} released after ${duration}ms`)
+dc.subscribe(CHANNELS.CONNECTION_RELEASE, ({ connectionId, poolId }) => {
+  console.log(`Pool ${poolId}: connection ${connectionId} released`)
 })
 ```
 
 | Constant | Channel name | Description |
 |---|---|---|
 | `CONNECTION_ACQUIRE` | `mssql:connection:acquire` | Connection borrowed from pool |
-| `CONNECTION_RELEASE` | `mssql:connection:release` | Connection returned to pool (includes `duration` in ms) |
+| `CONNECTION_RELEASE` | `mssql:connection:release` | Connection returned to pool |
 | `CONNECTION_CREATE` | `mssql:connection:create` | New connection created in pool |
 | `CONNECTION_DESTROY` | `mssql:connection:destroy` | Connection destroyed |
 | `POOL_CLOSE` | `mssql:pool:close` | Pool closed |

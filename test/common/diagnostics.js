@@ -62,7 +62,7 @@ describe('Diagnostics Channel', () => {
       const result = await tracePromise(CHANNELS.TRACE_QUERY, () => {
         called = true
         return Promise.resolve(42)
-      }, { command: 'SELECT 1' })
+      }, () => ({ command: 'SELECT 1' }))
       assert.ok(called)
       assert.strictEqual(result, 42)
     })
@@ -90,7 +90,7 @@ describe('Diagnostics Channel', () => {
       try {
         const result = await tracePromise(CHANNELS.TRACE_QUERY, () => {
           return Promise.resolve('data')
-        }, { command: 'SELECT 1' })
+        }, () => ({ command: 'SELECT 1' }))
         assert.strictEqual(result, 'data')
         assert.ok(events.some(e => e.event === 'start' && e.command === 'SELECT 1'))
         assert.ok(events.some(e => e.event === 'asyncEnd'))
@@ -114,7 +114,7 @@ describe('Diagnostics Channel', () => {
         await assert.rejects(
           () => tracePromise(CHANNELS.TRACE_BATCH, () => {
             return Promise.reject(new Error('test error'))
-          }, { command: 'BAD SQL' }),
+          }, () => ({ command: 'BAD SQL' })),
           { message: 'test error' }
         )
         assert.ok(events.some(e => e.event === 'error' && e.message === 'test error'))
