@@ -52,7 +52,7 @@
     "standard": "^17.0.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=18.19.0"
   },
   "files": [
     "lib/",
