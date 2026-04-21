@@ -163,12 +163,14 @@ describe('Diagnostics Channel', () => {
       try {
         publish(CHANNELS.TRANSACTION_BEGIN, () => ({
           transactionId: 42,
-          isolationLevel: 'READ_COMMITTED',
+          isolationLevel: 0x02,
+          isolationLevelName: 'READ_COMMITTED',
           poolId: 1
         }))
         assert.strictEqual(messages.length, 1)
         assert.strictEqual(messages[0].transactionId, 42)
-        assert.strictEqual(messages[0].isolationLevel, 'READ_COMMITTED')
+        assert.strictEqual(messages[0].isolationLevel, 0x02)
+        assert.strictEqual(messages[0].isolationLevelName, 'READ_COMMITTED')
       } finally {
         dc.unsubscribe(CHANNELS.TRANSACTION_BEGIN, handler)
       }
