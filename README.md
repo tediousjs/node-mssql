@@ -2256,8 +2256,8 @@ dc.subscribe(`tracing:${CHANNELS.TRACE_QUERY}:error`, ({ requestId, error }) => 
 | `TRACE_BULK` | `mssql:bulk` | `request.bulk()` |
 | `TRACE_CONNECT` | `mssql:connect` | `pool.connect()` |
 | `TRACE_POOL_ACQUIRE` | `mssql:pool:acquire` | Pool connection acquire (wait time) |
-| `TRACE_PREPARE` | `mssql:prepare` | `ps.prepare()` |
-| `TRACE_PREPARED_EXECUTE` | `mssql:prepared-execute` | `ps.execute()` |
+| `TRACE_PREPARED_STATEMENT_PREPARE` | `mssql:prepared-statement:prepare` | `ps.prepare()` |
+| `TRACE_PREPARED_STATEMENT_EXECUTE` | `mssql:prepared-statement:execute` | `ps.execute()` |
 
 TracingChannel contexts include identifiers (`requestId`, `poolId`), operation details (SQL text, procedure name, parameter names), and — on completion — `result` or `error`. Parameter **values** are never included. SQL text is included to support OTel `db.query.text` conventions but may contain inline literals; consumers should consider redaction. Connection-level identifiers are available through the `connection:acquire` / `connection:release` point-event channels.
 

@@ -15,8 +15,8 @@ describe('Diagnostics Channel', () => {
       assert.strictEqual(CHANNELS.TRACE_BULK, 'mssql:bulk')
       assert.strictEqual(CHANNELS.TRACE_CONNECT, 'mssql:connect')
       assert.strictEqual(CHANNELS.TRACE_POOL_ACQUIRE, 'mssql:pool:acquire')
-      assert.strictEqual(CHANNELS.TRACE_PREPARE, 'mssql:prepare')
-      assert.strictEqual(CHANNELS.TRACE_PREPARED_EXECUTE, 'mssql:prepared-execute')
+      assert.strictEqual(CHANNELS.TRACE_PREPARED_STATEMENT_PREPARE, 'mssql:prepared-statement:prepare')
+      assert.strictEqual(CHANNELS.TRACE_PREPARED_STATEMENT_EXECUTE, 'mssql:prepared-statement:execute')
     })
 
     it('exports all point-event channel names', () => {
