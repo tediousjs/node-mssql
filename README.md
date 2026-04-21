@@ -2265,7 +2265,7 @@ TracingChannel contexts include identifiers (`requestId`, `poolId`), operation d
 
 > **Note on identifiers:** `connectionId`, `poolId`, `requestId`, `transactionId`, and `preparedStatementId` are monotonically increasing integers scoped to the current node process. They are not stable across restarts and cannot be used to correlate activity across processes.
 
-> **Note:** TracingChannel instrumentation is active on the **promise** API. If you use the callback API, TracingChannel events will not fire for those calls. Point-event channels (connection, transaction, pool lifecycle) fire regardless of API style.
+> **Note:** TracingChannel instrumentation fires for both the promise and callback APIs. The callback API is traced via Node's `TracingChannel#traceCallback`, which emits the same `start` / `end` / `asyncStart` / `asyncEnd` / `error` sub-events as the promise path, so subscribers do not need to branch by API style. Point-event channels (connection, transaction, pool lifecycle) likewise fire regardless of API style.
 
 ### Point-event channels
 

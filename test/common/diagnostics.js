@@ -371,4 +371,117 @@ describe('Diagnostics Channel', () => {
       }
     })
   })
+
+  // Exercise the callback API through TracingChannel#traceCallback, which
+  // shares the sub-event channels (start/asyncEnd/error/...) with
+  // tracePromise — subscribers should not need to branch by API style.
+  describe('Callback API tracing', () => {
+    const sql = require('../../')
+
+    function collectTraces (tracingChannel) {
+      const events = []
+      const handlers = {
+        start: (ctx) => events.push({ event: 'start', ctx }),
+        end: (ctx) => events.push({ event: 'end', ctx }),
+        asyncStart: (ctx) => events.push({ event: 'asyncStart', ctx }),
+        asyncEnd: (ctx) => events.push({ event: 'asyncEnd', ctx }),
+        error: (ctx) => events.push({ event: 'error', ctx })
+      }
+      tracingChannel.subscribe(handlers)
+      return {
+        events,
+        stop () { tracingChannel.unsubscribe(handlers) }
+      }
+    }
+
+    it('request.query(cb) emits TRACE_QUERY start/asyncEnd with context', (done) => {
+      const req = new sql.Request()
+      req._query = (cmd, cb) => setImmediate(cb, null, [[{ x: 1 }]], {}, 1)
+      req.input('id', sql.Int, 42)
+
+      const tc = tracingChannels[CHANNELS.TRACE_QUERY]
+      const { events, stop } = collectTraces(tc)
+      req.query('SELECT @id', (err, result) => {
+        assert.ifError(err)
+        assert.ok(result)
+        // asyncEnd fires after this callback returns, so defer the check.
+        setImmediate(() => {
+          try {
+            const starts = events.filter(e => e.event === 'start')
+            const asyncEnds = events.filter(e => e.event === 'asyncEnd')
+            assert.strictEqual(starts.length, 1)
+            assert.strictEqual(asyncEnds.length, 1)
+            assert.strictEqual(starts[0].ctx.command, 'SELECT @id')
+            assert.deepStrictEqual(starts[0].ctx.parameters, ['id'])
+            done()
+          } catch (e) {
+            done(e)
+          } finally {
+            stop()
+          }
+        })
+      })
+    })
+
+    it('request.query(cb) emits TRACE_QUERY error on driver failure', (done) => {
+      const req = new sql.Request()
+      const boom = new Error('boom')
+      req._query = (cmd, cb) => setImmediate(cb, boom)
+
+      const tc = tracingChannels[CHANNELS.TRACE_QUERY]
+      const { events, stop } = collectTraces(tc)
+      req.query('SELECT 1', (err) => {
+        try {
+          assert.strictEqual(err, boom)
+          const errors = events.filter(e => e.event === 'error')
+          assert.strictEqual(errors.length, 1)
+          assert.strictEqual(errors[0].ctx.error, boom)
+          done()
+        } catch (e) {
+          done(e)
+        } finally {
+          stop()
+        }
+      })
+    })
+
+    it('callback path honours the _internal flag', (done) => {
+      const req = new sql.Request()
+      req._internal = true
+      req._query = (cmd, cb) => setImmediate(cb, null, [[]], {}, 0)
+
+      const tc = tracingChannels[CHANNELS.TRACE_QUERY]
+      const { events, stop } = collectTraces(tc)
+      req.query('SELECT 1', () => {
+        try {
+          assert.strictEqual(events.length, 0)
+          done()
+        } catch (e) {
+          done(e)
+        } finally {
+          stop()
+        }
+      })
+    })
+
+    it('request.execute(cb) emits TRACE_EXECUTE', (done) => {
+      const req = new sql.Request()
+      req._execute = (cmd, cb) => setImmediate(cb, null, [[]], {}, 0, 0)
+
+      const tc = tracingChannels[CHANNELS.TRACE_EXECUTE]
+      const { events, stop } = collectTraces(tc)
+      req.execute('sp_test', () => {
+        try {
+          const starts = events.filter(e => e.event === 'start')
+          assert.strictEqual(starts.length, 1)
+          assert.strictEqual(starts[0].ctx.procedure, 'sp_test')
+          done()
+        } catch (e) {
+          done(e)
+        } finally {
+          stop()
+        }
+      })
+    })
+  })
 })
