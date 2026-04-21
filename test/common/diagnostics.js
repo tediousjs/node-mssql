@@ -192,4 +192,183 @@ describe('Diagnostics Channel', () => {
       assert.strictEqual(req._internal, false)
     })
   })
+
+  // Integration tests: drive the real Request / Transaction / ConnectionPool
+  // classes (with stubbed drivers) to verify the diagnostics_channel
+  // instrumentation fires end-to-end — not just that the helpers work.
+  describe('Instrumentation integration', () => {
+    const sql = require('../../')
+
+    function collect (channel) {
+      const events = []
+      const handler = (msg) => events.push(msg)
+      dc.subscribe(channel, handler)
+      return {
+        events,
+        stop () { dc.unsubscribe(channel, handler) }
+      }
+    }
+
+    function collectTraces (tracingChannel) {
+      const events = []
+      const handlers = {
+        start: (ctx) => events.push({ event: 'start', ctx }),
+        end: (ctx) => events.push({ event: 'end', ctx }),
+        asyncStart: (ctx) => events.push({ event: 'asyncStart', ctx }),
+        asyncEnd: (ctx) => events.push({ event: 'asyncEnd', ctx }),
+        error: (ctx) => events.push({ event: 'error', ctx })
+      }
+      tracingChannel.subscribe(handlers)
+      return {
+        events,
+        stop () { tracingChannel.unsubscribe(handlers) }
+      }
+    }
+
+    it('request.query() emits TRACE_QUERY start/asyncEnd with context', async () => {
+      const req = new sql.Request()
+      req._query = (cmd, cb) => setImmediate(cb, null, [[{ x: 1 }]], {}, 1)
+      req.input('id', sql.Int, 42)
+
+      const tc = tracingChannels[CHANNELS.TRACE_QUERY]
+      const { events, stop } = collectTraces(tc)
+      try {
+        await req.query('SELECT @id')
+        const starts = events.filter(e => e.event === 'start')
+        const asyncEnds = events.filter(e => e.event === 'asyncEnd')
+        assert.strictEqual(starts.length, 1)
+        assert.strictEqual(asyncEnds.length, 1)
+        assert.strictEqual(starts[0].ctx.command, 'SELECT @id')
+        assert.deepStrictEqual(starts[0].ctx.parameters, ['id'])
+        assert.strictEqual(typeof starts[0].ctx.requestId, 'number')
+      } finally {
+        stop()
+      }
+    })
+
+    it('request.query() emits TRACE_QUERY error on rejection', async () => {
+      const req = new sql.Request()
+      const boom = new Error('boom')
+      req._query = (cmd, cb) => setImmediate(cb, boom)
+
+      const tc = tracingChannels[CHANNELS.TRACE_QUERY]
+      const { events, stop } = collectTraces(tc)
+      try {
+        await assert.rejects(() => req.query('SELECT 1'), { message: 'boom' })
+        const errors = events.filter(e => e.event === 'error')
+        assert.strictEqual(errors.length, 1)
+        assert.strictEqual(errors[0].ctx.error, boom)
+      } finally {
+        stop()
+      }
+    })
+
+    it('request marked as _internal does not emit TRACE_QUERY', async () => {
+      const req = new sql.Request()
+      req._internal = true
+      req._query = (cmd, cb) => setImmediate(cb, null, [[]], {}, 0)
+
+      const tc = tracingChannels[CHANNELS.TRACE_QUERY]
+      const { events, stop } = collectTraces(tc)
+      try {
+        await req.query('SELECT 1')
+        assert.strictEqual(events.length, 0)
+      } finally {
+        stop()
+      }
+    })
+
+    it('request.execute() emits TRACE_EXECUTE with procedure name', async () => {
+      const req = new sql.Request()
+      req._execute = (cmd, cb) => setImmediate(cb, null, [[]], {}, 0, 0)
+
+      const tc = tracingChannels[CHANNELS.TRACE_EXECUTE]
+      const { events, stop } = collectTraces(tc)
+      try {
+        await req.execute('sp_test')
+        const starts = events.filter(e => e.event === 'start')
+        assert.strictEqual(starts.length, 1)
+        assert.strictEqual(starts[0].ctx.procedure, 'sp_test')
+      } finally {
+        stop()
+      }
+    })
+
+    it('request.cancel() emits REQUEST_CANCEL for user requests only', () => {
+      const { events, stop } = collect(CHANNELS.REQUEST_CANCEL)
+      try {
+        const userReq = new sql.Request()
+        userReq._cancel = () => {}
+        userReq.cancel()
+        assert.strictEqual(events.length, 1)
+        assert.strictEqual(typeof events[0].requestId, 'number')
+
+        const internalReq = new sql.Request()
+        internalReq._internal = true
+        internalReq._cancel = () => {}
+        internalReq.cancel()
+        assert.strictEqual(events.length, 1, 'internal cancel should not emit')
+      } finally {
+        stop()
+      }
+    })
+
+    // Stub for Transaction._begin that mirrors what the real driver does:
+    // assigns the requested isolation level and clears the aborted flag.
+    function stubTransaction (tx) {
+      tx._begin = function (level, cb) {
+        if (level) this.isolationLevel = level
+        this._aborted = false
+        setImmediate(cb, null)
+      }
+      tx._commit = (cb) => setImmediate(cb, null)
+      tx._rollback = (cb) => setImmediate(cb, null)
+    }
+
+    it('transaction.begin emits TRANSACTION_BEGIN with numeric + named isolation level', async () => {
+      const tx = new sql.Transaction()
+      stubTransaction(tx)
+
+      const { events, stop } = collect(CHANNELS.TRANSACTION_BEGIN)
+      try {
+        await tx.begin(sql.ISOLATION_LEVEL.SERIALIZABLE)
+        assert.strictEqual(events.length, 1)
+        assert.strictEqual(events[0].isolationLevel, sql.ISOLATION_LEVEL.SERIALIZABLE)
+        assert.strictEqual(events[0].isolationLevelName, 'SERIALIZABLE')
+        assert.strictEqual(typeof events[0].transactionId, 'number')
+      } finally {
+        stop()
+      }
+    })
+
+    it('transaction.commit emits TRANSACTION_COMMIT', async () => {
+      const tx = new sql.Transaction()
+      stubTransaction(tx)
+
+      await tx.begin()
+      const { events, stop } = collect(CHANNELS.TRANSACTION_COMMIT)
+      try {
+        await tx.commit()
+        assert.strictEqual(events.length, 1)
+        assert.strictEqual(typeof events[0].transactionId, 'number')
+      } finally {
+        stop()
+      }
+    })
+
+    it('transaction.rollback emits TRANSACTION_ROLLBACK with aborted flag', async () => {
+      const tx = new sql.Transaction()
+      stubTransaction(tx)
+
+      await tx.begin()
+      const { events, stop } = collect(CHANNELS.TRANSACTION_ROLLBACK)
+      try {
+        await tx.rollback()
+        assert.strictEqual(events.length, 1)
+        assert.strictEqual(events[0].aborted, false)
+      } finally {
+        stop()
+      }
+    })
+  })
 })
