@@ -2259,7 +2259,11 @@ dc.subscribe(`tracing:${CHANNELS.TRACE_QUERY}:error`, ({ requestId, error }) => 
 | `TRACE_PREPARED_STATEMENT_PREPARE` | `mssql:prepared-statement:prepare` | `ps.prepare()` |
 | `TRACE_PREPARED_STATEMENT_EXECUTE` | `mssql:prepared-statement:execute` | `ps.execute()` |
 
-TracingChannel contexts include identifiers (`requestId`, `poolId`), operation details (SQL text, procedure name, parameter names), and — on completion — `result` or `error`. Parameter **values** are never included. SQL text is included to support OTel `db.query.text` conventions but may contain inline literals; consumers should consider redaction. Connection-level identifiers are available through the `connection:acquire` / `connection:release` point-event channels.
+TracingChannel contexts include identifiers (`requestId`, `poolId`), operation details (SQL text, procedure name, parameter names), and — on completion — `result` or `error`. Parameter **values** are never included (only their names).
+
+> **Note on SQL text in trace contexts:** `command` / `procedure` / `statement` fields contain the SQL text as sent to the server, to support OTel `db.query.text` conventions. Because node-mssql is parameterised-query-first, user-supplied values flow through `parameters` and do not appear in the SQL text. Avoid hard-coding credentials, tokens, or PII as inline SQL literals — anything hard-coded into a raw query will appear verbatim in trace contexts.
+
+> **Note on identifiers:** `connectionId`, `poolId`, `requestId`, `transactionId`, and `preparedStatementId` are monotonically increasing integers scoped to the current node process. They are not stable across restarts and cannot be used to correlate activity across processes.
 
 > **Note:** TracingChannel instrumentation is active on the **promise** API. If you use the callback API, TracingChannel events will not fire for those calls. Point-event channels (connection, transaction, pool lifecycle) fire regardless of API style.
 
@@ -2279,8 +2283,8 @@ dc.subscribe(CHANNELS.CONNECTION_RELEASE, ({ connectionId, poolId }) => {
 | `CONNECTION_RELEASE` | `mssql:connection:release` | Connection returned to pool |
 | `CONNECTION_CREATE` | `mssql:connection:create` | New connection created in pool |
 | `CONNECTION_DESTROY` | `mssql:connection:destroy` | Connection destroyed |
-| `POOL_CLOSE` | `mssql:pool:close` | Pool closed |
-| `TRANSACTION_BEGIN` | `mssql:transaction:begin` | Transaction begun (includes `isolationLevel`) |
+| `POOL_CLOSE` | `mssql:pool:close` | Pool closed (includes `reason`: `'closed'` or `'error'`; `error` on failure) |
+| `TRANSACTION_BEGIN` | `mssql:transaction:begin` | Transaction begun (includes numeric `isolationLevel` and `isolationLevelName`) |
 | `TRANSACTION_COMMIT` | `mssql:transaction:commit` | Transaction committed |
 | `TRANSACTION_ROLLBACK` | `mssql:transaction:rollback` | Transaction rolled back (includes `aborted` flag) |
 | `REQUEST_CANCEL` | `mssql:request:cancel` | Request cancelled |
