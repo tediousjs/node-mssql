@@ -8,6 +8,8 @@ const udt = require('../../lib/udt')
 const BasePool = require('../../lib/base/connection-pool')
 const ConnectionPool = require('../../lib/tedious/connection-pool')
 
+require('./diagnostics')
+
 describe('Unit', () => {
   it('table', done => {
     let t = new sql.Table('MyTable')
