@@ -346,6 +346,326 @@ describe('Geography Parsing', () => {
   })
 })
 
+// Helper to build spatial binary buffers for testing
+function buildSpatialBuffer (opts) {
+  const parts = []
+  const srid = Buffer.alloc(4)
+  srid.writeInt32LE(opts.srid != null ? opts.srid : 4326, 0)
+  parts.push(srid)
+  parts.push(Buffer.from([opts.version || 1]))
+  parts.push(Buffer.from([opts.flags || 0x04]))
+
+  if (!(opts.flags & 0x08) && !(opts.flags & 0x10)) {
+    const np = Buffer.alloc(4)
+    np.writeUInt32LE(opts.points ? opts.points.length : 0, 0)
+    parts.push(np)
+  }
+
+  if (opts.points) {
+    for (const p of opts.points) {
+      const pb = Buffer.alloc(16)
+      pb.writeDoubleLE(p[0], 0)
+      pb.writeDoubleLE(p[1], 8)
+      parts.push(pb)
+    }
+  }
+
+  if (opts.zValues) {
+    for (const z of opts.zValues) {
+      const zb = Buffer.alloc(8)
+      zb.writeDoubleLE(z, 0)
+      parts.push(zb)
+    }
+  }
+
+  if (opts.mValues) {
+    for (const m of opts.mValues) {
+      const mb = Buffer.alloc(8)
+      mb.writeDoubleLE(m, 0)
+      parts.push(mb)
+    }
+  }
+
+  if (!(opts.flags & 0x08) && !(opts.flags & 0x10)) {
+    if (opts.figures) {
+      const nf = Buffer.alloc(4)
+      nf.writeUInt32LE(opts.figures.length, 0)
+      parts.push(nf)
+      for (const f of opts.figures) {
+        const fb = Buffer.alloc(5)
+        fb.writeUInt8(f[0], 0)
+        fb.writeInt32LE(f[1], 1)
+        parts.push(fb)
+      }
+    }
+    if (opts.shapes) {
+      const ns = Buffer.alloc(4)
+      ns.writeUInt32LE(opts.shapes.length, 0)
+      parts.push(ns)
+      for (const s of opts.shapes) {
+        const sb = Buffer.alloc(9)
+        sb.writeInt32LE(s[0], 0)
+        sb.writeInt32LE(s[1], 4)
+        sb.writeUInt8(s[2], 8)
+        parts.push(sb)
+      }
+    }
+  }
+
+  if (opts.segments) {
+    const nseg = Buffer.alloc(4)
+    nseg.writeUInt32LE(opts.segments.length, 0)
+    parts.push(nseg)
+    for (const seg of opts.segments) {
+      parts.push(Buffer.from([seg]))
+    }
+  }
+
+  if (opts.extraBytes) {
+    parts.push(opts.extraBytes)
+  }
+
+  const buf = Buffer.concat(parts)
+  buf.position = 0
+  return buf
+}
+
+describe('Geography/Geometry - single point (P flag)', () => {
+  it('parses single geography point', () => {
+    // P flag = bit 3 = 0x08, V = bit 2 = 0x04 => 0x0C
+    const buf = buildSpatialBuffer({
+      flags: 0x0C,
+      points: [[45.0, -93.0]]
+    })
+    const geo = udt.PARSERS.geography(buf)
+    assert.strictEqual(geo.points.length, 1)
+    assert.strictEqual(geo.points[0].lat, 45.0)
+    assert.strictEqual(geo.points[0].lng, -93.0)
+    assert.strictEqual(geo.figures.length, 1)
+    assert.strictEqual(geo.shapes.length, 1)
+    assert.strictEqual(geo.shapes[0].type, 0x01)
+  })
+
+  it('parses single geometry point', () => {
+    const buf = buildSpatialBuffer({
+      flags: 0x0C,
+      points: [[10.0, 20.0]]
+    })
+    const geom = udt.PARSERS.geometry(buf)
+    assert.strictEqual(geom.points.length, 1)
+    assert.strictEqual(geom.points[0].x, 10.0)
+    assert.strictEqual(geom.points[0].y, 20.0)
+  })
+})
+
+describe('Geography/Geometry - single line (L flag)', () => {
+  it('parses single line geography', () => {
+    // L flag = bit 4 = 0x10, V = bit 2 = 0x04 => 0x14
+    const buf = buildSpatialBuffer({
+      flags: 0x14,
+      points: [[0.0, 0.0], [1.0, 1.0]]
+    })
+    const geo = udt.PARSERS.geography(buf)
+    assert.strictEqual(geo.points.length, 2)
+    assert.strictEqual(geo.figures.length, 1)
+    assert.strictEqual(geo.shapes.length, 1)
+    assert.strictEqual(geo.shapes[0].type, 0x02)
+  })
+})
+
+describe('Geography/Geometry - Z and M values', () => {
+  it('parses geography with Z values', () => {
+    // Z = bit 0 = 0x01, V = bit 2 = 0x04 => 0x05
+    const buf = buildSpatialBuffer({
+      flags: 0x05,
+      points: [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]],
+      zValues: [100.0, 200.0, 300.0],
+      figures: [[0x02, 0]],
+      shapes: [[-1, 0, 0x02]]
+    })
+    const geo = udt.PARSERS.geography(buf)
+    assert.strictEqual(geo.points.length, 3)
+    assert.strictEqual(geo.points[0].z, 100.0)
+    assert.strictEqual(geo.points[1].z, 200.0)
+    assert.strictEqual(geo.points[2].z, 300.0)
+  })
+
+  it('parses geography with Z and M values', () => {
+    // Z = 0x01, M = 0x02, V = 0x04 => 0x07
+    const buf = buildSpatialBuffer({
+      flags: 0x07,
+      points: [[1.0, 2.0], [3.0, 4.0]],
+      zValues: [10.0, 20.0],
+      mValues: [0.5, 0.75],
+      figures: [[0x01, 0]],
+      shapes: [[-1, 0, 0x02]]
+    })
+    const geo = udt.PARSERS.geography(buf)
+    assert.strictEqual(geo.points[0].z, 10.0)
+    assert.strictEqual(geo.points[1].z, 20.0)
+    assert.strictEqual(geo.points[0].m, 0.5)
+    assert.strictEqual(geo.points[1].m, 0.75)
+  })
+})
+
+describe('Geography/Geometry - v2 with segments', () => {
+  it('parses v2 geography with circular arc segments', () => {
+    const buf = buildSpatialBuffer({
+      version: 2,
+      flags: 0x04,
+      points: [[0.0, 1.0], [1.0, 0.0], [0.0, -1.0]],
+      figures: [[0x02, 0]],
+      shapes: [[-1, 0, 0x08]],
+      segments: [0x01]
+    })
+    const geo = udt.PARSERS.geography(buf)
+    assert.strictEqual(geo.version, 2)
+    assert.strictEqual(geo.points.length, 3)
+    assert.strictEqual(geo.shapes[0].type, 0x08)
+    assert.strictEqual(geo.segments.length, 1)
+    assert.strictEqual(geo.segments[0].type, 0x01)
+  })
+
+  it('parses v2 with multiple segment types', () => {
+    const buf = buildSpatialBuffer({
+      version: 2,
+      flags: 0x04,
+      points: [[0, 0], [1, 0], [2, 0], [3, 1], [4, 0]],
+      figures: [[0x03, 0]],
+      shapes: [[-1, 0, 0x09]],
+      segments: [0x03, 0x02]
+    })
+    const geo = udt.PARSERS.geography(buf)
+    assert.strictEqual(geo.segments.length, 2)
+    assert.strictEqual(geo.segments[0].type, 0x03)
+    assert.strictEqual(geo.segments[1].type, 0x02)
+  })
+})
+
+describe('Geography/Geometry - v2 H flag (IsLargerThanAHemisphere)', () => {
+  it('correctly parses H flag on bit 5', () => {
+    // V=0x04, H=0x20 => 0x24
+    const buf = buildSpatialBuffer({
+      version: 2,
+      flags: 0x24,
+      points: [[0.0, 1.0], [1.0, 0.0], [0.0, -1.0]],
+      figures: [[0x02, 0]],
+      shapes: [[-1, 0, 0x08]],
+      segments: [0x01]
+    })
+    const geo = udt.PARSERS.geography(buf)
+    assert.strictEqual(geo.version, 2)
+    assert.strictEqual(geo.points.length, 3)
+    // P flag (bit 3) should NOT be set
+    assert.strictEqual(geo.figures.length, 1)
+    assert.notStrictEqual(geo.figures[0].attribute, undefined)
+  })
+})
+
+describe('Geography/Geometry - multi-shape geometries', () => {
+  it('parses multipolygon with nested shapes', () => {
+    const buf = buildSpatialBuffer({
+      flags: 0x04,
+      points: [[0, 0], [0, 10], [10, 10], [0, 0], [20, 20], [20, 30], [30, 30], [20, 20]],
+      figures: [[0x02, 0], [0x02, 4]],
+      shapes: [[-1, -1, 0x06], [0, 0, 0x03], [0, 1, 0x03]]
+    })
+    const geo = udt.PARSERS.geography(buf)
+    assert.strictEqual(geo.points.length, 8)
+    assert.strictEqual(geo.figures.length, 2)
+    assert.strictEqual(geo.shapes.length, 3)
+    assert.strictEqual(geo.shapes[0].type, 0x06)
+    assert.strictEqual(geo.shapes[1].type, 0x03)
+    assert.strictEqual(geo.shapes[2].type, 0x03)
+  })
+
+  it('parses geometry collection', () => {
+    const buf = buildSpatialBuffer({
+      flags: 0x04,
+      points: [[1, 1], [0, 0], [1, 1], [2, 0]],
+      figures: [[0x01, 0], [0x01, 1]],
+      shapes: [[-1, -1, 0x07], [0, 0, 0x01], [0, 1, 0x02]]
+    })
+    const geom = udt.PARSERS.geometry(buf)
+    assert.strictEqual(geom.shapes.length, 3)
+    assert.strictEqual(geom.shapes[0].type, 0x07)
+    assert.strictEqual(geom.shapes[1].type, 0x01)
+    assert.strictEqual(geom.shapes[2].type, 0x02)
+  })
+})
+
+describe('Geography/Geometry - null and empty', () => {
+  it('returns null for null geometry (srid = -1)', () => {
+    const buf = Buffer.alloc(6)
+    buf.writeInt32LE(-1, 0)
+    buf.writeUInt8(1, 4)
+    buf.writeUInt8(0x04, 5)
+    buf.position = 0
+    const result = udt.PARSERS.geography(buf)
+    assert.strictEqual(result, null)
+  })
+
+  it('parses empty geometry (zero points, figures, shapes)', () => {
+    const buf = buildSpatialBuffer({
+      flags: 0x04,
+      points: [],
+      figures: [],
+      shapes: []
+    })
+    const geom = udt.PARSERS.geometry(buf)
+    assert.strictEqual(geom.points.length, 0)
+    assert.strictEqual(geom.figures.length, 0)
+    assert.strictEqual(geom.shapes.length, 0)
+  })
+})
+
+describe('Geography/Geometry - truncated data handling', () => {
+  it('throws on buffer too short for header', () => {
+    const buf = Buffer.alloc(3)
+    buf.position = 0
+    assert.throws(() => udt.PARSERS.geography(buf), /truncated/)
+  })
+
+  it('throws on truncated point data', () => {
+    // Valid header claiming 100 points, but buffer only has room for 1
+    const buf = buildSpatialBuffer({
+      flags: 0x04,
+      points: [[1.0, 2.0]]
+    })
+    // Corrupt the numberOfPoints field to claim 100 points
+    buf.writeUInt32LE(100, 6)
+    buf.position = 0
+    assert.throws(() => udt.PARSERS.geography(buf), /truncated/)
+  })
+
+  it('throws on truncated figure data', () => {
+    const buf = buildSpatialBuffer({
+      flags: 0x04,
+      points: [[1, 1], [2, 2], [3, 3]],
+      figures: [[0x02, 0]],
+      shapes: [[-1, 0, 0x03]]
+    })
+    // Corrupt numberOfFigures to claim 100 figures
+    const figCountOffset = 6 + 4 + 3 * 16
+    buf.writeUInt32LE(100, figCountOffset)
+    buf.position = 0
+    assert.throws(() => udt.PARSERS.geography(buf), /truncated/)
+  })
+
+  it('throws on truncated Z data', () => {
+    // Z flag set but no room for Z values
+    const buf = buildSpatialBuffer({
+      flags: 0x05,
+      points: [[1, 1], [2, 2]],
+      // deliberately omit zValues
+      figures: [[0x01, 0]],
+      shapes: [[-1, 0, 0x02]]
+    })
+    buf.position = 0
+    assert.throws(() => udt.PARSERS.geography(buf), /truncated/)
+  })
+})
+
 describe('value handlers', () => {
   afterEach('reset valueHandler', () => {
     sql.valueHandler.clear()
