@@ -171,6 +171,15 @@ begin
 
 end')
 
+exec('create procedure [dbo].[__testDelay]
+as
+begin
+
+	waitfor delay ''00:00:05''
+	select 1 as result
+
+end')
+
 ;with nums as
 (
     select 0 AS n

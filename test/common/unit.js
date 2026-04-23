@@ -1314,4 +1314,92 @@ describe('connection string auth - tedious', () => {
       })
     })
   })
+
+  describe('per-request requestTimeout overrides', () => {
+    const BaseRequest = require('../../lib/base/request')
+    const BaseTransaction = require('../../lib/base/transaction')
+    const BasePreparedStatement = require('../../lib/base/prepared-statement')
+
+    describe('Request', () => {
+      it('stores valid requestTimeout override', () => {
+        const req = new BaseRequest(null, { requestTimeout: 5000 })
+        assert.strictEqual(req.overrides.requestTimeout, 5000)
+      })
+
+      it('accepts zero as a valid timeout', () => {
+        const req = new BaseRequest(null, { requestTimeout: 0 })
+        assert.strictEqual(req.overrides.requestTimeout, 0)
+      })
+
+      it('ignores NaN', () => {
+        const req = new BaseRequest(null, { requestTimeout: NaN })
+        assert.strictEqual(req.overrides.requestTimeout, undefined)
+      })
+
+      it('ignores Infinity', () => {
+        const req = new BaseRequest(null, { requestTimeout: Infinity })
+        assert.strictEqual(req.overrides.requestTimeout, undefined)
+      })
+
+      it('ignores negative values', () => {
+        const req = new BaseRequest(null, { requestTimeout: -1 })
+        assert.strictEqual(req.overrides.requestTimeout, undefined)
+      })
+
+      it('ignores non-number values', () => {
+        const req = new BaseRequest(null, { requestTimeout: '5000' })
+        assert.strictEqual(req.overrides.requestTimeout, undefined)
+      })
+
+      it('defaults to empty overrides when none provided', () => {
+        const req = new BaseRequest(null)
+        assert.deepStrictEqual(req.overrides, {})
+      })
+    })
+
+    describe('Transaction', () => {
+      it('stores valid requestTimeout override', () => {
+        const tx = new BaseTransaction(null, { requestTimeout: 10000 })
+        assert.strictEqual(tx.overrides.requestTimeout, 10000)
+      })
+
+      it('ignores invalid overrides', () => {
+        const tx = new BaseTransaction(null, { requestTimeout: NaN })
+        assert.strictEqual(tx.overrides.requestTimeout, undefined)
+      })
+
+      it('cascades overrides to request when no per-request config given', () => {
+        const pool = new ConnectionPool({ server: 'localhost' })
+        const tx = pool.transaction({ requestTimeout: 10000 })
+        const req = tx.request()
+        assert.strictEqual(req.overrides.requestTimeout, 10000)
+      })
+
+      it('per-request config overrides transaction overrides', () => {
+        const pool = new ConnectionPool({ server: 'localhost' })
+        const tx = pool.transaction({ requestTimeout: 10000 })
+        const req = tx.request({ requestTimeout: 3000 })
+        assert.strictEqual(req.overrides.requestTimeout, 3000)
+      })
+
+      it('per-request config merges with transaction overrides', () => {
+        const pool = new ConnectionPool({ server: 'localhost' })
+        const tx = pool.transaction({ requestTimeout: 10000 })
+        const req = tx.request({})
+        assert.strictEqual(req.overrides.requestTimeout, 10000)
+      })
+    })
+
+    describe('PreparedStatement', () => {
+      it('stores valid requestTimeout override', () => {
+        const ps = new BasePreparedStatement(null, { requestTimeout: 8000 })
+        assert.strictEqual(ps.overrides.requestTimeout, 8000)
+      })
+
+      it('ignores invalid overrides', () => {
+        const ps = new BasePreparedStatement(null, { requestTimeout: -100 })
+        assert.strictEqual(ps.overrides.requestTimeout, undefined)
+      })
+    })
+  })
 })

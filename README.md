@@ -856,10 +856,21 @@ const config = sql.ConnectionPool.parseConnectionString('Server=localhost,1433;D
 ## Request
 
 ```javascript
-const request = new sql.Request(/* [pool or transaction] */)
+const request = new sql.Request(/* [pool or transaction], [options] */)
 ```
 
 If you omit pool/transaction argument, global pool is used instead.
+
+The optional `options` argument allows per-request configuration overrides:
+
+- **requestTimeout** - Override the pool's default request timeout (in ms) for this request only. This applies to queries and stored procedure executions; it does not apply to bulk data transfers (`request.bulk()`), which stream to completion as long as the connection is healthy. If you need to bound a bulk transfer, wrap the call with your own timer and call `request.cancel()`.
+
+```javascript
+// Request with a 60-second timeout instead of the pool default
+const request = new sql.Request(pool, { requestTimeout: 60000 })
+```
+
+**Note:** When using the global pool, you must still pass `undefined` as the first argument to use options: `new sql.Request(undefined, { requestTimeout: 60000 })`.
 
 ### Events
 
@@ -1226,10 +1237,12 @@ request.cancel()
 **IMPORTANT:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is acquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. After you call `commit` or `rollback`, connection is then released back to the connection pool.
 
 ```javascript
-const transaction = new sql.Transaction(/* [pool] */)
+const transaction = new sql.Transaction(/* [pool], [options] */)
 ```
 
 If you omit connection argument, global connection is used instead.
+
+The optional `options` argument allows per-transaction configuration overrides (e.g. `{ requestTimeout: 60000 }`). These are inherited by any requests created from this transaction unless overridden at the request level. Note that the timeout applies to data requests only, not to the `begin`/`commit`/`rollback` operations themselves.
 
 __Example__
 
@@ -1378,10 +1391,12 @@ __Errors__
 **IMPORTANT:** always use `PreparedStatement` class to create prepared statements - it ensures that all your executions of prepared statement are executed on one connection. Once you call `prepare`, a single connection is acquired from the connection pool and all subsequent executions are executed exclusively on this connection. After you call `unprepare`, the connection is then released back to the connection pool.
 
 ```javascript
-const ps = new sql.PreparedStatement(/* [pool] */)
+const ps = new sql.PreparedStatement(/* [pool], [options] */)
 ```
 
 If you omit the connection argument, the global connection is used instead.
+
+The optional `options` argument allows per-statement configuration overrides (e.g. `{ requestTimeout: 60000 }`). The timeout is applied to the `prepare`, `execute`, and `unprepare` operations.
 
 __Example__
 

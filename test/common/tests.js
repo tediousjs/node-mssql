@@ -1198,6 +1198,130 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'per-request timeout overrides pool default' (done, driver, message) {
+      const config = readConfig()
+      config.driver = driver
+      config.requestTimeout = 15000
+
+      new sql.ConnectionPool(config).connect().then(conn => {
+        const req = new sql.Request(conn, { requestTimeout: 1000 })
+        req.query('waitfor delay \'00:00:05\';select 1').then(() => {
+          conn.close()
+          done(new Error('Expected request to timeout'))
+        }).catch(err => {
+          assert.ok((message ? (message.exec(err.message) != null) : (err instanceof sql.RequestError)))
+
+          conn.close()
+          done()
+        })
+      }).catch(done)
+    },
+
+    'per-request timeout does not affect other requests' (done, driver, message) {
+      const config = readConfig()
+      config.driver = driver
+      config.requestTimeout = 15000
+
+      new sql.ConnectionPool(config).connect().then(conn => {
+        const reqFast = new sql.Request(conn, { requestTimeout: 1000 })
+        const reqNormal = new sql.Request(conn)
+
+        return Promise.allSettled([
+          reqFast.query('waitfor delay \'00:00:05\';select 1'),
+          reqNormal.query('waitfor delay \'00:00:02\';select 1')
+        ]).then(([fastResult, normalResult]) => {
+          assert.strictEqual(fastResult.status, 'rejected')
+          assert.ok((message ? (message.exec(fastResult.reason.message) != null) : (fastResult.reason instanceof sql.RequestError)))
+          assert.strictEqual(normalResult.status, 'fulfilled')
+
+          conn.close()
+          done()
+        })
+      }).catch(done)
+    },
+
+    'per-request timeout in transaction' (done, driver, message) {
+      const config = readConfig()
+      config.driver = driver
+      config.requestTimeout = 15000
+
+      new sql.ConnectionPool(config).connect().then(conn => {
+        const tx = new sql.Transaction(conn, { requestTimeout: 1000 })
+        tx.begin().then(() => {
+          const req = tx.request()
+          req.query('waitfor delay \'00:00:05\';select 1').then(() => {
+            tx.rollback().catch(() => {}).then(() => {
+              conn.close()
+              done(new Error('Expected request to timeout'))
+            })
+          }).catch(err => {
+            assert.ok((message ? (message.exec(err.message) != null) : (err instanceof sql.RequestError)))
+
+            tx.rollback().then(() => {
+              conn.close()
+              done()
+            }).catch(() => {
+              conn.close()
+              done()
+            })
+          })
+        }).catch(err => {
+          conn.close()
+          done(err)
+        })
+      }).catch(done)
+    },
+
+    'per-request timeout on stored procedure' (done, driver, message) {
+      const config = readConfig()
+      config.driver = driver
+      config.requestTimeout = 15000
+
+      new sql.ConnectionPool(config).connect().then(conn => {
+        const req = new sql.Request(conn, { requestTimeout: 1000 })
+        req.execute('__testDelay').then(() => {
+          conn.close()
+          done(new Error('Expected request to timeout'))
+        }).catch(err => {
+          assert.ok((message ? (message.exec(err.message) != null) : (err instanceof sql.RequestError)))
+
+          conn.close()
+          done()
+        })
+      }).catch(done)
+    },
+
+    'per-request timeout on prepared statement' (done, driver, message) {
+      const config = readConfig()
+      config.driver = driver
+      config.requestTimeout = 15000
+
+      new sql.ConnectionPool(config).connect().then(conn => {
+        const ps = new sql.PreparedStatement(conn, { requestTimeout: 1000 })
+        ps.prepare('waitfor delay \'00:00:05\';select 1').then(() => {
+          ps.execute().then(() => {
+            ps.unprepare().catch(() => {}).then(() => {
+              conn.close()
+              done(new Error('Expected request to timeout'))
+            })
+          }).catch(err => {
+            assert.ok((message ? (message.exec(err.message) != null) : (err instanceof sql.RequestError)))
+
+            ps.unprepare().then(() => {
+              conn.close()
+              done()
+            }).catch(() => {
+              conn.close()
+              done()
+            })
+          })
+        }).catch(err => {
+          conn.close()
+          done(err)
+        })
+      }).catch(done)
+    },
+
     'type validation' (mode, done) {
       const req = new TestRequest()
       req.input('image', sql.VarBinary, 'asdf')
