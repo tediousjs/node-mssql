@@ -94,6 +94,11 @@ describe('msnodesqlv8', function () {
     it('request timeout', done => TESTS['request timeout'](done))
     it('BigInt parameters', done => TESTS['BigInt parameters'](done))
     it('BigInt casted types', done => TESTS['BigInt casted types'](done))
+    it('per-request timeout overrides pool default', done => TESTS['per-request timeout overrides pool default'](done))
+    it('per-request timeout does not affect other requests', done => TESTS['per-request timeout does not affect other requests'](done))
+    it('per-request timeout in transaction', done => TESTS['per-request timeout in transaction'](done))
+    it('per-request timeout on stored procedure', done => TESTS['per-request timeout on stored procedure'](done))
+    it('per-request timeout on prepared statement', done => TESTS['per-request timeout on prepared statement'](done))
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))
     it('chunked xml support', done => TESTS['chunked xml support'](done))
 

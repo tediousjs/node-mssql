@@ -22,6 +22,9 @@ if exists (select * from sys.procedures where name = '__testInputOutputValue')
 if exists (select * from sys.procedures where name = '__testRowsAffected')
 	exec('drop procedure [dbo].[__testRowsAffected]')
 
+if exists (select * from sys.procedures where name = '__testDelay')
+	exec('drop procedure [dbo].[__testDelay]')
+
 if exists (select * from sys.types where is_user_defined = 1 and name = 'MSSQLTestType')
 	exec('drop type [dbo].[MSSQLTestType]')
 
