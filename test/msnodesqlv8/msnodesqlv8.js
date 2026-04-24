@@ -81,6 +81,7 @@ describe('msnodesqlv8', function () {
     it('prepared statement with affected rows', done => TESTS['prepared statement with affected rows'](done))
     it('prepared statement in transaction', done => TESTS['prepared statement in transaction'](done))
     it('prepared statement with duplicate output column names', done => TESTS['prepared statement with duplicate output column names'](done))
+    it('prepared statement with streaming and no callback', done => TESTS['prepared statement with streaming and no callback'](done))
     it('transaction with rollback', done => TESTS['transaction with rollback'](done))
     it('transaction with commit', done => TESTS['transaction with commit'](done))
     it('transaction throws on bad isolation level', done => TESTS['transaction throws on bad isolation level'](done))
