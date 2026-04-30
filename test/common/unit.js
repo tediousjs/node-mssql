@@ -1402,4 +1402,63 @@ describe('connection string auth - tedious', () => {
       })
     })
   })
+
+  describe('Transaction EABORT originalError', () => {
+    const BaseTransaction = require('../../lib/base/transaction')
+
+    it('commit on aborted transaction returns EABORT with originalError', (done) => {
+      const tx = new BaseTransaction(null)
+      tx._aborted = true
+      const reason = new Error('deadlock victim')
+      reason.code = 'EREQUEST'
+      tx._abortReason = reason
+
+      tx.commit((err) => {
+        assert.ok(err)
+        assert.strictEqual(err.code, 'EABORT')
+        assert.strictEqual(err.message, 'Transaction has been aborted.')
+        assert.strictEqual(err.originalError, reason)
+        assert.strictEqual(err.originalError.message, 'deadlock victim')
+        done()
+      })
+    })
+
+    it('rollback on aborted transaction returns EABORT with originalError', (done) => {
+      const tx = new BaseTransaction(null)
+      tx._aborted = true
+      const reason = new Error('constraint violation')
+      tx._abortReason = reason
+
+      tx.rollback((err) => {
+        assert.ok(err)
+        assert.strictEqual(err.code, 'EABORT')
+        assert.strictEqual(err.message, 'Transaction has been aborted.')
+        assert.strictEqual(err.originalError, reason)
+        done()
+      })
+    })
+
+    it('commit on aborted transaction without _abortReason omits originalError', (done) => {
+      const tx = new BaseTransaction(null)
+      tx._aborted = true
+
+      tx.commit((err) => {
+        assert.ok(err)
+        assert.strictEqual(err.code, 'EABORT')
+        assert.strictEqual(err.originalError, undefined)
+        done()
+      })
+    })
+
+    it('_abortReason is reset on begin', (done) => {
+      const tx = new BaseTransaction(null)
+      tx._abortReason = new Error('old reason')
+      tx._begin(undefined, (err) => {
+        assert.ifError(err)
+        assert.strictEqual(tx._abortReason, null)
+        assert.strictEqual(tx._aborted, false)
+        done()
+      })
+    })
+  })
 })
