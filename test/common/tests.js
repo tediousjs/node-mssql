@@ -922,6 +922,26 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'prepared statement with streaming and no callback' (done) {
+      const ps = new TestPreparedStatement()
+      ps.stream = true
+      ps.input('num', sql.Int)
+      ps.prepare('select @num as number').then(() => {
+        const req = ps.execute({ num: 123 })
+        const rows = []
+
+        req.on('row', row => rows.push(row))
+        req.on('error', err => {
+          ps.unprepare(() => done(err))
+        })
+        req.on('done', () => {
+          assert.strictEqual(rows.length, 1)
+          assert.strictEqual(rows[0].number, 123)
+          ps.unprepare(done)
+        })
+      }).catch(done)
+    },
+
     'transaction with rollback' (done) {
       let tbegin = false
       let tcommit = false
