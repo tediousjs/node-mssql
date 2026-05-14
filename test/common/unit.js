@@ -736,6 +736,43 @@ describe('connection string parser', () => {
   })
 })
 
+describe('connection string boolean options', () => {
+  it('parses useUTC=False as false', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;useUTC=False')
+    assert.strictEqual(config.options.useUTC, false)
+  })
+
+  it('parses useUTC=True as true', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;useUTC=True')
+    assert.strictEqual(config.options.useUTC, true)
+  })
+
+  it('parses useUTC=false as false', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;useUTC=false')
+    assert.strictEqual(config.options.useUTC, false)
+  })
+
+  it('parses stream=False as false', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;stream=False')
+    assert.strictEqual(config.stream, false)
+  })
+
+  it('parses stream=True as true', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;stream=True')
+    assert.strictEqual(config.stream, true)
+  })
+
+  it('parses parseJSON=False as false', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;parseJSON=False')
+    assert.strictEqual(config.parseJSON, false)
+  })
+
+  it('parses parseJSON=True as true', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;parseJSON=True')
+    assert.strictEqual(config.parseJSON, true)
+  })
+})
+
 describe('connection string auth - base', () => {
   it('parses basic login', () => {
     const config = BasePool._parseConnectionString('Server=database.test.com;Database=test;User Id=test;Password=admin')
