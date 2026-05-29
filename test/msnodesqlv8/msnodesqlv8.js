@@ -74,6 +74,7 @@ describe('msnodesqlv8', function () {
     it('query with pipe and back pressure', (done) => TESTS['query with pipe and back pressure'](done))
     it('batch', done => TESTS.batch(done))
     it('batch (stream)', done => TESTS.batch(done, true))
+    it('batch with output parameters and sql error', done => TESTS['batch with output parameters and sql error'](done))
     it('create procedure batch', done => TESTS['create procedure batch'](done))
     it('prepared statement', done => TESTS['prepared statement'](done))
     it('prepared statement that fails to prepare throws', done => TESTS['prepared statement that fails to prepare throws'](done))

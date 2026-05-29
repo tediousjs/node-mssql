@@ -644,6 +644,22 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'batch with output parameters and sql error' (done) {
+      const req = new TestRequest()
+      req.output('out', sql.Int)
+      req.batch('select * from notexistingtable').then(() => {
+        done(new Error('expected batch to reject with sql error'))
+      }).catch(err => {
+        try {
+          assert.ok(err instanceof sql.RequestError, `expected RequestError, got ${err && err.constructor.name}: ${err && err.message}`)
+          assert.strictEqual(err.code, 'EREQUEST')
+          done()
+        } catch (assertionError) {
+          done(assertionError)
+        }
+      })
+    },
+
     'create procedure batch' (done) {
       let req = new TestRequest()
       req.batch('create procedure #temporary as select 1 as num').then(result => {
