@@ -81,6 +81,7 @@ describe('tedious', () => {
     it('query with pipe and back pressure', (done) => TESTS['query with pipe and back pressure'](done))
     it('query with duplicate output column names', done => TESTS['query with duplicate output column names'](done))
     it('batch', done => TESTS.batch(done))
+    it('batch with output parameters and sql error', done => TESTS['batch with output parameters and sql error'](done))
     it('create procedure batch', done => TESTS['create procedure batch'](done))
     it('prepared statement', done => TESTS['prepared statement'](done))
     it('prepared statement that fails to prepare throws', done => TESTS['prepared statement that fails to prepare throws'](done))
