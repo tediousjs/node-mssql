@@ -113,6 +113,7 @@ jobs:
     env:
       MSSQL_PASSWORD: 'yourStrong(!)Password'
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-2022, windows-2025]
         node: [18.x, 20.x, 22.x, 24.x]
