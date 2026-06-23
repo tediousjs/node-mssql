@@ -145,17 +145,35 @@ jobs:
         run: npm run test-tedious
       - name: Run cli tests
         run: npm run test-cli
-      - name: Install msnodesqlv8
-        if: ${{ matrix.node != '22.x' && matrix.node != '24.x' }}
+      # msnodesqlv8 is exercised across its supported major versions. Each major
+      # is gated to the Node versions it ships prebuilt win32-x64 binaries for —
+      # a combo without a prebuild falls back to a node-gyp source build, which is
+      # brittle on the GitHub Windows images (e.g. the VS 2026 rollout on
+      # windows-2025 that node-gyp cannot detect). Coverage:
+      #   v2: Node 18    v3: Node 18-20    v4: Node 18-24    v5: Node 20-24
+      - name: Install msnodesqlv8 v2
+        if: ${{ matrix.node == '18.x' }}
         run: npm install --no-save msnodesqlv8@^2
-      - name: Run msnodesqlv8 tests
-        if: ${{ matrix.node != '22.x' && matrix.node != '24.x' }}
+      - name: Run msnodesqlv8 v2 tests
+        if: ${{ matrix.node == '18.x' }}
         run: npm run test-msnodesqlv8
-      - name: Install msnodesqlv8
-        if: ${{ matrix.node == '22.x' || matrix.node == '24.x' }}
+      - name: Install msnodesqlv8 v3
+        if: ${{ matrix.node == '18.x' || matrix.node == '20.x' }}
+        run: npm install --no-save msnodesqlv8@^3
+      - name: Run msnodesqlv8 v3 tests
+        if: ${{ matrix.node == '18.x' || matrix.node == '20.x' }}
+        run: npm run test-msnodesqlv8
+      - name: Install msnodesqlv8 v4
+        if: ${{ matrix.node == '18.x' || matrix.node == '20.x' || matrix.node == '22.x' || matrix.node == '24.x' }}
         run: npm install --no-save msnodesqlv8@^4
-      - name: Run msnodesqlv8 tests
-        if: ${{ matrix.node == '22.x' && matrix.node == '24.x' }}
+      - name: Run msnodesqlv8 v4 tests
+        if: ${{ matrix.node == '18.x' || matrix.node == '20.x' || matrix.node == '22.x' || matrix.node == '24.x' }}
+        run: npm run test-msnodesqlv8
+      - name: Install msnodesqlv8 v5
+        if: ${{ matrix.node == '20.x' || matrix.node == '22.x' || matrix.node == '24.x' }}
+        run: npm install --no-save msnodesqlv8@^5
+      - name: Run msnodesqlv8 v5 tests
+        if: ${{ matrix.node == '20.x' || matrix.node == '22.x' || matrix.node == '24.x' }}
         run: npm run test-msnodesqlv8
   release:
     name: Release
