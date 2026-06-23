@@ -7,7 +7,7 @@
 Supported TDS drivers:
 
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
-- [MSNodeSQLv8][msnodesqlv8-url] (Microsoft / Contributors Node V8 Driver for Node.js for SQL Server, v2 native - Windows or Linux/macOS 64 bits only)
+- [MSNodeSQLv8][msnodesqlv8-url] (Microsoft / Contributors Node V8 Driver for Node.js for SQL Server, v2-v5 native - Windows or Linux/macOS 64 bits only)
 
 ## Installation
 
