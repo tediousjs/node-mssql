@@ -38,7 +38,7 @@
     "commander": "^11.0.0",
     "debug": "^4.3.3",
     "tarn": "^3.0.2",
-    "tedious": "^19.0.0"
+    "tedious": "^19.2.2 || ^20.0.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.0.0",
