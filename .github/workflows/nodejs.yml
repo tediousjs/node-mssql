@@ -162,6 +162,13 @@ jobs:
       # brittle on the GitHub Windows images (e.g. the VS 2026 rollout on
       # windows-2025 that node-gyp cannot detect). Coverage:
       #   v2: Node 18    v3: Node 18-20    v4: Node 18-24    v5: Node 20-24
+      #
+      # v5 is split: msnodesqlv8 5.2.2 dropped the Node 20 (ABI 115) win32-x64
+      # prebuild, so `@^5` (5.2.3+) is gated to Node 22-24 and Node 20 is pinned
+      # to 5.2.1 — the last v5 release that ships one. Upstream now builds
+      # prebuilds for Node 22/24/26 only, so a floating `@^5` will not regain a
+      # Node 20 prebuild; leaving Node 20 on `@^5` source-builds via node-gyp,
+      # which is slow on windows-2022 and fails outright on windows-2025.
       - name: Install msnodesqlv8 v2
         if: ${{ matrix.node == '18.x' }}
         run: npm install --no-save msnodesqlv8@^2
@@ -180,11 +187,17 @@ jobs:
       - name: Run msnodesqlv8 v4 tests
         if: ${{ matrix.node == '18.x' || matrix.node == '20.x' || matrix.node == '22.x' || matrix.node == '24.x' }}
         run: npm run test-msnodesqlv8
+      - name: Install msnodesqlv8 v5 (Node 20, pinned)
+        if: ${{ matrix.node == '20.x' }}
+        run: npm install --no-save msnodesqlv8@5.2.1
+      - name: Run msnodesqlv8 v5 tests (Node 20, pinned)
+        if: ${{ matrix.node == '20.x' }}
+        run: npm run test-msnodesqlv8
       - name: Install msnodesqlv8 v5
-        if: ${{ matrix.node == '20.x' || matrix.node == '22.x' || matrix.node == '24.x' }}
+        if: ${{ matrix.node == '22.x' || matrix.node == '24.x' }}
         run: npm install --no-save msnodesqlv8@^5
       - name: Run msnodesqlv8 v5 tests
-        if: ${{ matrix.node == '20.x' || matrix.node == '22.x' || matrix.node == '24.x' }}
+        if: ${{ matrix.node == '22.x' || matrix.node == '24.x' }}
         run: npm run test-msnodesqlv8
   release:
     name: Release
