@@ -69,7 +69,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04]
-        node: [14.x, 16.x, 18.x]
+        node: [14.x, 16.x, 18.x, 20.x, 22.x, 24.x]
         sqlserver: [2017, 2019, 2022]
     steps:
       - name: Checkout code
@@ -117,7 +117,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-2022, windows-2025]
-        node: [14.x, 16.x, 18.x]
+        node: [14.x, 16.x, 18.x, 20.x, 22.x, 24.x]
         sqlserver: [2017, 2019, 2022]
     steps:
       - name: Checkout code
@@ -146,9 +146,28 @@ jobs:
         run: npm run test-tedious
       - name: Run cli tests
         run: npm run test-cli
-      - name: Install msnodesqlv8
-        run: npm install --no-save msnodesqlv8@^2
-      - name: Run msnodesqlv8 tests
+      # msnodesqlv8 is gated to the major that publishes a prebuilt win32-x64
+      # binary for the Node version under test. Its install script is
+      # `prebuild-install || node-gyp rebuild`, so a combination without a
+      # prebuild silently falls through to a source build — slow on
+      # windows-2022 and impossible on windows-2025, whose VS 2026 the node-gyp
+      # bundled with these Node versions' npm cannot detect.
+      #   v2 (2.7.0) prebuilds cover ABI 64-111 -> Node 10-19
+      #   v4 (4.5.0) prebuilds cover ABI 64-137 -> Node 10-24
+      # Pinned rather than ranged on purpose: upstream removes prebuilt ABIs
+      # within a major (5.2.2 dropped Node 20), which would turn this branch red
+      # without a commit to it and block a security release.
+      - name: Install msnodesqlv8 v2
+        if: ${{ matrix.node == '14.x' || matrix.node == '16.x' || matrix.node == '18.x' }}
+        run: npm install --no-save msnodesqlv8@2.7.0
+      - name: Run msnodesqlv8 v2 tests
+        if: ${{ matrix.node == '14.x' || matrix.node == '16.x' || matrix.node == '18.x' }}
+        run: npm run test-msnodesqlv8
+      - name: Install msnodesqlv8 v4
+        if: ${{ matrix.node == '20.x' || matrix.node == '22.x' || matrix.node == '24.x' }}
+        run: npm install --no-save msnodesqlv8@4.5.0
+      - name: Run msnodesqlv8 v4 tests
+        if: ${{ matrix.node == '20.x' || matrix.node == '22.x' || matrix.node == '24.x' }}
         run: npm run test-msnodesqlv8
   release:
     name: Release
