@@ -118,7 +118,9 @@ jobs:
       matrix:
         os: [windows-2022, windows-2025]
         node: [14.x, 16.x, 18.x, 20.x, 22.x, 24.x]
-        sqlserver: [2017, 2019, 2022]
+        # SQL Server 2008, 2012 and 2014 were dropped with windows-2019: they
+        # only install on that image, and it was retired in June 2025.
+        sqlserver: [2016, 2017, 2019, 2022]
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
