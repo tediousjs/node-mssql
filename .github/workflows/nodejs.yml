@@ -153,7 +153,7 @@ jobs:
   release:
     name: Release
     concurrency: release
-    if: ${{ github.event_name == 'push' && github.actor != 'dependabot[bot]' }}
+    if: ${{ github.repository_owner == 'tediousjs' && github.event_name == 'push' && github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-24.04
     needs:
       - commitlint
@@ -164,7 +164,7 @@ jobs:
       contents: write # to be able to publish a GitHub release
       issues: write # to be able to comment on released issues
       pull-requests: write # to be able to comment on released pull requests
-      id-token: write # to enable use of OIDC for npm provenance
+      id-token: write # to enable use of OIDC for npm publishing & provenance
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -173,7 +173,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: "lts/*"
+          node-version: "22.x"
           cache: 'npm'
       - name: Install dependencies
         run: npm clean-install
@@ -183,5 +183,4 @@ jobs:
         env:
           NPM_CONFIG_PROVENANCE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
