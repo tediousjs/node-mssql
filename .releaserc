@@ -3,3 +3,12 @@ plugins:
   - '@semantic-release/release-notes-generator'
   - '@semantic-release/npm'
   - '@semantic-release/github'
+
+# npm's trusted-publishing OIDC token authorises `npm publish --tag <channel>`
+# but not the standalone dist-tags REST endpoint, so back-filling a channel
+# onto an already-published version 401s. addChannel gates publish, so that
+# failure blocks every release from this branch, not just the back-fill.
+# The release-N.N.x dist-tag is still created by the next real publish.
+# https://github.com/semantic-release/npm/issues/1023
+addChannel:
+  - '@semantic-release/github'
