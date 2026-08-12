@@ -12,15 +12,15 @@ permissions:
 jobs:
   commitlint:
     name: Lint commits
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 18.x
           cache: 'npm'
@@ -34,14 +34,14 @@ jobs:
         run: npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
   codelint:
     name: Lint code
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 18.x
           cache: 'npm'
@@ -66,17 +66,18 @@ jobs:
     env:
       MSSQL_PASSWORD: 'yourStrong(!)Password'
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-22.04]
-        node: [18.x, 20.x, 22.x]
+        os: [ubuntu-24.04]
+        node: [18.x, 20.x, 22.x, 24.x]
         sqlserver: [2017, 2019, 2022]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Setup Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
@@ -113,25 +114,20 @@ jobs:
     env:
       MSSQL_PASSWORD: 'yourStrong(!)Password'
     strategy:
+      fail-fast: false
       matrix:
-        os: [windows-2019, windows-2022]
-        node: [18.x, 20.x, 22.x]
-        sqlserver: [2008, 2012, 2014, 2016, 2017, 2019, 2022]
-        # These sqlserver versions don't work on windows-2022 (at the moment)
-        exclude:
-          - os: windows-2022
-            sqlserver: 2008
-          - os: windows-2022
-            sqlserver: 2012
-          - os: windows-2022
-            sqlserver: 2014
+        os: [windows-2022, windows-2025]
+        node: [18.x, 20.x, 22.x, 24.x]
+        # SQL Server 2008, 2012 and 2014 were dropped with windows-2019: they
+        # only install on that image, and it was retired in June 2025.
+        sqlserver: [2016, 2017, 2019, 2022]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Setup Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
@@ -140,7 +136,7 @@ jobs:
       - name: Run unit tests
         run: npm run test-unit
       - name: Setup SQL Server
-        uses: tediousjs/setup-sqlserver@v2
+        uses: tediousjs/setup-sqlserver@34a6288c6260c5016590b41842de30a1b87164fb # v4.0.1
         with:
           sqlserver-version: ${{ matrix.sqlserver }}
           sa-password: ${{ env.MSSQL_PASSWORD }}
@@ -152,17 +148,34 @@ jobs:
         run: npm run test-tedious
       - name: Run cli tests
         run: npm run test-cli
-      - name: Install msnodesqlv8
-        if: ${{ matrix.node != '22.x' }}
-        run: npm install --no-save msnodesqlv8@^2
-      - name: Run msnodesqlv8 tests
-        if: ${{ matrix.node != '22.x' }}
+      # msnodesqlv8 is gated to the major that publishes a prebuilt win32-x64
+      # binary for the Node version under test. Its install script is
+      # `prebuild-install || node-gyp rebuild`, so a combination without a
+      # prebuild silently falls through to a source build — slow on
+      # windows-2022 and impossible on windows-2025, whose VS 2026 the node-gyp
+      # bundled with these Node versions' npm cannot detect.
+      #   v2 (2.7.0) prebuilds cover ABI 64-111 -> Node 10-19
+      #   v4 (4.5.0) prebuilds cover ABI 64-137 -> Node 10-24
+      # Pinned rather than ranged on purpose: upstream removes prebuilt ABIs
+      # within a major (5.2.2 dropped Node 20), which would turn this branch red
+      # without a commit to it and block a security release.
+      - name: Install msnodesqlv8 v2
+        if: ${{ matrix.node == '18.x' }}
+        run: npm install --no-save msnodesqlv8@2.7.0
+      - name: Run msnodesqlv8 v2 tests
+        if: ${{ matrix.node == '18.x' }}
+        run: npm run test-msnodesqlv8
+      - name: Install msnodesqlv8 v4
+        if: ${{ matrix.node == '20.x' || matrix.node == '22.x' || matrix.node == '24.x' }}
+        run: npm install --no-save msnodesqlv8@4.5.0
+      - name: Run msnodesqlv8 v4 tests
+        if: ${{ matrix.node == '20.x' || matrix.node == '22.x' || matrix.node == '24.x' }}
         run: npm run test-msnodesqlv8
   release:
     name: Release
     concurrency: release
     if: ${{ github.repository_owner == 'tediousjs' && github.event_name == 'push' && github.actor != 'dependabot[bot]' }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs:
       - commitlint
       - codelint
@@ -172,16 +185,16 @@ jobs:
       contents: write # to be able to publish a GitHub release
       issues: write # to be able to comment on released issues
       pull-requests: write # to be able to comment on released pull requests
-      id-token: write # to enable use of OIDC for npm provenance
+      id-token: write # to enable use of OIDC for npm publishing & provenance
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "18.x"
+          node-version: "22.x"
           cache: 'npm'
       - name: Install dependencies
         run: npm clean-install
@@ -191,5 +204,4 @@ jobs:
         env:
           NPM_CONFIG_PROVENANCE: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npx semantic-release
