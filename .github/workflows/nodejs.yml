@@ -66,6 +66,7 @@ jobs:
     env:
       MSSQL_PASSWORD: 'yourStrong(!)Password'
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-24.04]
         node: [18.x, 20.x, 22.x, 24.x]
@@ -138,7 +139,7 @@ jobs:
       - name: Run unit tests
         run: npm run test-unit
       - name: Setup SQL Server
-        uses: tediousjs/setup-sqlserver@4ded56ac552a6b21100672df2359f85b31e057d2 # v3
+        uses: tediousjs/setup-sqlserver@34a6288c6260c5016590b41842de30a1b87164fb # v4.0.1
         with:
           sqlserver-version: ${{ matrix.sqlserver }}
           sa-password: ${{ env.MSSQL_PASSWORD }}
