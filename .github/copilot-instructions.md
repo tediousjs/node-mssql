@@ -59,7 +59,7 @@ Driver index files use `Object.assign()` to merge base exports with driver-speci
   - All changes must go through a **pull request** — no direct commits to master.
 - **Debug logging**: Uses the `debug` library with `mssql:*` namespaces (`mssql:base`, `mssql:tedi`, etc.).
 - **Instance tracking**: `lib/utils.js` uses a `WeakMap` (`IDS`) to assign unique IDs to class instances.
-- **SQL injection guard**: Parameter names are validated against patterns like `--`, `/*`, `'` — throws `RequestError` with code `EINJECT`.
+- **Identifier guard**: parameter names, bulk column names, parameter type names/sizes and stored procedure names are built into the generated SQL, so they are checked before they are emitted — throws `EINJECT`. Both drivers accept and reject the same names. See the Identifiers section of the README.
 
 ### Test patterns
 

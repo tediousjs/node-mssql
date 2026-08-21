@@ -13,6 +13,8 @@ Security fixes are only provided for the latest major release line. We strongly 
 
 If you are on an older major version, please upgrade to the latest `12.x` release to receive security fixes. The [changelog](https://github.com/tediousjs/node-mssql/releases) documents any breaking changes to help you upgrade.
 
+We may still backport a fix to an earlier release line where doing so is feasible, but that is decided case by case on the effort involved and is not something you should rely on.
+
 ## Reporting a Vulnerability
 
 **Please do not report security vulnerabilities through public GitHub issues, pull requests, or discussions.**
