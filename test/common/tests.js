@@ -833,6 +833,33 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'leaves no listeners on the connection when a request is abandoned' (done) {
+      // the request attaches three listeners to the connection before it is sent; giving
+      // up after that has to take them off again, or they fire for the next borrower
+      const req = new TestRequest()
+      const pool = req.parent
+      const connectionOf = () => (pool.pool.free.length ? pool.pool.free[0].resource : null)
+
+      new sql.Request().query('select 1 as v').then(() => {
+        const connection = connectionOf()
+        if (!connection) return done(new Error('expected an idle connection to inspect'))
+        const before = ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e))
+
+        // a value the type cannot accept: the request gives up after the listeners are
+        // attached but before anything is sent, which is the path being tested
+        const reject = () => new sql.Request()
+          .input('p', sql.Int, {})
+          .batch('select @p as v')
+          .then(() => { throw new Error('batch() should reject an invalid value') }, () => {})
+
+        reject().then(reject).then(reject).then(() => {
+          const after = ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e))
+          assert.deepStrictEqual(after, before, 'abandoning a request should leave the connection as it was found')
+          done()
+        }).catch(done)
+      }).catch(done)
+    },
+
     'bulk load with varchar-max field' (name, done) {
       const t = new sql.Table(name)
       t.create = true

@@ -69,6 +69,7 @@ describe('tedious', () => {
     it('accepts parameter names that produce working SQL (query)', done => TESTS['accepts parameter names that produce working SQL']('query', done))
     it('accepts parameter names that produce working SQL (batch)', done => TESTS['accepts parameter names that produce working SQL']('batch', done))
     it('prepared statement rejects parameter names that escape the identifier', done => TESTS['prepared statement rejects parameter names that escape the identifier'](done))
+    it('leaves no listeners on the connection when a request is abandoned', done => TESTS['leaves no listeners on the connection when a request is abandoned'](done))
     it('query with input parameters', done => TESTS['query with input parameters']('query', done))
     it('query with input parameters (batch)', done => TESTS['query with input parameters']('batch', done))
     it('query with output parameters', done => TESTS['query with output parameters']('query', done))
