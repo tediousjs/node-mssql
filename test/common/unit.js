@@ -5,6 +5,7 @@
 const sql = require('../../')
 const assert = require('assert')
 const udt = require('../../lib/udt')
+const { declare } = require('../../lib/datatypes')
 const BasePool = require('../../lib/base/connection-pool')
 
 describe('Unit', () => {
@@ -536,5 +537,88 @@ describe('column name validation', () => {
     recordset.columns = { 'wei]rd': { type: sql.Int, nullable: true } }
     assert.doesNotThrow(() => sql.Table.fromRecordset(recordset, 'dbo.T'),
       'toTable() should not reject names the server produced, since TVPs never emit them as SQL')
+  })
+})
+
+describe('table-valued parameter type name validation', () => {
+  it('should accept type names that produce working SQL', () => {
+    for (const name of ['MSSQLTestType', 'AI.UDT_StringArray', 'dbo.T1', '用户型',
+      '[My Type]', 'dbo.[FR Space Type]', '[dbo].[FR Space Type]', '[a]]b]', 'dbo."My Type"']) {
+      assert.strictEqual(declare(sql.TVP(name).type, sql.TVP(name)), `${name} readonly`,
+        `TVP() should accept '${name}'`)
+    }
+  })
+
+  it('should accept a type name the tedious driver takes from the value instead', () => {
+    assert.doesNotThrow(() => declare(sql.TVP().type, sql.TVP()),
+      'a missing type name should be left to the driver')
+  })
+
+  it('should trim padding rather than refuse it', () => {
+    assert.strictEqual(declare(sql.TVP('  dbo.T1  ').type, sql.TVP('  dbo.T1  ')), 'dbo.T1 readonly',
+      'a padded type name should be trimmed')
+  })
+
+  it('should reject a type name that escapes the declaration, wherever it was set', () => {
+    const payload = 'int; create table dbo.pwned (a int); --'
+    // through the factory
+    assert.throws(() => declare(sql.TVP(payload).type, sql.TVP(payload)),
+      err => err.code === 'EINJECT', 'a hostile name given to TVP() should be rejected')
+    // set on the descriptor afterwards, which does not go through the factory
+    const descriptor = sql.TVP('dbo.Legit')
+    descriptor.tvpType = payload
+    assert.throws(() => declare(descriptor.type, descriptor),
+      err => err.code === 'EINJECT', 'a name changed after construction should be rejected')
+    // a descriptor built by hand, which never touches the factory at all
+    assert.throws(() => declare(sql.TVP, { tvpType: payload }),
+      err => err.code === 'EINJECT', 'a hand-built descriptor should be rejected')
+  })
+})
+
+describe('type size validation', () => {
+  it('should emit accepted sizes unchanged', () => {
+    assert.strictEqual(declare(sql.VarChar, { length: 'max' }), 'varchar (max)', "'max' should pass through")
+    assert.strictEqual(declare(sql.VarChar, { length: null }), 'varchar (MAX)', 'a missing length should become MAX')
+    assert.strictEqual(declare(sql.VarChar, { length: 50 }), 'varchar (50)', 'a number should be emitted as given')
+    assert.strictEqual(declare(sql.VarChar, { length: 9000 }), 'varchar (MAX)', 'an oversized length should become MAX')
+    assert.strictEqual(declare(sql.VarChar, { length: Infinity }), 'varchar (MAX)', 'Infinity should ask for the maximum')
+    assert.strictEqual(declare(sql.Decimal, { precision: 10, scale: 2 }), 'decimal (10, 2)', 'precision and scale should be emitted as given')
+    assert.strictEqual(declare(sql.DateTime2, { scale: 3 }), 'datetime2 (3)', 'scale should be emitted as given')
+  })
+
+  it('should accept the values a caller can reasonably supply', () => {
+    assert.strictEqual(declare(sql.VarChar, { length: '50 ' }), 'varchar (50)', 'padding should be trimmed')
+    assert.strictEqual(declare(sql.VarChar, { length: ' 50' }), 'varchar (50)', 'padding should be trimmed')
+    assert.strictEqual(declare(sql.VarChar, { length: 50n }), 'varchar (50)', 'a bigint should be accepted')
+    // eslint-disable-next-line no-new-wrappers
+    assert.strictEqual(declare(sql.VarChar, { length: new String('max') }), 'varchar (max)', 'a boxed string should be accepted')
+    assert.strictEqual(declare(sql.NVarChar, { length: 'random' }), 'nvarchar (random)', 'a word the server will reject should still reach it')
+  })
+
+  it('should not require options for a type that takes no size', () => {
+    assert.strictEqual(declare(sql.Int), 'int', 'a type with no size should declare without options')
+    assert.strictEqual(declare(sql.Bit), 'bit', 'a type with no size should declare without options')
+  })
+
+  it('should reject sizes that escape the declaration', () => {
+    const payload = '8000); create table dbo.pwned (a int); --'
+    assert.throws(() => declare(sql.VarChar, { length: payload }), err => err.code === 'EINJECT',
+      'a length that is not a number should be rejected')
+    assert.throws(() => declare(sql.Decimal, { precision: payload, scale: 0 }), err => err.code === 'EINJECT',
+      'a precision that is not a number should be rejected')
+    assert.throws(() => declare(sql.DateTime2, { scale: payload }), err => err.code === 'EINJECT',
+      'a scale that is not a number should be rejected')
+  })
+
+  it('should emit the value it checked, so a second read cannot differ', () => {
+    let reads = 0
+    const twoFaced = { toString () { return ++reads === 1 ? '50' : '8000); drop table dbo.t --' } }
+    assert.strictEqual(declare(sql.VarChar, { length: twoFaced }), 'varchar (50)',
+      'the checked value should be the one emitted')
+  })
+
+  it('should reject identifiers with a typed error', () => {
+    assert.throws(() => declare(sql.VarChar, { length: 'a b' }), err => err instanceof sql.MSSQLError,
+      'the rejection should be a library error, not a bare Error')
   })
 })

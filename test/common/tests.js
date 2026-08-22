@@ -736,16 +736,148 @@ module.exports = (sql, driver) => {
       done()
     },
 
+    'rejects an unsafe type size without throwing on its own tick' (done) {
+      // the declaration is built inside a callback the driver dispatches separately, so a
+      // rejected size has to come back through the request, not escape as an exception
+      const req = new TestRequest()
+      req.input('p', sql.VarChar('8000); create table dbo.tick_canary (a int); --'), 'x')
+
+      const pool = req.parent
+      const listeners = () => {
+        const connection = pool.pool.free.length ? pool.pool.free[0].resource : null
+        return connection ? ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e)) : null
+      }
+      let before
+
+      new sql.Request().query("if object_id('dbo.tick_canary') is not null drop table dbo.tick_canary")
+        .then(() => { before = listeners() })
+        .then(() => req.batch('select @p as v'))
+        .then(() => done(new Error('batch() should reject an unsafe length')), err => {
+          // the canary first: if the statement ran, say so, rather than reporting whichever
+          // error code came back from a server that has just executed the injection
+          new sql.Request().query("select object_id('dbo.tick_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            assert.ok(err instanceof sql.RequestError, 'the rejection should be a RequestError')
+            assert.deepStrictEqual(listeners(), before, 'giving up here should leave the connection as it was found')
+            done()
+          }).catch(done)
+        })
+    },
+
+    'leaves no listeners on the connection when a request is abandoned' (done) {
+      // the request attaches three listeners to the connection before it is sent; giving
+      // up after that has to take them off again, or they fire for the next borrower
+      const req = new TestRequest()
+      const pool = req.parent
+      const connectionOf = () => (pool.pool.free.length ? pool.pool.free[0].resource : null)
+
+      new sql.Request().query('select 1 as v').then(() => {
+        const connection = connectionOf()
+        if (!connection) return done(new Error('expected an idle connection to inspect'))
+        const before = ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e))
+
+        // a value the type cannot accept: the request gives up after the listeners are
+        // attached but before anything is sent, which is the path being tested
+        const reject = () => new sql.Request()
+          .input('p', sql.Int, {})
+          .batch('select @p as v')
+          .then(() => { throw new Error('batch() should reject an invalid value') }, () => {})
+
+        reject().then(reject).then(reject).then(() => {
+          const after = ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e))
+          assert.deepStrictEqual(after, before, 'abandoning a request should leave the connection as it was found')
+          done()
+        }).catch(done)
+      }).catch(done)
+    },
+
+    'rejects an unsafe type size in a non-batch query' (done) {
+      // query() does not build the declaration itself: tedious writes these into the
+      // sp_executesql parameter list, so the size is checked where it is handed over
+      const req = new TestRequest()
+      req.input('p', sql.VarChar('8000); create table dbo.query_canary (a int); --'), 'x')
+
+      new sql.Request().query("if object_id('dbo.query_canary') is not null drop table dbo.query_canary")
+        .then(() => req.query('select @p as v'))
+        .then(() => done(new Error('query() should reject an unsafe length')), err => {
+          new sql.Request().query("select object_id('dbo.query_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            done()
+          }).catch(done)
+        })
+    },
+
+    'rejects an unsafe type size in a stored procedure call' (done) {
+      const req = new TestRequest()
+      req.input('p', sql.VarChar('8000); create table dbo.exec_canary (a int); --'), 'x')
+
+      new sql.Request().query("if object_id('dbo.exec_canary') is not null drop table dbo.exec_canary")
+        .then(() => req.execute('__test2'))
+        .then(() => done(new Error('execute() should reject an unsafe length')), err => {
+          new sql.Request().query("select object_id('dbo.exec_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            done()
+          }).catch(done)
+        })
+    },
+
+    'bulk load rejects unsafe column size metadata' (name, done) {
+      // with create off, Table#declare never runs, so the driver's own `insert bulk`
+      // statement is the only place the size is emitted
+      const t = new sql.Table(name)
+      t.create = false
+      t.columns.add('a', sql.Decimal(18, 0), { nullable: true })
+      t.columns[0].precision = '18, 0)) ; create table dbo.bulk_size_canary (a int) -- '
+      t.rows.add(1)
+
+      new sql.Request().query("if object_id('dbo.bulk_size_canary') is not null drop table dbo.bulk_size_canary")
+        .then(() => new TestRequest().bulk(t))
+        .then(() => done(new Error('bulk() should reject an unsafe precision')), err => {
+          new sql.Request().query("select object_id('dbo.bulk_size_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            done()
+          }).catch(done)
+        })
+    },
+
+    'rejects a table-valued parameter type name that escapes the declaration' (done) {
+      const payload = 'int; create table dbo.tvp_canary (a int); --'
+      const table = new sql.Table('dbo.tvp_arg')
+      table.columns.add('a', sql.Int, { nullable: true })
+      table.rows.add(1)
+
+      // set after construction, so the check has to be where the SQL is built rather than
+      // in the factory
+      const type = sql.TVP('dbo.Legit')
+      type.tvpType = payload
+
+      new sql.Request().query("if object_id('dbo.tvp_canary') is not null drop table dbo.tvp_canary").then(() => {
+        return new sql.Request().input('p', type, table).batch('select 1 as v')
+      }).then(() => {
+        done(new Error('batch() should reject an unsafe type name'))
+      }).catch(err => {
+        try {
+          assert.strictEqual(err.code, 'EINJECT', 'the rejection should carry the identifier error code')
+        } catch (e) {
+          return done(e)
+        }
+        new sql.Request().query("select object_id('dbo.tvp_canary') as oid").then(result => {
+          assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+          done()
+        }).catch(done)
+      })
+    },
+
     'bulk load into an existing table rejects an unsafe column name' (name, done) {
-      // with create off, Table#declare is never called, so the driver's own column check
+      // With create off, Table#declare is never called, so the driver's own column check
       // is the only thing between the name and the `insert bulk` statement. The name is
       // read once before a connection is borrowed and again when the statement is built,
       // so it only becomes unsafe on the second read. Both drivers check the name where
       // they use it, so both reject this, whether or not the name would have reached SQL.
-      //
-      // tedious only: msnodesqlv8 hands the name to its table manager as an object key,
-      // matched against the columns the server reported, so it never becomes SQL there
-      // and there is no second read to re-check.
       const t = new sql.Table(name)
       t.columns.add('a', sql.Int, { nullable: true })
       t.rows.add(1)
@@ -831,33 +963,6 @@ module.exports = (sql, driver) => {
           done()
         }).catch(done)
       })
-    },
-
-    'leaves no listeners on the connection when a request is abandoned' (done) {
-      // the request attaches three listeners to the connection before it is sent; giving
-      // up after that has to take them off again, or they fire for the next borrower
-      const req = new TestRequest()
-      const pool = req.parent
-      const connectionOf = () => (pool.pool.free.length ? pool.pool.free[0].resource : null)
-
-      new sql.Request().query('select 1 as v').then(() => {
-        const connection = connectionOf()
-        if (!connection) return done(new Error('expected an idle connection to inspect'))
-        const before = ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e))
-
-        // a value the type cannot accept: the request gives up after the listeners are
-        // attached but before anything is sent, which is the path being tested
-        const reject = () => new sql.Request()
-          .input('p', sql.Int, {})
-          .batch('select @p as v')
-          .then(() => { throw new Error('batch() should reject an invalid value') }, () => {})
-
-        reject().then(reject).then(reject).then(() => {
-          const after = ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e))
-          assert.deepStrictEqual(after, before, 'abandoning a request should leave the connection as it was found')
-          done()
-        }).catch(done)
-      }).catch(done)
     },
 
     'bulk load with varchar-max field' (name, done) {

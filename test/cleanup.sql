@@ -55,3 +55,28 @@ if exists (select * from sys.tables where name = 'rowsaffected_test')
 if exists (select * from sys.tables where name = 'streaming')
 	exec('drop table [dbo].[streaming]')
 
+
+if exists (select * from sys.tables where name = 'tick_canary')
+	exec('drop table [dbo].[tick_canary]')
+
+if exists (select * from sys.tables where name = 'tvp_canary')
+	exec('drop table [dbo].[tvp_canary]')
+
+if exists (select * from sys.tables where name = 'bulk_table_unsafe')
+	exec('drop table [dbo].[bulk_table_unsafe]')
+
+if exists (select * from sys.tables where name = 'bulk_table_mutated')
+	exec('drop table [dbo].[bulk_table_mutated]')
+
+if object_id('dbo.query_canary') is not null
+	exec('drop table [dbo].[query_canary]')
+
+if object_id('dbo.exec_canary') is not null
+	exec('drop table [dbo].[exec_canary]')
+
+if object_id('dbo.bulk_size_canary') is not null
+	exec('drop table [dbo].[bulk_size_canary]')
+
+if object_id('dbo.bulk_table_size') is not null
+	exec('drop table [dbo].[bulk_table_size]')
+
