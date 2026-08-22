@@ -496,3 +496,45 @@ describe('parameter name validation', () => {
       'values should not be validated as identifiers')
   })
 })
+
+describe('column name validation', () => {
+  const hostile = 'a] int); create table dbo.pwned (z int); --'
+
+  it('declare should reject a column name that closes the quoted identifier', () => {
+    const table = new sql.Table('dbo.MyTable')
+    table.columns.push({ name: hostile, type: sql.Int().type, nullable: true })
+    assert.throws(() => table.declare(), /Invalid column name/,
+      'declare() should reject a name pushed directly onto the columns array')
+  })
+
+  it('declare should reject a column name mutated after it was added', () => {
+    const table = new sql.Table('dbo.MyTable')
+    table.columns.add('a', sql.Int, { nullable: true })
+    table.columns[0].name = hostile
+    assert.throws(() => table.declare(), /Invalid column name/,
+      'declare() should re-check the name at the point it builds SQL')
+  })
+
+  it('declare should accept a doubled bracket, which is the escaped form', () => {
+    const table = new sql.Table('dbo.MyTable')
+    table.columns.add('a]]b', sql.Int, { nullable: true })
+    assert.strictEqual(table.declare(), 'create table [dbo].[MyTable] ([a]]b] int null)',
+      'declare() should emit an escaped bracket unchanged')
+  })
+
+  it('declare should accept ordinary names including spaces', () => {
+    const table = new sql.Table('dbo.MyTable')
+    table.columns.add('normal', sql.Int, { nullable: true })
+    table.columns.add('with space', sql.Int, { nullable: true })
+    assert.strictEqual(table.declare(),
+      'create table [dbo].[MyTable] ([normal] int null, [with space] int null)',
+      'declare() should emit ordinary names as quoted identifiers')
+  })
+
+  it('fromRecordset should accept server-supplied names containing a bracket', () => {
+    const recordset = []
+    recordset.columns = { 'wei]rd': { type: sql.Int, nullable: true } }
+    assert.doesNotThrow(() => sql.Table.fromRecordset(recordset, 'dbo.T'),
+      'toTable() should not reject names the server produced, since TVPs never emit them as SQL')
+  })
+})

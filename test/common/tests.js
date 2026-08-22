@@ -736,6 +736,103 @@ module.exports = (sql, driver) => {
       done()
     },
 
+    'bulk load into an existing table rejects an unsafe column name' (name, done) {
+      // with create off, Table#declare is never called, so the driver's own column check
+      // is the only thing between the name and the `insert bulk` statement. The name is
+      // read once before a connection is borrowed and again when the statement is built,
+      // so it only becomes unsafe on the second read. Both drivers check the name where
+      // they use it, so both reject this, whether or not the name would have reached SQL.
+      //
+      // tedious only: msnodesqlv8 hands the name to its table manager as an object key,
+      // matched against the columns the server reported, so it never becomes SQL there
+      // and there is no second read to re-check.
+      const t = new sql.Table(name)
+      t.columns.add('a', sql.Int, { nullable: true })
+      t.rows.add(1)
+
+      const col = t.columns[0]
+      const original = col.name
+      let reads = 0
+      Object.defineProperty(col, 'name', {
+        get () { reads += 1; return reads <= 1 ? original : 'a] int) with (fire_triggers) --' },
+        configurable: true
+      })
+
+      new TestRequest().bulk(t).then(() => {
+        done(new Error('bulk() should reject an unsafe column name without create'))
+      }).catch(err => {
+        try {
+          assert.strictEqual(err.code, 'EINJECT', 'the rejection should carry the identifier error code')
+        } catch (e) {
+          return done(e)
+        }
+        done()
+      })
+    },
+
+    'bulk load rejects unsafe column names without leaking a connection' (name, done) {
+      const t = new sql.Table(name)
+      t.create = true
+      // pushed directly, so the name reaches the point where SQL is built
+      t.columns.push({ name: 'a] int); select 1; --', type: sql.Int().type, nullable: true })
+      t.rows.add(1)
+
+      const req = new TestRequest()
+      const pool = req.parent
+      // the table is the thing the injected DDL would create, so start from a known state
+      new sql.Request().query(`if object_id('${name}') is not null drop table ${name}`).then(() => req.bulk(t)).then(() => {
+        done(new Error('bulk() should reject an unsafe column name'))
+      }).catch(err => {
+        try {
+          assert.strictEqual(err.code, 'EINJECT', 'the rejection should carry the identifier error code')
+          assert.match(err.message, /Invalid column name/, 'the rejection should come from the column name check')
+          assert.strictEqual(pool.pool.numUsed(), 0, 'a rejected bulk should leave no connection borrowed')
+        } catch (e) {
+          return done(e)
+        }
+        // the injected statement must not have run, and the pool must still work
+        new sql.Request().query(`select object_id('${name}') as oid, 1 as v`).then(result => {
+          assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have created the table')
+          assert.strictEqual(result.recordset[0].v, 1, 'the pool should still serve queries afterwards')
+          done()
+        }).catch(done)
+      })
+    },
+
+    'bulk load releases the connection when a column name changes after the check' (name, done) {
+      const t = new sql.Table(name)
+      t.create = true
+      t.columns.add('a', sql.Int, { nullable: true })
+      t.rows.add(1)
+
+      // the name is read once when it is checked and again when the SQL is built; a value
+      // that changes in between must not strand the borrowed connection
+      const col = t.columns[0]
+      const original = col.name
+      let reads = 0
+      Object.defineProperty(col, 'name', {
+        get () { reads += 1; return reads <= 1 ? original : 'a] int); select 1; --' },
+        configurable: true
+      })
+
+      const req = new TestRequest()
+      const pool = req.parent
+      req.bulk(t).then(() => {
+        done(new Error('bulk() should reject a column name that became unsafe'))
+      }).catch(err => {
+        try {
+          assert.strictEqual(err.code, 'EINJECT', 'the rejection should carry the identifier error code')
+          assert.strictEqual(pool.pool.numUsed(), 0, 'the borrowed connection should have been released')
+        } catch (e) {
+          return done(e)
+        }
+        new sql.Request().query('select 1 as v').then(result => {
+          assert.strictEqual(result.recordset[0].v, 1, 'the pool should still serve queries afterwards')
+          done()
+        }).catch(done)
+      })
+    },
+
     'bulk load with varchar-max field' (name, done) {
       const t = new sql.Table(name)
       t.create = true
