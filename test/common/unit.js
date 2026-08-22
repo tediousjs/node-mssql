@@ -422,3 +422,77 @@ describe('connection string parser', () => {
     })
   })
 })
+
+describe('parameter name validation', () => {
+  // Names verified to produce working SQL against SQL Server. The library prepends '@',
+  // so the name itself sits in an identifier's subsequent position, where T-SQL also
+  // permits digits and '$'.
+  const accepted = [
+    'param1', 'input_parameter', '_leadingUnderscore', 'MixedCase123', 'p1_0',
+    '0', '1', '1leadingDigit', '2fa_code', '$x', '$', 'a$b',
+    '@leadingAt', '#leadingHash', 'naïve', 'náme', 'नाम', '用户', 'aⅨ',
+    // characters SQL Server accepts inside an identifier: fullwidth underscore and
+    // katakana middle dots, zero-width joiners, and connector punctuation
+    'a\uFF3Fb', 'a\u30FBb', 'a\uFF65b', 'a\u200Cb', 'a\u200Db', 'a\u203Fb', 'a\u2040b'
+  ]
+
+  // Names containing a character that terminates or escapes the identifier. These are the
+  // names that use tab as a T-SQL whitespace substitute, which the old denylist missed.
+  const rejected = [
+    'has space', "has'quote", 'has--comment', 'has/*comment', 'has*/comment',
+    'has\ttab', 'has\nnewline', 'has\rreturn', 'has;semicolon', 'has=equals',
+    'has[bracket', 'has]bracket', 'has(paren', 'has.dot', 'has-dash',
+    'a=1;drop\ttable\tdbo.canary;declare\t@q\tint;select\t@q',
+    'x\tint;create\ttable\tdbo.pwned(x\tint);select\t@x'
+  ]
+
+  it('request should accept names that produce working SQL', () => {
+    for (const name of accepted) {
+      const request = new sql.Request()
+      request.input(name, sql.Int, 1)
+      assert.strictEqual(request.parameters[name].name, name, `input() should accept '${name}'`)
+      request.output(`out_${name}`, sql.Int)
+    }
+  })
+
+  it('request should reject names that escape the identifier', () => {
+    for (const name of rejected) {
+      assert.throws(() => new sql.Request().input(name, sql.Int, 1),
+        err => err.code === 'EINJECT', `input() should reject ${JSON.stringify(name)}`)
+      assert.throws(() => new sql.Request().output(name, sql.Int),
+        err => err.code === 'EINJECT', `output() should reject ${JSON.stringify(name)}`)
+    }
+  })
+
+  it('prepared statement should accept names that produce working SQL', () => {
+    for (const name of accepted) {
+      const ps = new sql.PreparedStatement()
+      ps.input(name, sql.Int)
+      assert.strictEqual(ps.parameters[name].name, name, `input() should accept '${name}'`)
+      ps.output(`out_${name}`, sql.Int)
+    }
+  })
+
+  it('prepared statement should reject names that escape the identifier', () => {
+    for (const name of rejected) {
+      assert.throws(() => new sql.PreparedStatement().input(name, sql.Int),
+        err => err.code === 'EINJECT', `input() should reject ${JSON.stringify(name)}`)
+      assert.throws(() => new sql.PreparedStatement().output(name, sql.Int),
+        err => err.code === 'EINJECT', `output() should reject ${JSON.stringify(name)}`)
+    }
+  })
+
+  it('request should reject a non-primitive name whose toString can change', () => {
+    let calls = 0
+    const twoFaced = { toString () { return ++calls === 1 ? 'safe' : 'x];drop table dbo.t--' } }
+    assert.throws(() => new sql.Request().input(twoFaced, sql.Int, 1),
+      err => err.code === 'EINJECT', 'input() should reject a non-primitive name')
+  })
+
+  it('request should keep parameter values unrestricted', () => {
+    const request = new sql.Request()
+    request.input('safe', sql.VarChar, "x'; drop table dbo.canary--")
+    assert.strictEqual(request.parameters.safe.value, "x'; drop table dbo.canary--",
+      'values should not be validated as identifiers')
+  })
+})

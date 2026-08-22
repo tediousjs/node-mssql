@@ -671,6 +671,71 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'rejects parameter names that escape the identifier' (done) {
+      const payloads = [
+        'a b', "a'b", 'a--b', 'a/*b', 'a\tb', 'a\nb', 'a\rb', 'a;b', 'a=b', 'a[b', 'a]b',
+        'a=1;drop\ttable\tdbo.canary;declare\t@q\tint;select\t@q'
+      ]
+
+      for (const name of payloads) {
+        try {
+          new sql.Request().input(name, sql.Int, 1)
+          return done(new Error(`input() should reject ${JSON.stringify(name)}`))
+        } catch (err) {
+          if (err.code !== 'EINJECT') return done(new Error(`input() should reject ${JSON.stringify(name)} with EINJECT, got ${err.code}`))
+        }
+        try {
+          new sql.Request().output(name, sql.Int)
+          return done(new Error(`output() should reject ${JSON.stringify(name)}`))
+        } catch (err) {
+          if (err.code !== 'EINJECT') return done(new Error(`output() should reject ${JSON.stringify(name)} with EINJECT, got ${err.code}`))
+        }
+      }
+
+      // the connection must be unaffected by the rejections
+      new sql.Request().query('select 1 as v').then(result => {
+        assert.strictEqual(result.recordset[0].v, 1, 'the connection should still be usable after a rejected name')
+        done()
+      }).catch(done)
+    },
+
+    'accepts parameter names that produce working SQL' (method, done) {
+      // names verified to work against SQL Server; the guard must not reject them
+      const names = ['param1', '_a', '0', '1', '2fa_code', 'a$b', '$x', 'náme', '用户', '@foo', '#tmp']
+
+      const next = (i) => {
+        if (i >= names.length) return done()
+        const name = names[i]
+        const req = new sql.Request()
+        req.input(name, sql.Int, 7)
+        req[method](`select @${name} as v`).then(result => {
+          assert.strictEqual(result.recordset[0].v, 7, `${JSON.stringify(name)} should round-trip through ${method}()`)
+          next(i + 1)
+        }).catch(err => done(new Error(`${JSON.stringify(name)} should be accepted by ${method}(): ${err.message}`)))
+      }
+
+      next(0)
+    },
+
+    'prepared statement rejects parameter names that escape the identifier' (done) {
+      const ps = new sql.PreparedStatement()
+      for (const name of ['a b', 'a;b', 'a\tb', 'a]b']) {
+        try {
+          ps.input(name, sql.Int)
+          return done(new Error(`input() should reject ${JSON.stringify(name)}`))
+        } catch (err) {
+          if (err.code !== 'EINJECT') return done(new Error(`input() should reject ${JSON.stringify(name)} with EINJECT, got ${err.code}`))
+        }
+        try {
+          ps.output(name, sql.Int)
+          return done(new Error(`output() should reject ${JSON.stringify(name)}`))
+        } catch (err) {
+          if (err.code !== 'EINJECT') return done(new Error(`output() should reject ${JSON.stringify(name)} with EINJECT, got ${err.code}`))
+        }
+      }
+      done()
+    },
+
     'bulk load with varchar-max field' (name, done) {
       const t = new sql.Table(name)
       t.create = true
