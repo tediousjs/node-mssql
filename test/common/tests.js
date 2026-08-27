@@ -1180,6 +1180,21 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'calls to close during connection call back exactly once' (config, done) {
+      const pool = new sql.ConnectionPool(config)
+      const calls = []
+      const connecting = pool.connect()
+      // the callback form is used deliberately: a promise settles only once, so it
+      // cannot observe a callback being invoked a second time
+      pool.close((err) => calls.push(err))
+      connecting.then(() => {
+        assert.strictEqual(calls.length, 1, 'close() during connect should invoke its callback exactly once')
+        assert.ok(calls[0] instanceof Error, 'close() during connect should call back with an error')
+        assert.strictEqual(calls[0].message, 'Cannot close a pool while it is connecting')
+        pool.close(done)
+      }).catch(done)
+    },
+
     'connection healthy works' (config, done) {
       const pool = new sql.ConnectionPool(config)
       assert.ok(!pool.healthy)
