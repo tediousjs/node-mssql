@@ -745,7 +745,11 @@ module.exports = (sql, driver) => {
       const pool = req.parent
       const listeners = () => {
         const connection = pool.pool.free.length ? pool.pool.free[0].resource : null
-        return connection ? ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e)) : null
+        // only the tedious driver attaches listeners to the connection itself; msnodesqlv8's
+        // pooled resource is not an EventEmitter, so there is nothing to count there
+        return connection && typeof connection.listenerCount === 'function'
+          ? ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e))
+          : null
       }
       let before
 
@@ -789,6 +793,44 @@ module.exports = (sql, driver) => {
           assert.deepStrictEqual(after, before, 'abandoning a request should leave the connection as it was found')
           done()
         }).catch(done)
+      }).catch(done)
+    },
+
+    'rejects a stored procedure name that escapes the exec' (done) {
+      // msnodesqlv8 builds `exec @___return___ = <name>` as SQL text; tedious sends the name
+      // as a bound RPC and could not be injected through it. Both reject it, so the same name
+      // behaves the same way whichever driver is in use.
+      const req = new TestRequest()
+      const pool = req.parent
+      const listeners = () => {
+        const connection = pool.pool.free.length ? pool.pool.free[0].resource : null
+        // only the tedious driver attaches listeners to the connection itself; msnodesqlv8's
+        // pooled resource is not an EventEmitter, so there is nothing to count there
+        return connection && typeof connection.listenerCount === 'function'
+          ? ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e))
+          : null
+      }
+      let before
+
+      new sql.Request().query("if object_id('dbo.proc_canary') is not null drop table dbo.proc_canary")
+        .then(() => { before = listeners() })
+        .then(() => req.execute('dbo.__test2; create table dbo.proc_canary (a int); --'))
+        .then(() => done(new Error('execute() should reject a procedure name that escapes the exec')), err => {
+          new sql.Request().query("select object_id('dbo.proc_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            assert.ok(err instanceof sql.RequestError, 'the rejection should be a RequestError')
+            assert.deepStrictEqual(listeners(), before, 'giving up here should leave the connection as it was found')
+            done()
+          }).catch(done)
+        })
+    },
+
+    'accepts a qualified stored procedure name' (done) {
+      // the check must not refuse the quoted and schema-qualified forms the server accepts
+      new TestRequest().execute('[dbo].[__test2]').then(result => {
+        assert.strictEqual(result.returnValue, 11, 'a bracket-quoted procedure name should still run')
+        done()
       }).catch(done)
     },
 

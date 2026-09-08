@@ -80,3 +80,6 @@ if object_id('dbo.bulk_size_canary') is not null
 if object_id('dbo.bulk_table_size') is not null
 	exec('drop table [dbo].[bulk_table_size]')
 
+if object_id('dbo.proc_canary') is not null
+	exec('drop table [dbo].[proc_canary]')
+

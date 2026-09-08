@@ -113,6 +113,7 @@ async () => {
 * [Parameter names](#parameter-names)
 * [Column names](#column-names)
 * [Type names and sizes](#type-names-and-sizes)
+* [Procedure names](#procedure-names)
 
 ### Transactions
 
@@ -752,6 +753,7 @@ request.execute('procedure_name', (err, result) => {
 
 __Errors__
 - EREQUEST (`RequestError`) - *Message from SQL Server*
+- EINJECT (`RequestError`) - Procedure name or parameter type is not a valid identifier. See [Identifiers](#identifiers).
 - ECANCEL (`RequestError`) - Cancelled.
 - ETIMEOUT (`RequestError`) - Request timeout.
 - ENOCONN (`RequestError`) - No connection is specified for that request.
@@ -1836,7 +1838,8 @@ Results in:
 
 Values are sent to the server as parameters and may hold anything. A few things
 are not values, and cannot be: the name of a parameter, the name of a column in a
-bulk load, and the type a parameter is declared as. Those are *identifiers*, and
+bulk load, the type a parameter is declared as, and the name of a stored procedure.
+Those are *identifiers*, and
 no SQL database can bind them, so this library builds them into the statement it
 sends. It checks them, and rejects anything that could end the identifier and have
 the rest of the value read as SQL.
@@ -1890,6 +1893,29 @@ request.input('rows', sql.TVP('dbo.[My Type]'), table)
 request.input('name', sql.VarChar(50), value)
 request.input('note', sql.VarChar('max'), value)
 ```
+
+A size is checked wherever it is built into SQL, which includes the declaration a
+bulk load sends and the parameter list a query sends, not only `sql.TVP()`.
+
+### Procedure names
+
+`request.execute()` takes the name of a stored procedure, optionally qualified with
+a server, database and schema and optionally quoted with brackets or double quotes.
+An omitted part may be left empty, as T-SQL allows. The `msnodesqlv8` driver builds
+this into the statement it sends; the `tedious` driver sends it as a bound remote
+procedure call and could not be injected through it. Both check it, so a name is
+accepted or rejected the same way whichever driver you use.
+
+```javascript
+request.execute('dbo.[My Procedure]')
+request.execute('master..sp_who')      // an omitted schema is fine
+```
+
+The first and last parts must be present, so `.proc` and `db..` are rejected.
+
+Anything else raises `EINJECT`. Numbered procedures — the deprecated
+`procedure;1` form — are rejected, because the `;` cannot be told apart from the
+end of a statement.
 
 ---------------------------------------
 

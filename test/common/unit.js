@@ -6,6 +6,7 @@ const sql = require('../../')
 const assert = require('assert')
 const udt = require('../../lib/udt')
 const { declare } = require('../../lib/datatypes')
+const { assertSafeProcedureName } = require('../../lib/utils')
 const BasePool = require('../../lib/base/connection-pool')
 
 describe('Unit', () => {
@@ -554,6 +555,13 @@ describe('table-valued parameter type name validation', () => {
       'a missing type name should be left to the driver')
   })
 
+  it('should accept a qualified name with an omitted part', () => {
+    assert.strictEqual(declare(sql.TVP('mydb..MyType').type, sql.TVP('mydb..MyType')), 'mydb..MyType readonly',
+      'an omitted schema should be accepted in a type name too')
+    assert.throws(() => declare(sql.TVP('.MyType').type, sql.TVP('.MyType')), err => err.code === 'EINJECT',
+      'a leading empty part should still be rejected')
+  })
+
   it('should trim padding rather than refuse it', () => {
     assert.strictEqual(declare(sql.TVP('  dbo.T1  ').type, sql.TVP('  dbo.T1  ')), 'dbo.T1 readonly',
       'a padded type name should be trimmed')
@@ -620,5 +628,45 @@ describe('type size validation', () => {
   it('should reject identifiers with a typed error', () => {
     assert.throws(() => declare(sql.VarChar, { length: 'a b' }), err => err instanceof sql.MSSQLError,
       'the rejection should be a library error, not a bare Error')
+  })
+})
+
+describe('procedure name validation', () => {
+  it('should accept the names a caller can reasonably supply', () => {
+    assert.strictEqual(assertSafeProcedureName('sp_help'), 'sp_help', 'a bare name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('dbo.__test2'), 'dbo.__test2', 'a schema-qualified name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('[dbo].[__test2]'), '[dbo].[__test2]', 'a bracket-quoted name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('"dbo"."p"'), '"dbo"."p"', 'a double-quoted name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('db.dbo.p'), 'db.dbo.p', 'a database-qualified name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('#temp_proc'), '#temp_proc', 'a temporary procedure name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('[dbo].[my proc]'), '[dbo].[my proc]', 'a quoted name containing a space should be accepted')
+    assert.strictEqual(assertSafeProcedureName(' dbo.p '), 'dbo.p', 'padding should be trimmed')
+    assert.strictEqual(assertSafeProcedureName('srv.db.dbo.p'), 'srv.db.dbo.p', 'a four-part name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('master..sp_who'), 'master..sp_who', 'an omitted schema should be accepted')
+    assert.strictEqual(assertSafeProcedureName('srv.db..proc'), 'srv.db..proc', 'an omitted intermediate part should be accepted')
+    assert.strictEqual(assertSafeProcedureName('[db]..[proc]'), '[db]..[proc]', 'an omitted part between quoted parts should be accepted')
+  })
+
+  it('should emit the value it checked, so a second read cannot differ', () => {
+    let reads = 0
+    const name = { toString () { reads += 1; return reads <= 1 ? 'dbo.p' : 'dbo.p; drop table t --' } }
+    assert.strictEqual(assertSafeProcedureName(name), 'dbo.p', 'the checked value should be the one returned')
+  })
+
+  it('should reject names that escape the exec', () => {
+    for (const payload of [
+      'dbo.p; create table dbo.pwned (a int); --',
+      'dbo.p) ; select 1',
+      'dbo.p --',
+      'dbo p',
+      'dbo.p\tselect 1',
+      '.proc',
+      'db..',
+      '.',
+      ''
+    ]) {
+      assert.throws(() => assertSafeProcedureName(payload), err => err.code === 'EINJECT',
+        `${JSON.stringify(payload)} should be rejected`)
+    }
   })
 })
