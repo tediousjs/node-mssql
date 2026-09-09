@@ -671,6 +671,455 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'rejects parameter names that escape the identifier' (done) {
+      const payloads = [
+        'a b', "a'b", 'a--b', 'a/*b', 'a\tb', 'a\nb', 'a\rb', 'a;b', 'a=b', 'a[b', 'a]b',
+        'a=1;drop\ttable\tdbo.canary;declare\t@q\tint;select\t@q'
+      ]
+
+      for (const name of payloads) {
+        try {
+          new sql.Request().input(name, sql.Int, 1)
+          return done(new Error(`input() should reject ${JSON.stringify(name)}`))
+        } catch (err) {
+          if (err.code !== 'EINJECT') return done(new Error(`input() should reject ${JSON.stringify(name)} with EINJECT, got ${err.code}`))
+        }
+        try {
+          new sql.Request().output(name, sql.Int)
+          return done(new Error(`output() should reject ${JSON.stringify(name)}`))
+        } catch (err) {
+          if (err.code !== 'EINJECT') return done(new Error(`output() should reject ${JSON.stringify(name)} with EINJECT, got ${err.code}`))
+        }
+      }
+
+      // the connection must be unaffected by the rejections
+      new sql.Request().query('select 1 as v').then(result => {
+        assert.strictEqual(result.recordset[0].v, 1, 'the connection should still be usable after a rejected name')
+        done()
+      }).catch(done)
+    },
+
+    'accepts parameter names that produce working SQL' (method, done) {
+      // names verified to work against SQL Server; the guard must not reject them
+      const names = ['param1', '_a', '0', '1', '2fa_code', 'a$b', '$x', 'náme', '用户', '@foo', '#tmp']
+
+      const next = (i) => {
+        if (i >= names.length) return done()
+        const name = names[i]
+        const req = new sql.Request()
+        req.input(name, sql.Int, 7)
+        req[method](`select @${name} as v`).then(result => {
+          assert.strictEqual(result.recordset[0].v, 7, `${JSON.stringify(name)} should round-trip through ${method}()`)
+          next(i + 1)
+        }).catch(err => done(new Error(`${JSON.stringify(name)} should be accepted by ${method}(): ${err.message}`)))
+      }
+
+      next(0)
+    },
+
+    'prepared statement rejects a declaration it cannot build' (done) {
+      // prepare() builds the sp_prepare parameter declaration with a connection already
+      // borrowed, so a rejected type size has to come back through the path that releases
+      // it — otherwise the borrow is stranded and the pool drains one prepare() at a time
+      const ps = new sql.PreparedStatement()
+      ps.input('p', sql.VarChar('8000); create table dbo.ps_decl_canary (a int); --'))
+
+      const pool = ps.parent
+      const free = () => pool.pool.numFree()
+      let before
+
+      new sql.Request().query("if object_id('dbo.ps_decl_canary') is not null drop table dbo.ps_decl_canary")
+        .then(() => { before = free() })
+        .then(() => ps.prepare('select 1 as v'))
+        .then(() => done(new Error('prepare() should reject a declaration it cannot build')), err => {
+          // assert the release FIRST: a follow-up query can borrow a fresh connection and
+          // restore the free count, which would hide a leak. numUsed() cannot be masked that way
+          try {
+            assert.strictEqual(pool.pool.numUsed(), 0, 'the borrowed connection should have been released')
+            assert.strictEqual(free(), before, 'the borrowed connection should have gone back to the pool')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            assert.ok(err instanceof sql.PreparedStatementError, 'the rejection should be a PreparedStatementError')
+            assert.strictEqual(ps.prepared, false, 'the statement should not be marked prepared')
+          } catch (e) {
+            return done(e)
+          }
+          new sql.Request().query("select object_id('dbo.ps_decl_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            return new sql.Request().query('select 1 as v').then(r => {
+              assert.strictEqual(r.recordset[0].v, 1, 'the pool should still serve requests')
+              done()
+            })
+          }).catch(done)
+        })
+    },
+
+    'prepared statement rejects parameter names that escape the identifier' (done) {
+      const ps = new sql.PreparedStatement()
+      for (const name of ['a b', 'a;b', 'a\tb', 'a]b']) {
+        try {
+          ps.input(name, sql.Int)
+          return done(new Error(`input() should reject ${JSON.stringify(name)}`))
+        } catch (err) {
+          if (err.code !== 'EINJECT') return done(new Error(`input() should reject ${JSON.stringify(name)} with EINJECT, got ${err.code}`))
+        }
+        try {
+          ps.output(name, sql.Int)
+          return done(new Error(`output() should reject ${JSON.stringify(name)}`))
+        } catch (err) {
+          if (err.code !== 'EINJECT') return done(new Error(`output() should reject ${JSON.stringify(name)} with EINJECT, got ${err.code}`))
+        }
+      }
+      done()
+    },
+
+    'rejects an unsafe type size without throwing on its own tick' (done) {
+      // the declaration is built inside a callback the driver dispatches separately, so a
+      // rejected size has to come back through the request, not escape as an exception
+      const req = new TestRequest()
+      req.input('p', sql.VarChar('8000); create table dbo.tick_canary (a int); --'), 'x')
+
+      const pool = req.parent
+      const listeners = () => {
+        const connection = pool.pool.free.length ? pool.pool.free[0].resource : null
+        // only the tedious driver attaches listeners to the connection itself; msnodesqlv8's
+        // pooled resource is not an EventEmitter, so there is nothing to count there
+        return connection && typeof connection.listenerCount === 'function'
+          ? ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e))
+          : null
+      }
+      let before
+
+      new sql.Request().query("if object_id('dbo.tick_canary') is not null drop table dbo.tick_canary")
+        .then(() => { before = listeners() })
+        .then(() => req.batch('select @p as v'))
+        .then(() => done(new Error('batch() should reject an unsafe length')), err => {
+          // the canary first: if the statement ran, say so, rather than reporting whichever
+          // error code came back from a server that has just executed the injection
+          new sql.Request().query("select object_id('dbo.tick_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            assert.ok(err instanceof sql.RequestError, 'the rejection should be a RequestError')
+            assert.deepStrictEqual(listeners(), before, 'giving up here should leave the connection as it was found')
+            done()
+          }).catch(done)
+        })
+    },
+
+    'leaves no listeners on the connection when a request is abandoned' (done) {
+      // the request attaches three listeners to the connection before it is sent; giving
+      // up after that has to take them off again, or they fire for the next borrower
+      const req = new TestRequest()
+      const pool = req.parent
+      const connectionOf = () => (pool.pool.free.length ? pool.pool.free[0].resource : null)
+
+      new sql.Request().query('select 1 as v').then(() => {
+        const connection = connectionOf()
+        if (!connection) return done(new Error('expected an idle connection to inspect'))
+        const before = ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e))
+
+        // a value the type cannot accept: the request gives up after the listeners are
+        // attached but before anything is sent, which is the path being tested
+        const reject = () => new sql.Request()
+          .input('p', sql.Int, {})
+          .batch('select @p as v')
+          .then(() => { throw new Error('batch() should reject an invalid value') }, () => {})
+
+        reject().then(reject).then(reject).then(() => {
+          const after = ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e))
+          assert.deepStrictEqual(after, before, 'abandoning a request should leave the connection as it was found')
+          done()
+        }).catch(done)
+      }).catch(done)
+    },
+
+    'bulk load releases the connection when the driver rejects its options' (name, done) {
+      // tedious validates the bulk options inside newBulkLoad and throws for a bad `order`
+      // direction, with a connection already borrowed; the borrow has to be given back
+      const t = new sql.Table(name)
+      t.create = false
+      t.columns.add('a', sql.Int, { nullable: true })
+      t.rows.add(1)
+
+      const req = new TestRequest()
+      const pool = req.parent
+      const free = () => pool.pool.numFree()
+      const before = free()
+
+      req.bulk(t, { order: { a: 'NOT_A_DIRECTION' } }).then(() => {
+        done(new Error('bulk() should reject an invalid ordering direction'))
+      }, err => {
+        try {
+          assert.strictEqual(err.code, 'EREQUEST', `the rejection should be a request error, got ${err.code}`)
+          assert.strictEqual(free(), before, 'the borrowed connection should have gone back to the pool')
+        } catch (e) {
+          return done(e)
+        }
+        done()
+      })
+    },
+
+    'bulk load rejects an unsafe ordering key' (name, done) {
+      // the driver writes these into `insert bulk ... WITH (ORDER (<key> <direction>))`
+      // unquoted, so a key that closes the clause takes over the load's options
+      const t = new sql.Table(name)
+      t.create = false
+      t.columns.add('a', sql.Int, { nullable: true })
+      t.rows.add(1)
+
+      new TestRequest().bulk(t, { order: { 'a ASC), FIRE_TRIGGERS, KEEP_NULLS) --': 'ASC' } })
+        .then(() => done(new Error('bulk() should reject an ordering key that escapes the clause')), err => {
+          try {
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+          } catch (e) {
+            return done(e)
+          }
+          done()
+        })
+    },
+
+    'bulk load accepts a quoted ordering key' (name, done) {
+      // brackets are how a spaced name is written in that position, so they must not be refused.
+      // create the table, or the load fails for a missing table and proves nothing.
+      const t = new sql.Table(name)
+      t.create = true
+      t.columns.add('a', sql.Int, { nullable: true })
+      t.rows.add(1)
+
+      new sql.Request().query(`if object_id('${name}') is not null drop table ${name}`).then(() => {
+        return new TestRequest().bulk(t, { order: { '[a]': 'ASC' } })
+      }).then(result => {
+        assert.strictEqual(result.rowsAffected, 1, 'the load should insert its row')
+        done()
+      }, done)
+    },
+
+    'rejects a stored procedure name that escapes the exec' (done) {
+      // msnodesqlv8 builds `exec @___return___ = <name>` as SQL text; tedious sends the name
+      // as a bound RPC and could not be injected through it. Both reject it, so the same name
+      // behaves the same way whichever driver is in use.
+      const req = new TestRequest()
+      const pool = req.parent
+      const listeners = () => {
+        const connection = pool.pool.free.length ? pool.pool.free[0].resource : null
+        // only the tedious driver attaches listeners to the connection itself; msnodesqlv8's
+        // pooled resource is not an EventEmitter, so there is nothing to count there
+        return connection && typeof connection.listenerCount === 'function'
+          ? ['error', 'errorMessage', 'infoMessage'].map(e => connection.listenerCount(e))
+          : null
+      }
+      let before
+
+      new sql.Request().query("if object_id('dbo.proc_canary') is not null drop table dbo.proc_canary")
+        .then(() => { before = listeners() })
+        .then(() => req.execute('dbo.__test2; create table dbo.proc_canary (a int); --'))
+        .then(() => done(new Error('execute() should reject a procedure name that escapes the exec')), err => {
+          new sql.Request().query("select object_id('dbo.proc_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            assert.ok(err instanceof sql.RequestError, 'the rejection should be a RequestError')
+            assert.deepStrictEqual(listeners(), before, 'giving up here should leave the connection as it was found')
+            done()
+          }).catch(done)
+        })
+    },
+
+    'accepts a qualified stored procedure name' (done) {
+      // the check must not refuse the quoted and schema-qualified forms the server accepts
+      new TestRequest().execute('[dbo].[__test2]').then(result => {
+        assert.strictEqual(result.returnValue, 11, 'a bracket-quoted procedure name should still run')
+        done()
+      }).catch(done)
+    },
+
+    'rejects an unsafe type size in a non-batch query' (done) {
+      // query() does not build the declaration itself: tedious writes these into the
+      // sp_executesql parameter list, so the size is checked where it is handed over
+      const req = new TestRequest()
+      req.input('p', sql.VarChar('8000); create table dbo.query_canary (a int); --'), 'x')
+
+      new sql.Request().query("if object_id('dbo.query_canary') is not null drop table dbo.query_canary")
+        .then(() => req.query('select @p as v'))
+        .then(() => done(new Error('query() should reject an unsafe length')), err => {
+          new sql.Request().query("select object_id('dbo.query_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            done()
+          }).catch(done)
+        })
+    },
+
+    'rejects an unsafe type size on an output parameter' (done) {
+      // output parameters go through addOutputParameter, a separate guard from the input one
+      const req = new TestRequest()
+      req.output('p', sql.VarChar('8000); create table dbo.outsize_canary (a int); --'))
+
+      new sql.Request().query("if object_id('dbo.outsize_canary') is not null drop table dbo.outsize_canary")
+        .then(() => req.query('select @p as v'))
+        .then(() => done(new Error('query() should reject an unsafe length on an output parameter')), err => {
+          new sql.Request().query("select object_id('dbo.outsize_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            done()
+          }).catch(done)
+        })
+    },
+
+    'rejects an unsafe type size in a stored procedure call' (done) {
+      const req = new TestRequest()
+      req.input('p', sql.VarChar('8000); create table dbo.exec_canary (a int); --'), 'x')
+
+      new sql.Request().query("if object_id('dbo.exec_canary') is not null drop table dbo.exec_canary")
+        .then(() => req.execute('__test2'))
+        .then(() => done(new Error('execute() should reject an unsafe length')), err => {
+          new sql.Request().query("select object_id('dbo.exec_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            done()
+          }).catch(done)
+        })
+    },
+
+    'bulk load rejects unsafe column size metadata' (name, done) {
+      // with create off, Table#declare never runs, so the driver's own `insert bulk`
+      // statement is the only place the size is emitted
+      const t = new sql.Table(name)
+      t.create = false
+      t.columns.add('a', sql.Decimal(18, 0), { nullable: true })
+      t.columns[0].precision = '18, 0)) ; create table dbo.bulk_size_canary (a int) -- '
+      t.rows.add(1)
+
+      new sql.Request().query("if object_id('dbo.bulk_size_canary') is not null drop table dbo.bulk_size_canary")
+        .then(() => new TestRequest().bulk(t))
+        .then(() => done(new Error('bulk() should reject an unsafe precision')), err => {
+          new sql.Request().query("select object_id('dbo.bulk_size_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            done()
+          }).catch(done)
+        })
+    },
+
+    'rejects a table-valued parameter type name that escapes the declaration' (done) {
+      const payload = 'int; create table dbo.tvp_canary (a int); --'
+      const table = new sql.Table('dbo.tvp_arg')
+      table.columns.add('a', sql.Int, { nullable: true })
+      table.rows.add(1)
+
+      // set after construction, so the check has to be where the SQL is built rather than
+      // in the factory
+      const type = sql.TVP('dbo.Legit')
+      type.tvpType = payload
+
+      new sql.Request().query("if object_id('dbo.tvp_canary') is not null drop table dbo.tvp_canary").then(() => {
+        return new sql.Request().input('p', type, table).batch('select 1 as v')
+      }).then(() => {
+        done(new Error('batch() should reject an unsafe type name'))
+      }).catch(err => {
+        try {
+          assert.strictEqual(err.code, 'EINJECT', 'the rejection should carry the identifier error code')
+        } catch (e) {
+          return done(e)
+        }
+        new sql.Request().query("select object_id('dbo.tvp_canary') as oid").then(result => {
+          assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+          done()
+        }).catch(done)
+      })
+    },
+
+    'bulk load into an existing table rejects an unsafe column name' (name, done) {
+      // With create off, Table#declare is never called, so the driver's own column check
+      // is the only thing between the name and the `insert bulk` statement. The name is
+      // read once before a connection is borrowed and again when the statement is built,
+      // so it only becomes unsafe on the second read. Both drivers check the name where
+      // they use it, so both reject this, whether or not the name would have reached SQL.
+      const t = new sql.Table(name)
+      t.columns.add('a', sql.Int, { nullable: true })
+      t.rows.add(1)
+
+      const col = t.columns[0]
+      const original = col.name
+      let reads = 0
+      Object.defineProperty(col, 'name', {
+        get () { reads += 1; return reads <= 1 ? original : 'a] int) with (fire_triggers) --' },
+        configurable: true
+      })
+
+      new TestRequest().bulk(t).then(() => {
+        done(new Error('bulk() should reject an unsafe column name without create'))
+      }).catch(err => {
+        try {
+          assert.strictEqual(err.code, 'EINJECT', 'the rejection should carry the identifier error code')
+        } catch (e) {
+          return done(e)
+        }
+        done()
+      })
+    },
+
+    'bulk load rejects unsafe column names without leaking a connection' (name, done) {
+      const t = new sql.Table(name)
+      t.create = true
+      // pushed directly, so the name reaches the point where SQL is built
+      t.columns.push({ name: 'a] int); select 1; --', type: sql.Int().type, nullable: true })
+      t.rows.add(1)
+
+      const req = new TestRequest()
+      const pool = req.parent
+      // the table is the thing the injected DDL would create, so start from a known state
+      new sql.Request().query(`if object_id('${name}') is not null drop table ${name}`).then(() => req.bulk(t)).then(() => {
+        done(new Error('bulk() should reject an unsafe column name'))
+      }).catch(err => {
+        try {
+          assert.strictEqual(err.code, 'EINJECT', 'the rejection should carry the identifier error code')
+          assert.match(err.message, /Invalid column name/, 'the rejection should come from the column name check')
+          assert.strictEqual(pool.pool.numUsed(), 0, 'a rejected bulk should leave no connection borrowed')
+        } catch (e) {
+          return done(e)
+        }
+        // the injected statement must not have run, and the pool must still work
+        new sql.Request().query(`select object_id('${name}') as oid, 1 as v`).then(result => {
+          assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have created the table')
+          assert.strictEqual(result.recordset[0].v, 1, 'the pool should still serve queries afterwards')
+          done()
+        }).catch(done)
+      })
+    },
+
+    'bulk load releases the connection when a column name changes after the check' (name, done) {
+      const t = new sql.Table(name)
+      t.create = true
+      t.columns.add('a', sql.Int, { nullable: true })
+      t.rows.add(1)
+
+      // the name is read once when it is checked and again when the SQL is built; a value
+      // that changes in between must not strand the borrowed connection
+      const col = t.columns[0]
+      const original = col.name
+      let reads = 0
+      Object.defineProperty(col, 'name', {
+        get () { reads += 1; return reads <= 1 ? original : 'a] int); select 1; --' },
+        configurable: true
+      })
+
+      const req = new TestRequest()
+      const pool = req.parent
+      req.bulk(t).then(() => {
+        done(new Error('bulk() should reject a column name that became unsafe'))
+      }).catch(err => {
+        try {
+          assert.strictEqual(err.code, 'EINJECT', 'the rejection should carry the identifier error code')
+          assert.strictEqual(pool.pool.numUsed(), 0, 'the borrowed connection should have been released')
+        } catch (e) {
+          return done(e)
+        }
+        new sql.Request().query('select 1 as v').then(result => {
+          assert.strictEqual(result.recordset[0].v, 1, 'the pool should still serve queries afterwards')
+          done()
+        }).catch(done)
+      })
+    },
+
     'bulk load with varchar-max field' (name, done) {
       const t = new sql.Table(name)
       t.create = true
