@@ -796,6 +796,41 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'bulk load rejects an unsafe ordering key' (name, done) {
+      // the driver writes these into `insert bulk ... WITH (ORDER (<key> <direction>))`
+      // unquoted, so a key that closes the clause takes over the load's options
+      const t = new sql.Table(name)
+      t.create = false
+      t.columns.add('a', sql.Int, { nullable: true })
+      t.rows.add(1)
+
+      new TestRequest().bulk(t, { order: { 'a ASC), FIRE_TRIGGERS, KEEP_NULLS) --': 'ASC' } })
+        .then(() => done(new Error('bulk() should reject an ordering key that escapes the clause')), err => {
+          try {
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+          } catch (e) {
+            return done(e)
+          }
+          done()
+        })
+    },
+
+    'bulk load accepts a quoted ordering key' (name, done) {
+      // brackets are how a spaced name is written in that position, so they must not be refused.
+      // create the table, or the load fails for a missing table and proves nothing.
+      const t = new sql.Table(name)
+      t.create = true
+      t.columns.add('a', sql.Int, { nullable: true })
+      t.rows.add(1)
+
+      new sql.Request().query(`if object_id('${name}') is not null drop table ${name}`).then(() => {
+        return new TestRequest().bulk(t, { order: { '[a]': 'ASC' } })
+      }).then(result => {
+        assert.strictEqual(result.rowsAffected, 1, 'the load should insert its row')
+        done()
+      }, done)
+    },
+
     'rejects a stored procedure name that escapes the exec' (done) {
       // msnodesqlv8 builds `exec @___return___ = <name>` as SQL text; tedious sends the name
       // as a bound RPC and could not be injected through it. Both reject it, so the same name

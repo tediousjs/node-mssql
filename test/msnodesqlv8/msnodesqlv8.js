@@ -63,6 +63,8 @@ describe('msnodesqlv8', function () {
     it('accepts parameter names that produce working SQL (batch)', done => TESTS['accepts parameter names that produce working SQL']('batch', done))
     it('prepared statement rejects parameter names that escape the identifier', done => TESTS['prepared statement rejects parameter names that escape the identifier'](done))
     it('rejects an unsafe type size without throwing on its own tick', done => TESTS['rejects an unsafe type size without throwing on its own tick'](done))
+    it('bulk load rejects an unsafe ordering key', done => TESTS['bulk load rejects an unsafe ordering key']('bulk_table_order', done))
+    it('bulk load accepts a quoted ordering key', done => TESTS['bulk load accepts a quoted ordering key']('bulk_table_order', done))
     it('rejects a stored procedure name that escapes the exec', done => TESTS['rejects a stored procedure name that escapes the exec'](done))
     it('accepts a qualified stored procedure name', done => TESTS['accepts a qualified stored procedure name'](done))
     it('rejects an unsafe type size in a non-batch query', done => TESTS['rejects an unsafe type size in a non-batch query'](done))

@@ -1881,6 +1881,15 @@ table.columns.add('a]]b', sql.Int)   // the column named a]b
 A single `]` raises `EINJECT`. Column names are not otherwise restricted: spaces,
 punctuation and reserved words are all fine, because the quoting handles them.
 
+The keys of `options.order` are also identifiers, but the driver writes them into the bulk
+statement's `ORDER (...)` clause *unquoted* rather than as `[name]`. They follow the type
+name rule instead: bare, or quoted with brackets or double quotes.
+
+```javascript
+request.bulk(table, { order: { created_at: 'ASC' } })
+request.bulk(table, { order: { '[Created At]': 'DESC' } })   // quote a spaced name yourself
+```
+
 ### Type names and sizes
 
 `sql.TVP()` takes the name of a table type, optionally qualified with a schema and
