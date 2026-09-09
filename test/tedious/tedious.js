@@ -77,6 +77,7 @@ describe('tedious', () => {
     it('rejects a stored procedure name that escapes the exec', done => TESTS['rejects a stored procedure name that escapes the exec'](done))
     it('accepts a qualified stored procedure name', done => TESTS['accepts a qualified stored procedure name'](done))
     it('rejects an unsafe type size in a non-batch query', done => TESTS['rejects an unsafe type size in a non-batch query'](done))
+    it('rejects an unsafe type size on an output parameter', done => TESTS['rejects an unsafe type size on an output parameter'](done))
     it('rejects an unsafe type size in a stored procedure call', done => TESTS['rejects an unsafe type size in a stored procedure call'](done))
     it('bulk load rejects unsafe column size metadata', done => TESTS['bulk load rejects unsafe column size metadata']('bulk_table_size', done))
     it('rejects a table-valued parameter type name that escapes the declaration', done => TESTS['rejects a table-valued parameter type name that escapes the declaration'](done))

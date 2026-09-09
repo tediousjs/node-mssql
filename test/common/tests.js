@@ -948,6 +948,22 @@ module.exports = (sql, driver) => {
         })
     },
 
+    'rejects an unsafe type size on an output parameter' (done) {
+      // output parameters go through addOutputParameter, a separate guard from the input one
+      const req = new TestRequest()
+      req.output('p', sql.VarChar('8000); create table dbo.outsize_canary (a int); --'))
+
+      new sql.Request().query("if object_id('dbo.outsize_canary') is not null drop table dbo.outsize_canary")
+        .then(() => req.query('select @p as v'))
+        .then(() => done(new Error('query() should reject an unsafe length on an output parameter')), err => {
+          new sql.Request().query("select object_id('dbo.outsize_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            done()
+          }).catch(done)
+        })
+    },
+
     'rejects an unsafe type size in a stored procedure call' (done) {
       const req = new TestRequest()
       req.input('p', sql.VarChar('8000); create table dbo.exec_canary (a int); --'), 'x')
