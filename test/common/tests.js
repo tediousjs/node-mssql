@@ -717,6 +717,42 @@ module.exports = (sql, driver) => {
       next(0)
     },
 
+    'prepared statement rejects a declaration it cannot build' (done) {
+      // prepare() builds the sp_prepare parameter declaration with a connection already
+      // borrowed, so a rejected type size has to come back through the path that releases
+      // it — otherwise the borrow is stranded and the pool drains one prepare() at a time
+      const ps = new sql.PreparedStatement()
+      ps.input('p', sql.VarChar('8000); create table dbo.ps_decl_canary (a int); --'))
+
+      const pool = ps.parent
+      const free = () => pool.pool.numFree()
+      let before
+
+      new sql.Request().query("if object_id('dbo.ps_decl_canary') is not null drop table dbo.ps_decl_canary")
+        .then(() => { before = free() })
+        .then(() => ps.prepare('select 1 as v'))
+        .then(() => done(new Error('prepare() should reject a declaration it cannot build')), err => {
+          // assert the release FIRST: a follow-up query can borrow a fresh connection and
+          // restore the free count, which would hide a leak. numUsed() cannot be masked that way
+          try {
+            assert.strictEqual(pool.pool.numUsed(), 0, 'the borrowed connection should have been released')
+            assert.strictEqual(free(), before, 'the borrowed connection should have gone back to the pool')
+            assert.strictEqual(err.code, 'EINJECT', `the rejection should carry the identifier error code, got ${err.code}`)
+            assert.ok(err instanceof sql.PreparedStatementError, 'the rejection should be a PreparedStatementError')
+            assert.strictEqual(ps.prepared, false, 'the statement should not be marked prepared')
+          } catch (e) {
+            return done(e)
+          }
+          new sql.Request().query("select object_id('dbo.ps_decl_canary') as oid").then(result => {
+            assert.strictEqual(result.recordset[0].oid, null, 'the injected DDL should not have run')
+            return new sql.Request().query('select 1 as v').then(r => {
+              assert.strictEqual(r.recordset[0].v, 1, 'the pool should still serve requests')
+              done()
+            })
+          }).catch(done)
+        })
+    },
+
     'prepared statement rejects parameter names that escape the identifier' (done) {
       const ps = new sql.PreparedStatement()
       for (const name of ['a b', 'a;b', 'a\tb', 'a]b']) {

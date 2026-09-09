@@ -68,6 +68,7 @@ describe('tedious', () => {
     it('rejects parameter names that escape the identifier', done => TESTS['rejects parameter names that escape the identifier'](done))
     it('accepts parameter names that produce working SQL (query)', done => TESTS['accepts parameter names that produce working SQL']('query', done))
     it('accepts parameter names that produce working SQL (batch)', done => TESTS['accepts parameter names that produce working SQL']('batch', done))
+    it('prepared statement rejects a declaration it cannot build', done => TESTS['prepared statement rejects a declaration it cannot build'](done))
     it('prepared statement rejects parameter names that escape the identifier', done => TESTS['prepared statement rejects parameter names that escape the identifier'](done))
     it('rejects an unsafe type size without throwing on its own tick', done => TESTS['rejects an unsafe type size without throwing on its own tick'](done))
     it('bulk load releases the connection when the driver rejects its options', done => TESTS['bulk load releases the connection when the driver rejects its options']('bulk_table_order', done))

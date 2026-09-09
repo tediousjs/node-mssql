@@ -86,3 +86,6 @@ if object_id('dbo.proc_canary') is not null
 if object_id('dbo.bulk_table_order') is not null
 	exec('drop table [dbo].[bulk_table_order]')
 
+if object_id('dbo.ps_decl_canary') is not null
+	exec('drop table [dbo].[ps_decl_canary]')
+
