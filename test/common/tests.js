@@ -796,6 +796,32 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'bulk load releases the connection when the driver rejects its options' (name, done) {
+      // tedious validates the bulk options inside newBulkLoad and throws for a bad `order`
+      // direction, with a connection already borrowed; the borrow has to be given back
+      const t = new sql.Table(name)
+      t.create = false
+      t.columns.add('a', sql.Int, { nullable: true })
+      t.rows.add(1)
+
+      const req = new TestRequest()
+      const pool = req.parent
+      const free = () => pool.pool.numFree()
+      const before = free()
+
+      req.bulk(t, { order: { a: 'NOT_A_DIRECTION' } }).then(() => {
+        done(new Error('bulk() should reject an invalid ordering direction'))
+      }, err => {
+        try {
+          assert.strictEqual(err.code, 'EREQUEST', `the rejection should be a request error, got ${err.code}`)
+          assert.strictEqual(free(), before, 'the borrowed connection should have gone back to the pool')
+        } catch (e) {
+          return done(e)
+        }
+        done()
+      })
+    },
+
     'bulk load rejects an unsafe ordering key' (name, done) {
       // the driver writes these into `insert bulk ... WITH (ORDER (<key> <direction>))`
       // unquoted, so a key that closes the clause takes over the load's options

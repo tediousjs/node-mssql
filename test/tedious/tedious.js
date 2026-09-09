@@ -70,6 +70,7 @@ describe('tedious', () => {
     it('accepts parameter names that produce working SQL (batch)', done => TESTS['accepts parameter names that produce working SQL']('batch', done))
     it('prepared statement rejects parameter names that escape the identifier', done => TESTS['prepared statement rejects parameter names that escape the identifier'](done))
     it('rejects an unsafe type size without throwing on its own tick', done => TESTS['rejects an unsafe type size without throwing on its own tick'](done))
+    it('bulk load releases the connection when the driver rejects its options', done => TESTS['bulk load releases the connection when the driver rejects its options']('bulk_table_order', done))
     it('bulk load rejects an unsafe ordering key', done => TESTS['bulk load rejects an unsafe ordering key']('bulk_table_order', done))
     it('bulk load accepts a quoted ordering key', done => TESTS['bulk load accepts a quoted ordering key']('bulk_table_order', done))
     it('rejects a stored procedure name that escapes the exec', done => TESTS['rejects a stored procedure name that escapes the exec'](done))
