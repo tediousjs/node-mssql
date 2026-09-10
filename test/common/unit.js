@@ -5,6 +5,8 @@
 const sql = require('../../')
 const assert = require('assert')
 const udt = require('../../lib/udt')
+const { assertSafeProcedureName } = require('../../lib/utils')
+const { declare } = require('../../lib/datatypes')
 const BasePool = require('../../lib/base/connection-pool')
 const ConnectionPool = require('../../lib/tedious/connection-pool')
 
@@ -734,5 +736,251 @@ describe('connection string auth - tedious', () => {
         }
       }
     })
+  })
+})
+
+describe('parameter name validation', () => {
+  // Names verified to produce working SQL against SQL Server. The library prepends '@',
+  // so the name itself sits in an identifier's subsequent position, where T-SQL also
+  // permits digits and '$'.
+  const accepted = [
+    'param1', 'input_parameter', '_leadingUnderscore', 'MixedCase123', 'p1_0',
+    '0', '1', '1leadingDigit', '2fa_code', '$x', '$', 'a$b',
+    '@leadingAt', '#leadingHash', 'naïve', 'náme', 'नाम', '用户', 'aⅨ',
+    // characters SQL Server accepts inside an identifier: fullwidth underscore and
+    // katakana middle dots, zero-width joiners, and connector punctuation
+    'a\uFF3Fb', 'a\u30FBb', 'a\uFF65b', 'a\u200Cb', 'a\u200Db', 'a\u203Fb', 'a\u2040b'
+  ]
+
+  // Names containing a character that terminates or escapes the identifier. These are the
+  // names that use tab as a T-SQL whitespace substitute, which the old denylist missed.
+  const rejected = [
+    'has space', "has'quote", 'has--comment', 'has/*comment', 'has*/comment',
+    'has\ttab', 'has\nnewline', 'has\rreturn', 'has;semicolon', 'has=equals',
+    'has[bracket', 'has]bracket', 'has(paren', 'has.dot', 'has-dash',
+    'a=1;drop\ttable\tdbo.canary;declare\t@q\tint;select\t@q',
+    'x\tint;create\ttable\tdbo.pwned(x\tint);select\t@x'
+  ]
+
+  it('request should accept names that produce working SQL', () => {
+    for (const name of accepted) {
+      const request = new sql.Request()
+      request.input(name, sql.Int, 1)
+      assert.strictEqual(request.parameters[name].name, name, `input() should accept '${name}'`)
+      request.output(`out_${name}`, sql.Int)
+    }
+  })
+
+  it('request should reject names that escape the identifier', () => {
+    for (const name of rejected) {
+      assert.throws(() => new sql.Request().input(name, sql.Int, 1),
+        err => err.code === 'EINJECT', `input() should reject ${JSON.stringify(name)}`)
+      assert.throws(() => new sql.Request().output(name, sql.Int),
+        err => err.code === 'EINJECT', `output() should reject ${JSON.stringify(name)}`)
+    }
+  })
+
+  it('prepared statement should accept names that produce working SQL', () => {
+    for (const name of accepted) {
+      const ps = new sql.PreparedStatement()
+      ps.input(name, sql.Int)
+      assert.strictEqual(ps.parameters[name].name, name, `input() should accept '${name}'`)
+      ps.output(`out_${name}`, sql.Int)
+    }
+  })
+
+  it('prepared statement should reject names that escape the identifier', () => {
+    for (const name of rejected) {
+      assert.throws(() => new sql.PreparedStatement().input(name, sql.Int),
+        err => err.code === 'EINJECT', `input() should reject ${JSON.stringify(name)}`)
+      assert.throws(() => new sql.PreparedStatement().output(name, sql.Int),
+        err => err.code === 'EINJECT', `output() should reject ${JSON.stringify(name)}`)
+    }
+  })
+
+  it('request should reject a non-primitive name whose toString can change', () => {
+    let calls = 0
+    const twoFaced = { toString () { return ++calls === 1 ? 'safe' : 'x];drop table dbo.t--' } }
+    assert.throws(() => new sql.Request().input(twoFaced, sql.Int, 1),
+      err => err.code === 'EINJECT', 'input() should reject a non-primitive name')
+  })
+
+  it('request should keep parameter values unrestricted', () => {
+    const request = new sql.Request()
+    request.input('safe', sql.VarChar, "x'; drop table dbo.canary--")
+    assert.strictEqual(request.parameters.safe.value, "x'; drop table dbo.canary--",
+      'values should not be validated as identifiers')
+  })
+})
+
+describe('column name validation', () => {
+  const hostile = 'a] int); create table dbo.pwned (z int); --'
+
+  it('declare should reject a column name that closes the quoted identifier', () => {
+    const table = new sql.Table('dbo.MyTable')
+    table.columns.push({ name: hostile, type: sql.Int().type, nullable: true })
+    assert.throws(() => table.declare(), /Invalid column name/,
+      'declare() should reject a name pushed directly onto the columns array')
+  })
+
+  it('declare should reject a column name mutated after it was added', () => {
+    const table = new sql.Table('dbo.MyTable')
+    table.columns.add('a', sql.Int, { nullable: true })
+    table.columns[0].name = hostile
+    assert.throws(() => table.declare(), /Invalid column name/,
+      'declare() should re-check the name at the point it builds SQL')
+  })
+
+  it('declare should accept a doubled bracket, which is the escaped form', () => {
+    const table = new sql.Table('dbo.MyTable')
+    table.columns.add('a]]b', sql.Int, { nullable: true })
+    assert.strictEqual(table.declare(), 'create table [dbo].[MyTable] ([a]]b] int null)',
+      'declare() should emit an escaped bracket unchanged')
+  })
+
+  it('declare should accept ordinary names including spaces', () => {
+    const table = new sql.Table('dbo.MyTable')
+    table.columns.add('normal', sql.Int, { nullable: true })
+    table.columns.add('with space', sql.Int, { nullable: true })
+    assert.strictEqual(table.declare(),
+      'create table [dbo].[MyTable] ([normal] int null, [with space] int null)',
+      'declare() should emit ordinary names as quoted identifiers')
+  })
+
+  it('fromRecordset should accept server-supplied names containing a bracket', () => {
+    const recordset = []
+    recordset.columns = { 'wei]rd': { type: sql.Int, nullable: true } }
+    assert.doesNotThrow(() => sql.Table.fromRecordset(recordset, 'dbo.T'),
+      'toTable() should not reject names the server produced, since TVPs never emit them as SQL')
+  })
+})
+
+describe('table-valued parameter type name validation', () => {
+  it('should accept type names that produce working SQL', () => {
+    for (const name of ['MSSQLTestType', 'AI.UDT_StringArray', 'dbo.T1', '用户型',
+      '[My Type]', 'dbo.[FR Space Type]', '[dbo].[FR Space Type]', '[a]]b]', 'dbo."My Type"']) {
+      assert.strictEqual(declare(sql.TVP(name).type, sql.TVP(name)), `${name} readonly`,
+        `TVP() should accept '${name}'`)
+    }
+  })
+
+  it('should accept a type name the tedious driver takes from the value instead', () => {
+    assert.doesNotThrow(() => declare(sql.TVP().type, sql.TVP()),
+      'a missing type name should be left to the driver')
+  })
+
+  it('should accept a qualified name with an omitted part', () => {
+    assert.strictEqual(declare(sql.TVP('mydb..MyType').type, sql.TVP('mydb..MyType')), 'mydb..MyType readonly',
+      'an omitted schema should be accepted in a type name too')
+    assert.throws(() => declare(sql.TVP('.MyType').type, sql.TVP('.MyType')), err => err.code === 'EINJECT',
+      'a leading empty part should still be rejected')
+  })
+
+  it('should trim padding rather than refuse it', () => {
+    assert.strictEqual(declare(sql.TVP('  dbo.T1  ').type, sql.TVP('  dbo.T1  ')), 'dbo.T1 readonly',
+      'a padded type name should be trimmed')
+  })
+
+  it('should reject a type name that escapes the declaration, wherever it was set', () => {
+    const payload = 'int; create table dbo.pwned (a int); --'
+    // through the factory
+    assert.throws(() => declare(sql.TVP(payload).type, sql.TVP(payload)),
+      err => err.code === 'EINJECT', 'a hostile name given to TVP() should be rejected')
+    // set on the descriptor afterwards, which does not go through the factory
+    const descriptor = sql.TVP('dbo.Legit')
+    descriptor.tvpType = payload
+    assert.throws(() => declare(descriptor.type, descriptor),
+      err => err.code === 'EINJECT', 'a name changed after construction should be rejected')
+    // a descriptor built by hand, which never touches the factory at all
+    assert.throws(() => declare(sql.TVP, { tvpType: payload }),
+      err => err.code === 'EINJECT', 'a hand-built descriptor should be rejected')
+  })
+})
+
+describe('type size validation', () => {
+  it('should emit accepted sizes unchanged', () => {
+    assert.strictEqual(declare(sql.VarChar, { length: 'max' }), 'varchar (max)', "'max' should pass through")
+    assert.strictEqual(declare(sql.VarChar, { length: null }), 'varchar (MAX)', 'a missing length should become MAX')
+    assert.strictEqual(declare(sql.VarChar, { length: 50 }), 'varchar (50)', 'a number should be emitted as given')
+    assert.strictEqual(declare(sql.VarChar, { length: 9000 }), 'varchar (MAX)', 'an oversized length should become MAX')
+    assert.strictEqual(declare(sql.VarChar, { length: Infinity }), 'varchar (MAX)', 'Infinity should ask for the maximum')
+    assert.strictEqual(declare(sql.Decimal, { precision: 10, scale: 2 }), 'decimal (10, 2)', 'precision and scale should be emitted as given')
+    assert.strictEqual(declare(sql.DateTime2, { scale: 3 }), 'datetime2 (3)', 'scale should be emitted as given')
+  })
+
+  it('should accept the values a caller can reasonably supply', () => {
+    assert.strictEqual(declare(sql.VarChar, { length: '50 ' }), 'varchar (50)', 'padding should be trimmed')
+    assert.strictEqual(declare(sql.VarChar, { length: ' 50' }), 'varchar (50)', 'padding should be trimmed')
+    assert.strictEqual(declare(sql.VarChar, { length: 50n }), 'varchar (50)', 'a bigint should be accepted')
+    // eslint-disable-next-line no-new-wrappers
+    assert.strictEqual(declare(sql.VarChar, { length: new String('max') }), 'varchar (max)', 'a boxed string should be accepted')
+    assert.strictEqual(declare(sql.NVarChar, { length: 'random' }), 'nvarchar (random)', 'a word the server will reject should still reach it')
+  })
+
+  it('should not require options for a type that takes no size', () => {
+    assert.strictEqual(declare(sql.Int), 'int', 'a type with no size should declare without options')
+    assert.strictEqual(declare(sql.Bit), 'bit', 'a type with no size should declare without options')
+  })
+
+  it('should reject sizes that escape the declaration', () => {
+    const payload = '8000); create table dbo.pwned (a int); --'
+    assert.throws(() => declare(sql.VarChar, { length: payload }), err => err.code === 'EINJECT',
+      'a length that is not a number should be rejected')
+    assert.throws(() => declare(sql.Decimal, { precision: payload, scale: 0 }), err => err.code === 'EINJECT',
+      'a precision that is not a number should be rejected')
+    assert.throws(() => declare(sql.DateTime2, { scale: payload }), err => err.code === 'EINJECT',
+      'a scale that is not a number should be rejected')
+  })
+
+  it('should emit the value it checked, so a second read cannot differ', () => {
+    let reads = 0
+    const twoFaced = { toString () { return ++reads === 1 ? '50' : '8000); drop table dbo.t --' } }
+    assert.strictEqual(declare(sql.VarChar, { length: twoFaced }), 'varchar (50)',
+      'the checked value should be the one emitted')
+  })
+
+  it('should reject identifiers with a typed error', () => {
+    assert.throws(() => declare(sql.VarChar, { length: 'a b' }), err => err instanceof sql.MSSQLError,
+      'the rejection should be a library error, not a bare Error')
+  })
+})
+
+describe('procedure name validation', () => {
+  it('should accept the names a caller can reasonably supply', () => {
+    assert.strictEqual(assertSafeProcedureName('sp_help'), 'sp_help', 'a bare name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('dbo.__test2'), 'dbo.__test2', 'a schema-qualified name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('[dbo].[__test2]'), '[dbo].[__test2]', 'a bracket-quoted name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('"dbo"."p"'), '"dbo"."p"', 'a double-quoted name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('db.dbo.p'), 'db.dbo.p', 'a database-qualified name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('#temp_proc'), '#temp_proc', 'a temporary procedure name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('[dbo].[my proc]'), '[dbo].[my proc]', 'a quoted name containing a space should be accepted')
+    assert.strictEqual(assertSafeProcedureName(' dbo.p '), 'dbo.p', 'padding should be trimmed')
+    assert.strictEqual(assertSafeProcedureName('srv.db.dbo.p'), 'srv.db.dbo.p', 'a four-part name should be accepted')
+    assert.strictEqual(assertSafeProcedureName('master..sp_who'), 'master..sp_who', 'an omitted schema should be accepted')
+    assert.strictEqual(assertSafeProcedureName('srv.db..proc'), 'srv.db..proc', 'an omitted intermediate part should be accepted')
+    assert.strictEqual(assertSafeProcedureName('[db]..[proc]'), '[db]..[proc]', 'an omitted part between quoted parts should be accepted')
+  })
+
+  it('should emit the value it checked, so a second read cannot differ', () => {
+    let reads = 0
+    const name = { toString () { reads += 1; return reads <= 1 ? 'dbo.p' : 'dbo.p; drop table t --' } }
+    assert.strictEqual(assertSafeProcedureName(name), 'dbo.p', 'the checked value should be the one returned')
+  })
+
+  it('should reject names that escape the exec', () => {
+    for (const payload of [
+      'dbo.p; create table dbo.pwned (a int); --',
+      'dbo.p) ; select 1',
+      'dbo.p --',
+      'dbo p',
+      'dbo.p\tselect 1',
+      '.proc',
+      'db..',
+      '.',
+      ''
+    ]) {
+      assert.throws(() => assertSafeProcedureName(payload), err => err.code === 'EINJECT',
+        `${JSON.stringify(payload)} should be rejected`)
+    }
   })
 })
