@@ -150,6 +150,13 @@ const config = {
 * [bulk](#bulk-table-options-callback)
 * [cancel](#cancel)
 
+### Identifier rules
+
+* [Parameter names](#parameter-names)
+* [Column names](#column-names)
+* [Type names and sizes](#type-names-and-sizes)
+* [Procedure names](#procedure-names)
+
 ### Transactions
 
 * [Transaction](#transaction)
@@ -838,6 +845,7 @@ request.execute('procedure_name', (err, result) => {
 
 __Errors__
 - EREQUEST (`RequestError`) - *Message from SQL Server*
+- EINJECT (`RequestError`) - Procedure name or parameter type is not a valid identifier. See [Identifiers](#identifiers).
 - ECANCEL (`RequestError`) - Cancelled.
 - ETIMEOUT (`RequestError`) - Request timeout.
 - ENOCONN (`RequestError`) - No connection is specified for that request.
@@ -890,7 +898,7 @@ sql.map.register(Number, sql.BigInt)
 
 __Errors__ (synchronous)
 - EARGS (`RequestError`) - Invalid number of arguments.
-- EINJECT (`RequestError`) - SQL injection warning.
+- EINJECT (`RequestError`) - Parameter name is not a valid identifier. See [Identifiers](#identifiers).
 
 ---------------------------------------
 
@@ -915,7 +923,7 @@ request.output('output_parameter', sql.VarChar(50), 'abc')
 
 __Errors__ (synchronous)
 - EARGS (`RequestError`) - Invalid number of arguments.
-- EINJECT (`RequestError`) - SQL injection warning.
+- EINJECT (`RequestError`) - Parameter name is not a valid identifier. See [Identifiers](#identifiers).
 
 ---------------------------------------
 
@@ -999,6 +1007,7 @@ __Errors__
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 - EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
+- EINJECT (`RequestError`) - Parameter type is not a valid identifier. See [Identifiers](#identifiers).
 
 ```javascript
 const request = new sql.Request()
@@ -1044,6 +1053,7 @@ __Errors__
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 - EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
+- EINJECT (`RequestError`) - Parameter type is not a valid identifier. See [Identifiers](#identifiers).
 
 You can enable multiple recordsets in queries with the `request.multiple = true` command.
 
@@ -1090,6 +1100,7 @@ __Errors__
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 - EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
+- EINJECT (`RequestError`) - Column name or parameter type is not a valid identifier. See [Identifiers](#identifiers).
 
 ---------------------------------------
 
@@ -1320,7 +1331,7 @@ ps.input('input_parameter', sql.VarChar(50))
 
 __Errors__ (synchronous)
 - EARGS (`PreparedStatementError`) - Invalid number of arguments.
-- EINJECT (`PreparedStatementError`) - SQL injection warning.
+- EINJECT (`PreparedStatementError`) - Parameter name is not a valid identifier. See [Identifiers](#identifiers).
 
 ---------------------------------------
 
@@ -1342,7 +1353,7 @@ ps.output('output_parameter', sql.VarChar(50))
 
 __Errors__ (synchronous)
 - EARGS (`PreparedStatementError`) - Invalid number of arguments.
-- EINJECT (`PreparedStatementError`) - SQL injection warning.
+- EINJECT (`PreparedStatementError`) - Parameter name is not a valid identifier. See [Identifiers](#identifiers).
 
 ---------------------------------------
 
@@ -1915,6 +1926,100 @@ Results in:
 ]
 ```
 
+## Identifiers
+
+Values are sent to the server as parameters and may hold anything. A few things
+are not values, and cannot be: the name of a parameter, the name of a column in a
+bulk load, the type a parameter is declared as, and the name of a stored procedure.
+Those are *identifiers*, and
+no SQL database can bind them, so this library builds them into the statement it
+sends. It checks them, and rejects anything that could end the identifier and have
+the rest of the value read as SQL.
+
+That check is not a substitute for your own. If any of these comes from somewhere
+you do not control, map it to a value you expect first:
+
+```javascript
+const columns = { name: 'name', created: 'created_at' }        // what you allow
+const column = columns[req.query.sortBy]                       // what they asked for
+if (!column) throw new Error('unknown column')
+
+request.input(column, sql.NVarChar, value)
+```
+
+### Parameter names
+
+`request.input()`, `request.output()` and the same methods on a prepared statement
+take a name without the leading `@`. It may hold letters, digits, marks and
+connector punctuation from any script, along with `@`, `#`, `$` and the two
+zero-width joiners. A name that is not a string or a number is rejected, as is one
+holding an invisible format character, because one of them is a separator the
+server treats as ending the identifier.
+
+Anything else raises `EINJECT`. Note that a name this library accepts may still be
+one the server rejects; the check is deliberately wider than the server's own rules
+so that it only refuses what could change the shape of the statement.
+
+### Column names
+
+`table.columns.add()` names a column in a bulk load, and the name is emitted as a
+quoted identifier. A `]` ends that quoting, so a name holding one must double it,
+which is how T-SQL escapes it:
+
+```javascript
+table.columns.add('a]]b', sql.Int)   // the column named a]b
+```
+
+A single `]` raises `EINJECT`. Column names are not otherwise restricted: spaces,
+punctuation and reserved words are all fine, because the quoting handles them.
+
+The keys of `options.order` are also identifiers, but the driver writes them into the bulk
+statement's `ORDER (...)` clause *unquoted* rather than as `[name]`. They follow the type
+name rule instead: bare, or quoted with brackets or double quotes.
+
+```javascript
+request.bulk(table, { order: { created_at: 'ASC' } })
+request.bulk(table, { order: { '[Created At]': 'DESC' } })   // quote a spaced name yourself
+```
+
+### Type names and sizes
+
+`sql.TVP()` takes the name of a table type, optionally qualified with a schema and
+optionally quoted with brackets or double quotes. A size — the length, precision or
+scale of a type such as `sql.VarChar()` — must be a number, or the word `max` the
+declaration accepts in its place. Padding is trimmed.
+
+```javascript
+request.input('rows', sql.TVP('dbo.[My Type]'), table)
+request.input('name', sql.VarChar(50), value)
+request.input('note', sql.VarChar('max'), value)
+```
+
+A size is checked wherever it is built into SQL, which includes the declaration a
+bulk load sends and the parameter list a query sends, not only `sql.TVP()`.
+
+### Procedure names
+
+`request.execute()` takes the name of a stored procedure, optionally qualified with
+a server, database and schema and optionally quoted with brackets or double quotes.
+An omitted part may be left empty, as T-SQL allows. The `msnodesqlv8` driver builds
+this into the statement it sends; the `tedious` driver sends it as a bound remote
+procedure call and could not be injected through it. Both check it, so a name is
+accepted or rejected the same way whichever driver you use.
+
+```javascript
+request.execute('dbo.[My Procedure]')
+request.execute('master..sp_who')      // an omitted schema is fine
+```
+
+The first and last parts must be present, so `.proc` and `db..` are rejected.
+
+Anything else raises `EINJECT`. Numbered procedures — the deprecated
+`procedure;1` form — are rejected, because the `;` cannot be told apart from the
+end of a statement.
+
+---------------------------------------
+
 ## Errors
 
 There are 4 types of errors you can handle:
@@ -1951,10 +2056,10 @@ Name | Code | Message
 `RequestError` | ECANCEL | Cancelled.
 `RequestError` | ETIMEOUT | Request timeout.
 `RequestError` | EARGS | Invalid number of arguments.
-`RequestError` | EINJECT | SQL injection warning.
+`RequestError` | EINJECT | Parameter name, column name or type is not a valid identifier.
 `RequestError` | ENOCONN | No connection is specified for that request.
 `PreparedStatementError` | EARGS | Invalid number of arguments.
-`PreparedStatementError` | EINJECT | SQL injection warning.
+`PreparedStatementError` | EINJECT | Parameter name is not a valid identifier.
 `PreparedStatementError` | EALREADYPREPARED | Statement is already prepared.
 `PreparedStatementError` | ENOTPREPARED | Statement is not prepared.
 
