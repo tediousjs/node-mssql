@@ -1283,6 +1283,26 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'output parameters with a falsy initial value' (done) {
+      const req = new TestRequest()
+      req.output('i', sql.Int, 0)
+      req.output('s', sql.NVarChar(10), '')
+      req.output('b', sql.Bit, false)
+      req.query("set @i = @i + 1; set @s = @s + N'x'; set @b = ~@b").then(result => {
+        assert.strictEqual(result.output.i, 1, 'an int output starting at 0 should be incremented')
+        assert.strictEqual(result.output.s, 'x', 'an nvarchar output starting empty should be appended to')
+        assert.strictEqual(result.output.b, true, 'a bit output starting false should be flipped')
+
+        const proc = new TestRequest()
+        proc.input('in', sql.Int, 1)
+        proc.output('out', sql.Int, 0)
+        return proc.execute('__testInputOutputValue')
+      }).then(result => {
+        assert.strictEqual(result.output.out, 1, 'a procedure output starting at 0 should be added to')
+        done()
+      }).catch(done)
+    },
+
     'prepared statement' (done) {
       const ps = new TestPreparedStatement()
       ps.input('num', sql.Int)

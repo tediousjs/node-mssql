@@ -91,6 +91,7 @@ describe('tedious', () => {
     it('query with duplicate parameters throws', done => TESTS['query with duplicate parameters throws'](done))
     it('query parameters can be replaced', done => TESTS['query parameters can be replaced'](done))
     it('parameters with length as max', done => TESTS['parameters with length as max'](done))
+    it('output parameters with a falsy initial value', done => TESTS['output parameters with a falsy initial value'](done))
     it('query with error', done => TESTS['query with error'](done))
     it('query with multiple errors', done => TESTS['query with multiple errors'](done))
     it('query with raiseerror', done => TESTS['query with raiseerror'](done))
