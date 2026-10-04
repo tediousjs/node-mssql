@@ -22,6 +22,9 @@ if exists (select * from sys.procedures where name = '__testDuplicateNames')
 if exists (select * from sys.procedures where name = '__testInputOutputValue')
 	exec('drop procedure [dbo].[__testInputOutputValue]')
 
+if exists (select * from sys.procedures where name = '__testParameterOrder')
+	exec('drop procedure [dbo].[__testParameterOrder]')
+
 if exists (select * from sys.procedures where name = '__testRowsAffected')
 	exec('drop procedure [dbo].[__testRowsAffected]')
 

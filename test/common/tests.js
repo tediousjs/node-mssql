@@ -382,6 +382,26 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'stored procedure with an output initial value declared in any order' (done) {
+      // the procedure gives a different answer for every way the three values could be
+      // assigned, so it only returns 312 if each one reached its own parameter
+      const orders = [['a', 'b', 'out'], ['out', 'a', 'b'], ['a', 'out', 'b']]
+      const values = { a: 1, b: 2, out: 3 }
+      orders.reduce((previous, order) => previous.then(() => {
+        const req = new TestRequest()
+        for (const name of order) {
+          if (name === 'out') {
+            req.output(name, sql.Int, values[name])
+          } else {
+            req.input(name, sql.Int, values[name])
+          }
+        }
+        return req.execute('__testParameterOrder').then(result => {
+          assert.strictEqual(result.output.out, 312, `declaring ${order.join(', ')} should give each parameter its own value`)
+        })
+      }), Promise.resolve()).then(() => done()).catch(done)
+    },
+
     'empty query' (done) {
       const req = new TestRequest()
       req.query('').then(result => {
