@@ -90,6 +90,8 @@ describe('tedious', () => {
     it('query with output parameters (batch)', done => TESTS['query with output parameters']('batch', done))
     it('query with duplicate parameters throws', done => TESTS['query with duplicate parameters throws'](done))
     it('query parameters can be replaced', done => TESTS['query parameters can be replaced'](done))
+    it('parameters with length as max', done => TESTS['parameters with length as max'](done))
+    it('output parameters with a falsy initial value', done => TESTS['output parameters with a falsy initial value'](done))
     it('query with error', done => TESTS['query with error'](done))
     it('query with multiple errors', done => TESTS['query with multiple errors'](done))
     it('query with raiseerror', done => TESTS['query with raiseerror'](done))
@@ -318,6 +320,7 @@ describe('tedious', () => {
     })
 
     it('new Table', done => TESTS['new Table'](done))
+    it('new Table with string columns without a length', done => TESTS['new Table with string columns without a length'](done))
     it('Recordset.toTable()', done => TESTS['Recordset.toTable()'](done))
     it('Recordset.toTable() from existing', done => TESTS['Recordset.toTable() from existing'](done))
 

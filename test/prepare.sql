@@ -112,6 +112,21 @@ exec('create type [dbo].[MSSQLTestType] as table(
 	[b] [integer] null
 )')
 
+exec('create type [dbo].[MSSQLTestMaxType] as table(
+	[n] [nvarchar](50) null,
+	[v] [varchar](50) null,
+	[vb] [varbinary](50) null
+)')
+
+exec('create procedure [dbo].[__testMaxType]
+	@tvp MSSQLTestMaxType readonly
+as
+begin
+
+	select * from @tvp
+
+end')
+
 exec('create procedure [dbo].[__test7]
 	@tvp MSSQLTestType readonly
 as

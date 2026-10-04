@@ -13,6 +13,9 @@ if exists (select * from sys.procedures where name = '__test5')
 if exists (select * from sys.procedures where name = '__test7')
 	exec('drop procedure [dbo].[__test7]')
 
+if exists (select * from sys.procedures where name = '__testMaxType')
+	exec('drop procedure [dbo].[__testMaxType]')
+
 if exists (select * from sys.procedures where name = '__testDuplicateNames')
 	exec('drop procedure [dbo].[__testDuplicateNames]')
 
@@ -27,6 +30,9 @@ if exists (select * from sys.procedures where name = '__testDelay')
 
 if exists (select * from sys.types where is_user_defined = 1 and name = 'MSSQLTestType')
 	exec('drop type [dbo].[MSSQLTestType]')
+
+if exists (select * from sys.types where is_user_defined = 1 and name = 'MSSQLTestMaxType')
+	exec('drop type [dbo].[MSSQLTestMaxType]')
 
 if exists (select * from sys.tables where name = 'prepstm_test')
 	exec('drop table [dbo].[tvp_test]')
