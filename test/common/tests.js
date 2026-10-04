@@ -1268,6 +1268,21 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'parameters with length as max' (done) {
+      const req = new TestRequest()
+      req.input('nvarchar', sql.NVarChar('max'), 'JP1016')
+      req.input('varchar', sql.VarChar('max'), 'JP1016')
+      req.input('varbinary', sql.VarBinary('max'), Buffer.from('JP1016'))
+      req.output('out', sql.NVarChar('max'), 'JP1016')
+      req.query('select @nvarchar as nvarchar, @varchar as varchar, @varbinary as varbinary; set @out = @out + @out').then(result => {
+        assert.strictEqual(result.recordset[0].nvarchar, 'JP1016', 'nvarchar(max) input should round-trip')
+        assert.strictEqual(result.recordset[0].varchar, 'JP1016', 'varchar(max) input should round-trip')
+        assert.deepStrictEqual(result.recordset[0].varbinary, Buffer.from('JP1016'), 'varbinary(max) input should round-trip')
+        assert.strictEqual(result.output.out, 'JP1016JP1016', 'nvarchar(max) output should round-trip')
+        done()
+      }).catch(done)
+    },
+
     'prepared statement' (done) {
       const ps = new TestPreparedStatement()
       ps.input('num', sql.Int)
@@ -2479,6 +2494,24 @@ module.exports = (sql, driver) => {
         assert.strictEqual(result.recordsets[0][0].a, 'asdf')
         assert.strictEqual(result.recordsets[0][0].b, 15)
 
+        done()
+      }).catch(done)
+    },
+
+    'new Table with string columns without a length' (done) {
+      const tvp = new sql.Table('dbo.MSSQLTestMaxType')
+      tvp.columns.add('n', sql.NVarChar)
+      tvp.columns.add('v', sql.VarChar)
+      tvp.columns.add('vb', sql.VarBinary)
+      tvp.rows.add('asdf', 'asdf', Buffer.from('asdf'))
+
+      const req = new TestRequest()
+      req.input('tvp', tvp)
+      req.execute('__testMaxType').then(result => {
+        assert.strictEqual(result.recordsets[0].length, 1, 'the table should come back with its one row')
+        assert.strictEqual(result.recordsets[0][0].n, 'asdf', 'an nvarchar column should round-trip')
+        assert.strictEqual(result.recordsets[0][0].v, 'asdf', 'a varchar column should round-trip')
+        assert.deepStrictEqual(result.recordsets[0][0].vb, Buffer.from('asdf'), 'a varbinary column should round-trip')
         done()
       }).catch(done)
     },

@@ -165,6 +165,7 @@ describe('msnodesqlv8', function () {
     it('bulk load rejects unsafe column names without leaking a connection', done => TESTS['bulk load rejects unsafe column names without leaking a connection']('bulk_table_unsafe', done))
     it('bulk load releases the connection when a column name changes after the check', done => TESTS['bulk load releases the connection when a column name changes after the check']('bulk_table_mutated', done))
     it('bulk load into an existing table rejects an unsafe column name', done => TESTS['bulk load into an existing table rejects an unsafe column name']('bulk_table', done))
+    it('bulk insert with length as max (table)', done => TESTS['bulk insert with length as max']('bulk_table5', done))
 
     after(done => sql.close(done))
   })
@@ -264,6 +265,7 @@ describe('msnodesqlv8', function () {
     })
 
     it('new Table', done => TESTS['new Table'](done))
+    it('new Table with string columns without a length', done => TESTS['new Table with string columns without a length'](done))
     it('Recordset.toTable()', done => TESTS['Recordset.toTable()'](done))
     it('Recordset.toTable() from existing', done => TESTS['Recordset.toTable() from existing'](done))
 
