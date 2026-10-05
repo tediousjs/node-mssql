@@ -1249,17 +1249,15 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
-    'bulk insert with length option as undefined throws' (name, done) {
+    'bulk insert of a value that is not a string into a string column throws' (name, done) {
       const req = new TestRequest()
       const table = new sql.Table(name)
       table.create = true
-      table.columns.add('name', sql.NVarChar, {
-        length: undefined
-      })
+      table.columns.add('name', sql.NVarChar(50))
 
-      table.rows.add(table.rows, ['JP1016'])
+      table.rows.add(['JP1016'])
       req.bulk(table).then(() => {
-        assert.fail('it should throw error while insertion length with non-supported values')
+        assert.fail('bulk() should reject a value that is not a string')
       }).catch(err => {
         assert.strictEqual(err.message, 'Invalid string.')
         assert.strictEqual(err.code, 'EREQUEST')
