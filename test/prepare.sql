@@ -165,6 +165,10 @@ exec('create table [dbo].[bulk_table] (
 	c image null
 )')
 
+exec('create table [dbo].[bulk_table_xml] (
+	a xml null
+)')
+
 exec('create table [dbo].[rowsaffected_test] (
 	a int not null
 )')

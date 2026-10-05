@@ -185,6 +185,8 @@ describe('tedious', () => {
     it('bulk insert with length option as undefined throws (table)', done => TESTS['bulk insert with length option as undefined throws']('bulk_table3', done))
     it('bulk insert with length option as string other than max throws (table)', done => TESTS['bulk insert with length option as string other than max throws']('bulk_table4', done))
     it('bulk insert with length as max (table)', done => TESTS['bulk insert with length as max']('bulk_table5', done))
+    it('bulk load with columns declared without a length', done => TESTS['bulk load with columns declared without a length']('bulk_table_unsized', done))
+    it('bulk load of an Xml column into an existing xml column', done => TESTS['bulk load of an Xml column into an existing xml column']('bulk_table_xml', done))
     after(done => sql.close(done))
   })
 

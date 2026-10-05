@@ -169,6 +169,8 @@ describe('msnodesqlv8', function () {
     it('bulk load releases the connection when a column name changes after the check', done => TESTS['bulk load releases the connection when a column name changes after the check']('bulk_table_mutated', done))
     it('bulk load into an existing table rejects an unsafe column name', done => TESTS['bulk load into an existing table rejects an unsafe column name']('bulk_table', done))
     it('bulk insert with length as max (table)', done => TESTS['bulk insert with length as max']('bulk_table5', done))
+    it('bulk load with columns declared without a length', done => TESTS['bulk load with columns declared without a length']('bulk_table_unsized', done))
+    it.skip('bulk load of an Xml column into an existing xml column (not supported by msnodesqlv8)', done => TESTS['bulk load of an Xml column into an existing xml column']('bulk_table_xml', done))
 
     after(done => sql.close(done))
   })
