@@ -1176,6 +1176,39 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'bulk load releases the connection when the table lookup fails' (name, done) {
+      // without create, the table is looked up on the borrowed connection before any row is
+      // sent. A database that does not exist makes that lookup fail outright, rather than
+      // find no table, and the borrow has to come back with the error. The name is used by
+      // no other test, so nothing the driver remembers about it can reach another load.
+      const t = new sql.Table(`notexistingdb.dbo.${name}`)
+      t.create = false
+      t.columns.add('a', sql.Int, { nullable: true })
+      t.rows.add(1)
+
+      const req = new TestRequest()
+      const pool = req.parent
+      const free = () => pool.pool.numFree()
+      const before = free()
+
+      req.bulk(t).then(() => {
+        done(new Error('bulk() should reject a table in a database that does not exist'))
+      }, err => {
+        try {
+          assert.strictEqual(pool.pool.numUsed(), 0, 'the borrowed connection should have been released')
+          assert.strictEqual(free(), before, 'the borrowed connection should have gone back to the pool')
+          assert.ok(err instanceof sql.RequestError, 'the rejection should be a RequestError')
+          assert.strictEqual(err.code, 'EREQUEST', `the rejection should be a request error, got ${err.code}`)
+        } catch (e) {
+          return done(e)
+        }
+        new sql.Request().query('select 1 as v').then(result => {
+          assert.strictEqual(result.recordset[0].v, 1, 'the pool should still serve queries afterwards')
+          done()
+        }).catch(done)
+      })
+    },
+
     'bulk load with varchar-max field' (name, done) {
       const t = new sql.Table(name)
       t.create = true
