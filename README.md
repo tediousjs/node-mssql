@@ -920,6 +920,7 @@ request.execute('procedure_name', (err, result) => {
 
 __Errors__
 - EREQUEST (`RequestError`) - *Message from SQL Server*
+- EPARAM (`RequestError`) - A parameter value is not valid for its type.
 - EINJECT (`RequestError`) - Procedure name or parameter type is not a valid identifier. See [Identifiers](#identifiers).
 - ECANCEL (`RequestError`) - Cancelled.
 - ETIMEOUT (`RequestError`) - Request timeout.
@@ -1123,6 +1124,7 @@ request.query('select 1 as number', (err, result) => {
 __Errors__
 - ETIMEOUT (`RequestError`) - Request timeout.
 - EREQUEST (`RequestError`) - *Message from SQL Server*
+- EPARAM (`RequestError`) - A parameter value is not valid for its type.
 - ECANCEL (`RequestError`) - Cancelled.
 - ENOCONN (`RequestError`) - No connection is specified for that request.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
@@ -1169,6 +1171,7 @@ request.batch('create procedure #temporary as select * from table', (err, result
 __Errors__
 - ETIMEOUT (`RequestError`) - Request timeout.
 - EREQUEST (`RequestError`) - *Message from SQL Server*
+- EPARAM (`RequestError`) - A parameter value is not valid for its type.
 - ECANCEL (`RequestError`) - Cancelled.
 - ENOCONN (`RequestError`) - No connection is specified for that request.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
@@ -1577,6 +1580,7 @@ __Errors__
 - ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
 - ETIMEOUT (`RequestError`) - Request timeout.
 - EREQUEST (`RequestError`) - *Message from SQL Server*
+- EPARAM (`RequestError`) - A parameter value is not valid for its type.
 - ECANCEL (`RequestError`) - Cancelled.
 
 ---------------------------------------

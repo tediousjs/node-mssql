@@ -888,6 +888,77 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'does not keep a connection when a parameter value cannot be converted' (mode, done) {
+      // a value with no prototype has nothing to convert it with, on either driver: the
+      // request has to fail with a parameter error and leave the pool as it found it
+      const pool = new sql.Request().parent
+      const borrowed = () => pool.pool.numUsed()
+      const before = borrowed()
+
+      const req = new sql.Request()
+      req.input('in', sql.Int, Object.create(null))
+      const run = mode === 'execute' ? req.execute('__testInputOutputValue') : req[mode]('select @in as v')
+      run.then(() => {
+        throw new Error(`${mode}() should reject a value the type cannot convert`)
+      }, err => {
+        assert.ok(err instanceof sql.RequestError, `the rejection should be a RequestError, got ${err.constructor.name}: ${err.message}`)
+        assert.strictEqual(err.code, 'EPARAM', `the rejection should carry the parameter error code, got ${err.code}`)
+        assert.strictEqual(borrowed(), before, 'the pool should have every connection back')
+      }).then(done, done)
+    },
+
+    'does not keep a connection when converting a parameter value throws something other than an Error' (done) {
+      // what a conversion throws is user code's choice: a Symbol cannot even be put into a
+      // message implicitly, and the request still has to settle with a parameter error
+      const pool = new sql.Request().parent
+      const borrowed = () => pool.pool.numUsed()
+      const before = borrowed()
+
+      const value = { toString () { throw Symbol('boom') } }
+      new sql.Request().input('in', sql.NVarChar, value).query('select @in as v').then(() => {
+        throw new Error('query() should reject a value whose conversion throws')
+      }, err => {
+        assert.ok(err instanceof sql.RequestError, `the rejection should be a RequestError, got ${err && err.constructor && err.constructor.name}`)
+        assert.strictEqual(err.code, 'EPARAM', `the rejection should carry the parameter error code, got ${err.code}`)
+        assert.strictEqual(borrowed(), before, 'the pool should have every connection back')
+      }).then(done, done)
+    },
+
+    'does not hold up a transaction when a parameter value cannot be converted' (done) {
+      // the same inside a transaction, which hands its connection to a request on a later
+      // tick: the request has to fail and leave the transaction free for the next one
+      const tran = new TestTransaction()
+      tran.begin().then(() => {
+        return new sql.Request(tran).input('in', sql.Int, Object.create(null)).query('select @in as v').then(() => {
+          throw new Error('query() should reject a value the type cannot convert')
+        }, err => {
+          assert.strictEqual(err.code, 'EPARAM', `the rejection should carry the parameter error code, got ${err.code}`)
+          return new sql.Request(tran).query('select 1 as v')
+        })
+      }).then(result => {
+        assert.strictEqual(result.recordset[0].v, 1, 'the transaction should still run requests')
+        return tran.rollback()
+      }).then(() => done(), err => tran.rollback().then(() => done(err), () => done(err)))
+    },
+
+    'does not hold up a prepared statement when a parameter value cannot be converted' (done) {
+      // a prepared statement hands its connection over on a later tick too, and its values
+      // only arrive with each execution
+      const ps = new TestPreparedStatement()
+      ps.input('in', sql.Int)
+      ps.prepare('select @in as v').then(() => {
+        return ps.execute({ in: Object.create(null) }).then(() => {
+          throw new Error('execute() should reject a value the type cannot convert')
+        }, err => {
+          assert.strictEqual(err.code, 'EPARAM', `the rejection should carry the parameter error code, got ${err.code}`)
+          return ps.execute({ in: 1 })
+        })
+      }).then(result => {
+        assert.strictEqual(result.recordset[0].v, 1, 'the prepared statement should still execute')
+        return ps.unprepare()
+      }).then(() => done(), err => ps.unprepare().then(() => done(err), () => done(err)))
+    },
+
     'bulk load releases the connection when the driver rejects its options' (name, done) {
       // tedious validates the bulk options inside newBulkLoad and throws for a bad `order`
       // direction, with a connection already borrowed; the borrow has to be given back
