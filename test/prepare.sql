@@ -107,6 +107,15 @@ begin
 	set @out = @out + @in
 end')
 
+exec('create procedure [dbo].[__testParameterOrder]
+	@a int,
+	@b int,
+	@out int = NULL OUTPUT
+as
+begin
+	set @out = @out * 100 + @a * 10 + @b
+end')
+
 exec('create type [dbo].[MSSQLTestType] as table(
 	[a] [varchar](50) null,
 	[b] [integer] null

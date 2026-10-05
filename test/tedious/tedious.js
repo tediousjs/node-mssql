@@ -63,6 +63,7 @@ describe('tedious', () => {
     it('stored procedure with one empty recordset', done => TESTS['stored procedure with one empty recordset'](done))
     it('stored procedure with duplicate output column names', done => TESTS['stored procedure with duplicate output column names'](done))
     it('stored procedure with input/output column', done => TESTS['stored procedure with input/output column'](done))
+    it('stored procedure with an output initial value declared in any order', done => TESTS['stored procedure with an output initial value declared in any order'](done))
     it('empty query', done => TESTS['empty query'](done))
     it('query with no recordset', done => TESTS['query with no recordset'](done))
     it('query with one recordset', done => TESTS['query with one recordset'](done))
