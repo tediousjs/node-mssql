@@ -1382,6 +1382,7 @@ transaction.begin(err => {
 ```
 
 __Errors__
+- ENOCONN (`TransactionError`) - No connection is specified for that transaction.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - EALREADYBEGUN (`TransactionError`) - Transaction has already begun.
 
@@ -1544,6 +1545,7 @@ ps.prepare('select @param as value', err => {
 ```
 
 __Errors__
+- ENOCONN (`PreparedStatementError`) - No connection is specified for that prepared statement.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - EALREADYPREPARED (`PreparedStatementError`) - Statement is already prepared.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
@@ -2221,6 +2223,7 @@ Name | Code | Message
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
 `TransactionError` | EREQINPROG | Can't commit/rollback transaction or acquire connection for the request. There is a request in progress.
 `TransactionError` | EABORT | Transaction has been aborted.
+`TransactionError` | ENOCONN | No connection is specified for that transaction.
 `RequestError` | EREQUEST | Message from SQL Server. Error object contains additional details.
 `RequestError` | ECANCEL | Cancelled.
 `RequestError` | ETIMEOUT | Request timeout.
@@ -2231,6 +2234,7 @@ Name | Code | Message
 `PreparedStatementError` | EINJECT | Parameter name is not a valid identifier.
 `PreparedStatementError` | EALREADYPREPARED | Statement is already prepared.
 `PreparedStatementError` | ENOTPREPARED | Statement is not prepared.
+`PreparedStatementError` | ENOCONN | No connection is specified for that prepared statement.
 
 ### Detailed SQL Errors
 
