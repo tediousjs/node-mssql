@@ -20,6 +20,10 @@ const reportsErrorsAfterAResult = major > 5 || (major === 5 && (minor > 1 || (mi
 // or polling, and lets any other run to the end
 const cancelsRunningQueries = major > 5 || (major === 5 && minor >= 6)
 
+// from 3.0 msnodesqlv8 binds a bulk column by the type of the column it loads into, and has no
+// binding for xml, sql_variant or the spatial types, which it refuses as an invalid parameter
+const itBulkLoadsAnyColumnType = major < 3 ? it : (title, fn) => it.skip(`${title} (not supported by msnodesqlv8 3 and later)`, fn)
+
 const config = function () {
   const cfg = JSON.parse(readFileSync(join(__dirname, '../.mssql.json')))
   cfg.driver = 'msnodesqlv8'
@@ -198,6 +202,12 @@ describe('msnodesqlv8', function () {
     it.skip('bulk insert of a value that is not a string into a string column throws (table) (not supported by msnodesqlv8)', done => TESTS['bulk insert of a value that is not a string into a string column throws']('bulk_table3', done))
     it('bulk insert with length option as string other than max throws (table)', done => TESTS['bulk insert with length option as string other than max throws']('bulk_table4', done))
     it('bulk insert with length as max (table)', done => TESTS['bulk insert with length as max']('bulk_table5', done))
+    it('bulk load with columns declared without a length', done => TESTS['bulk load with columns declared without a length']('bulk_table_unsized', done))
+    itBulkLoadsAnyColumnType('bulk load of an Xml column into an existing xml column', done => TESTS['bulk load of an Xml column into an existing xml column']('bulk_table_xml', done))
+    it('bulk load of columns without a length into existing sized columns', done => TESTS['bulk load of columns without a length into existing sized columns']('bulk_table_sized', done))
+    itBulkLoadsAnyColumnType('bulk load of a column without a length into an existing sql_variant column', done => TESTS['bulk load of a column without a length into an existing sql_variant column']('bulk_table_variant', done))
+    itBulkLoadsAnyColumnType('bulk load of spatial columns into existing geography and geometry columns', done => TESTS['bulk load of spatial columns into existing geography and geometry columns']('bulk_table_spatial', done))
+    it('bulk load of a UDT column into an existing hierarchyid column', done => TESTS['bulk load of a UDT column into an existing hierarchyid column']('bulk_table_hierarchy', done))
 
     after(done => sql.close(done))
   })

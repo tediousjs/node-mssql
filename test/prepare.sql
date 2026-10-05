@@ -165,6 +165,29 @@ exec('create table [dbo].[bulk_table] (
 	c image null
 )')
 
+exec('create table [dbo].[bulk_table_xml] (
+	a xml null
+)')
+
+exec('create table [dbo].[bulk_table_sized] (
+	a nvarchar (50) null,
+	b varchar (50) null,
+	c varbinary (50) null
+)')
+
+exec('create table [dbo].[bulk_table_variant] (
+	a sql_variant null
+)')
+
+exec('create table [dbo].[bulk_table_spatial] (
+	g geography null,
+	m geometry null
+)')
+
+exec('create table [dbo].[bulk_table_hierarchy] (
+	h hierarchyid null
+)')
+
 exec('create table [dbo].[rowsaffected_test] (
 	a int not null
 )')

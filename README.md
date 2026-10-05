@@ -1213,6 +1213,8 @@ request.bulk(table, (err, result) => {
 
 **TIP**: You can also create Table variable from any recordset with `recordset.toTable()`. You can optionally specify table type name in the first argument.
 
+**TIP**: A `VarChar`, `NVarChar` or `VarBinary` column declared without a length (e.g. `sql.NVarChar`) is created as `max` when `table.create` is set, and the tedious driver loads it as `max`. It does so whether or not the table already existed, so when `table.create` is set for an existing table, give such a column its length if the table's column is sized (it loads faster) or a `sql_variant` (which cannot hold a `max` value). Without `table.create`, the tedious driver needs a column declared as `max` (e.g. `sql.NVarChar(sql.MAX)`) to bulk load into an existing `varchar(max)`, `nvarchar(max)` or `varbinary(max)` column. `Xml`, `UDT`, `Geography` and `Geometry` columns are loaded as `max` unless you give them a length.
+
 __Errors__
 - ENAME (`RequestError`) - Table name must be specified for bulk insert.
 - ETIMEOUT (`RequestError`) - Request timeout.
