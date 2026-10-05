@@ -1286,6 +1286,44 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'bulk load with columns declared without a length' (name, done) {
+      // Table#declare creates each of these columns as max (an Xml column is bulk loaded
+      // as an NVarChar without a length)
+      const t = new sql.Table(name)
+      t.create = true
+      t.columns.add('a', sql.NVarChar, { nullable: true })
+      t.columns.add('b', sql.VarChar, { nullable: true })
+      t.columns.add('c', sql.VarBinary, { nullable: true })
+      t.columns.add('d', sql.Xml, { nullable: true })
+      t.rows.add('JP1016', 'JP1016', Buffer.from('JP1016'), '<a>JP1016</a>')
+
+      new TestRequest().bulk(t).then(result => {
+        assert.strictEqual(result.rowsAffected, 1, 'the bulk load should insert the row')
+        return new sql.Request().batch(`select * from ${name}`)
+      }).then(result => {
+        assert.strictEqual(result.recordset[0].a, 'JP1016', 'the NVarChar column should hold the loaded value')
+        assert.strictEqual(result.recordset[0].b, 'JP1016', 'the VarChar column should hold the loaded value')
+        assert.deepStrictEqual(result.recordset[0].c, Buffer.from('JP1016'), 'the VarBinary column should hold the loaded value')
+        assert.strictEqual(result.recordset[0].d, '<a>JP1016</a>', 'the Xml column should hold the loaded value')
+        done()
+      }).catch(done)
+    },
+
+    'bulk load of an Xml column into an existing xml column' (name, done) {
+      const t = new sql.Table(name)
+      t.create = false
+      t.columns.add('a', sql.Xml, { nullable: true })
+      t.rows.add('<a>JP1016</a>')
+
+      new TestRequest().bulk(t).then(result => {
+        assert.strictEqual(result.rowsAffected, 1, 'the bulk load should insert the row')
+        return new sql.Request().batch(`select * from ${name}`)
+      }).then(result => {
+        assert.strictEqual(result.recordset[0].a, '<a>JP1016</a>', 'the xml column should hold the loaded value')
+        done()
+      }).catch(done)
+    },
+
     'parameters with length as max' (done) {
       const req = new TestRequest()
       req.input('nvarchar', sql.NVarChar('max'), 'JP1016')
