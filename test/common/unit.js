@@ -1698,6 +1698,33 @@ describe('operations with no connection', () => {
     await assert.rejects(tx.commit(), { code: 'ENOTBEGUN' },
       'commit() after a failed begin() should report the transaction as not begun')
   })
+
+  it('preparedStatement.prepare() on a transaction with no pool rejects with ECONNCLOSED', async () => {
+    // the transaction exists, so this is not ENOCONN, but it can never be connected
+    await assert.rejects(new sql.PreparedStatement(new sql.Transaction()).prepare('select 1'),
+      { name: 'ConnectionError', code: 'ECONNCLOSED' },
+      'prepare() on a transaction with no pool should reject with ConnectionError ECONNCLOSED')
+  })
+})
+
+describe('operations on a pool that is not connected', () => {
+  const cases = [
+    ['request.query()', pool => pool.request().query('select 1')],
+    ['transaction.begin()', pool => pool.transaction().begin()],
+    ['preparedStatement.prepare()', pool => new sql.PreparedStatement(pool).prepare('select 1')]
+  ]
+
+  for (const [name, run] of cases) {
+    it(`${name} rejects with ECONNCLOSED without a pool error event`, async () => {
+      const pool = new ConnectionPool({ server: 'localhost' })
+      const poolErrors = []
+      pool.on('error', err => poolErrors.push(err))
+
+      await assert.rejects(run(pool), { name: 'ConnectionError', code: 'ECONNCLOSED' },
+        `${name} should reject with ConnectionError ECONNCLOSED`)
+      assert.deepStrictEqual(poolErrors, [], `there should be no pool error event from ${name}`)
+    })
+  }
 })
 
 describe('parameter name validation', () => {

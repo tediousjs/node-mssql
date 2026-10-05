@@ -150,6 +150,7 @@ describe('msnodesqlv8', function () {
     it('allows repeat calls to connect', done => TESTS['repeat calls to connect resolve'](config(), done))
     it('calls to close during connection throw', done => TESTS['calls to close during connection throw'](config(), done))
     it('calls to close during connection call back exactly once', done => TESTS['calls to close during connection call back exactly once'](config(), done))
+    it('calls to begin or prepare while the pool is not connected reject with ECONNCLOSED', done => TESTS['calls to begin or prepare while the pool is not connected reject with ECONNCLOSED'](config(), done))
     it('connection healthy works', done => TESTS['connection healthy works'](config(), done))
     it('healthy connection goes bad', done => TESTS['healthy connection goes bad'](config(), done))
     it('request timeout', done => TESTS['request timeout'](done))
