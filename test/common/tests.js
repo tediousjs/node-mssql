@@ -1551,6 +1551,37 @@ module.exports = (sql, driver) => {
       tran.on('rollback', () => { trollback = true })
     },
 
+    'commit or rollback rejects when the server has already ended the transaction' (method, done) {
+      const tran = new TestTransaction()
+      tran.begin().then(() => {
+        // with XACT_ABORT on, the failing statement has the server roll the transaction
+        // back; the option is set inside sp_executesql, so it reverts when that batch ends
+        // and leaves the pooled connection as it was
+        return tran.request().query('exec sp_executesql N\'set xact_abort on; select 1 / 0\'').then(() => {
+          return tran.rollback().then(() => { throw new Error('the statement should fail') })
+        }, () => tran[method]().then(() => {
+          throw new Error(`${method} should reject once the server has rolled the transaction back`)
+        }, err => {
+          assert.ok(err instanceof sql.TransactionError, `${method} should reject with a TransactionError, got ${err}`)
+        }))
+      }).then(() => done()).catch(done)
+    },
+
+    'rollback while a request is in progress reports a rollback error' (done) {
+      const tran = new TestTransaction()
+      tran.begin().then(() => {
+        const inflight = tran.request().query('waitfor delay \'00:00:01\'')
+        setTimeout(() => {
+          tran.rollback().then(() => {
+            throw new Error('rollback should reject while a request is in progress')
+          }, err => inflight.then(() => tran.rollback()).then(() => {
+            assert.strictEqual(err.code, 'EREQINPROG', 'rollback should be refused while a request is in progress')
+            assert.match(err.message, /rollback/, 'the error should be about the rollback')
+          })).then(() => done()).catch(done)
+        }, 100)
+      }).catch(done)
+    },
+
     'transaction throws on bad isolation level' (done) {
       const tran = new TestTransaction()
       tran.begin('bad isolation level').then(() => {

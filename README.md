@@ -1313,6 +1313,8 @@ transaction.begin(err => {
 })
 ```
 
+The msnodesqlv8 driver has no `abortTransactionOnError` option and can't tell when the server has rolled a transaction back. If you turn `XACT_ABORT` on yourself, or the server rolls the transaction back for another reason (for example, when it picks it as a deadlock victim), the `rollback` event isn't emitted, so the `rollback()` call above fails with a `TransactionError` saying there is no transaction to roll back: the server has already rolled it back.
+
 ### Events
 
 - **begin** - Dispatched when transaction begin.
