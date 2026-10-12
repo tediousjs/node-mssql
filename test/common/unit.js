@@ -1721,6 +1721,8 @@ describe('msnodesqlv8 query events', () => {
 
   const odbcError = (message, code, sqlstate) => Object.assign(new Error(message), { code, sqlstate })
   const PRIMARY_KEY = () => odbcError('Violation of PRIMARY KEY constraint \'PK_t\'.', 2627, '23000')
+  const TERMINATED = () => odbcError('The statement has been terminated.', 3621, '01000')
+  const tick = () => new Promise(resolve => setImmediate(resolve))
 
   // the request's pool, its connection and the query that connection runs; `play` is given
   // the query once it is running and emits on it what msnodesqlv8 would
@@ -1833,5 +1835,110 @@ describe('msnodesqlv8 query events', () => {
     })
     assert.deepStrictEqual(errors.map(e => e.message), ['Something went wrong'], 'the error should be streamed once')
     assert.deepStrictEqual(rows, [{ a: 1 }], 'the rows after the error should still be streamed')
+  })
+
+  // msnodesqlv8 >= 5.6 emits a failed statement's info messages ahead of its error
+  it('should reject with the error a statement was terminated by when it follows the message', async () => {
+    const { request } = setup(notify => {
+      notify.emit('info', TERMINATED(), false)
+      notify.fail(PRIMARY_KEY(), false)
+      notify.emit('done')
+    })
+    await assert.rejects(request.query('insert into t values (1)'), err => {
+      assert.strictEqual(err.number, 2627, 'the error should be the one that terminated the statement')
+      return true
+    })
+  })
+
+  // msnodesqlv8 >= 5.6, when the statement fails after an earlier result and the batch carries on
+  it('should reject with the error a statement was terminated by when it follows the message and does not end the batch', async () => {
+    const { request } = setup(notify => {
+      notify.emit('info', TERMINATED(), false)
+      notify.fail(PRIMARY_KEY(), true)
+      result('___return___', 0)(notify)
+      notify.emit('done')
+    })
+    await assert.rejects(request.execute('insert_t'), err => {
+      assert.strictEqual(err.number, 2627, 'the error should be the one that terminated the statement')
+      return true
+    })
+  })
+
+  // msnodesqlv8 2.0 could stop after the message that the statement was terminated (node-mssql #1126)
+  it('should reject with the error a statement was terminated by when it comes before the message', async () => {
+    const { request } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), true)
+      notify.emit('info', TERMINATED(), false)
+    })
+    await assert.rejects(request.query('insert into t values (1)'), err => {
+      assert.strictEqual(err.number, 2627, 'the error should be the one that terminated the statement')
+      return true
+    })
+  })
+
+  it('should reject with the message that a statement was terminated when no error says why', async () => {
+    const { request } = setup(notify => {
+      notify.emit('info', TERMINATED(), false)
+      notify.emit('done')
+    })
+    await assert.rejects(request.query('insert into t values (1)'), err => {
+      assert.strictEqual(err.number, 3621, 'the error should be the termination')
+      return true
+    })
+  })
+
+  // msnodesqlv8 >= 5.6: the batch carries on after an earlier statement's error, and the
+  // message that a later statement was terminated comes ahead of the error that terminated it
+  it('should reject with the last error when a later statement is terminated', async () => {
+    const { request, pool } = setup(async notify => {
+      notify.fail(odbcError('Something went wrong', 50000, '42000'), true)
+      await tick()
+      notify.emit('info', TERMINATED(), false)
+      notify.fail(PRIMARY_KEY(), true)
+      await tick()
+      result('a', 1)(notify)
+      notify.emit('done')
+    })
+    await assert.rejects(request.query('raiserror(N\'Something went wrong\', 16, 1); insert into t values (1); select 1 as a'), err => {
+      assert.strictEqual(err.number, 2627, 'the error should be the last one the batch reported')
+      assert.deepStrictEqual(err.precedingErrors.map(e => e.number), [50000], 'the earlier error should precede it')
+      return true
+    })
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  // msnodesqlv8 >= 5.6: a procedure whose first statement fails reports the error ahead of the
+  // message, and carries on to the select of the return value
+  it('should reject an execute whose first statement is terminated, once the batch is done', async () => {
+    let releasedBeforeDone
+    const { request, pool } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), true)
+      notify.emit('info', TERMINATED(), true)
+      result('___return___', 0)(notify)
+      releasedBeforeDone = pool.released
+      notify.emit('done')
+    })
+    await assert.rejects(request.execute('insert_t'), err => {
+      assert.strictEqual(err.number, 2627, 'the error should be the one that terminated the statement')
+      return true
+    })
+    assert.strictEqual(releasedBeforeDone, 0, 'the connection should not be released before the batch is done')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  it('should stream an error a statement was terminated by once', async () => {
+    const { request } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      notify.emit('info', TERMINATED(), false)
+      notify.emit('done')
+    })
+    request.stream = true
+    const errors = []
+    request.on('error', err => errors.push(err))
+    await new Promise(resolve => {
+      request.on('done', resolve)
+      request.query('insert into t values (1)')
+    })
+    assert.deepStrictEqual(errors.map(e => e.number), [2627], 'the error should be streamed once')
   })
 })

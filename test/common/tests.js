@@ -549,6 +549,23 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'query with a constraint violation' (afterAResult, done) {
+      const statements = [
+        // the batch fails before it returns anything
+        'declare @t table (id int primary key); insert into @t values (1), (1)'
+      ]
+      if (afterAResult) {
+        // a statement after a result fails
+        statements.push('declare @t table (id int primary key); insert into @t values (1); insert into @t values (1)')
+      }
+      statements.reduce((previous, statement) => previous.then(() => new TestRequest().query(statement).then(() => {
+        throw new Error(`${statement} should fail`)
+      }, err => {
+        assert.ok(err instanceof sql.RequestError, `${statement} should fail with a RequestError`)
+        assert.strictEqual(err.number, 2627, `${statement} should fail with the violation, not the statement's termination`)
+      })), Promise.resolve()).then(() => done(), done)
+    },
+
     'query with raiseerror' (done) {
       const notices = []
       const req = new TestRequest()
