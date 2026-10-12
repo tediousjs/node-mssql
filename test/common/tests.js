@@ -3,6 +3,7 @@
 const assert = require('node:assert')
 const stream = require('node:stream')
 const { join } = require('node:path')
+const { readFileSync } = require('node:fs')
 const { format } = require('node:util')
 const ISOLATION_LEVELS = require('../../lib/isolationlevel')
 const BaseTransaction = require('../../lib/base/transaction')
@@ -29,8 +30,10 @@ class WritableStream extends stream.Writable {
   }
 }
 
+// read afresh for each test: tests change the config they are given, and a copy that
+// require() caches would carry the change into every test that comes after
 const readConfig = () => {
-  return require(join(__dirname, '../.mssql.json'))
+  return JSON.parse(readFileSync(join(__dirname, '../.mssql.json'), 'utf8'))
 }
 
 module.exports = (sql, driver) => {
