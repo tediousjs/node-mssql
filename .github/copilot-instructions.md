@@ -64,6 +64,7 @@ Driver index files use `Object.assign()` to merge base exports with driver-speci
 ### Test patterns
 
 - **Unit tests** (`test/common/unit.js`): No database needed. Tests type mapping, table parsing, error construction.
+- **msnodesqlv8 event stubs**: the `msnodesqlv8 query events` block at the end of `test/common/unit.js` stands a bare object in for `require('msnodesqlv8')` and plays the events a given msnodesqlv8 version emits. The msnodesqlv8 integration suite only runs on Windows CI, so extend these stubs for any change to how `lib/msnodesqlv8/request.js` handles driver events.
 - **Integration tests** (`test/common/tests.js`): Exported as a factory `(sql, driver) => { ... }` — called by each driver's test file. Many tests exercise three execution styles: callback, promise, and streaming.
 - **Framework**: Mocha + Node.js built-in `assert` (no chai/sinon).
 - **Keeping this file up to date:** If a change affects the architecture, conventions, build process, or any other information documented here, update this file as part of the same PR.

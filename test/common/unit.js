@@ -1,6 +1,6 @@
 'use strict'
 
-/* globals describe, it, before, afterEach */
+/* globals describe, it, before, after, afterEach */
 
 const sql = require('../../')
 const assert = require('node:assert')
@@ -1688,5 +1688,132 @@ describe('procedure name validation', () => {
       assert.throws(() => assertSafeProcedureName(payload), err => err.code === 'EINJECT',
         `${JSON.stringify(payload)} should be rejected`)
     }
+  })
+})
+
+describe('msnodesqlv8 query events', () => {
+  const Module = require('node:module')
+  const { EventEmitter } = require('node:events')
+  const RequestError = require('../../lib/error/request-error')
+
+  // msnodesqlv8 is a native module that only the Windows CI jobs install. The request only
+  // reaches into it for TVPs, so a bare object stands in for it, and each test plays the
+  // events a version of it emits on the query it is given.
+  const STUB = 'msnodesqlv8-stub'
+  const REQUEST = require.resolve('../../lib/msnodesqlv8/request')
+  let resolveFilename
+  let Request
+
+  before(() => {
+    resolveFilename = Module._resolveFilename
+    Module._resolveFilename = function (request, ...rest) {
+      return request === 'msnodesqlv8' ? STUB : resolveFilename.call(this, request, ...rest)
+    }
+    require.cache[STUB] = { id: STUB, filename: STUB, loaded: true, exports: {} }
+    Request = require(REQUEST)
+  })
+
+  after(() => {
+    Module._resolveFilename = resolveFilename
+    delete require.cache[STUB]
+    delete require.cache[REQUEST]
+  })
+
+  const odbcError = (message, code, sqlstate) => Object.assign(new Error(message), { code, sqlstate })
+  const PRIMARY_KEY = () => odbcError('Violation of PRIMARY KEY constraint \'PK_t\'.', 2627, '23000')
+
+  // the request's pool, its connection and the query that connection runs; `play` is given
+  // the query once it is running and emits on it what msnodesqlv8 would
+  const setup = (play, query = {}) => {
+    const notify = Object.assign(new EventEmitter(), {
+      isPaused: () => false,
+      cancelQuery () {}
+    }, query)
+    // msnodesqlv8 does not emit an error that nothing listens for
+    notify.fail = (err, more) => {
+      if (notify.listenerCount('error') > 0) notify.emit('error', err, more)
+    }
+    const connection = {
+      queryRaw () {
+        setImmediate(play, notify)
+        return notify
+      }
+    }
+    const pool = {
+      connected: true,
+      config: {},
+      released: 0,
+      acquire (request, callback) { callback(null, connection, { requestTimeout: 15000 }) },
+      release () { this.released++ }
+    }
+    return { request: new Request(pool), notify, pool, connection }
+  }
+
+  const result = (meta, value) => notify => {
+    notify.emit('meta', [{ name: meta, sqlType: 'int', size: 4, nullable: false }])
+    notify.emit('row', 0)
+    notify.emit('column', 0, value, false)
+  }
+
+  it('should reject when an error ends the batch', async () => {
+    const { request, pool } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      notify.emit('done')
+    })
+    await assert.rejects(request.query('insert into t values (1)'), err => {
+      assert.ok(err instanceof RequestError, 'the error should be a RequestError')
+      assert.strictEqual(err.number, 2627, 'the error should be the one that ended the batch')
+      assert.strictEqual(err.code, 'EREQUEST', 'the error should be a request error')
+      return true
+    })
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  // msnodesqlv8 >= 5.6
+  it('should reject when an error does not end the batch', async () => {
+    const { request, pool } = setup(notify => {
+      notify.fail(odbcError('Something went wrong', 50000, '42000'), true)
+      result('a', 1)(notify)
+      notify.emit('done')
+    })
+    await assert.rejects(request.query('raiserror(N\'Something went wrong\', 16, 1); select 1 as a'), err => {
+      assert.strictEqual(err.message, 'Something went wrong', 'the error should be the one the batch reported')
+      assert.strictEqual(err.code, 'EREQUEST', 'the error should be a request error')
+      return true
+    })
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  // msnodesqlv8 >= 5.6, which carries on to the select of the return value
+  it('should reject an execute of a procedure that cannot be found', async () => {
+    const { request, pool } = setup(notify => {
+      notify.fail(odbcError('Could not find stored procedure \'missing\'.', 2812, '42000'), true)
+      result('___return___', 0)(notify)
+      notify.emit('done')
+    })
+    await assert.rejects(request.execute('missing'), err => {
+      assert.strictEqual(err.number, 2812, 'the error should be the missing procedure')
+      return true
+    })
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  it('should stream an error that does not end the batch, then complete', async () => {
+    const { request } = setup(notify => {
+      notify.fail(odbcError('Something went wrong', 50000, '42000'), true)
+      result('a', 1)(notify)
+      notify.emit('done')
+    })
+    request.stream = true
+    const errors = []
+    const rows = []
+    request.on('error', err => errors.push(err))
+    request.on('row', row => rows.push(row))
+    await new Promise(resolve => {
+      request.on('done', resolve)
+      request.query('select 1')
+    })
+    assert.deepStrictEqual(errors.map(e => e.message), ['Something went wrong'], 'the error should be streamed once')
+    assert.deepStrictEqual(rows, [{ a: 1 }], 'the rows after the error should still be streamed')
   })
 })

@@ -538,6 +538,17 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'query with an error that does not end the batch' (done) {
+      const req = new TestRequest()
+      req.query('raiserror(N\'Something went wrong\', 16, 1); select 1 as a', err => {
+        assert.ok(err instanceof sql.RequestError, 'the query should fail')
+        assert.strictEqual(err.message, 'Something went wrong', 'the error should be the one the batch raised')
+        assert.strictEqual(err.number, 50000, 'the error should be the one the batch raised')
+
+        done()
+      })
+    },
+
     'query with raiseerror' (done) {
       const notices = []
       const req = new TestRequest()
@@ -1712,7 +1723,11 @@ module.exports = (sql, driver) => {
         const req = tran.request()
         req.input('date', sql.TinyInt, 1561651515615)
 
-        req.execute('someStoreProc').catch(() => {
+        // the transaction is rolled back either way, so a failure is reported rather than
+        // left holding a connection
+        req.execute('someStoreProc').then(() => {
+          tran.rollback(() => done(new Error('executing a procedure that does not exist should fail')))
+        }, () => {
           tran.rollback(done)
         })
       }).catch(done)
