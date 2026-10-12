@@ -127,6 +127,7 @@ describe('tedious', () => {
     it('transaction with error (XACT_ABORT set to ON)', done => TESTS['transaction with error'](done))
     it('transaction with synchronous error', done => TESTS['transaction with synchronous error'](done))
     it('cancel request', done => TESTS['cancel request'](done, /Canceled./))
+    it('cancel a running request', done => TESTS['cancel a running request'](true, done))
     it('allows repeat calls to connect', done => TESTS['repeat calls to connect resolve'](config(), done))
     it('calls to close during connection throw', done => TESTS['calls to close during connection throw'](config(), done))
     it('calls to close during connection call back exactly once', done => TESTS['calls to close during connection call back exactly once'](config(), done))

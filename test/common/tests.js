@@ -1761,6 +1761,20 @@ module.exports = (sql, driver) => {
       req.cancel()
     },
 
+    'cancel a running request' (cancels, done) {
+      const req = new TestRequest()
+      req.query('waitfor delay \'00:00:05\'; select 1 as a').then(result => {
+        assert.ok(!cancels, 'the request should be cancelled')
+        assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'a request that cannot be cancelled should run to the end')
+      }, err => {
+        assert.ok(cancels, `the request should not fail: ${err.message}`)
+        assert.strictEqual(err.code, 'ECANCEL', 'the request should fail as cancelled')
+      }).then(() => done(), done)
+
+      // by then the query is running
+      setTimeout(() => req.cancel(), 1000)
+    },
+
     'repeat calls to connect resolve' (config, done) {
       const pool = new sql.ConnectionPool(config)
       Promise.all([pool.connect(), pool.connect()])

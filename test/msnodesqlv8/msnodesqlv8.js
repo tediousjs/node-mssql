@@ -16,6 +16,10 @@ const [major, minor, patch] = require('msnodesqlv8/package.json').version.split(
 // that call replaces an error that follows an earlier result in the batch with one of its own
 const reportsErrorsAfterAResult = major > 5 || (major === 5 && (minor > 1 || (minor === 1 && patch >= 9)))
 
+// msnodesqlv8 cancels a running query from 5.6; before that it only cancels one that is paused
+// or polling, and lets any other run to the end
+const cancelsRunningQueries = major > 5 || (major === 5 && minor >= 6)
+
 const config = function () {
   const cfg = JSON.parse(readFileSync(join(__dirname, '../.mssql.json')))
   cfg.driver = 'msnodesqlv8'
@@ -127,6 +131,7 @@ describe('msnodesqlv8', function () {
     it.skip('transaction with error (XACT_ABORT set to ON) (not supported by msnodesqlv8)', done => TESTS['transaction with error'](done))
     it('transaction with synchronous error', done => TESTS['transaction with synchronous error'](done))
     it('cancel request', done => TESTS['cancel request'](done))
+    it('cancel a running request', done => TESTS['cancel a running request'](cancelsRunningQueries, done))
     it('allows repeat calls to connect', done => TESTS['repeat calls to connect resolve'](config(), done))
     it('calls to close during connection throw', done => TESTS['calls to close during connection throw'](config(), done))
     it('calls to close during connection call back exactly once', done => TESTS['calls to close during connection call back exactly once'](config(), done))
