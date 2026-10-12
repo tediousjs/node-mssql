@@ -114,6 +114,7 @@ describe('msnodesqlv8', function () {
     it('query with toReadableStream', done => TESTS['query with toReadableStream'](done))
     it('query with pipe', done => TESTS['query with pipe'](done))
     it('query with pipe and back pressure', (done) => TESTS['query with pipe and back pressure'](done))
+    it('query with toReadableStream and a failing destination', done => TESTS['query with toReadableStream and a failing destination'](done))
     it('query with duplicate output column names', done => TESTS['query with duplicate output column names'](done))
     it('batch', done => TESTS.batch(done))
     it('batch (stream)', done => TESTS.batch(done, true))

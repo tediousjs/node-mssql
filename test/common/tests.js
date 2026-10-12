@@ -670,6 +670,40 @@ module.exports = (sql, driver) => {
       req.pipe(blockingTransformStream).pipe(wstream)
     },
 
+    'query with toReadableStream and a failing destination' (done) {
+      const pool = new sql.Request().parent
+      const before = pool.pool.numUsed()
+      const failure = new Error('the destination failed')
+      let pipelineError = null
+      let written = 0
+
+      const destination = new stream.Writable({
+        objectMode: true,
+        highWaterMark: 1,
+        write (row, encoding, callback) {
+          // fail once the request has filled the stream and been paused
+          callback(++written === 20 ? failure : null)
+        }
+      })
+
+      const req = new sql.Request()
+      req.on('done', () => {
+        setImmediate(() => {
+          try {
+            assert.strictEqual(pipelineError, failure, 'the pipeline should fail with the destination\'s error')
+            assert.strictEqual(pool.pool.numUsed(), before, 'the pool should have every connection back')
+            done()
+          } catch (e) {
+            done(e)
+          }
+        })
+      })
+      stream.pipeline(req.toReadableStream(), destination, err => {
+        pipelineError = err
+      })
+      req.query('select top 2000 * from streaming')
+    },
+
     'query with duplicate output column names' (done) {
       const req = new TestRequest()
       req.arrayRowMode = true

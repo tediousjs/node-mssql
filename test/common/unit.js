@@ -1404,6 +1404,69 @@ describe('connection string auth - tedious', () => {
     })
   })
 
+  describe('Request readable stream', () => {
+    const BaseRequest = require('../../lib/base/request')
+
+    it('resumes the request once the stream is destroyed', () => {
+      const req = new BaseRequest(null)
+      const readableStream = req.toReadableStream({ highWaterMark: 1 })
+      req.emit('row', { a: 1 })
+      req.emit('row', { a: 2 })
+      assert.strictEqual(req.paused, true, 'the request should be paused while nothing reads the stream')
+
+      readableStream.destroy()
+      assert.strictEqual(req.paused, false, 'destroying the stream should resume the request')
+
+      req.emit('row', { a: 3 })
+      assert.strictEqual(req.paused, false, 'the request should stay resumed while it sends the rest of its rows')
+      req.emit('done')
+    })
+
+    it('runs a destroy hook passed in the stream options', done => {
+      const failure = new Error('the destination failed')
+      const cleanupFailure = new Error('the cleanup failed')
+      const calls = []
+      const errors = []
+      const req = new BaseRequest(null)
+      const readableStream = req.toReadableStream({
+        highWaterMark: 1,
+        destroy (error, callback) {
+          calls.push({ stream: this, error, paused: req.paused })
+          callback(cleanupFailure)
+        }
+      })
+      readableStream.on('error', err => errors.push(err))
+      readableStream.on('close', () => {
+        assert.strictEqual(calls.length, 1, 'the hook should run once')
+        assert.strictEqual(calls[0].stream, readableStream, 'the hook should run with the stream as `this`')
+        assert.strictEqual(calls[0].error, failure, 'the hook should be given the error the stream was destroyed with')
+        assert.strictEqual(calls[0].paused, false, 'the request should be resumed before the hook runs')
+        assert.deepStrictEqual(errors, [cleanupFailure], 'the stream should emit the error the hook passed on')
+        done()
+      })
+
+      readableStream.destroy(failure)
+    })
+
+    it('takes null stream options as no options', () => {
+      const req = new BaseRequest(null)
+      const readableStream = req.toReadableStream(null)
+      assert.strictEqual(readableStream.readableObjectMode, true, 'the stream should be an object-mode stream')
+      readableStream.destroy()
+      assert.strictEqual(req.paused, false, 'destroying the stream should resume the request')
+    })
+
+    it('leaves a finished request alone when the stream is destroyed', () => {
+      const req = new BaseRequest(null)
+      const readableStream = req.toReadableStream({ highWaterMark: 1 })
+      req.emit('row', { a: 1 })
+      req.emit('done')
+
+      readableStream.destroy()
+      assert.strictEqual(req.paused, true, 'a request that has finished should not be resumed')
+    })
+  })
+
   describe('Transaction EABORT originalError', () => {
     const BaseTransaction = require('../../lib/base/transaction')
 

@@ -1074,6 +1074,10 @@ pipeline(readableStream, transformStream, writableStream)
 request.query('select * from mytable')
 ```
 
+If the readable stream is destroyed before the request finishes (for example because a later stream in the pipeline failed), the request still runs to the end and the rows it has left are discarded. Call `request.cancel()` to stop it early.
+
+With msnodesqlv8 before 5.6 that cancel does not stop it. The request is resumed as soon as its stream is destroyed, so that it does not keep its connection, and those versions can only cancel a paused request.
+
 
 ### pipe (stream)
 
