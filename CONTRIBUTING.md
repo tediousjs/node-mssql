@@ -55,6 +55,8 @@ The integration tests require a running SQL Server instance configured in `test/
 
 Unit tests (`npm run test-unit`) do **not** require a database, so you can develop and validate most changes without a SQL Server instance.
 
+For the cases the dev container cannot cover — exercising `msnodesqlv8` against the `SQL Server Native Client 11.0` driver that `node-mssql` defaults to on Windows, or testing behaviour that depends on the SQL Server edition — `contrib/azure-sql-vm` provisions a Windows VM running SQL Server Developer edition. It creates billable Azure resources and is not exercised by CI, so read its [README](contrib/azure-sql-vm/README.md) first.
+
 ## Coding Standards
 
 - **Style:** The project uses [StandardJS](https://standardjs.com/) — no semicolons, 2-space indentation, single quotes. There is no config file or override; run `npm run lint` to check your work, and `npx standard --fix` to auto-fix many issues.
