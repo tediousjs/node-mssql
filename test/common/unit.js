@@ -4,6 +4,7 @@
 
 const sql = require('../../')
 const assert = require('node:assert')
+const { Writable } = require('node:stream')
 const udt = require('../../lib/udt')
 const { assertSafeProcedureName } = require('../../lib/utils')
 const { declare } = require('../../lib/datatypes')
@@ -1464,6 +1465,61 @@ describe('connection string auth - tedious', () => {
 
       readableStream.destroy()
       assert.strictEqual(req.paused, true, 'a request that has finished should not be resumed')
+    })
+
+    it('ends the stream with the request\'s first error', done => {
+      const first = new Error('first')
+      const errors = []
+      const req = new BaseRequest(null)
+      const readableStream = req.toReadableStream()
+      readableStream.on('error', err => errors.push(err))
+      readableStream.on('close', () => {
+        assert.deepStrictEqual(errors, [first], 'the stream should be sent the first error only')
+        assert.strictEqual(req.paused, false, 'the request should be resumed to run to the end')
+        done()
+      })
+
+      req.emit('error', first)
+      req.emit('row', { a: 1 })
+      req.emit('error', new Error('second'))
+      req.emit('done')
+    })
+
+    it('leaves a cancelled request to its driver when the stream is destroyed', () => {
+      const req = new BaseRequest(null)
+      const readableStream = req.toReadableStream({ highWaterMark: 1 })
+      const errors = []
+      readableStream.on('error', err => errors.push(err))
+      req.emit('row', { a: 1 })
+      assert.strictEqual(req.paused, true, 'the request should be paused while nothing reads the stream')
+
+      req.emit('error', new sql.RequestError('Canceled.', 'ECANCEL'))
+      assert.strictEqual(readableStream.destroyed, true, 'the cancel should destroy the stream')
+      assert.strictEqual(req.paused, true, 'a cancelled request should be left for its driver to stop')
+    })
+
+    it('destroys the destination of pipe() with the request\'s first error', done => {
+      const first = new Error('first')
+      const errors = []
+      const destination = new Writable({
+        objectMode: true,
+        write (row, encoding, callback) {
+          callback()
+        }
+      })
+      destination.on('error', err => errors.push(err))
+      destination.on('close', () => {
+        assert.deepStrictEqual(errors, [first], 'the destination should be sent the first error only')
+        assert.strictEqual(destination.errored, first, 'the destination should be destroyed with the first error')
+        done()
+      })
+
+      const req = new BaseRequest(null)
+      req.pipe(destination)
+      req.emit('error', first)
+      req.emit('row', { a: 1 })
+      req.emit('error', new Error('second'))
+      req.emit('done')
     })
   })
 

@@ -670,6 +670,39 @@ module.exports = (sql, driver) => {
       req.pipe(blockingTransformStream).pipe(wstream)
     },
 
+    'query with pipe and an error' (endsTheBatch, done) {
+      // pipe() returns the destination, not the stream it puts in front of it, so the
+      // destination is the only place a request's error can be handled
+      const command = endsTheBatch
+        ? 'select * from notexistingtable'
+        // the rows after this error come once the destination has been destroyed
+        : 'raiserror(N\'Something went wrong\', 16, 1); select \'asdf\' as text'
+      const pool = new sql.Request().parent
+      const before = pool.pool.numUsed()
+      const errors = []
+
+      const destination = new WritableStream()
+      destination.on('error', err => errors.push(err))
+
+      const req = new sql.Request()
+      req.on('done', () => {
+        setImmediate(() => {
+          try {
+            assert.strictEqual(errors.length, 1, 'the destination should be sent the request\'s error once')
+            assert.ok(errors[0] instanceof sql.RequestError, `the destination's error should be a RequestError, got ${errors[0].constructor.name}`)
+            assert.strictEqual(destination.errored, errors[0], 'the destination should be destroyed with the request\'s error')
+            assert.deepStrictEqual(destination.cache, [], 'the rows after the error should be dropped')
+            assert.strictEqual(pool.pool.numUsed(), before, 'the pool should have every connection back')
+            done()
+          } catch (e) {
+            done(e)
+          }
+        })
+      })
+      req.pipe(destination)
+      req.query(command)
+    },
+
     'query with toReadableStream and a failing destination' (done) {
       const pool = new sql.Request().parent
       const before = pool.pool.numUsed()

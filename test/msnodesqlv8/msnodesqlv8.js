@@ -20,6 +20,10 @@ const reportsErrorsAfterAResult = major > 5 || (major === 5 && (minor > 1 || (mi
 // or polling, and lets any other run to the end
 const cancelsRunningQueries = major > 5 || (major === 5 && minor >= 6)
 
+// before 5.6 msnodesqlv8 stops a query at its first error and emits no 'done', so a stream never
+// completes after one, even an error that would not end the batch
+const continuesAfterErrors = major > 5 || (major === 5 && minor >= 6)
+
 // from 3.0 msnodesqlv8 binds a bulk column by the type of the column it loads into, and has no
 // binding for xml, sql_variant or the spatial types, which it refuses as an invalid parameter
 const itBulkLoadsAnyColumnType = major < 3 ? it : (title, fn) => it.skip(`${title} (not supported by msnodesqlv8 3 and later)`, fn)
@@ -114,6 +118,12 @@ describe('msnodesqlv8', function () {
     it('query with toReadableStream', done => TESTS['query with toReadableStream'](done))
     it('query with pipe', done => TESTS['query with pipe'](done))
     it('query with pipe and back pressure', (done) => TESTS['query with pipe and back pressure'](done))
+    it.skip('query with pipe and an error that ends the batch (msnodesqlv8 streams do not complete after one)', done => TESTS['query with pipe and an error'](true, done))
+    if (continuesAfterErrors) {
+      it('query with pipe and an error that does not end the batch', done => TESTS['query with pipe and an error'](false, done))
+    } else {
+      it.skip('query with pipe and an error that does not end the batch (msnodesqlv8 streams do not complete after an error before 5.6)', done => TESTS['query with pipe and an error'](false, done))
+    }
     it('query with toReadableStream and a failing destination', done => TESTS['query with toReadableStream and a failing destination'](done))
     it('query with duplicate output column names', done => TESTS['query with duplicate output column names'](done))
     it('batch', done => TESTS.batch(done))
