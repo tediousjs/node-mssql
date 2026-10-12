@@ -1784,6 +1784,24 @@ describe('msnodesqlv8 query events', () => {
     assert.strictEqual(pool.released, 1, 'the connection should be released once')
   })
 
+  // msnodesqlv8 >= 5.6
+  it('should keep the errors that came before the last one in a batch that carries on', async () => {
+    const { request } = setup(notify => {
+      notify.fail(odbcError('first', 50000, '42000'), true)
+      result('a', 1)(notify)
+      notify.fail(odbcError('second', 50000, '42000'), true)
+      result('b', 2)(notify)
+      notify.fail(odbcError('third', 50000, '42000'), true)
+      result('c', 3)(notify)
+      notify.emit('done')
+    })
+    await assert.rejects(request.query('select 1'), err => {
+      assert.strictEqual(err.message, 'third', 'the error should be the last one reported')
+      assert.deepStrictEqual(err.precedingErrors.map(e => e.message), ['first', 'second'], 'the earlier errors should precede it')
+      return true
+    })
+  })
+
   // msnodesqlv8 >= 5.6, which carries on to the select of the return value
   it('should reject an execute of a procedure that cannot be found', async () => {
     const { request, pool } = setup(notify => {
