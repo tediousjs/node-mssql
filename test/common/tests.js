@@ -2985,6 +2985,72 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'streaming an error that ends the batch' (done) {
+      // msnodesqlv8 emits no 'done' after an error that ends the batch: the stream still has
+      // to report the error, then complete once and give its connection back. The pool is the
+      // test's own, so that no other test's connection is out while it is checked
+      const config = readConfig()
+      config.driver = driver
+
+      new sql.ConnectionPool(config).connect().then(conn => {
+        const errors = []
+        let completed = 0
+
+        const req = new sql.Request(conn)
+        req.stream = true
+        req.on('error', err => errors.push(err))
+        req.on('done', () => {
+          if (completed++) return
+          setImmediate(() => {
+            try {
+              assert.strictEqual(completed, 1, 'the stream should complete once')
+              assert.strictEqual(errors.length, 1, 'the error should be streamed once')
+              assert.ok(errors[0] instanceof sql.RequestError, `the error should be a RequestError, got ${errors[0].constructor.name}`)
+              assert.strictEqual(errors[0].code, 'EREQUEST', 'the error should be a request error')
+              assert.strictEqual(conn.pool.numUsed(), 0, 'the pool should have every connection back')
+            } catch (e) {
+              return conn.close().then(() => done(e), () => done(e))
+            }
+            conn.close().then(() => done(), done)
+          })
+        })
+        req.query('select * from notexistingtable')
+      }).catch(done)
+    },
+
+    'streaming a request timeout' (done, driver, message) {
+      // a timeout ends the batch on an error like any other, which is when a stream is most
+      // likely to be left waiting for a 'done' that never comes
+      const config = readConfig()
+      config.driver = driver
+      config.requestTimeout = 1000 // note: msnodesqlv8 doesn't support timeouts less than 1 second
+
+      new sql.ConnectionPool(config).connect().then(conn => {
+        const errors = []
+        let completed = 0
+
+        const req = new sql.Request(conn)
+        req.stream = true
+        req.on('error', err => errors.push(err))
+        req.on('done', () => {
+          if (completed++) return
+          setImmediate(() => {
+            try {
+              assert.strictEqual(completed, 1, 'the stream should complete once')
+              assert.strictEqual(errors.length, 1, 'the timeout should be streamed once')
+              assert.ok(message ? message.test(errors[0].message) : errors[0] instanceof sql.RequestError,
+                `the error should be the timeout, got ${errors[0].constructor.name}: ${errors[0].message}`)
+              assert.strictEqual(conn.pool.numUsed(), 0, 'the pool should have every connection back')
+            } catch (e) {
+              return conn.close().then(() => done(e), () => done(e))
+            }
+            conn.close().then(() => done(), done)
+          })
+        })
+        req.query('waitfor delay \'00:00:05\';select 1')
+      }).catch(done)
+    },
+
     'new Table' (done) {
       const tvp = new MSSQLTestType()
       tvp.rows.add('asdf', 15)

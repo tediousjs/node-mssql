@@ -3001,4 +3001,90 @@ describe('msnodesqlv8 query events', () => {
       assert.deepStrictEqual(calls, [], 'the driver should not be paused')
     })
   })
+
+  // the events a streamed request emits, in order, up to a tick after `run` settles, so that
+  // anything it emits after it has completed is caught too
+  const streamed = async (request, run) => {
+    const events = []
+    request.stream = true
+    request.on('row', row => events.push(['row', row]))
+    request.on('error', err => events.push(['error', err.number]))
+    request.on('done', () => events.push(['done']))
+    await run(request)
+    await tick()
+    return events
+  }
+
+  // every version: a batch that completes emits 'done', then 'free' once its statement is released
+  it('should resolve once when the batch completes', async () => {
+    const { request, pool } = setup(notify => {
+      result('a', 1)(notify)
+      notify.emit('done')
+      notify.emit('free')
+    })
+    const { recordset } = await request.query('select 1 as a')
+    assert.deepStrictEqual(recordset, [{ a: 1 }], 'the row should be returned')
+    await tick()
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  it('should complete a stream once when the batch completes', async () => {
+    const { request, pool } = setup(notify => {
+      result('a', 1)(notify)
+      notify.emit('done')
+      notify.emit('free')
+    })
+    const events = await streamed(request, r => r.query('select 1 as a'))
+    assert.deepStrictEqual(events, [['row', { a: 1 }], ['done']], 'the row should be streamed, then done once')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  // every version: an error that ends the batch is emitted with more=false, and no 'done'
+  // follows it, only 'free' once the statement is released
+  it('should reject once when an error ends the batch and the statement is released', async () => {
+    const { request, pool } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      notify.emit('free')
+    })
+    await assert.rejects(request.query('insert into t values (1)'), err => {
+      assert.ok(err instanceof RequestError, 'the error should be a RequestError')
+      assert.strictEqual(err.number, 2627, 'the error should be the one that ended the batch')
+      return true
+    })
+    await tick()
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  it('should stream an error that ends the batch, then complete', async () => {
+    const { request, pool } = setup(notify => {
+      result('a', 1)(notify)
+      notify.fail(PRIMARY_KEY(), false)
+      notify.emit('free')
+    })
+    const events = await streamed(request, r => r.query('select 1 as a; insert into t values (1)'))
+    assert.deepStrictEqual(events, [['row', { a: 1 }], ['error', 2627], ['done']],
+      'the row and the error should be streamed, then done once')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  it('should stream an error that ends the batch of an execute, then complete', async () => {
+    const { request, pool } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      notify.emit('free')
+    })
+    const events = await streamed(request, r => r.execute('p'))
+    assert.deepStrictEqual(events, [['error', 2627], ['done']], 'the error should be streamed, then done once')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  it('should stream a timeout, then complete', async () => {
+    // the driver's query timeout ends the batch on an error like any other
+    const { request, pool } = setup(notify => {
+      notify.fail(odbcError('Query timeout expired', 0, 'HYT00'), false)
+      notify.emit('free')
+    })
+    const events = await streamed(request, r => r.query('waitfor delay \'00:00:05\''))
+    assert.deepStrictEqual(events, [['error', 0], ['done']], 'the timeout should be streamed, then done once')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
 })
