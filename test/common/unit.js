@@ -106,6 +106,25 @@ describe('Unit', () => {
     return done()
   })
 
+  it('bulk loads converted types as max', () => {
+    const t = new sql.Table('MyTable')
+    t.columns.add('x', sql.Xml, { nullable: true })
+    t.columns.add('u', sql.UDT, { nullable: true })
+    t.columns.add('g', sql.Geography, { nullable: true })
+    t.columns.add('m', sql.Geometry, { nullable: true })
+    t.columns.add('n', sql.UDT, { nullable: true, length: 50 })
+    t._makeBulk()
+
+    assert.strictEqual(t.columns[0].type, sql.NVarChar, 'an Xml column should be bulk loaded as an NVarChar')
+    assert.strictEqual(t.columns[0].length, sql.MAX, 'an Xml column should be bulk loaded as max')
+    for (const col of t.columns.slice(1, 4)) {
+      assert.strictEqual(col.type, sql.VarBinary, `the ${col.name} column should be bulk loaded as a VarBinary`)
+      assert.strictEqual(col.length, sql.MAX, `the ${col.name} column should be bulk loaded as max`)
+    }
+    assert.strictEqual(t.columns[4].length, 50, 'a length that was given should be kept')
+    assert.strictEqual(t.declare(), 'create table [MyTable] ([x] nvarchar (MAX) null, [u] varbinary (MAX) null, [g] varbinary (MAX) null, [m] varbinary (MAX) null, [n] varbinary (50) null)', 'the created columns should be the same as before')
+  })
+
   it('custom promise library', done => {
     let resolved = false
 

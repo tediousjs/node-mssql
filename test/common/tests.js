@@ -1418,6 +1418,118 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'bulk load with columns declared without a length' (name, done) {
+      // Table#declare creates each of these columns as max (an Xml column is bulk loaded
+      // as an NVarChar(MAX))
+      const t = new sql.Table(name)
+      t.create = true
+      t.columns.add('a', sql.NVarChar, { nullable: true })
+      t.columns.add('b', sql.VarChar, { nullable: true })
+      t.columns.add('c', sql.VarBinary, { nullable: true })
+      t.columns.add('d', sql.Xml, { nullable: true })
+      t.rows.add('JP1016', 'JP1016', Buffer.from('JP1016'), '<a>JP1016</a>')
+
+      new TestRequest().bulk(t).then(result => {
+        assert.strictEqual(result.rowsAffected, 1, 'the bulk load should insert the row')
+        return new sql.Request().batch(`select * from ${name}`)
+      }).then(result => {
+        assert.strictEqual(result.recordset[0].a, 'JP1016', 'the NVarChar column should hold the loaded value')
+        assert.strictEqual(result.recordset[0].b, 'JP1016', 'the VarChar column should hold the loaded value')
+        assert.deepStrictEqual(result.recordset[0].c, Buffer.from('JP1016'), 'the VarBinary column should hold the loaded value')
+        assert.strictEqual(result.recordset[0].d, '<a>JP1016</a>', 'the Xml column should hold the loaded value')
+        done()
+      }).catch(done)
+    },
+
+    'bulk load of an Xml column into an existing xml column' (name, done) {
+      const t = new sql.Table(name)
+      t.create = false
+      t.columns.add('a', sql.Xml, { nullable: true })
+      t.rows.add('<a>JP1016</a>')
+
+      new TestRequest().bulk(t).then(result => {
+        assert.strictEqual(result.rowsAffected, 1, 'the bulk load should insert the row')
+        return new sql.Request().batch(`select * from ${name}`)
+      }).then(result => {
+        assert.strictEqual(result.recordset[0].a, '<a>JP1016</a>', 'the xml column should hold the loaded value')
+        done()
+      }).catch(done)
+    },
+
+    'bulk load of columns without a length into existing sized columns' (name, done) {
+      // without table.create the target's column types are not known, so these keep the
+      // length the driver gives them, which a sized column accepts
+      const t = new sql.Table(name)
+      t.create = false
+      t.columns.add('a', sql.NVarChar, { nullable: true })
+      t.columns.add('b', sql.VarChar, { nullable: true })
+      t.columns.add('c', sql.VarBinary, { nullable: true })
+      t.rows.add('JP1016', 'JP1016', Buffer.from('JP1016'))
+
+      new TestRequest().bulk(t).then(result => {
+        assert.strictEqual(result.rowsAffected, 1, 'the bulk load should insert the row')
+        return new sql.Request().batch(`select * from ${name}`)
+      }).then(result => {
+        assert.strictEqual(result.recordset[0].a, 'JP1016', 'the nvarchar(50) column should hold the loaded value')
+        assert.strictEqual(result.recordset[0].b, 'JP1016', 'the varchar(50) column should hold the loaded value')
+        assert.deepStrictEqual(result.recordset[0].c, Buffer.from('JP1016'), 'the varbinary(50) column should hold the loaded value')
+        done()
+      }).catch(done)
+    },
+
+    'bulk load of a column without a length into an existing sql_variant column' (name, done) {
+      // a sql_variant column cannot hold a max value, so this relies on the column keeping
+      // the driver's length too
+      const t = new sql.Table(name)
+      t.create = false
+      t.columns.add('a', sql.NVarChar, { nullable: true })
+      t.rows.add('JP1016')
+
+      new TestRequest().bulk(t).then(result => {
+        assert.strictEqual(result.rowsAffected, 1, 'the bulk load should insert the row')
+        return new sql.Request().batch(`select cast(a as nvarchar(50)) as a, cast(sql_variant_property(a, 'BaseType') as nvarchar(128)) as type from ${name}`)
+      }).then(result => {
+        assert.strictEqual(result.recordset[0].a, 'JP1016', 'the sql_variant column should hold the loaded value')
+        assert.strictEqual(result.recordset[0].type, 'nvarchar', 'the value should be stored as an nvarchar')
+        done()
+      }).catch(done)
+    },
+
+    'bulk load of spatial columns into existing geography and geometry columns' (name, done) {
+      // the values are the bytes the server serializes these types to
+      new sql.Request().query("select cast(geography::STGeomFromText('POINT(-122.36 47.656)', 4326) as varbinary(max)) as g, cast(geometry::STGeomFromText('POINT(1 2)', 0) as varbinary(max)) as m").then(result => {
+        const t = new sql.Table(name)
+        t.create = false
+        t.columns.add('g', sql.Geography, { nullable: true })
+        t.columns.add('m', sql.Geometry, { nullable: true })
+        t.rows.add(result.recordset[0].g, result.recordset[0].m)
+        return new TestRequest().bulk(t)
+      }).then(result => {
+        assert.strictEqual(result.rowsAffected, 1, 'the bulk load should insert the row')
+        return new sql.Request().batch(`select g.STAsText() as g, m.STAsText() as m from ${name}`)
+      }).then(result => {
+        assert.strictEqual(result.recordset[0].g, 'POINT (-122.36 47.656)', 'the geography column should hold the loaded point')
+        assert.strictEqual(result.recordset[0].m, 'POINT (1 2)', 'the geometry column should hold the loaded point')
+        done()
+      }).catch(done)
+    },
+
+    'bulk load of a UDT column into an existing hierarchyid column' (name, done) {
+      new sql.Request().query("select cast(hierarchyid::Parse('/1/') as varbinary(max)) as h").then(result => {
+        const t = new sql.Table(name)
+        t.create = false
+        t.columns.add('h', sql.UDT, { nullable: true })
+        t.rows.add(result.recordset[0].h)
+        return new TestRequest().bulk(t)
+      }).then(result => {
+        assert.strictEqual(result.rowsAffected, 1, 'the bulk load should insert the row')
+        return new sql.Request().batch(`select h.ToString() as h from ${name}`)
+      }).then(result => {
+        assert.strictEqual(result.recordset[0].h, '/1/', 'the hierarchyid column should hold the loaded node')
+        done()
+      }).catch(done)
+    },
+
     'parameters with length as max' (done) {
       const req = new TestRequest()
       req.input('nvarchar', sql.NVarChar('max'), 'JP1016')

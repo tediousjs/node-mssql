@@ -61,6 +61,24 @@ if exists (select * from sys.tables where name = 'bulk_table4')
 if exists (select * from sys.tables where name = 'bulk_table5')
 	exec('drop table [dbo].[bulk_table5]')
 
+if exists (select * from sys.tables where name = 'bulk_table_unsized')
+	exec('drop table [dbo].[bulk_table_unsized]')
+
+if exists (select * from sys.tables where name = 'bulk_table_xml')
+	exec('drop table [dbo].[bulk_table_xml]')
+
+if exists (select * from sys.tables where name = 'bulk_table_sized')
+	exec('drop table [dbo].[bulk_table_sized]')
+
+if exists (select * from sys.tables where name = 'bulk_table_variant')
+	exec('drop table [dbo].[bulk_table_variant]')
+
+if exists (select * from sys.tables where name = 'bulk_table_spatial')
+	exec('drop table [dbo].[bulk_table_spatial]')
+
+if exists (select * from sys.tables where name = 'bulk_table_hierarchy')
+	exec('drop table [dbo].[bulk_table_hierarchy]')
+
 if exists (select * from sys.tables where name = 'rowsaffected_test')
 	exec('drop table [dbo].[rowsaffected_test]')
 
