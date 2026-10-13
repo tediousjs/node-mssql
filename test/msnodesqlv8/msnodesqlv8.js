@@ -125,6 +125,8 @@ describe('msnodesqlv8', function () {
       it.skip('query with pipe and an error that does not end the batch (msnodesqlv8 streams do not complete after an error before 5.6)', done => TESTS['query with pipe and an error'](false, done))
     }
     it('query with toReadableStream and a failing destination', done => TESTS['query with toReadableStream and a failing destination'](done))
+    it('query with pipe and a failing destination', done => TESTS['query with pipe and a failing destination'](done))
+    it('query with pipe into a destination that is already destroyed', done => TESTS['query with pipe into a destination that is already destroyed'](done))
     it('query with duplicate output column names', done => TESTS['query with duplicate output column names'](done))
     it('batch', done => TESTS.batch(done))
     it('batch (stream)', done => TESTS.batch(done, true))

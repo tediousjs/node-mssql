@@ -1105,6 +1105,8 @@ stream.on('finish', () => {
 
 The stream is destroyed with the request's first error, so listen for `error` on it as above. It does not emit `finish` after an error. The request still runs to the end, and its remaining rows are discarded.
 
+If the stream fails or closes before the request finishes, or was already destroyed, the request also runs to the end and its remaining rows are discarded, rather than waiting for a stream that will not read any more. Call `request.cancel()` to stop it early, bearing in mind the msnodesqlv8 caveat under [toReadableStream](#toreadablestream).
+
 `pipe()` passes errors only to the stream it is given. If you pipe through more streams after that one, use `stream.pipeline()` with [`toReadableStream`](#toreadablestream) instead, so that every error reaches you:
 
 ```javascript

@@ -4,7 +4,7 @@
 
 const sql = require('../../')
 const assert = require('node:assert')
-const { Writable } = require('node:stream')
+const { Readable, Writable } = require('node:stream')
 const udt = require('../../lib/udt')
 const { assertSafeProcedureName } = require('../../lib/utils')
 const { declare } = require('../../lib/datatypes')
@@ -1496,6 +1496,97 @@ describe('connection string auth - tedious', () => {
       req.emit('error', new sql.RequestError('Canceled.', 'ECANCEL'))
       assert.strictEqual(readableStream.destroyed, true, 'the cancel should destroy the stream')
       assert.strictEqual(req.paused, true, 'a cancelled request should be left for its driver to stop')
+    })
+
+    describe('releases a piped request whose destination will not read any more', () => {
+      // the rest of a running request's rows, more than the stream buffers
+      const sendTheRest = (req) => {
+        for (let a = 100; a < 150; a++) req.emit('row', { a })
+      }
+
+      it('when the destination fails while the request is held back', done => {
+        const failure = new Error('the destination failed')
+        const errors = []
+        let finishWrite
+        const destination = new Writable({
+          objectMode: true,
+          highWaterMark: 1,
+          write (row, encoding, callback) {
+            // the first write never completes until the destination fails
+            finishWrite = callback
+          }
+        })
+        destination.on('error', err => errors.push(err))
+        const req = new BaseRequest(null)
+        req.pipe(destination)
+
+        setImmediate(() => {
+          for (let a = 0; a < 30; a++) req.emit('row', { a })
+          assert.strictEqual(req.paused, true, 'the request should be held back while the destination is full')
+
+          finishWrite(failure)
+          setImmediate(() => {
+            assert.deepStrictEqual(errors, [failure], 'the destination should report its own failure')
+            sendTheRest(req)
+            assert.strictEqual(req.paused, false, 'the request should not be held back once nothing reads its rows')
+            req.emit('done')
+            done()
+          })
+        })
+      })
+
+      it('when the destination fails without emitting close', done => {
+        const failure = new Error('the destination failed')
+        const destination = new Writable({
+          objectMode: true,
+          highWaterMark: 1,
+          autoDestroy: false,
+          emitClose: false,
+          write (row, encoding, callback) {
+            callback(failure)
+          }
+        })
+        const req = new BaseRequest(null)
+        destination.on('error', () => setImmediate(() => {
+          sendTheRest(req)
+          assert.strictEqual(req.paused, false, 'the request should not be held back once nothing reads its rows')
+          req.emit('done')
+          done()
+        }))
+
+        req.pipe(destination)
+        req.emit('row', { a: 0 })
+      })
+
+      it('when the destination is already destroyed', () => {
+        const destination = new Writable({
+          objectMode: true,
+          write (row, encoding, callback) {
+            callback()
+          }
+        })
+        destination.destroy()
+        const req = new BaseRequest(null)
+
+        req.pipe(destination)
+        sendTheRest(req)
+        assert.strictEqual(req.paused, false, 'the request should not be held back once nothing reads its rows')
+        req.emit('done')
+      })
+    })
+
+    it('leaves the errors of a pipe() destination to the caller', () => {
+      const writable = () => new Writable({
+        objectMode: true,
+        write (row, encoding, callback) {
+          callback()
+        }
+      })
+      const plain = writable()
+      new Readable({ objectMode: true, read () {} }).pipe(plain)
+      const destination = writable()
+      new BaseRequest(null).pipe(destination)
+      assert.strictEqual(destination.listenerCount('error'), plain.listenerCount('error'), 'pipe() should add no error listener of its own, so an unhandled destination error is still thrown')
     })
 
     it('destroys the destination of pipe() with the request\'s first error', done => {

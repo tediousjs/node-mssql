@@ -737,6 +737,74 @@ module.exports = (sql, driver) => {
       req.query('select top 2000 * from streaming')
     },
 
+    'query with pipe and a failing destination' (done) {
+      const pool = new sql.Request().parent
+      const before = pool.pool.numUsed()
+      const failure = new Error('the destination failed')
+      const errors = []
+      let heldBackAtFailure = null
+      let written = 0
+
+      const req = new sql.Request()
+      const destination = new stream.Writable({
+        objectMode: true,
+        highWaterMark: 1,
+        write (row, encoding, callback) {
+          // slow enough for the stream to fill and hold the request back, then fail
+          setTimeout(() => {
+            if (++written === 20) {
+              heldBackAtFailure = req.paused
+              return callback(failure)
+            }
+            callback()
+          }, 1)
+        }
+      })
+      destination.on('error', err => errors.push(err))
+
+      req.on('done', () => {
+        setImmediate(() => {
+          try {
+            assert.strictEqual(heldBackAtFailure, true, 'the request should be held back by the full stream when the destination fails')
+            assert.deepStrictEqual(errors, [failure], 'the destination should report its own failure')
+            assert.strictEqual(pool.pool.numUsed(), before, 'the pool should have every connection back')
+            done()
+          } catch (e) {
+            done(e)
+          }
+        })
+      })
+      req.pipe(destination)
+      req.query('select top 2000 * from streaming')
+    },
+
+    'query with pipe into a destination that is already destroyed' (done) {
+      const pool = new sql.Request().parent
+      const before = pool.pool.numUsed()
+
+      const destination = new stream.Writable({
+        objectMode: true,
+        write (row, encoding, callback) {
+          callback()
+        }
+      })
+      destination.destroy()
+
+      const req = new sql.Request()
+      req.on('done', () => {
+        setImmediate(() => {
+          try {
+            assert.strictEqual(pool.pool.numUsed(), before, 'the pool should have every connection back')
+            done()
+          } catch (e) {
+            done(e)
+          }
+        })
+      })
+      req.pipe(destination)
+      req.query('select top 2000 * from streaming')
+    },
+
     'query with duplicate output column names' (done) {
       const req = new TestRequest()
       req.arrayRowMode = true
