@@ -670,6 +670,141 @@ module.exports = (sql, driver) => {
       req.pipe(blockingTransformStream).pipe(wstream)
     },
 
+    'query with pipe and an error' (endsTheBatch, done) {
+      // pipe() returns the destination, not the stream it puts in front of it, so the
+      // destination is the only place a request's error can be handled
+      const command = endsTheBatch
+        ? 'select * from notexistingtable'
+        // the rows after this error come once the destination has been destroyed
+        : 'raiserror(N\'Something went wrong\', 16, 1); select \'asdf\' as text'
+      const pool = new sql.Request().parent
+      const before = pool.pool.numUsed()
+      const errors = []
+
+      const destination = new WritableStream()
+      destination.on('error', err => errors.push(err))
+
+      const req = new sql.Request()
+      req.on('done', () => {
+        setImmediate(() => {
+          try {
+            assert.strictEqual(errors.length, 1, 'the destination should be sent the request\'s error once')
+            assert.ok(errors[0] instanceof sql.RequestError, `the destination's error should be a RequestError, got ${errors[0].constructor.name}`)
+            assert.strictEqual(destination.errored, errors[0], 'the destination should be destroyed with the request\'s error')
+            assert.deepStrictEqual(destination.cache, [], 'the rows after the error should be dropped')
+            assert.strictEqual(pool.pool.numUsed(), before, 'the pool should have every connection back')
+            done()
+          } catch (e) {
+            done(e)
+          }
+        })
+      })
+      req.pipe(destination)
+      req.query(command)
+    },
+
+    'query with toReadableStream and a failing destination' (done) {
+      const pool = new sql.Request().parent
+      const before = pool.pool.numUsed()
+      const failure = new Error('the destination failed')
+      let pipelineError = null
+      let written = 0
+
+      const destination = new stream.Writable({
+        objectMode: true,
+        highWaterMark: 1,
+        write (row, encoding, callback) {
+          // fail once the request has filled the stream and been paused
+          callback(++written === 20 ? failure : null)
+        }
+      })
+
+      const req = new sql.Request()
+      req.on('done', () => {
+        setImmediate(() => {
+          try {
+            assert.strictEqual(pipelineError, failure, 'the pipeline should fail with the destination\'s error')
+            assert.strictEqual(pool.pool.numUsed(), before, 'the pool should have every connection back')
+            done()
+          } catch (e) {
+            done(e)
+          }
+        })
+      })
+      stream.pipeline(req.toReadableStream(), destination, err => {
+        pipelineError = err
+      })
+      req.query('select top 2000 * from streaming')
+    },
+
+    'query with pipe and a failing destination' (done) {
+      const pool = new sql.Request().parent
+      const before = pool.pool.numUsed()
+      const failure = new Error('the destination failed')
+      const errors = []
+      let heldBackAtFailure = null
+      let written = 0
+
+      const req = new sql.Request()
+      const destination = new stream.Writable({
+        objectMode: true,
+        highWaterMark: 1,
+        write (row, encoding, callback) {
+          // slow enough for the stream to fill and hold the request back, then fail
+          setTimeout(() => {
+            if (++written === 20) {
+              heldBackAtFailure = req.paused
+              return callback(failure)
+            }
+            callback()
+          }, 1)
+        }
+      })
+      destination.on('error', err => errors.push(err))
+
+      req.on('done', () => {
+        setImmediate(() => {
+          try {
+            assert.strictEqual(heldBackAtFailure, true, 'the request should be held back by the full stream when the destination fails')
+            assert.deepStrictEqual(errors, [failure], 'the destination should report its own failure')
+            assert.strictEqual(pool.pool.numUsed(), before, 'the pool should have every connection back')
+            done()
+          } catch (e) {
+            done(e)
+          }
+        })
+      })
+      req.pipe(destination)
+      req.query('select top 2000 * from streaming')
+    },
+
+    'query with pipe into a destination that is already destroyed' (done) {
+      const pool = new sql.Request().parent
+      const before = pool.pool.numUsed()
+
+      const destination = new stream.Writable({
+        objectMode: true,
+        write (row, encoding, callback) {
+          callback()
+        }
+      })
+      destination.destroy()
+
+      const req = new sql.Request()
+      req.on('done', () => {
+        setImmediate(() => {
+          try {
+            assert.strictEqual(pool.pool.numUsed(), before, 'the pool should have every connection back')
+            done()
+          } catch (e) {
+            done(e)
+          }
+        })
+      })
+      req.pipe(destination)
+      req.query('select top 2000 * from streaming')
+    },
+
     'query with duplicate output column names' (done) {
       const req = new TestRequest()
       req.arrayRowMode = true

@@ -1074,6 +1074,12 @@ pipeline(readableStream, transformStream, writableStream)
 request.query('select * from mytable')
 ```
 
+The readable stream is destroyed with the request's first error. Later errors are still emitted on the request, but not on the stream.
+
+If the readable stream is destroyed before the request finishes (for example because a later stream in the pipeline failed), the request still runs to the end and the rows it has left are discarded. Call `request.cancel()` to stop it early.
+
+With msnodesqlv8 before 5.6 that cancel does not stop it. The request is resumed as soon as its stream is destroyed, so that it does not keep its connection, and those versions can only cancel a paused request.
+
 
 ### pipe (stream)
 
@@ -1095,6 +1101,21 @@ stream.on('error', err => {
 stream.on('finish', () => {
     // ...
 })
+```
+
+The stream is destroyed with the request's first error, so listen for `error` on it as above. It does not emit `finish` after an error. The request still runs to the end, and its remaining rows are discarded.
+
+If the stream fails or closes before the request finishes, or was already destroyed, the request also runs to the end and its remaining rows are discarded, rather than waiting for a stream that will not read any more. Call `request.cancel()` to stop it early, bearing in mind the msnodesqlv8 caveat under [toReadableStream](#toreadablestream).
+
+`pipe()` passes errors only to the stream it is given. If you pipe through more streams after that one, use `stream.pipeline()` with [`toReadableStream`](#toreadablestream) instead, so that every error reaches you:
+
+```javascript
+const { pipeline } = require('stream')
+const request = new sql.Request()
+pipeline(request.toReadableStream(), transformStream, writableStream, err => {
+    // ...
+})
+request.query('select * from mytable')
 ```
 
 ---------------------------------------
