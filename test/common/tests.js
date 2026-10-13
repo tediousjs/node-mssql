@@ -538,6 +538,34 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'query with an error that does not end the batch' (done) {
+      const req = new TestRequest()
+      req.query('raiserror(N\'Something went wrong\', 16, 1); select 1 as a', err => {
+        assert.ok(err instanceof sql.RequestError, 'the query should fail')
+        assert.strictEqual(err.message, 'Something went wrong', 'the error should be the one the batch raised')
+        assert.strictEqual(err.number, 50000, 'the error should be the one the batch raised')
+
+        done()
+      })
+    },
+
+    'query with a constraint violation' (afterAResult, done) {
+      const statements = [
+        // the batch fails before it returns anything
+        'declare @t table (id int primary key); insert into @t values (1), (1)'
+      ]
+      if (afterAResult) {
+        // a statement after a result fails
+        statements.push('declare @t table (id int primary key); insert into @t values (1); insert into @t values (1)')
+      }
+      statements.reduce((previous, statement) => previous.then(() => new TestRequest().query(statement).then(() => {
+        throw new Error(`${statement} should fail`)
+      }, err => {
+        assert.ok(err instanceof sql.RequestError, `${statement} should fail with a RequestError`)
+        assert.strictEqual(err.number, 2627, `${statement} should fail with the violation, not the statement's termination`)
+      })), Promise.resolve()).then(() => done(), done)
+    },
+
     'query with raiseerror' (done) {
       const notices = []
       const req = new TestRequest()
@@ -1712,7 +1740,11 @@ module.exports = (sql, driver) => {
         const req = tran.request()
         req.input('date', sql.TinyInt, 1561651515615)
 
-        req.execute('someStoreProc').catch(() => {
+        // the transaction is rolled back either way, so a failure is reported rather than
+        // left holding a connection
+        req.execute('someStoreProc').then(() => {
+          tran.rollback(() => done(new Error('executing a procedure that does not exist should fail')))
+        }, () => {
           tran.rollback(done)
         })
       }).catch(done)
@@ -1727,6 +1759,20 @@ module.exports = (sql, driver) => {
       })
 
       req.cancel()
+    },
+
+    'cancel a running request' (cancels, done) {
+      const req = new TestRequest()
+      req.query('waitfor delay \'00:00:05\'; select 1 as a').then(result => {
+        assert.ok(!cancels, 'the request should be cancelled')
+        assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'a request that cannot be cancelled should run to the end')
+      }, err => {
+        assert.ok(cancels, `the request should not fail: ${err.message}`)
+        assert.strictEqual(err.code, 'ECANCEL', 'the request should fail as cancelled')
+      }).then(() => done(), done)
+
+      // by then the query is running
+      setTimeout(() => req.cancel(), 1000)
     },
 
     'repeat calls to connect resolve' (config, done) {

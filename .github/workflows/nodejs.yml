@@ -165,11 +165,12 @@ jobs:
       #   v2: Node 18    v3: Node 18-20    v4: Node 18-24    v5: Node 20-24
       #
       # v5 is split: msnodesqlv8 5.2.2 dropped the Node 20 (ABI 115) win32-x64
-      # prebuild, so `@^5` (5.2.3+) is gated to Node 22-24 and Node 20 is pinned
-      # to 5.2.1 — the last v5 release that ships one. Upstream now builds
-      # prebuilds for Node 22/24/26 only, so a floating `@^5` will not regain a
-      # Node 20 prebuild; leaving Node 20 on `@^5` source-builds via node-gyp,
-      # which is slow on windows-2022 and fails outright on windows-2025.
+      # prebuild, so `@^5` is gated to Node 22-24 and Node 20 is pinned to 5.2.1,
+      # the last release before that drop. A combination without a prebuild
+      # source-builds via node-gyp, which is slow on windows-2022 and fails
+      # outright on windows-2025. From 5.3.0 msnodesqlv8 ships a single Node-API
+      # binary instead of one per ABI, which may load on Node 20 again but has not
+      # been tried here.
       - name: Install msnodesqlv8 v2
         if: ${{ matrix.node == '18.x' }}
         run: npm install --no-save msnodesqlv8@^2

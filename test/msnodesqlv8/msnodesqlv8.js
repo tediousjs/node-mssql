@@ -10,6 +10,16 @@ const TIMES = require('../common/times.js')(sql, 'msnodesqlv8')
 const versionHelper = require('../common/versionhelper')
 const { readFileSync } = require('node:fs')
 
+const [major, minor, patch] = require('msnodesqlv8/package.json').version.split('.').map(Number)
+
+// before 5.1.9 msnodesqlv8 reads the next result's metadata after SQLMoreResults has failed, and
+// that call replaces an error that follows an earlier result in the batch with one of its own
+const reportsErrorsAfterAResult = major > 5 || (major === 5 && (minor > 1 || (minor === 1 && patch >= 9)))
+
+// msnodesqlv8 cancels a running query from 5.6; before that it only cancels one that is paused
+// or polling, and lets any other run to the end
+const cancelsRunningQueries = major > 5 || (major === 5 && minor >= 6)
+
 const config = function () {
   const cfg = JSON.parse(readFileSync(join(__dirname, '../.mssql.json')))
   cfg.driver = 'msnodesqlv8'
@@ -93,6 +103,8 @@ describe('msnodesqlv8', function () {
     it('parameters with length as max', done => TESTS['parameters with length as max'](done))
     it('output parameters with a falsy initial value', done => TESTS['output parameters with a falsy initial value'](done))
     it('query with error', done => TESTS['query with error'](done))
+    it('query with an error that does not end the batch', done => TESTS['query with an error that does not end the batch'](done))
+    it('query with a constraint violation', done => TESTS['query with a constraint violation'](reportsErrorsAfterAResult, done))
     it('query with multiple errors (not supported by msnodesqlv8)', done => TESTS['query with multiple errors'](done))
     it.skip('query with raiseerror (not supported by msnodesqlv8)', done => TESTS['query with raiseerror'](done))
     it('query with toReadableStream', done => TESTS['query with toReadableStream'](done))
@@ -119,6 +131,7 @@ describe('msnodesqlv8', function () {
     it.skip('transaction with error (XACT_ABORT set to ON) (not supported by msnodesqlv8)', done => TESTS['transaction with error'](done))
     it('transaction with synchronous error', done => TESTS['transaction with synchronous error'](done))
     it('cancel request', done => TESTS['cancel request'](done))
+    it('cancel a running request', done => TESTS['cancel a running request'](cancelsRunningQueries, done))
     it('allows repeat calls to connect', done => TESTS['repeat calls to connect resolve'](config(), done))
     it('calls to close during connection throw', done => TESTS['calls to close during connection throw'](config(), done))
     it('calls to close during connection call back exactly once', done => TESTS['calls to close during connection call back exactly once'](config(), done))

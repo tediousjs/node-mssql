@@ -1246,6 +1246,10 @@ request.query('waitfor delay \'00:00:05\'; select 1 as number', (err, result) =>
 request.cancel()
 ```
 
+A cancelled stream emits an `error` event with code `ECANCEL`, followed by `done`.
+
+With the `msnodesqlv8` driver, a request that is already running can only be cancelled from msnodesqlv8 5.6. Earlier versions can cancel a paused stream, but let any other running request run to the end and complete as if `cancel()` had not been called.
+
 ## Transaction
 
 **IMPORTANT:** always use `Transaction` class to create transactions - it ensures that all your requests are executed on one connection. Once you call `begin`, a single connection is acquired from the connection pool and all subsequent requests (initialized with the `Transaction` object) are executed exclusively on this connection. After you call `commit` or `rollback`, connection is then released back to the connection pool.

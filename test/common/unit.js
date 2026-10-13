@@ -1,6 +1,6 @@
 'use strict'
 
-/* globals describe, it, before, afterEach */
+/* globals describe, it, before, after, afterEach */
 
 const sql = require('../../')
 const assert = require('node:assert')
@@ -1688,5 +1688,462 @@ describe('procedure name validation', () => {
       assert.throws(() => assertSafeProcedureName(payload), err => err.code === 'EINJECT',
         `${JSON.stringify(payload)} should be rejected`)
     }
+  })
+})
+
+describe('msnodesqlv8 query events', () => {
+  const Module = require('node:module')
+  const { EventEmitter } = require('node:events')
+  const RequestError = require('../../lib/error/request-error')
+
+  // msnodesqlv8 is a native module that only the Windows CI jobs install. The request only
+  // reaches into it for TVPs, so a bare object stands in for it, and each test plays the
+  // events a version of it emits on the query it is given.
+  const STUB = 'msnodesqlv8-stub'
+  const REQUEST = require.resolve('../../lib/msnodesqlv8/request')
+  let resolveFilename
+  let Request
+
+  before(() => {
+    resolveFilename = Module._resolveFilename
+    Module._resolveFilename = function (request, ...rest) {
+      return request === 'msnodesqlv8' ? STUB : resolveFilename.call(this, request, ...rest)
+    }
+    require.cache[STUB] = { id: STUB, filename: STUB, loaded: true, exports: {} }
+    Request = require(REQUEST)
+  })
+
+  after(() => {
+    Module._resolveFilename = resolveFilename
+    delete require.cache[STUB]
+    delete require.cache[REQUEST]
+  })
+
+  const odbcError = (message, code, sqlstate) => Object.assign(new Error(message), { code, sqlstate })
+  const PRIMARY_KEY = () => odbcError('Violation of PRIMARY KEY constraint \'PK_t\'.', 2627, '23000')
+  const TERMINATED = () => odbcError('The statement has been terminated.', 3621, '01000')
+  const CANCELED = () => odbcError('[msnodesql] Operation canceled', 0, 'HY008')
+  const REFUSED = () => new Error('Error: [msnodesql] cancel only supported for statements where polling is enabled.')
+  const tick = () => new Promise(resolve => setImmediate(resolve))
+
+  // the request's pool, its connection and the query that connection runs; `play` is given
+  // the query once it is running and emits on it what msnodesqlv8 would
+  const setup = (play, query = {}) => {
+    const notify = Object.assign(new EventEmitter(), {
+      isPaused: () => false,
+      cancelQuery () {}
+    }, query)
+    // msnodesqlv8 does not emit an error that nothing listens for
+    notify.fail = (err, more) => {
+      if (notify.listenerCount('error') > 0) notify.emit('error', err, more)
+    }
+    const connection = {
+      queryRaw () {
+        setImmediate(play, notify)
+        return notify
+      }
+    }
+    const pool = {
+      connected: true,
+      config: {},
+      released: 0,
+      acquire (request, callback) { callback(null, connection, { requestTimeout: 15000 }) },
+      release () { this.released++ }
+    }
+    return { request: new Request(pool), notify, pool, connection }
+  }
+
+  const result = (meta, value) => notify => {
+    notify.emit('meta', [{ name: meta, sqlType: 'int', size: 4, nullable: false }])
+    notify.emit('row', 0)
+    notify.emit('column', 0, value, false)
+  }
+
+  it('should reject when an error ends the batch', async () => {
+    const { request, pool } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      notify.emit('done')
+    })
+    await assert.rejects(request.query('insert into t values (1)'), err => {
+      assert.ok(err instanceof RequestError, 'the error should be a RequestError')
+      assert.strictEqual(err.number, 2627, 'the error should be the one that ended the batch')
+      assert.strictEqual(err.code, 'EREQUEST', 'the error should be a request error')
+      return true
+    })
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  // msnodesqlv8 >= 5.6
+  it('should reject when an error does not end the batch', async () => {
+    const { request, pool } = setup(notify => {
+      notify.fail(odbcError('Something went wrong', 50000, '42000'), true)
+      result('a', 1)(notify)
+      notify.emit('done')
+    })
+    await assert.rejects(request.query('raiserror(N\'Something went wrong\', 16, 1); select 1 as a'), err => {
+      assert.strictEqual(err.message, 'Something went wrong', 'the error should be the one the batch reported')
+      assert.strictEqual(err.code, 'EREQUEST', 'the error should be a request error')
+      return true
+    })
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  // msnodesqlv8 >= 5.6
+  it('should keep the errors that came before the last one in a batch that carries on', async () => {
+    const { request } = setup(notify => {
+      notify.fail(odbcError('first', 50000, '42000'), true)
+      result('a', 1)(notify)
+      notify.fail(odbcError('second', 50000, '42000'), true)
+      result('b', 2)(notify)
+      notify.fail(odbcError('third', 50000, '42000'), true)
+      result('c', 3)(notify)
+      notify.emit('done')
+    })
+    await assert.rejects(request.query('select 1'), err => {
+      assert.strictEqual(err.message, 'third', 'the error should be the last one reported')
+      assert.deepStrictEqual(err.precedingErrors.map(e => e.message), ['first', 'second'], 'the earlier errors should precede it')
+      return true
+    })
+  })
+
+  // msnodesqlv8 >= 5.6, which carries on to the select of the return value
+  it('should reject an execute of a procedure that cannot be found', async () => {
+    const { request, pool } = setup(notify => {
+      notify.fail(odbcError('Could not find stored procedure \'missing\'.', 2812, '42000'), true)
+      result('___return___', 0)(notify)
+      notify.emit('done')
+    })
+    await assert.rejects(request.execute('missing'), err => {
+      assert.strictEqual(err.number, 2812, 'the error should be the missing procedure')
+      return true
+    })
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  it('should stream an error that does not end the batch, then complete', async () => {
+    const { request } = setup(notify => {
+      notify.fail(odbcError('Something went wrong', 50000, '42000'), true)
+      result('a', 1)(notify)
+      notify.emit('done')
+    })
+    request.stream = true
+    const errors = []
+    const rows = []
+    request.on('error', err => errors.push(err))
+    request.on('row', row => rows.push(row))
+    await new Promise(resolve => {
+      request.on('done', resolve)
+      request.query('select 1')
+    })
+    assert.deepStrictEqual(errors.map(e => e.message), ['Something went wrong'], 'the error should be streamed once')
+    assert.deepStrictEqual(rows, [{ a: 1 }], 'the rows after the error should still be streamed')
+  })
+
+  // msnodesqlv8 >= 5.6 emits a failed statement's info messages ahead of its error
+  it('should reject with the error a statement was terminated by when it follows the message', async () => {
+    const { request } = setup(notify => {
+      notify.emit('info', TERMINATED(), false)
+      notify.fail(PRIMARY_KEY(), false)
+      notify.emit('done')
+    })
+    await assert.rejects(request.query('insert into t values (1)'), err => {
+      assert.strictEqual(err.number, 2627, 'the error should be the one that terminated the statement')
+      return true
+    })
+  })
+
+  // msnodesqlv8 >= 5.6, when the statement fails after an earlier result and the batch carries on
+  it('should reject with the error a statement was terminated by when it follows the message and does not end the batch', async () => {
+    const { request } = setup(notify => {
+      notify.emit('info', TERMINATED(), false)
+      notify.fail(PRIMARY_KEY(), true)
+      result('___return___', 0)(notify)
+      notify.emit('done')
+    })
+    await assert.rejects(request.execute('insert_t'), err => {
+      assert.strictEqual(err.number, 2627, 'the error should be the one that terminated the statement')
+      return true
+    })
+  })
+
+  // msnodesqlv8 2.0 could stop after the message that the statement was terminated (node-mssql #1126)
+  it('should reject with the error a statement was terminated by when it comes before the message', async () => {
+    const { request } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), true)
+      notify.emit('info', TERMINATED(), false)
+    })
+    await assert.rejects(request.query('insert into t values (1)'), err => {
+      assert.strictEqual(err.number, 2627, 'the error should be the one that terminated the statement')
+      return true
+    })
+  })
+
+  it('should reject with the message that a statement was terminated when no error says why', async () => {
+    const { request } = setup(notify => {
+      notify.emit('info', TERMINATED(), false)
+      notify.emit('done')
+    })
+    await assert.rejects(request.query('insert into t values (1)'), err => {
+      assert.strictEqual(err.number, 3621, 'the error should be the termination')
+      return true
+    })
+  })
+
+  // msnodesqlv8 >= 5.6: the batch carries on after an earlier statement's error, and the
+  // message that a later statement was terminated comes ahead of the error that terminated it
+  it('should reject with the last error when a later statement is terminated', async () => {
+    const { request, pool } = setup(async notify => {
+      notify.fail(odbcError('Something went wrong', 50000, '42000'), true)
+      await tick()
+      notify.emit('info', TERMINATED(), false)
+      notify.fail(PRIMARY_KEY(), true)
+      await tick()
+      result('a', 1)(notify)
+      notify.emit('done')
+    })
+    await assert.rejects(request.query('raiserror(N\'Something went wrong\', 16, 1); insert into t values (1); select 1 as a'), err => {
+      assert.strictEqual(err.number, 2627, 'the error should be the last one the batch reported')
+      assert.deepStrictEqual(err.precedingErrors.map(e => e.number), [50000], 'the earlier error should precede it')
+      return true
+    })
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  // msnodesqlv8 >= 5.6: a procedure whose first statement fails reports the error ahead of the
+  // message, and carries on to the select of the return value
+  it('should reject an execute whose first statement is terminated, once the batch is done', async () => {
+    let releasedBeforeDone
+    const { request, pool } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), true)
+      notify.emit('info', TERMINATED(), true)
+      result('___return___', 0)(notify)
+      releasedBeforeDone = pool.released
+      notify.emit('done')
+    })
+    await assert.rejects(request.execute('insert_t'), err => {
+      assert.strictEqual(err.number, 2627, 'the error should be the one that terminated the statement')
+      return true
+    })
+    assert.strictEqual(releasedBeforeDone, 0, 'the connection should not be released before the batch is done')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  it('should stream an error a statement was terminated by once', async () => {
+    const { request } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      notify.emit('info', TERMINATED(), false)
+      notify.emit('done')
+    })
+    request.stream = true
+    const errors = []
+    request.on('error', err => errors.push(err))
+    await new Promise(resolve => {
+      request.on('done', resolve)
+      request.query('insert into t values (1)')
+    })
+    assert.deepStrictEqual(errors.map(e => e.number), [2627], 'the error should be streamed once')
+  })
+
+  // msnodesqlv8 >= 5.6: 'done' as soon as the cancel is through, then an error from the read
+  // the cancel cut short, then 'free' once the statement is released
+  const cancels = {
+    cancelQuery (callback) {
+      setImmediate(() => {
+        this.emit('done')
+        callback(null)
+        setImmediate(() => {
+          this.fail(CANCELED(), false)
+          setImmediate(() => this.emit('free'))
+        })
+      })
+    }
+  }
+
+  // msnodesqlv8 >= 5.6. The connection goes back with the cancel, not at the statement's 'free'
+  it('should reject a running query that is cancelled', async () => {
+    const { request, notify, pool } = setup(notify => {
+      result('a', 1)(notify)
+      request.cancel()
+    }, cancels)
+    const freed = new Promise(resolve => notify.once('free', resolve))
+    await assert.rejects(request.query('waitfor delay \'00:00:05\'; select 1 as a'), err => {
+      assert.strictEqual(err.code, 'ECANCEL', 'the error should be a cancel')
+      return true
+    })
+    assert.strictEqual(pool.released, 1, 'the connection should be released with the cancel')
+    await freed
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  // msnodesqlv8 >= 5.6
+  it('should stream a cancel once, then complete', async () => {
+    const { request } = setup(notify => {
+      result('a', 1)(notify)
+      request.cancel()
+    }, cancels)
+    request.stream = true
+    const errors = []
+    let done = 0
+    request.on('error', err => errors.push(err))
+    await new Promise(resolve => {
+      request.on('done', () => {
+        done++
+        resolve()
+      })
+      request.query('select * from streaming')
+    })
+    // the error the cancel cut the read short with comes after 'done'
+    await tick()
+    await tick()
+    assert.deepStrictEqual(errors.map(e => e.code), ['ECANCEL'], 'only the cancel should be streamed as an error')
+    assert.strictEqual(done, 1, 'the stream should complete once')
+  })
+
+  // msnodesqlv8 >= 5.6 can report a cancel the statement refused as done, and the query goes on
+  it('should stream nothing a cancelled query emits after done', async () => {
+    const { request, pool } = setup(notify => {
+      result('a', 1)(notify)
+      request.cancel()
+    }, {
+      cancelQuery (callback) {
+        setImmediate(() => {
+          this.emit('done')
+          callback(null)
+          setImmediate(() => {
+            result('b', 2)(this)
+            this.emit('rowcount', 1)
+            this.emit('info', odbcError('Still running', 0, '01000'), false)
+            this.fail(odbcError('Something went wrong', 50000, '42000'), false)
+            this.emit('done')
+          })
+        })
+      }
+    })
+    request.stream = true
+    const events = []
+    request.on('recordset', () => events.push('recordset'))
+    request.on('row', () => events.push('row'))
+    request.on('rowsaffected', () => events.push('rowsaffected'))
+    request.on('info', () => events.push('info'))
+    request.on('error', err => events.push(`error ${err.code}`))
+    request.on('done', () => events.push('done'))
+    request.query('select * from streaming')
+    while (!events.includes('done')) await tick()
+    await tick()
+    await tick()
+    assert.deepStrictEqual(events, ['recordset', 'row', 'error ECANCEL', 'done'], 'nothing should be streamed after done')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  // msnodesqlv8 < 5.6
+  it('should complete a query whose cancel is refused', async () => {
+    const { request } = setup(notify => {
+      result('a', 1)(notify)
+      request.cancel()
+      setImmediate(() => setImmediate(() => notify.emit('done')))
+    }, {
+      cancelQuery (callback) {
+        setImmediate(callback, REFUSED())
+      }
+    })
+    const { recordset } = await request.query('select 1 as a')
+    assert.deepStrictEqual(recordset, [{ a: 1 }], 'the query should complete')
+  })
+
+  // msnodesqlv8 5.1 to 5.5 note the first cancel, refused or not, and drop any after it
+  it('should complete a query whose first cancel is refused and later ones dropped', async () => {
+    let sent = false
+    const { request } = setup(notify => {
+      result('a', 1)(notify)
+      request.cancel()
+      setImmediate(() => setImmediate(() => {
+        request.cancel()
+        notify.emit('done')
+      }))
+    }, {
+      getCancelSent: () => sent,
+      cancelQuery (callback) {
+        if (sent) return
+        sent = true
+        setImmediate(callback, REFUSED())
+      }
+    })
+    const { recordset } = await request.query('select 1 as a')
+    assert.deepStrictEqual(recordset, [{ a: 1 }], 'the query should complete')
+  })
+
+  // every msnodesqlv8 version cancels a paused query, and ends it with 'done' before calling back
+  it('should stream a cancel of a paused query once, then complete with what was read', async () => {
+    let paused = false
+    const { request, pool } = setup(notify => {
+      result('a', 1)(notify)
+      notify.emit('rowcount', 1)
+      result('b', 2)(notify)
+    }, {
+      isPaused: () => paused,
+      pauseQuery () { paused = true },
+      resumeQuery () { paused = false },
+      cancelQuery (callback) {
+        setImmediate(() => {
+          this.emit('done')
+          callback(null)
+        })
+      }
+    })
+    request.stream = true
+    const errors = []
+    let completed = null
+    request.on('error', err => errors.push(err))
+    request.on('row', row => {
+      if (row.b) {
+        request.pause()
+        request.cancel()
+      }
+    })
+    await new Promise(resolve => {
+      request.on('done', result => {
+        completed = result
+        resolve()
+      })
+      request.query('select * from streaming')
+    })
+    await tick()
+    assert.deepStrictEqual(errors.map(e => e.code), ['ECANCEL'], 'the cancel should be streamed as an error')
+    assert.deepStrictEqual(completed.rowsAffected, [1], 'the stream should complete with the rows affected so far')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  // msnodesqlv8 >= 5.6 can fail the read a cancel cut short before the cancel is through
+  it('should reject a cancelled query whose read fails before the cancel is through', async () => {
+    const { request, pool } = setup(notify => request.cancel(), {
+      cancelQuery (callback) {
+        setImmediate(() => {
+          this.fail(CANCELED(), false)
+          this.emit('done')
+          callback(null)
+        })
+      }
+    })
+    await assert.rejects(request.query('waitfor delay \'00:00:05\''), err => {
+      assert.strictEqual(err.code, 'ECANCEL', 'the error should be a cancel')
+      return true
+    })
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  it('should mark the connection broken when the link fails after a cancel', async () => {
+    const { request, connection } = setup(notify => request.cancel(), {
+      cancelQuery (callback) {
+        setImmediate(() => {
+          this.emit('done')
+          callback(null)
+          setImmediate(() => this.fail(odbcError('Communication link failure', 0, '08S01'), false))
+        })
+      }
+    })
+    await assert.rejects(request.query('select 1'))
+    await tick()
+    await tick()
+    assert.strictEqual(connection.hasError, true, 'a link failure after a cancel should mark the connection as broken')
   })
 })
