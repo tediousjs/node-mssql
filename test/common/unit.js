@@ -2380,7 +2380,7 @@ describe('msnodesqlv8 query events', () => {
   })
 
   describe('stream back pressure', () => {
-    const { Writable } = require('node:stream')
+    const { Writable, pipeline } = require('node:stream')
     const BATCH = 50
 
     // Plays `recordsets` ([column, row count] each) the way msnodesqlv8's reader does: it
@@ -2957,6 +2957,27 @@ describe('msnodesqlv8 query events', () => {
       await completed
       assert.strictEqual(rows.length, 60, 'no row should be emitted after the stream was paused and cancelled')
       assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
+    })
+
+    it('should run a stream that is held back to the end once nothing reads it', async () => {
+      const { request, pool, calls } = setupReader('5.6', [['a', 75], ['b', 120]])
+      const failure = new Error('the destination failed')
+      let written = 0
+      const destination = new Writable({
+        objectMode: true,
+        highWaterMark: 1,
+        write (row, encoding, callback) {
+          setImmediate(callback, ++written === 20 ? failure : null)
+        }
+      })
+      const completed = new Promise(resolve => request.on('done', resolve))
+      const failed = new Promise(resolve => pipeline(request.toReadableStream(), destination, resolve))
+      request.query('select a; select b')
+
+      assert.strictEqual(await failed, failure, 'the pipeline should fail with the destination\'s error')
+      await completed
+      assert.deepStrictEqual(calls, ['pause', 'resume'], 'the driver, held back at the end of its batch, should be resumed to run to the end')
+      assert.strictEqual(pool.released, 1, 'the connection should be released once')
     })
 
     it('should leave a cancel of a request that is no longer streaming to msnodesqlv8', async () => {
