@@ -107,6 +107,7 @@ describe('tedious', () => {
     it('query with toReadableStream', done => TESTS['query with toReadableStream'](done))
     it('query with pipe', done => TESTS['query with pipe'](done))
     it('query with pipe and back pressure', (done) => TESTS['query with pipe and back pressure'](done))
+    it('query with pipe and back pressure across partial row batches', done => TESTS['query with pipe and back pressure across partial row batches'](done))
     it('query with pipe and an error that ends the batch', done => TESTS['query with pipe and an error'](true, done))
     it('query with pipe and an error that does not end the batch', done => TESTS['query with pipe and an error'](false, done))
     it('query with toReadableStream and a failing destination', done => TESTS['query with toReadableStream and a failing destination'](done))

@@ -2301,13 +2301,16 @@ describe('msnodesqlv8 query events', () => {
     assert.deepStrictEqual(recordset, [{ a: 1 }], 'the query should complete')
   })
 
-  // every msnodesqlv8 version cancels a paused query, and ends it with 'done' before calling back
+  // every msnodesqlv8 version cancels a paused query, and ends it with 'done' before calling back;
+  // a stream paused part way through a result set is cancelled once the driver has handed over
+  // the batch, so this query, whose batch is its last, ends first
   it('should stream a cancel of a paused query once, then complete with what was read', async () => {
     let paused = false
     const { request, pool } = setup(notify => {
       result('a', 1)(notify)
       notify.emit('rowcount', 1)
       result('b', 2)(notify)
+      setImmediate(() => notify.emit('done'))
     }, {
       isPaused: () => paused,
       pauseQuery () { paused = true },
@@ -2374,5 +2377,607 @@ describe('msnodesqlv8 query events', () => {
     await tick()
     await tick()
     assert.strictEqual(connection.hasError, true, 'a link failure after a cancel should mark the connection as broken')
+  })
+
+  describe('stream back pressure', () => {
+    const { Writable } = require('node:stream')
+    const BATCH = 50
+
+    // Plays `recordsets` ([column, row count] each) the way msnodesqlv8's reader does: it
+    // fetches a result set's rows BATCH at a time and hands them over until it is paused. What
+    // it does after a pause part way through a batch is what differs: up to 4.x it goes on as if
+    // the batch was handed over; 5.0 to 5.5 do too, and when resumed after the last batch of a
+    // result set, move on to the next one a second time; 5.6 waits for the rest of the batch,
+    // unless it was paused on the batch's last row. `timeOutAtFetch` names a fetch that does not
+    // come back before the request times out, and `failAtEnd` ends the query on an error; a query
+    // that ends on an error emits 'free' and no 'done', as msnodesqlv8 does. `beginDelay` holds
+    // back the end of the first statement, and `stallBegin` keeps it from ending.
+    const reader = (version, recordsets, { timeOutAtFetch, failAtEnd, beginDelay, stallBegin } = {}) => {
+      const pausedAt = []
+      const calls = []
+      let notify = null
+      let queried = false
+      let handle = false
+      let token = null
+      let cancelSent = false
+      let fetches = 0
+      let set = 0
+      let read = 0
+      let batch = null
+      let index = 0
+      let paused = false
+      let running = true
+
+      const meta = () => [{ name: recordsets[set][0], sqlType: 'int', size: 4, nullable: false }]
+
+      const fetch = () => {
+        const data = []
+        while (data.length < BATCH && read < recordsets[set][1]) data.push(++read)
+        // a fetch that comes back short has reached the end of the result set
+        return { data, endOfRows: data.length < BATCH }
+      }
+
+      const isPaused = () => paused
+
+      // handing over a row can pause the query, which stops the loop
+      const dispatchRows = () => {
+        if (!batch) return
+        while (!isPaused() && index < batch.data.length) {
+          notify.emit('row', index)
+          notify.emit('column', 0, batch.data[index++], false)
+        }
+      }
+
+      const nextResult = () => setImmediate(() => {
+        if (!running) return
+        set++
+        read = 0
+        if (set < recordsets.length) {
+          notify.emit('meta', meta())
+          dispatch()
+        } else if (failAtEnd) {
+          fail(Object.assign(new Error('Something went wrong'), { code: 50000, sqlstate: '42000' }))
+        } else {
+          running = false
+          notify.emit('done')
+          notify.emit('free')
+        }
+      })
+
+      const fail = err => {
+        running = false
+        notify.fail(err, false)
+        setImmediate(() => notify.emit('free'))
+      }
+
+      const dispatch = () => {
+        if (!running || paused) return
+        if (++fetches === timeOutAtFetch) {
+          return setTimeout(fail, 10, Object.assign(new Error('Query timeout expired'), { code: 0, sqlstate: 'HYT00' }))
+        }
+        setImmediate(() => {
+          if (!running) return
+          batch = fetch()
+          index = 0
+          dispatchRows()
+          if (version === '5.6' && paused && index < batch.data.length) return
+          if (batch.endOfRows) {
+            nextResult()
+          } else {
+            dispatch()
+          }
+        })
+      }
+
+      // every version cancels a paused query, and ends it with 'done' before calling back;
+      // before 5.6 a query that is neither paused nor polling is not cancelled
+      const sendCancel = callback => {
+        if (version !== '5.6' && !paused) {
+          calls.push('cancel refused')
+          return setImmediate(callback, new Error('Error: [msnodesql] cancel only supported for statements where polling is enabled.'))
+        }
+        calls.push('cancel')
+        running = false
+        setImmediate(() => {
+          notify.emit('done')
+          callback(null)
+        })
+      }
+
+      const query = {
+        isPaused,
+        pauseQuery () {
+          calls.push('pause')
+          pausedAt.push(batch ? `${index} of ${batch.data.length}` : 'before the first batch')
+          paused = true
+        },
+        resumeQuery () {
+          calls.push('resume')
+          paused = false
+          dispatchRows()
+          if (paused) return
+          if (version !== '2.x to 4.x' && batch && batch.endOfRows && index >= batch.data.length) {
+            nextResult()
+          } else {
+            dispatch()
+          }
+        },
+        // from 5.0 a query is sent one cancel: one made before the query has a statement waits
+        // for it, and a repeat is dropped without calling back
+        cancelQuery (callback) {
+          if (version !== '2.x to 4.x') {
+            if (cancelSent) return calls.push('cancel dropped')
+            if (!handle) {
+              token = callback
+              return
+            }
+            cancelSent = true
+          }
+          sendCancel(callback)
+        }
+      }
+      if (version !== '2.x to 4.x') query.getCancelSent = () => cancelSent
+
+      return {
+        pausedAt,
+        calls,
+        fetches: () => fetches,
+        queried: () => queried,
+        query,
+        play (emitter) {
+          notify = emitter
+          queried = true
+          const begin = () => {
+            handle = true
+            if (token) {
+              const callback = token
+              token = null
+              cancelSent = true
+              sendCancel(callback)
+            }
+            if (stallBegin || !running) return
+            notify.emit('meta', meta())
+            dispatch()
+          }
+          if (beginDelay) {
+            setTimeout(begin, beginDelay)
+          } else {
+            begin()
+          }
+        }
+      }
+    }
+
+    const setupReader = (version, recordsets, options) => {
+      const query = reader(version, recordsets, options)
+      return { ...setup(query.play, query.query), pausedAt: query.pausedAt, calls: query.calls, fetches: query.fetches, queried: query.queried }
+    }
+
+    const rowsOf = recordsets => recordsets.flatMap(([column, count]) => Array.from({ length: count }, (_, i) => `${column}=${i + 1}`))
+
+    // the rows the stream hands to a writable that takes one at a time, so that it is paused
+    // throughout
+    const pipeToSlowWritable = request => new Promise((resolve, reject) => {
+      const rows = []
+      const writable = new Writable({
+        objectMode: true,
+        highWaterMark: 1,
+        write (row, encoding, callback) {
+          rows.push(Object.entries(row).map(([column, value]) => `${column}=${value}`).join())
+          setImmediate(callback)
+        }
+      })
+      writable.on('finish', () => resolve(rows))
+      request.on('error', reject)
+      request.pipe(writable)
+    })
+
+    // a short last batch in the first result set, a last batch of one row in the next, and a
+    // short last batch in the last
+    const RECORDSETS = [['a', 75], ['b', 51], ['c', 120]]
+
+    for (const version of ['2.x to 4.x', '5.0 to 5.5', '5.6']) {
+      it(`should pipe every row of every result set with msnodesqlv8 ${version}`, async () => {
+        const { request, pausedAt } = setupReader(version, RECORDSETS)
+        const completed = request.query('select a; select b; select c')
+        const rows = await pipeToSlowWritable(request)
+        await completed
+        assert.deepStrictEqual(rows, rowsOf(RECORDSETS), 'every row should arrive once, in order, under its own column')
+        assert.ok(pausedAt.length > 0, 'the driver should have been paused')
+        assert.deepStrictEqual(pausedAt.filter(at => at !== `${BATCH} of ${BATCH}`), [], 'the driver should only be paused once it has handed over a whole batch')
+      })
+    }
+
+    it('should emit nothing while a stream is paused, and complete once it is resumed', async () => {
+      const { request, notify } = setupReader('5.6', [['a', 75]])
+      request.stream = true
+      const rows = []
+      let completed = false
+      request.on('row', row => {
+        rows.push(row.a)
+        if (rows.length === 60) request.pause()
+      })
+      request.on('done', () => { completed = true })
+      const finished = new Promise(resolve => notify.once('done', resolve))
+      const result = request.query('select a')
+
+      await finished
+      await tick()
+      assert.strictEqual(rows.length, 60, 'no row should be emitted while the stream is paused')
+      assert.strictEqual(completed, false, 'the stream should not complete while rows are waiting')
+
+      request.resume()
+      await result
+      assert.deepStrictEqual(rows, rowsOf([['a', 75]]).map(row => Number(row.slice(2))), 'the waiting rows should be emitted once the stream is resumed')
+      assert.strictEqual(completed, true, 'the stream should complete once it has emitted the waiting rows')
+    })
+
+    it('should stream a cancel of a paused stream without emitting the rows still waiting', async () => {
+      const { request, notify, pool } = setupReader('5.6', [['a', 75]])
+      request.stream = true
+      const rows = []
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      request.on('row', row => {
+        rows.push(row.a)
+        if (rows.length === 10) request.pause()
+      })
+      const completed = new Promise(resolve => request.on('done', resolve))
+      request.query('select a')
+
+      // the driver goes on to the end of its batch
+      while (!notify.isPaused()) await tick()
+      request.cancel()
+      await completed
+      assert.strictEqual(rows.length, 10, 'no row should be emitted after the stream was paused')
+      assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
+      assert.strictEqual(pool.released, 1, 'the connection should be released once')
+    })
+
+    it('should cancel a paused stream once the driver has handed over its batch', async () => {
+      const { request, pausedAt, calls } = setupReader('5.6', [['a', 75]])
+      request.stream = true
+      const rows = []
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      request.on('row', row => {
+        rows.push(row.a)
+        if (rows.length === 10) {
+          request.pause()
+          request.cancel()
+        }
+      })
+      const completed = new Promise(resolve => request.on('done', resolve))
+      request.query('select a')
+
+      await completed
+      assert.strictEqual(rows.length, 10, 'no row should be emitted after the stream was paused')
+      assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
+      assert.deepStrictEqual(pausedAt, ['50 of 50'], 'the driver should be paused at the end of its batch')
+      assert.deepStrictEqual(calls, ['pause', 'cancel'], 'the driver should be cancelled once it is paused')
+    })
+
+    it('should cancel a paused stream at the start of the next result set', async () => {
+      const { request, calls } = setupReader('5.6', [['a', 30], ['b', 30]])
+      request.stream = true
+      const rows = []
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      request.on('row', row => {
+        rows.push(row)
+        if (rows.length === 10) {
+          request.pause()
+          request.cancel()
+        }
+      })
+      const completed = new Promise(resolve => request.on('done', resolve))
+      request.query('select a; select b')
+
+      await completed
+      assert.strictEqual(rows.length, 10, 'no row should be emitted after the stream was paused')
+      assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
+      assert.deepStrictEqual(calls, ['pause', 'cancel'], 'the driver should be paused and cancelled once, before it reads the next result set')
+    })
+
+    it('should not pause a driver that is ending the query when a paused stream is cancelled', async () => {
+      const { request, notify, calls } = setupReader('5.6', [['a', 75]])
+      request.stream = true
+      const rows = []
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      request.on('row', row => {
+        rows.push(row.a)
+        if (rows.length === 60) request.pause()
+      })
+      // once the driver has handed over its last, short batch it goes on to end the query
+      notify.on('column', (index, value) => {
+        if (value === 75) setImmediate(() => request.cancel())
+      })
+      const completed = new Promise(resolve => request.on('done', resolve))
+      request.query('select a')
+
+      await completed
+      assert.strictEqual(rows.length, 60, 'no row should be emitted after the stream was paused')
+      assert.deepStrictEqual(errors, ['ECANCEL'], 'a stream that drops rows should report the cancel')
+      assert.deepStrictEqual(calls, [], 'the driver should be left to end the query')
+    })
+
+    it('should stream a cancel of a paused stream whose query has ended with rows still waiting', async () => {
+      const { request, notify, pool } = setupReader('5.6', [['a', 75]])
+      request.stream = true
+      const rows = []
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      request.on('row', row => {
+        rows.push(row.a)
+        if (rows.length === 60) request.pause()
+      })
+      const completed = new Promise(resolve => request.on('done', resolve))
+      const finished = new Promise(resolve => notify.once('done', resolve))
+      request.query('select a')
+
+      await finished
+      await tick()
+      request.cancel()
+      await completed
+      assert.strictEqual(rows.length, 60, 'no row should be emitted after the stream was paused')
+      assert.deepStrictEqual(errors, ['ECANCEL'], 'a stream that drops rows should report the cancel')
+      assert.strictEqual(pool.released, 1, 'the connection should be released once')
+    })
+
+    it('should keep the driver paused for a cancel made while a stream emits its waiting rows', async () => {
+      const { request, notify, calls } = setupReader('5.0 to 5.5', [['a', 200]])
+      request.stream = true
+      const rows = []
+      const errors = []
+      let completedAfter = null
+      request.on('error', err => errors.push(err.code))
+      request.on('row', row => {
+        if (row.a === 10) request.pause()
+        if (row.a === 30) request.cancel()
+      })
+      // a listener after the one that cancels
+      request.on('row', row => rows.push(row.a))
+      const completed = new Promise(resolve => request.on('done', () => {
+        completedAfter = rows.length
+        resolve()
+      }))
+      request.query('select a')
+
+      // the driver goes on to the end of its batch, then the stream is resumed
+      while (!notify.isPaused()) await tick()
+      request.resume()
+      await completed
+      assert.deepStrictEqual(calls, ['pause', 'cancel'], 'the driver should not be resumed under the cancel')
+      assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be the only error')
+      assert.deepStrictEqual(rows, Array.from({ length: 50 }, (_, i) => i + 1), 'the rows handed over before the cancel was through should be emitted in order')
+      assert.strictEqual(completedAfter, 50, 'the stream should complete after its last row')
+    })
+
+    it('should go on piping every row when msnodesqlv8 refuses a cancel', async () => {
+      const { request, calls } = setupReader('2.x to 4.x', [['a', 75], ['b', 51]])
+      request.on('row', row => {
+        if (row.a === 5) request.cancel()
+      })
+      const completed = request.query('select a; select b')
+      const rows = await pipeToSlowWritable(request)
+      await completed
+      assert.strictEqual(calls[0], 'cancel refused', 'the cancel should have been refused')
+      assert.deepStrictEqual(rows, rowsOf([['a', 75], ['b', 51]]), 'a query whose cancel is refused should run to the end')
+    })
+
+    it('should complete a cancelled paused stream once a fetch under way times out', async () => {
+      const { request, calls } = setupReader('5.0 to 5.5', [['a', 200]], { timeOutAtFetch: 3 })
+      request.stream = true
+      const rows = []
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      request.on('row', row => rows.push(row.a))
+      const completed = new Promise(resolve => request.on('done', resolve))
+      request.query('select a')
+
+      // the third fetch does not come back
+      while (rows.length < 100) await tick()
+      await tick()
+      request.pause()
+      request.cancel()
+      await completed
+      assert.deepStrictEqual(calls, [], 'the driver should not be paused or cancelled part way through a fetch')
+      assert.deepStrictEqual(errors, ['EREQUEST', 'ECANCEL'], 'the timeout and then the cancel should be streamed')
+      assert.strictEqual(rows.length, 100, 'no row should be emitted after the stream was paused')
+    })
+
+    it('should report a cancel of a paused stream although an earlier cancel was refused', async () => {
+      const { request, calls } = setupReader('2.x to 4.x', [['a', 75]])
+      request.stream = true
+      const rows = []
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      request.on('row', row => {
+        rows.push(row.a)
+        // refused, as the driver is not paused, but only once the next cancel is under way
+        if (rows.length === 10) request.cancel()
+        if (rows.length === 13) {
+          request.pause()
+          request.cancel()
+        }
+      })
+      const completed = new Promise(resolve => request.on('done', resolve))
+      request.query('select a')
+
+      await completed
+      assert.deepStrictEqual(calls, ['cancel refused', 'pause', 'cancel'], 'the second cancel should go through at the end of the batch')
+      assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel that went through should be streamed')
+      assert.strictEqual(rows.length, 13, 'no row should be emitted after the stream was paused')
+    })
+
+    it('should hold the driver back from the start for a stream paused before its query', async () => {
+      const { request, notify, calls, fetches } = setupReader('5.0 to 5.5', [['a', 75]])
+      request.stream = true
+      request.pause()
+      const rows = []
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      request.on('row', row => rows.push(row.a))
+      const started = new Promise(resolve => notify.once('meta', resolve))
+      const completed = new Promise(resolve => request.on('done', resolve))
+      request.query('select a')
+
+      await started
+      await tick()
+      await tick()
+      assert.strictEqual(fetches(), 0, 'the driver should fetch nothing while the stream is paused')
+      request.cancel()
+      await completed
+      assert.deepStrictEqual(calls, ['pause', 'cancel'], 'the driver should be paused before it fetches, and cancelled there')
+      assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
+      assert.strictEqual(rows.length, 0, 'no row should be emitted')
+    })
+
+    it('should complete a cancelled paused stream whose query ends on an error', async () => {
+      const { request, notify, pool } = setupReader('5.6', [['a', 75]], { failAtEnd: true })
+      request.stream = true
+      const rows = []
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      request.on('row', row => {
+        rows.push(row.a)
+        if (rows.length === 60) request.pause()
+      })
+      notify.on('column', (index, value) => {
+        if (value === 75) setImmediate(() => request.cancel())
+      })
+      const completed = new Promise(resolve => request.on('done', resolve))
+      request.query('select a')
+
+      await completed
+      assert.strictEqual(rows.length, 60, 'no row should be emitted after the stream was paused')
+      assert.deepStrictEqual(errors, ['EREQUEST', 'ECANCEL'], 'the error and then the cancel should be streamed')
+      assert.strictEqual(pool.released, 1, 'the connection should be released once')
+    })
+
+    it('should emit what was waiting in order to every listener when one resumes the stream', async () => {
+      const { request } = setupReader('5.6', [['a', 120]])
+      request.stream = true
+      const rows = []
+      request.on('row', row => {
+        if (row.a === 10) {
+          request.pause()
+          setTimeout(() => request.resume(), 5)
+        }
+        // a stream that is not paused can be resumed all the same
+        if (row.a > 10 && row.a < 15) request.resume()
+      })
+      // a listener after the one that resumes
+      request.on('row', row => rows.push(row.a))
+      await request.query('select a')
+      assert.deepStrictEqual(rows, Array.from({ length: 120 }, (_, i) => i + 1), 'every listener should get the rows in order')
+    })
+
+    it('should complete as cancelled a stream cancelled and paused again while it emits what was waiting', async () => {
+      const { request, notify } = setupReader('5.6', [['a', 30]])
+      request.stream = true
+      const rows = []
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      request.on('row', row => {
+        rows.push(row.a)
+        if (rows.length === 5) request.pause()
+        if (rows.length === 10) {
+          request.cancel()
+          request.pause()
+        }
+      })
+      const completed = new Promise(resolve => request.on('done', resolve))
+      const finished = new Promise(resolve => notify.once('done', resolve))
+      request.query('select a')
+
+      // the query ends while the stream is paused, and the stream is resumed after it
+      await finished
+      await tick()
+      request.resume()
+      await completed
+      assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
+      assert.strictEqual(rows.length, 10, 'no row should be emitted after the stream was paused')
+    })
+
+    it('should cancel a paused stream whose first statement does not end', async () => {
+      const { request, calls, queried } = setupReader('5.6', [['a', 75]], { stallBegin: true })
+      request.stream = true
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      const completed = new Promise(resolve => request.on('done', resolve))
+      request.query('select a')
+
+      while (!queried()) await tick()
+      request.pause()
+      request.cancel()
+      await completed
+      assert.deepStrictEqual(calls, ['pause', 'cancel'], 'the driver should be paused and cancelled at once')
+      assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
+    })
+
+    it('should cancel a stream paused before its first statement ends, after a cancel made while it was flowing', async () => {
+      const { request, calls, queried } = setupReader('5.0 to 5.5', [['a', 75]], { beginDelay: 10 })
+      request.stream = true
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      const completed = new Promise(resolve => request.on('done', resolve))
+      request.query('select a')
+
+      while (!queried()) await tick()
+      // msnodesqlv8 holds this cancel until the query has a statement, and refuses it then
+      request.cancel()
+      request.pause()
+      request.cancel()
+      await completed
+      assert.deepStrictEqual(calls, ['pause', 'cancel'], 'the driver should be paused at once, so that the cancel is accepted')
+      assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
+    })
+
+    it('should not emit the rows of a cancelled paused stream that a listener resumes', async () => {
+      const { request, notify } = setupReader('5.6', [['a', 75], ['b', 30]])
+      request.stream = true
+      const rows = []
+      const errors = []
+      request.on('error', err => errors.push(err.code))
+      request.on('row', row => {
+        rows.push(row)
+        if (rows.length === 60) request.pause()
+      })
+      // the next result set's 'recordset' waits ahead of its rows, and its listener resumes the stream
+      request.on('recordset', () => request.resume())
+      const completed = new Promise(resolve => request.on('done', resolve))
+      const finished = new Promise(resolve => notify.once('done', resolve))
+      request.query('select a; select b')
+
+      await finished
+      await tick()
+      request.cancel()
+      await completed
+      assert.strictEqual(rows.length, 60, 'no row should be emitted after the stream was paused and cancelled')
+      assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
+    })
+
+    it('should leave a cancel of a request that is no longer streaming to msnodesqlv8', async () => {
+      const { request, notify, calls } = setupReader('2.x to 4.x', [['a', 120]])
+      request.stream = true
+      request.pause()
+      request.stream = false
+      notify.once('column', () => setImmediate(() => request.cancel()))
+      const result = await request.query('select a')
+      assert.deepStrictEqual(calls, ['cancel refused'], 'the driver should not be paused for the cancel')
+      assert.strictEqual(result.recordset.length, 120, 'a query whose cancel is refused should run to the end')
+    })
+
+    it('should not pause the driver for a request that is no longer streaming', async () => {
+      const { request, calls } = setupReader('5.6', [['a', 75]])
+      request.stream = true
+      request.pause()
+      request.stream = false
+      const result = await request.query('select a')
+      assert.strictEqual(result.recordset.length, 75, 'every row should be read')
+      assert.deepStrictEqual(calls, [], 'the driver should not be paused')
+    })
   })
 })
