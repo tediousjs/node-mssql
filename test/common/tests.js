@@ -3051,6 +3051,75 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'pausing and resuming a stream once it is over' (ending, done) {
+      // msnodesqlv8 does not check that a query is still running when it is paused or resumed,
+      // and can put one that has ended back on its connection's work queue, where it holds up
+      // whatever that connection runs next. With one connection in the pool, the query that
+      // follows the stream runs on the connection the stream had
+      const config = readConfig()
+      config.driver = driver
+      config.pool = { max: 1, min: 0 }
+      const queries = {
+        completed: 'select 1 as a union all select 2',
+        failed: 'select * from notexistingtable',
+        cancelled: 'select * from streaming'
+      }
+      const endings = { completed: [], failed: ['EREQUEST'], cancelled: ['ECANCEL'] }
+      let timer
+      let held = false
+
+      const pool = new sql.ConnectionPool(config)
+      pool.connect().then(() => new Promise(resolve => {
+        const errors = []
+        let rows = 0
+        const req = new sql.Request(pool)
+        req.stream = true
+        // as a stream that is still being read when the error arrives resumes the request
+        req.on('error', err => {
+          errors.push(err.code)
+          req.pause()
+          req.resume()
+        })
+        req.on('row', () => {
+          if (ending === 'cancelled' && ++rows === 10) {
+            req.pause()
+            req.cancel()
+          }
+        })
+        req.once('done', () => {
+          req.pause()
+          req.resume()
+          // and again once the driver has released the statement: msnodesqlv8 can take a query
+          // that is put back on the queue before then off it again as it releases the statement.
+          // Were the release to take longer, the test would only stop telling the bug apart
+          setTimeout(() => {
+            req.pause()
+            req.resume()
+            resolve(errors)
+          }, 200)
+        })
+        req.query(queries[ending])
+      })).then(errors => {
+        assert.deepStrictEqual(errors, endings[ending], `the stream should end as ${ending}`)
+        return new Promise((resolve, reject) => {
+          timer = setTimeout(() => {
+            held = true
+            reject(new Error('the next query on the connection should run'))
+          }, 5000)
+          pool.request().query('select 1 as a').then(resolve, reject)
+        })
+      }).then(result => {
+        clearTimeout(timer)
+        assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'the next query should return its result')
+        return pool.close()
+      }).then(() => done(), err => {
+        clearTimeout(timer)
+        // a connection that is held up cannot be closed either, so the pool is left as it is
+        if (held) return done(err)
+        pool.close().then(() => done(err), () => done(err))
+      })
+    },
+
     'new Table' (done) {
       const tvp = new MSSQLTestType()
       tvp.rows.add('asdf', 15)

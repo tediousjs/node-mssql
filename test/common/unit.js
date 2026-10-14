@@ -3087,4 +3087,470 @@ describe('msnodesqlv8 query events', () => {
     assert.deepStrictEqual(events, [['error', 0], ['done']], 'the timeout should be streamed, then done once')
     assert.strictEqual(pool.released, 1, 'the connection should be released once')
   })
+
+  // every version: pausing and then resuming a query that has ended, or resuming one that
+  // ended while it was paused, puts it back at the head of the connection's work queue, where it
+  // holds up the next query, so `calls` records the pauses, resumes and cancels that reach the query
+  const pausable = (calls, query = {}) => {
+    let paused = false
+    return Object.assign({
+      isPaused: () => paused,
+      pauseQuery () {
+        paused = true
+        calls.push('pause')
+      },
+      resumeQuery () {
+        paused = false
+        calls.push('resume')
+      },
+      cancelQuery () {
+        calls.push('cancel')
+      }
+    }, query)
+  }
+
+  const completion = (request, run) => new Promise(resolve => {
+    request.once('done', resolve)
+    run(request)
+  })
+
+  // a result set of `count` rows of one column
+  const rows = (name, count) => notify => {
+    notify.emit('meta', [{ name, sqlType: 'int', size: 4, nullable: false }])
+    for (let i = 0; i < count; i++) {
+      notify.emit('row', i)
+      notify.emit('column', 0, i, false)
+    }
+  }
+
+  it('should stop pausing and resuming a query once the batch completes', async () => {
+    const calls = []
+    const { request } = setup(async notify => {
+      rows('a', 50)(notify)
+      await tick()
+      request.resume()
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls))
+    request.stream = true
+    request.on('row', row => {
+      if (row.a === 49) request.pause()
+    })
+    await completion(request, r => r.query('select a from t'))
+    request.pause()
+    request.resume()
+    assert.deepStrictEqual(calls, ['pause', 'resume'], 'only the pause at the end of the batch and its resume should reach the query')
+  })
+
+  it('should stop pausing and resuming a query once an error ends the batch', async () => {
+    const calls = []
+    const { request } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      setImmediate(() => notify.emit('free'))
+    }, pausable(calls))
+    request.stream = true
+    // as a stream that is still being read when the error arrives pauses and resumes the request,
+    // before msnodesqlv8 emits 'free'
+    request.on('error', () => {
+      request.pause()
+      request.resume()
+      setImmediate(() => {
+        request.pause()
+        request.resume()
+      })
+    })
+    await completion(request, r => r.query('insert into t values (1)'))
+    request.pause()
+    request.resume()
+    assert.deepStrictEqual(calls, [], 'no pause or resume after the error should reach the query')
+  })
+
+  // msnodesqlv8 >= 5.1 emits the errors that end a batch together, before it releases the statement
+  it('should not pause or resume a query while the errors that end its batch are emitted', async () => {
+    const calls = []
+    const { request } = setup(notify => {
+      notify.fail(odbcError('There is already an object named \'t\' in the database.', 2714, '42S01'), true)
+      notify.fail(odbcError('Could not create constraint or index. See previous errors.', 1750, '42000'), false)
+      setImmediate(() => notify.emit('free'))
+    }, pausable(calls))
+    request.stream = true
+    request.on('error', () => {
+      request.pause()
+      request.resume()
+      setImmediate(() => {
+        request.pause()
+        request.resume()
+      })
+    })
+    await completion(request, r => r.query('create table t (id int constraint pk primary key)'))
+    await tick()
+    assert.deepStrictEqual(calls, [], 'no pause or resume while the batch was ending, or after, should reach the query')
+  })
+
+  // msnodesqlv8 >= 5.6
+  it('should pause a query on an error that does not end the batch once the error is handled', async () => {
+    const calls = []
+    let paused
+    const { request } = setup(async notify => {
+      notify.fail(odbcError('Something went wrong', 50000, '42000'), true)
+      await tick()
+      paused = calls.slice()
+      request.resume()
+      rows('a', 1)(notify)
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls))
+    request.stream = true
+    const received = []
+    request.on('error', () => request.pause())
+    request.on('row', row => received.push(row))
+    await completion(request, r => r.query('raiserror(N\'Something went wrong\', 16, 1); select 0 as a'))
+    assert.deepStrictEqual(paused, ['pause'], 'a pause on an error that does not end the batch should reach the query')
+    assert.deepStrictEqual(calls, ['pause', 'resume'], 'the resume after it should reach the query too')
+    assert.deepStrictEqual(received, [{ a: 0 }], 'the rows after the error should be streamed')
+  })
+
+  // msnodesqlv8 >= 5.1 emits the errors that end a batch together, before it releases the statement
+  it('should not cancel a query while the errors that end its batch are emitted', async () => {
+    const calls = []
+    const { request } = setup(notify => {
+      notify.fail(odbcError('There is already an object named \'t\' in the database.', 2714, '42S01'), true)
+      notify.fail(odbcError('Could not create constraint or index. See previous errors.', 1750, '42000'), false)
+      setImmediate(() => notify.emit('free'))
+    }, pausable(calls))
+    request.stream = true
+    const errors = []
+    request.on('error', err => {
+      errors.push(err.code)
+      if (errors.length === 1) request.cancel()
+    })
+    await completion(request, r => r.query('create table t (id int constraint pk primary key)'))
+    assert.deepStrictEqual(errors, ['EREQUEST', 'EREQUEST'], 'only the errors should be streamed')
+    assert.deepStrictEqual(calls, [], 'the cancel should not reach the query, which had ended')
+  })
+
+  // msnodesqlv8 >= 5.6
+  it('should cancel a query on an error that does not end the batch once the error is handled', async () => {
+    const calls = []
+    let onError
+    const { request } = setup(notify => {
+      notify.fail(odbcError('Something went wrong', 50000, '42000'), true)
+    }, pausable(calls, {
+      cancelQuery (callback) {
+        calls.push('cancel')
+        setImmediate(() => {
+          this.emit('done')
+          callback(null)
+          setImmediate(() => this.emit('free'))
+        })
+      }
+    }))
+    request.stream = true
+    const errors = []
+    request.on('error', err => {
+      errors.push(err.code)
+      if (errors.length === 1) {
+        request.cancel()
+        onError = calls.slice()
+      }
+    })
+    await completion(request, r => r.query('raiserror(N\'Something went wrong\', 16, 1); waitfor delay \'00:00:05\''))
+    await tick()
+    assert.deepStrictEqual(onError, [], 'the cancel should wait until the error has been handled')
+    assert.deepStrictEqual(calls, ['cancel'], 'the cancel should then reach the query, which carried on')
+    assert.deepStrictEqual(errors, ['EREQUEST', 'ECANCEL'], 'the error and then the cancel should be streamed')
+  })
+
+  // msnodesqlv8 >= 5.6: a paused stream is cancelled when the query next stops, here at the start
+  // of the next result set
+  it('should leave a query that is cancelled on an error that does not end the batch to the cancel', async () => {
+    const calls = []
+    const { request } = setup(async notify => {
+      notify.fail(odbcError('Something went wrong', 50000, '42000'), true)
+      await tick()
+      rows('a', 1)(notify)
+    }, pausable(calls, {
+      cancelQuery (callback) {
+        calls.push('cancel')
+        setImmediate(() => {
+          this.emit('done')
+          callback(null)
+          setImmediate(() => this.emit('free'))
+        })
+      }
+    }))
+    request.stream = true
+    const errors = []
+    request.on('error', err => {
+      errors.push(err.code)
+      if (errors.length === 1) {
+        request.pause()
+        request.cancel()
+      }
+    })
+    await completion(request, r => r.query('raiserror(N\'Something went wrong\', 16, 1); select 0 as a'))
+    await tick()
+    assert.deepStrictEqual(errors, ['EREQUEST', 'ECANCEL'], 'the error and then the cancel should be streamed')
+    assert.deepStrictEqual(calls, ['pause', 'cancel'], 'the query should be paused only to be cancelled')
+  })
+
+  // msnodesqlv8 >= 3 stops the query's reader a few ticks before it emits 'done', and from 5.1.9
+  // resuming a stopped reader releases its statement again
+  it('should not resume a query whose reader has stopped', async () => {
+    const calls = []
+    const reader = { running: true }
+    const { request } = setup(async notify => {
+      notify.emit('rowcount', 1)
+      reader.running = false
+      await tick()
+      request.resume()
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls, { queryWorker: reader }))
+    request.stream = true
+    // as toReadableStream() pauses a request before it runs it
+    request.pause()
+    await completion(request, r => r.query('update t set a = 1'))
+    assert.deepStrictEqual(calls, ['pause'], 'only the pause while the reader ran should reach the query')
+  })
+
+  it('should not pause a query whose reader has stopped', async () => {
+    const calls = []
+    const reader = { running: true }
+    const { request } = setup(async notify => {
+      notify.emit('rowcount', 1)
+      reader.running = false
+      await tick()
+      request.pause()
+      request.resume()
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls, { queryWorker: reader }))
+    request.stream = true
+    await completion(request, r => r.query('update t set a = 1'))
+    assert.deepStrictEqual(calls, [], 'no pause or resume after the reader stopped should reach the query')
+  })
+
+  // msnodesqlv8 2 has no reader to check, so only the error tells the request that the query has ended
+  it('should not resume a paused query once an error has ended it', async () => {
+    const calls = []
+    const { request } = setup(async notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      await tick()
+      request.resume()
+      await tick()
+      notify.emit('free')
+    }, pausable(calls))
+    request.stream = true
+    request.on('error', () => {})
+    // as toReadableStream() pauses a request before it runs it
+    request.pause()
+    await completion(request, r => r.query('insert into t values (1)'))
+    assert.deepStrictEqual(calls, ['pause'], 'only the pause made before the query ran should reach it')
+  })
+
+  // msnodesqlv8 can give the last error of a statement that fails first more=false, and carry on
+  // to the statements after it
+  it('should resume a query that goes on to a result set after an error with nothing more to follow', async () => {
+    const calls = []
+    let resumed
+    const { request } = setup(async notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      notify.emit('meta', [{ name: 'a', sqlType: 'int', size: 4, nullable: false }])
+      await tick()
+      request.resume()
+      resumed = calls.slice()
+      notify.emit('row', 0)
+      notify.emit('column', 0, 1, false)
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls))
+    request.stream = true
+    const received = []
+    request.on('error', () => {})
+    request.on('row', row => received.push(row))
+    // as toReadableStream() pauses a request before it runs it
+    request.pause()
+    await completion(request, r => r.query('insert into t values (1); select 1 as a'))
+    assert.deepStrictEqual(resumed, ['pause', 'resume'], 'the resume should reach the query, which carried on')
+    assert.deepStrictEqual(received, [{ a: 1 }], 'the rows after the error should be streamed')
+  })
+
+  it('should cancel a query that goes on to a result set after it was cancelled on an error with nothing more to follow', async () => {
+    const calls = []
+    const { request } = setup(async notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      notify.emit('meta', [{ name: 'a', sqlType: 'int', size: 4, nullable: false }])
+      await tick()
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls, {
+      cancelQuery (callback) {
+        calls.push('cancel')
+        setImmediate(() => {
+          this.emit('done')
+          callback(null)
+          setImmediate(() => this.emit('free'))
+        })
+      }
+    }))
+    request.stream = true
+    const errors = []
+    request.on('error', err => {
+      errors.push(err.code)
+      if (errors.length === 1) request.cancel()
+    })
+    await completion(request, r => r.query('insert into t values (1); select 1 as a'))
+    await tick()
+    assert.deepStrictEqual(calls, ['cancel'], 'the cancel should reach the query once it carries on')
+    assert.deepStrictEqual(errors, ['EREQUEST', 'ECANCEL'], 'the error and then the cancel should be streamed')
+  })
+
+  it('should not pause a query on an error that does not end the batch unless the stream was paused', async () => {
+    const calls = []
+    const { request } = setup(async notify => {
+      notify.fail(odbcError('Something went wrong', 50000, '42000'), true)
+      await tick()
+      rows('a', 1)(notify)
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls))
+    request.stream = true
+    request.on('error', () => {})
+    await completion(request, r => r.query('raiserror(N\'Something went wrong\', 16, 1); select 0 as a'))
+    assert.deepStrictEqual(calls, [], 'the query should not be paused')
+  })
+
+  it('should complete a paused stream as cancelled when it is cancelled after an error ends the batch', async () => {
+    const calls = []
+    const { request } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      setImmediate(() => notify.emit('free'))
+    }, pausable(calls))
+    request.stream = true
+    const errors = []
+    request.on('error', err => {
+      errors.push(err.code)
+      if (errors.length === 1) {
+        request.pause()
+        request.cancel()
+      }
+    })
+    await completion(request, r => r.query('insert into t values (1)'))
+    assert.deepStrictEqual(errors, ['EREQUEST', 'ECANCEL'], 'the error and then the cancel should be streamed')
+    assert.deepStrictEqual(calls, [], 'the cancel should not reach the query, which had ended')
+  })
+
+  // msnodesqlv8 2.0 ends a statement's error with more=true and the message that the statement
+  // was terminated, and then nothing follows
+  it('should stop pausing and resuming a query once its statement is terminated', async () => {
+    const calls = []
+    const { request } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), true)
+      notify.emit('info', TERMINATED(), false)
+    }, pausable(calls))
+    request.stream = true
+    await new Promise(resolve => {
+      request.once('error', () => setImmediate(resolve))
+      request.query('insert into t values (1)')
+    })
+    request.pause()
+    request.resume()
+    assert.deepStrictEqual(calls, [], 'no pause or resume after the statement was terminated should reach the query')
+  })
+
+  // msnodesqlv8 >= 2.4 gives the errors of a set more=true until the last, and a message that the
+  // statement was terminated between them settles the request before the last error arrives
+  it('should not pause or resume a query whose request was settled by the termination of its statement', async () => {
+    const calls = []
+    const { request } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), true)
+      notify.emit('info', TERMINATED(), false)
+      notify.fail(odbcError('Something went wrong', 50000, '42000'), false)
+    }, pausable(calls))
+    await assert.rejects(request.query('insert into t values (1)'), err => {
+      assert.strictEqual(err.number, 2627, 'the error should be the one that terminated the statement')
+      return true
+    })
+    // as toReadableStream() does with a request it is given to run again
+    request.stream = true
+    request.pause()
+    request.resume()
+    assert.deepStrictEqual(calls, [], 'no pause or resume after the request was settled should reach the query')
+  })
+
+  it('should not cancel a query whose reader has stopped', async () => {
+    const calls = []
+    const reader = { running: true }
+    const { request } = setup(async notify => {
+      notify.emit('rowcount', 1)
+      reader.running = false
+      await tick()
+      request.cancel()
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls, { queryWorker: reader }))
+    request.stream = true
+    const errors = []
+    request.on('error', err => errors.push(err.code))
+    await completion(request, r => r.query('update t set a = 1'))
+    assert.deepStrictEqual(errors, [], 'the stream should complete without a cancel')
+    assert.deepStrictEqual(calls, [], 'the cancel should not reach the query, whose reader had stopped')
+  })
+
+  it('should complete a paused stream as cancelled when it is cancelled after its reader has stopped', async () => {
+    const calls = []
+    const reader = { running: true }
+    const { request } = setup(async notify => {
+      notify.emit('rowcount', 1)
+      reader.running = false
+      await tick()
+      request.cancel()
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls, { queryWorker: reader }))
+    request.stream = true
+    const errors = []
+    request.on('error', err => errors.push(err.code))
+    // as toReadableStream() pauses a request before it runs it
+    request.pause()
+    await completion(request, r => r.query('update t set a = 1'))
+    assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed')
+    assert.deepStrictEqual(calls, ['pause'], 'only the pause made before the query ran should reach it')
+  })
+
+  it('should not cancel a query once an error ends the batch', async () => {
+    const calls = []
+    const { request } = setup(notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      setImmediate(() => notify.emit('free'))
+    }, pausable(calls))
+    request.stream = true
+    const errors = []
+    request.on('error', err => {
+      errors.push(err.code)
+      request.cancel()
+    })
+    await completion(request, r => r.query('insert into t values (1)'))
+    assert.deepStrictEqual(errors, ['EREQUEST'], 'only the error should be streamed')
+    assert.deepStrictEqual(calls, [], 'the cancel should not reach the query, which had ended')
+  })
+
+  it('should not cancel a query for the error it is completed with', async () => {
+    const calls = []
+    const { request } = setup(notify => {
+      notify.emit('info', TERMINATED(), false)
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls))
+    request.stream = true
+    const errors = []
+    request.on('error', err => {
+      errors.push(err.number)
+      request.cancel()
+    })
+    await completion(request, r => r.query('insert into t values (1)'))
+    assert.deepStrictEqual(errors, [3621], 'the termination should be streamed')
+    assert.deepStrictEqual(calls, [], 'the cancel should not reach the query, which had ended')
+  })
 })

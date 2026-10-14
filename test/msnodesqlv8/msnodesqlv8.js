@@ -309,6 +309,9 @@ describe('msnodesqlv8', function () {
     it('streaming a request timeout', done => TESTS['streaming a request timeout'](done))
     it('a cancelled stream emits done event', done => TESTS['a cancelled stream emits done event'](done))
     it('a cancelled paused stream emits done event', done => TESTS['a cancelled paused stream emits done event'](done))
+    it('pausing and resuming a stream once it has completed', done => TESTS['pausing and resuming a stream once it is over']('completed', done))
+    it('pausing and resuming a stream once an error has ended it', done => TESTS['pausing and resuming a stream once it is over']('failed', done))
+    it('pausing and resuming a stream once it has been cancelled', done => TESTS['pausing and resuming a stream once it is over']('cancelled', done))
 
     after(done => sql.close(done))
   })
