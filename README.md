@@ -430,6 +430,12 @@ function processRows() {
 }
 ```
 
+Nothing is emitted while the request is paused: `row`, `recordset`, `info`, `error`, `rowsaffected` and `done`
+ events wait until it is resumed. The msnodesqlv8 driver reads rows 50 at a time and only stops reading at the end
+ of a full batch, so the rows it reads before then are held until the request is resumed. A paused request that is
+ cancelled does not wait to be resumed: it drops the rows it holds, emits the other events it holds, and completes
+ with an `error` (`ECANCEL`) and `done` (see [cancel](#cancel)).
+
 ## Connection Pools
 
 An important concept to understand when using this library is [Connection Pooling](https://en.wikipedia.org/wiki/Connection_pool) as this library uses connection pooling extensively. As one Node JS process is able to handle multiple requests at once, we can take advantage of this long running process to create a pool of database connections for reuse; this saves overhead of connecting to the database for each request
@@ -1271,7 +1277,7 @@ request.cancel()
 
 A cancelled stream emits an `error` event with code `ECANCEL`, followed by `done`.
 
-With the `msnodesqlv8` driver, a request that is already running can only be cancelled from msnodesqlv8 5.6. Earlier versions can cancel a paused stream, but let any other running request run to the end and complete as if `cancel()` had not been called.
+With the `msnodesqlv8` driver, a request that is already running can only be cancelled from msnodesqlv8 5.6. Earlier versions can cancel a paused stream, but let any other running request run to the end and complete as if `cancel()` had not been called. A paused stream is cancelled once the driver stops reading, at the end of a batch of 50 rows or the start of the next result set; a query that ends first, or times out, completes as cancelled.
 
 ## Transaction
 

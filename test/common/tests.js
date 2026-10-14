@@ -670,6 +670,39 @@ module.exports = (sql, driver) => {
       req.pipe(blockingTransformStream).pipe(wstream)
     },
 
+    'query with pipe and back pressure across partial row batches' (done) {
+      // msnodesqlv8 fetches rows 50 at a time, so each of these result sets ends with a short
+      // batch, or a batch of one row, that the stream is paused part way through or at the end of
+      const recordsets = [['a', 75], ['b', 51], ['c', 120]]
+      const expected = recordsets.flatMap(([column, count]) => Array.from({ length: count }, (_, i) => `${column}=${i + 1}`))
+      const rows = []
+      // takes one row at a time, and more slowly than the driver fetches a batch, so the request
+      // is paused throughout, including when a batch of one row arrives
+      const wstream = new stream.Writable({
+        objectMode: true,
+        highWaterMark: 1,
+        write (row, encoding, cb) {
+          rows.push(Object.entries(row).map(([column, value]) => `${column}=${value}`).join())
+          setTimeout(cb, 10)
+        }
+      })
+      wstream.on('finish', () => {
+        try {
+          assert.deepStrictEqual(rows, expected, 'every row should arrive once, in order, under its own column')
+          done()
+        } catch (err) {
+          done(err)
+        }
+      })
+      wstream.on('error', done)
+
+      const req = new sql.Request()
+      req.query(recordsets.map(([column, count]) =>
+        `select top (${count}) cast(row_number() over (order by object_id, column_id) as int) as ${column} from sys.all_columns order by object_id, column_id`
+      ).join(';'))
+      req.pipe(wstream)
+    },
+
     'query with pipe and an error' (endsTheBatch, done) {
       // pipe() returns the destination, not the stream it puts in front of it, so the
       // destination is the only place a request's error can be handled

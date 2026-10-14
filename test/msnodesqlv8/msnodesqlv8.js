@@ -118,6 +118,7 @@ describe('msnodesqlv8', function () {
     it('query with toReadableStream', done => TESTS['query with toReadableStream'](done))
     it('query with pipe', done => TESTS['query with pipe'](done))
     it('query with pipe and back pressure', (done) => TESTS['query with pipe and back pressure'](done))
+    it('query with pipe and back pressure across partial row batches', done => TESTS['query with pipe and back pressure across partial row batches'](done))
     it.skip('query with pipe and an error that ends the batch (msnodesqlv8 streams do not complete after one)', done => TESTS['query with pipe and an error'](true, done))
     if (continuesAfterErrors) {
       it('query with pipe and an error that does not end the batch', done => TESTS['query with pipe and an error'](false, done))
