@@ -2097,7 +2097,7 @@ module.exports = (sql, driver) => {
 
     'gives the connection back when a transaction fails to begin' (config, done) {
       // with one connection in the pool, nothing more can run unless the transaction gives
-      // back the connection it borrowed
+      // back any connection it borrowed
       const pool = new sql.ConnectionPool(Object.assign({}, config, { pool: { min: 0, max: 1, acquireTimeoutMillis: 5000 } }))
       pool.connect().then(() => {
         const tran = new sql.Transaction(pool)

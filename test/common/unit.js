@@ -3004,8 +3004,10 @@ describe('msnodesqlv8 query events', () => {
 })
 
 describe('transaction begin failures', () => {
+  const Module = require('node:module')
   const { EventEmitter } = require('node:events')
   const TransactionError = require('../../lib/error/transaction-error')
+  const RequestError = require('../../lib/error/request-error')
 
   before(() => { sql.Promise = Promise })
 
@@ -3138,5 +3140,108 @@ describe('transaction begin failures', () => {
       assert.strictEqual(calls.length, 1, 'the callback should be called once')
       assert.strictEqual(calls[0].code, 'EINVALIDSTATE', 'the callback should be given the error tedious called back with')
     })
+  })
+
+  describe('msnodesqlv8', () => {
+    // msnodesqlv8 is a native module that only the Windows CI jobs install, and nothing here
+    // reaches into it, so a bare object stands in for it
+    const STUB = 'msnodesqlv8-stub'
+    const MODULES = ['transaction', 'request', 'connection-pool'].map(name => require.resolve(`../../lib/msnodesqlv8/${name}`))
+    let resolveFilename
+    let Transaction
+    let ConnectionPool
+
+    before(() => {
+      resolveFilename = Module._resolveFilename
+      Module._resolveFilename = function (request, ...rest) {
+        return request === 'msnodesqlv8' ? STUB : resolveFilename.call(this, request, ...rest)
+      }
+      require.cache[STUB] = { id: STUB, filename: STUB, loaded: true, exports: {} }
+      Transaction = require('../../lib/msnodesqlv8/transaction')
+      ConnectionPool = require('../../lib/msnodesqlv8/connection-pool')
+    })
+
+    after(() => {
+      Module._resolveFilename = resolveFilename
+      delete require.cache[STUB]
+      for (const module of MODULES) delete require.cache[module]
+    })
+
+    // stands in for an msnodesqlv8 connection; `play` is given each query it runs, and emits on
+    // it what msnodesqlv8 would
+    const connect = play => ({
+      hasError: false,
+      queryRaw () {
+        const notify = Object.assign(new EventEmitter(), { isPaused: () => false, cancelQuery () {} })
+        setImmediate(play, notify)
+        return notify
+      }
+    })
+    const state = connection => ({ hasError: connection.hasError })
+
+    // an error that ends the batch is followed by 'free', not 'done'
+    const TIMES_OUT = notify => {
+      notify.emit('error', Object.assign(new Error('[Microsoft][ODBC Driver 17 for SQL Server]Query timeout expired'), { code: 0, sqlstate: 'HYT00' }), false)
+      setImmediate(() => notify.emit('free'))
+    }
+    const BEGINS = notify => notify.emit('done')
+
+    it('should give the connection back when the isolation level is invalid', async () => {
+      const pool = lend(state, connect(BEGINS), connect(BEGINS))
+      const tx = new Transaction(pool)
+      tx.isolationLevel = 99
+
+      await assert.rejects(tx.begin(), err => {
+        assert.ok(err instanceof TransactionError, `the rejection should be a TransactionError, got ${err.name}`)
+        assert.strictEqual(err.message, 'Invalid isolation level.', 'the rejection should be about the isolation level')
+        return true
+      })
+      assert.strictEqual(pool.returned.length, pool.lent, 'the pool should have back every connection it lent')
+
+      tx.isolationLevel = sql.ISOLATION_LEVEL.READ_COMMITTED
+      await tx.begin()
+    })
+
+    it('should leave the pool to close the connection when the query to begin fails', async () => {
+      const connection = connect(TIMES_OUT)
+      const pool = lend(state, connection, connect(BEGINS))
+      const tx = new Transaction(pool)
+
+      await assert.rejects(tx.begin(), err => {
+        assert.ok(err instanceof TransactionError, `the rejection should be a TransactionError, got ${err.name}`)
+        assert.ok(err.originalError instanceof RequestError, 'the rejection should carry the error the query failed with')
+        assert.match(err.message, /Query timeout expired/, 'the rejection should say why the query failed')
+        return true
+      })
+      assert.deepStrictEqual(pool.returned, [{ hasError: true }], 'the connection should go back to the pool once, marked as failed')
+      for (const validateConnection of [true, false]) {
+        assert.strictEqual(await new ConnectionPool({ validateConnection })._poolValidate(connection), false, `the pool should refuse to lend the connection again (validateConnection: ${validateConnection})`)
+      }
+
+      await tx.begin()
+      assert.strictEqual(pool.lent, 2, 'the transaction should begin again on another connection')
+    })
+
+    for (const [failure, isolationLevel, play] of [['the isolation level is invalid', 99, BEGINS], ['the query to begin fails', sql.ISOLATION_LEVEL.READ_COMMITTED, TIMES_OUT]]) {
+      it(`should call the begin() callback once when ${failure}`, done => {
+        const pool = lend(state, connect(play))
+        const tx = new Transaction(pool)
+        tx.isolationLevel = isolationLevel
+        const calls = []
+        tx.begin(err => {
+          calls.push(err)
+          setImmediate(() => {
+            try {
+              assert.strictEqual(calls.length, 1, 'the callback should be called once')
+              assert.ok(calls[0] instanceof TransactionError, 'the callback should be given a TransactionError')
+              assert.strictEqual(pool.returned.length, pool.lent, 'the pool should have back every connection it lent')
+              done()
+            } catch (err) {
+              done(err)
+            }
+          })
+        })
+      })
+    }
   })
 })
