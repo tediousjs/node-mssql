@@ -225,6 +225,20 @@ describe('Diagnostics Channel', () => {
       }
     }
 
+    it('ConnectionPool._poolDestroy() emits CONNECTION_DESTROY for a tedious connection that has already closed', async () => {
+      const ConnectionPool = require('../../lib/tedious/connection-pool')
+      const pool = new ConnectionPool({})
+      const connection = { closed: true }
+
+      const { events, stop } = collect(CHANNELS.CONNECTION_DESTROY)
+      try {
+        await pool._poolDestroy(connection)
+        assert.strictEqual(events.length, 1, 'the destroy should be published once')
+      } finally {
+        stop()
+      }
+    })
+
     it('request.query() emits TRACE_QUERY start/asyncEnd with context', async () => {
       const req = new sql.Request()
       req._query = (cmd, cb) => setImmediate(cb, null, [[{ x: 1 }]], {}, 1)
