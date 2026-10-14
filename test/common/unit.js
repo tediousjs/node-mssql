@@ -3002,3 +3002,141 @@ describe('msnodesqlv8 query events', () => {
     })
   })
 })
+
+describe('transaction begin failures', () => {
+  const { EventEmitter } = require('node:events')
+  const TransactionError = require('../../lib/error/transaction-error')
+
+  before(() => { sql.Promise = Promise })
+
+  // a pool that lends `connections` in turn through the pool's own acquire(), and notes the
+  // `state` of each one it gets back
+  const lend = (state, ...connections) => {
+    const pool = new BasePool({})
+    pool._connected = true
+    pool.lent = 0
+    pool.returned = []
+    pool._acquire = () => {
+      pool.lent++
+      return Promise.resolve(connections.shift())
+    }
+    pool.release = connection => {
+      pool.returned.push(state(connection))
+      return pool
+    }
+    return pool
+  }
+
+  // mocha takes any error that nothing handles, so this takes the next one from it, and the
+  // hook below hands it back
+  let mochaListeners = null
+  const nextUnhandledError = () => new Promise(resolve => {
+    mochaListeners = {}
+    for (const event of ['uncaughtException', 'unhandledRejection']) {
+      mochaListeners[event] = process.listeners(event)
+      process.removeAllListeners(event)
+      process.once(event, resolve)
+    }
+  })
+  afterEach(() => {
+    if (!mochaListeners) return
+    for (const [event, listeners] of Object.entries(mochaListeners)) {
+      process.removeAllListeners(event)
+      for (const listener of listeners) process.on(event, listener)
+    }
+    mochaListeners = null
+  })
+
+  const tick = () => new Promise(resolve => setImmediate(resolve))
+
+  describe('tedious', () => {
+    const Transaction = require('../../lib/tedious/transaction')
+
+    // stands in for a tedious connection that begins transactions with `beginTransaction`
+    const connect = beginTransaction => Object.assign(new EventEmitter(), {
+      closed: false,
+      close () { this.closed = true },
+      beginTransaction
+    })
+    const state = connection => ({ closed: connection.closed })
+
+    // what tedious throws for an isolation level it does not know, before it sends anything
+    const THROWS = () => { throw new RangeError('The value of "isolationLevel" is out of range. It must be >= 0 && <= 5. Received: 99') }
+    // the request to begin goes out, and fails
+    const TIMES_OUT = callback => setImmediate(callback, Object.assign(new Error('Timeout: Request failed to complete in 300ms'), { code: 'ETIMEOUT' }))
+    const BEGINS = callback => setImmediate(callback)
+
+    it('should give the connection back when tedious throws beginning the transaction', async () => {
+      const connection = connect(THROWS)
+      const pool = lend(state, connection, connect(BEGINS))
+      const tx = new Transaction(pool)
+
+      await assert.rejects(tx.begin(), err => {
+        assert.ok(err instanceof TransactionError, `the rejection should be a TransactionError, got ${err.name}`)
+        assert.ok(err.originalError instanceof RangeError, 'the rejection should carry what tedious threw')
+        return true
+      })
+      assert.deepStrictEqual(pool.returned, [{ closed: false }], 'the connection should go back to the pool once, as it was')
+      assert.strictEqual(connection.listenerCount('rollbackTransaction'), 0, 'the transaction should stop listening to the connection')
+
+      await tx.begin()
+      assert.strictEqual(pool.lent, 2, 'the transaction should begin again on another connection')
+    })
+
+    it('should close the connection before giving it back when the request to begin fails', async () => {
+      const connection = connect(TIMES_OUT)
+      const pool = lend(state, connection, connect(BEGINS))
+      const tx = new Transaction(pool)
+
+      await assert.rejects(tx.begin(), err => {
+        assert.ok(err instanceof TransactionError, `the rejection should be a TransactionError, got ${err.name}`)
+        assert.strictEqual(err.code, 'ETIMEOUT', 'the rejection should keep the code of the error tedious called back with')
+        assert.strictEqual(err.originalError.message, 'Timeout: Request failed to complete in 300ms', 'the rejection should carry the error tedious called back with')
+        return true
+      })
+      assert.deepStrictEqual(pool.returned, [{ closed: true }], 'the connection should be closed when it goes back to the pool')
+      assert.strictEqual(connection.listenerCount('rollbackTransaction'), 0, 'the transaction should stop listening to the connection')
+
+      await tx.begin()
+      assert.strictEqual(pool.lent, 2, 'the transaction should begin again on another connection')
+    })
+
+    for (const [failure, beginTransaction, closed] of [['throws', THROWS, false], ['calls back with an error', TIMES_OUT, true]]) {
+      it(`should call the begin() callback once when tedious ${failure}`, done => {
+        const pool = lend(state, connect(beginTransaction))
+        const calls = []
+        new Transaction(pool).begin(err => {
+          calls.push(err)
+          setImmediate(() => {
+            try {
+              assert.strictEqual(calls.length, 1, 'the callback should be called once')
+              assert.ok(calls[0] instanceof TransactionError, 'the callback should be given a TransactionError')
+              assert.deepStrictEqual(pool.returned, [{ closed }], 'the connection should be back in the pool by the time of the callback')
+              done()
+            } catch (err) {
+              done(err)
+            }
+          })
+        })
+      })
+    }
+
+    it('should leave what the begin() callback throws to the process when tedious calls back at once', async () => {
+      // as tedious does for a connection that is not logged in
+      const pool = lend(state, connect(callback => callback(Object.assign(new Error('Requests can only be made in the LoggedIn state, not the Final state'), { code: 'EINVALIDSTATE' }))))
+      const thrown = new Error('thrown by the callback')
+      const calls = []
+      const unhandled = nextUnhandledError()
+
+      new Transaction(pool).begin(err => {
+        calls.push(err)
+        throw thrown
+      })
+
+      assert.strictEqual(await unhandled, thrown, 'what the callback throws should reach the process')
+      await tick()
+      assert.strictEqual(calls.length, 1, 'the callback should be called once')
+      assert.strictEqual(calls[0].code, 'EINVALIDSTATE', 'the callback should be given the error tedious called back with')
+    })
+  })
+})
