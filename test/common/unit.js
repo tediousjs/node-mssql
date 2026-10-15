@@ -2379,6 +2379,32 @@ describe('msnodesqlv8 query events', () => {
     assert.strictEqual(connection.hasError, true, 'a link failure after a cancel should mark the connection as broken')
   })
 
+  it('should reject a bulk load when the pool fails to lend a connection', async () => {
+    const failure = new Error('acquire failed')
+    const pool = {
+      connected: true,
+      config: {},
+      acquire (request, callback) { callback(failure) }
+    }
+    const table = new sql.Table('t')
+    table.columns.add('a', sql.Int)
+    table.rows.add(1)
+
+    // a bulk load that never settles would otherwise only end at mocha's timeout
+    let timer
+    const hang = new Promise((resolve, reject) => {
+      timer = setTimeout(reject, 1000, new Error('bulk() should settle'))
+    })
+    try {
+      await assert.rejects(Promise.race([new Request(pool).bulk(table), hang]), err => {
+        assert.strictEqual(err, failure, 'the rejection should be the error the pool failed with')
+        return true
+      })
+    } finally {
+      clearTimeout(timer)
+    }
+  })
+
   describe('stream back pressure', () => {
     const { Writable, pipeline } = require('node:stream')
     const BATCH = 50
