@@ -4,6 +4,7 @@ const assert = require('node:assert')
 const net = require('node:net')
 const stream = require('node:stream')
 const { join } = require('node:path')
+const { readFileSync } = require('node:fs')
 const { format } = require('node:util')
 const ISOLATION_LEVELS = require('../../lib/isolationlevel')
 const BaseTransaction = require('../../lib/base/transaction')
@@ -30,8 +31,10 @@ class WritableStream extends stream.Writable {
   }
 }
 
+// read afresh for each test: tests change the config they are given, and a copy that
+// require() caches would carry the change into every test that comes after
 const readConfig = () => {
-  return require(join(__dirname, '../.mssql.json'))
+  return JSON.parse(readFileSync(join(__dirname, '../.mssql.json'), 'utf8'))
 }
 
 module.exports = (sql, driver) => {
@@ -3086,6 +3089,141 @@ module.exports = (sql, driver) => {
         assert.strictEqual(recordsets[0][1].name, 'text')
         assert.strictEqual(result.length, 2)
         done()
+      })
+    },
+
+    'streaming an error that ends the batch' (done) {
+      // msnodesqlv8 emits no 'done' after an error that ends the batch: the stream still has
+      // to report the error, then complete once and give its connection back. The pool is the
+      // test's own, so that no other test's connection is out while it is checked
+      const config = readConfig()
+      config.driver = driver
+
+      new sql.ConnectionPool(config).connect().then(conn => {
+        const errors = []
+        let completed = 0
+
+        const req = new sql.Request(conn)
+        req.stream = true
+        req.on('error', err => errors.push(err))
+        req.on('done', () => {
+          if (completed++) return
+          setImmediate(() => {
+            try {
+              assert.strictEqual(completed, 1, 'the stream should complete once')
+              assert.strictEqual(errors.length, 1, 'the error should be streamed once')
+              assert.ok(errors[0] instanceof sql.RequestError, `the error should be a RequestError, got ${errors[0].constructor.name}`)
+              assert.strictEqual(errors[0].code, 'EREQUEST', 'the error should be a request error')
+              assert.strictEqual(conn.pool.numUsed(), 0, 'the pool should have every connection back')
+            } catch (e) {
+              return conn.close().then(() => done(e), () => done(e))
+            }
+            conn.close().then(() => done(), done)
+          })
+        })
+        req.query('select * from notexistingtable')
+      }).catch(done)
+    },
+
+    'streaming a request timeout' (done, driver, message) {
+      // a timeout ends the batch on an error like any other, which is when a stream is most
+      // likely to be left waiting for a 'done' that never comes
+      const config = readConfig()
+      config.driver = driver
+      config.requestTimeout = 1000 // note: msnodesqlv8 doesn't support timeouts less than 1 second
+
+      new sql.ConnectionPool(config).connect().then(conn => {
+        const errors = []
+        let completed = 0
+
+        const req = new sql.Request(conn)
+        req.stream = true
+        req.on('error', err => errors.push(err))
+        req.on('done', () => {
+          if (completed++) return
+          setImmediate(() => {
+            try {
+              assert.strictEqual(completed, 1, 'the stream should complete once')
+              assert.strictEqual(errors.length, 1, 'the timeout should be streamed once')
+              assert.ok(message ? message.test(errors[0].message) : errors[0] instanceof sql.RequestError,
+                `the error should be the timeout, got ${errors[0].constructor.name}: ${errors[0].message}`)
+              assert.strictEqual(conn.pool.numUsed(), 0, 'the pool should have every connection back')
+            } catch (e) {
+              return conn.close().then(() => done(e), () => done(e))
+            }
+            conn.close().then(() => done(), done)
+          })
+        })
+        req.query('waitfor delay \'00:00:05\';select 1')
+      }).catch(done)
+    },
+
+    'pausing and resuming a stream once it is over' (ending, done) {
+      // msnodesqlv8 does not check that a query is still running when it is paused or resumed,
+      // and can put one that has ended back on its connection's work queue, where it holds up
+      // whatever that connection runs next. With one connection in the pool, the query that
+      // follows the stream runs on the connection the stream had
+      const config = readConfig()
+      config.driver = driver
+      config.pool = { max: 1, min: 0 }
+      const queries = {
+        completed: 'select 1 as a union all select 2',
+        failed: 'select * from notexistingtable',
+        cancelled: 'select * from streaming'
+      }
+      const endings = { completed: [], failed: ['EREQUEST'], cancelled: ['ECANCEL'] }
+      let timer
+      let held = false
+
+      const pool = new sql.ConnectionPool(config)
+      pool.connect().then(() => new Promise(resolve => {
+        const errors = []
+        let rows = 0
+        const req = new sql.Request(pool)
+        req.stream = true
+        // as a stream that is still being read when the error arrives resumes the request
+        req.on('error', err => {
+          errors.push(err.code)
+          req.pause()
+          req.resume()
+        })
+        req.on('row', () => {
+          if (ending === 'cancelled' && ++rows === 10) {
+            req.pause()
+            req.cancel()
+          }
+        })
+        req.once('done', () => {
+          req.pause()
+          req.resume()
+          // and again once the driver has released the statement: msnodesqlv8 can take a query
+          // that is put back on the queue before then off it again as it releases the statement.
+          // Were the release to take longer, the test would only stop telling the bug apart
+          setTimeout(() => {
+            req.pause()
+            req.resume()
+            resolve(errors)
+          }, 200)
+        })
+        req.query(queries[ending])
+      })).then(errors => {
+        assert.deepStrictEqual(errors, endings[ending], `the stream should end as ${ending}`)
+        return new Promise((resolve, reject) => {
+          timer = setTimeout(() => {
+            held = true
+            reject(new Error('the next query on the connection should run'))
+          }, 5000)
+          pool.request().query('select 1 as a').then(resolve, reject)
+        })
+      }).then(result => {
+        clearTimeout(timer)
+        assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'the next query should return its result')
+        return pool.close()
+      }).then(() => done(), err => {
+        clearTimeout(timer)
+        // a connection that is held up cannot be closed either, so the pool is left as it is
+        if (held) return done(err)
+        pool.close().then(() => done(err), () => done(err))
       })
     },
 

@@ -336,8 +336,13 @@ describe('tedious', () => {
     it('streaming rowsaffected in stored procedure', done => TESTS['streaming rowsaffected in stored procedure'](done))
     it('streaming trailing rows', done => TESTS['streaming trailing rows'](done))
     it('streaming with duplicate output column names', done => TESTS['streaming with duplicate output column names'](done))
+    it('streaming an error that ends the batch', done => TESTS['streaming an error that ends the batch'](done))
+    it('streaming a request timeout', done => TESTS['streaming a request timeout'](done, 'tedious', /Timeout: Request failed to complete in 1000ms/))
     it('a cancelled stream emits done event', done => TESTS['a cancelled stream emits done event'](done))
     it('a cancelled paused stream emits done event', done => TESTS['a cancelled paused stream emits done event'](done))
+    it('pausing and resuming a stream once it has completed', done => TESTS['pausing and resuming a stream once it is over']('completed', done))
+    it('pausing and resuming a stream once an error has ended it', done => TESTS['pausing and resuming a stream once it is over']('failed', done))
+    it('pausing and resuming a stream once it has been cancelled', done => TESTS['pausing and resuming a stream once it is over']('cancelled', done))
 
     after(done => sql.close(done))
   })
