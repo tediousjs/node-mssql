@@ -346,6 +346,8 @@ describe('tedious', () => {
     it('pausing and resuming a stream once an error has ended it', done => TESTS['pausing and resuming a stream once it is over']('failed', done))
     it('pausing and resuming a stream once it has been cancelled', done => TESTS['pausing and resuming a stream once it is over']('cancelled', done))
     it('cancelling a stream held back while its query moves on to its first result set', done => TESTS['cancelling a stream held back while its query moves on to its first result set'](done))
+    it('resuming a stream held back while its query executes', done => TESTS['resuming a stream held back while its query executes'](false, done))
+    it('resuming a stream held back while its failing query executes', done => TESTS['resuming a stream held back while its query executes'](true, done))
 
     after(done => sql.close(done))
   })

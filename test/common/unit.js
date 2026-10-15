@@ -3632,12 +3632,19 @@ describe('msnodesqlv8 query events', () => {
   it('should pause a query on an error that does not end the batch once the error is handled', async () => {
     const calls = []
     let paused
+    let resumed
     const { request } = setup(async notify => {
+      notify.emit('submitted')
       notify.fail(odbcError('Something went wrong', 50000, '42000'), true)
       await tick()
       paused = calls.slice()
       request.resume()
-      rows('a', 1)(notify)
+      resumed = calls.slice()
+      // the driver stops at the next result set while it is paused, and reads on once resumed
+      rows('a', 0)(notify)
+      await tick()
+      notify.emit('row', 0)
+      notify.emit('column', 0, 0, false)
       notify.emit('done')
       notify.emit('free')
     }, pausable(calls))
@@ -3647,7 +3654,8 @@ describe('msnodesqlv8 query events', () => {
     request.on('row', row => received.push(row))
     await completion(request, r => r.query('raiserror(N\'Something went wrong\', 16, 1); select 0 as a'))
     assert.deepStrictEqual(paused, ['pause'], 'a pause on an error that does not end the batch should reach the query')
-    assert.deepStrictEqual(calls, ['pause', 'resume'], 'the resume after it should reach the query too')
+    assert.deepStrictEqual(resumed, ['pause'], 'the resume after it should wait until the query stops at its next result set')
+    assert.deepStrictEqual(calls, ['pause', 'resume'], 'the resume after it should reach the query then')
     assert.deepStrictEqual(received, [{ a: 0 }], 'the rows after the error should be streamed')
   })
 
@@ -4273,6 +4281,119 @@ describe('msnodesqlv8 query events', () => {
     assert.deepStrictEqual(calls, ['pause', 'cancel'], 'the query should be cancelled once it stops at its result set')
     assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
     assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  // every version: msnodesqlv8 starts a query a tick or more after queryRaw(), and emits 'submitted'
+  // once it has. Its resume() fetches at once, and a query that is still executing, or moving on
+  // through statements with no result, fails the fetch with a 'Function sequence error' (HY010).
+  // After 'meta' the driver calls dispatch(), which returns while it is paused
+  it('should not resume a query held back before its first result set until it stops at one', async () => {
+    const calls = []
+    let executing
+    let atMeta
+    const { request } = setup(async notify => {
+      notify.emit('submitted')
+      await tick()
+      // as a readable stream that is read while the query still executes resumes the request
+      request.resume()
+      executing = calls.slice()
+      notify.emit('meta', [{ name: 'a', sqlType: 'int', size: 4, nullable: false }])
+      atMeta = calls.slice()
+      await tick()
+      notify.emit('row', 0)
+      notify.emit('column', 0, 1, false)
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls))
+    request.stream = true
+    const received = []
+    request.on('row', row => received.push(row))
+    // a listener that resumes the stream at its result set does so while the driver emits 'meta'
+    request.on('recordset', () => {
+      request.pause()
+      request.resume()
+    })
+    // as toReadableStream() pauses a request before it runs it
+    request.pause()
+    await completion(request, r => r.query('waitfor delay \'00:00:01\'; select 1 as a'))
+    assert.deepStrictEqual(executing, ['pause'], 'the query should not be resumed while it executes')
+    assert.deepStrictEqual(atMeta, ['pause'], 'the query should not be resumed before it stops at its result set')
+    assert.deepStrictEqual(calls, ['pause', 'resume'], 'the query should be resumed once it stops at its result set')
+    assert.deepStrictEqual(received, [{ a: 1 }], 'the row should be streamed once')
+  })
+
+  it('should not resume a query held back once it runs until it stops at its first result set', async () => {
+    const calls = []
+    let movingOn
+    let atMeta
+    const { request } = setup(async notify => {
+      notify.emit('submitted')
+      notify.emit('rowcount', 1)
+      await tick()
+      request.resume()
+      movingOn = calls.slice()
+      notify.emit('meta', [{ name: 'a', sqlType: 'int', size: 4, nullable: false }])
+      atMeta = calls.slice()
+      await tick()
+      notify.emit('row', 0)
+      notify.emit('column', 0, 1, false)
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls))
+    request.stream = true
+    const received = []
+    request.on('row', row => received.push(row))
+    request.once('rowsaffected', () => request.pause())
+    await completion(request, r => r.query('update t set a = 1; select a from t'))
+    assert.deepStrictEqual(movingOn, ['pause'], 'the query should not be resumed while it moves on to its result set')
+    assert.deepStrictEqual(atMeta, ['pause'], 'the query should not be resumed before it stops at its result set')
+    assert.deepStrictEqual(calls, ['pause', 'resume'], 'the query should be resumed once it stops at its result set')
+    assert.deepStrictEqual(received, [{ a: 1 }], 'the row should be streamed once')
+  })
+
+  it('should not resume a query held back before its first result set that ends without one', async () => {
+    const calls = []
+    const { request } = setup(async notify => {
+      notify.emit('submitted')
+      await tick()
+      request.resume()
+      notify.emit('rowcount', 1)
+      await tick()
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls))
+    request.stream = true
+    const affected = []
+    request.on('rowsaffected', count => affected.push(count))
+    // as toReadableStream() pauses a request before it runs it
+    request.pause()
+    await completion(request, r => r.query('waitfor delay \'00:00:01\'; update t set a = 1'))
+    assert.deepStrictEqual(calls, ['pause'], 'the query should not be resumed, as it needed no resume to end')
+    assert.deepStrictEqual(affected, [1], 'the rows affected should be streamed')
+  })
+
+  // msnodesqlv8 < 5.6 refuses to cancel a query that is not paused, which then runs to the end, but
+  // cancels a paused one by freeing its statement, even while the query still executes
+  it('should resume a query held back before it runs as soon as it is resumed', async () => {
+    const calls = []
+    let beforeStart
+    const { request } = setup(async notify => {
+      // as a readable stream that is read before msnodesqlv8 starts the query resumes the request
+      request.resume()
+      beforeStart = calls.slice()
+      notify.emit('submitted')
+      rows('a', 1)(notify)
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls))
+    request.stream = true
+    const received = []
+    request.on('row', row => received.push(row))
+    // as toReadableStream() pauses a request before it runs it
+    request.pause()
+    await completion(request, r => r.query('waitfor delay \'00:00:01\'; select 0 as a'))
+    assert.deepStrictEqual(beforeStart, ['pause', 'resume'], 'the query should be resumed before it starts, so that it starts unpaused')
+    assert.deepStrictEqual(received, [{ a: 0 }], 'the row should be streamed once')
   })
 })
 
