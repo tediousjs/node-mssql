@@ -670,3 +670,94 @@ describe('procedure name validation', () => {
     }
   })
 })
+
+describe('transaction name', () => {
+  const { EventEmitter } = require('events')
+  const TediousTransaction = require('../../lib/tedious/transaction')
+
+  // A pool holding one connection whose beginTransaction is supplied by the test.
+  const setup = (tdsVersion, beginTransaction) => {
+    const connection = new EventEmitter()
+    connection.config = { options: { tdsVersion } }
+    connection.beginTransaction = beginTransaction
+    const pool = {
+      acquired: 0,
+      acquire (requester, callback) {
+        pool.acquired++
+        setImmediate(callback, null, connection, {})
+        return pool
+      },
+      release () {
+        return pool
+      }
+    }
+    return pool
+  }
+
+  // Uses the callback form, so the result does not depend on whichever promise library is set.
+  const begin = tx => new Promise((resolve, reject) => tx.begin(err => err ? reject(err) : resolve()))
+
+  // Begin a transaction with the given name and report what the driver was asked to send.
+  const sentName = (tdsVersion, name) => new Promise((resolve, reject) => {
+    let sent
+    const pool = setup(tdsVersion, (callback, n) => {
+      sent = n
+      setImmediate(callback, null)
+    })
+    const tx = new TediousTransaction(pool)
+    tx.name = name
+    tx.begin(err => err ? reject(err) : resolve(sent))
+  })
+
+  it('should send the name as a quoted identifier where the driver builds it into SQL', async () => {
+    assert.strictEqual(await sentName('7_1', 'tx'), '[tx]', 'a plain name should be quoted')
+    assert.strictEqual(await sentName('7_1', "x;EXEC sp_executesql N'CREATE TABLE dbo.canary (z int)';--"),
+      "[x;EXEC sp_executesql N'CREATE TABLE dbo.canary (z int)';--]", 'a name holding SQL should be quoted')
+    assert.strictEqual(await sentName('7_1', 'commit'), '[commit]', 'a keyword should be quoted, or it runs as a statement')
+    assert.strictEqual(await sentName('7_1', 'a];commit--'), '[a]];commit--]', 'a ] in the name should be doubled')
+    assert.strictEqual(await sentName('7_1', ''), '', 'no name should be sent as no name')
+    assert.strictEqual(await sentName('7_1', null), '', 'a null name should be sent as no name')
+    assert.strictEqual(await sentName('7_1', undefined), '', 'an undefined name should be sent as no name')
+  })
+
+  it('should send the name as given where the driver sends it as data', async () => {
+    for (const tdsVersion of ['7_2', '7_3_A', '7_3_B', '7_4']) {
+      for (const name of ['tx', 'my tx', "x;drop table t;--'", '[x]', '']) {
+        assert.strictEqual(await sentName(tdsVersion, name), name, `${JSON.stringify(name)} should be sent unchanged on TDS ${tdsVersion}`)
+      }
+    }
+  })
+
+  it('should send the name it read, so a second read cannot differ', async () => {
+    let sent
+    const pool = setup('7_1', (callback, n) => {
+      sent = n
+      setImmediate(callback, null)
+    })
+    const tx = new TediousTransaction(pool)
+    let reads = 0
+    Object.defineProperty(tx, 'name', { get () { return ++reads === 1 ? 'safe' : 'x;commit--' } })
+    await begin(tx)
+    assert.strictEqual(sent, '[safe]', 'the name sent should be the one first read')
+  })
+
+  it('should reject with what reading the name throws, without taking a connection', async () => {
+    const thrown = new Error('no name')
+    const pool = setup('7_4', () => assert.fail('beginTransaction should not be called'))
+    const tx = new TediousTransaction(pool)
+    Object.defineProperty(tx, 'name', { get () { throw thrown } })
+    await assert.rejects(begin(tx), err => err === thrown, 'begin should reject with the error the name threw')
+    assert.strictEqual(pool.acquired, 0, 'no connection should have been taken')
+  })
+
+  it('should reject a name that is not a string without taking a connection', async () => {
+    for (const name of [5, true, ['tx'], { toString () { return 'tx' } }]) {
+      const pool = setup('7_4', () => assert.fail('beginTransaction should not be called'))
+      const tx = new TediousTransaction(pool)
+      tx.name = name
+      await assert.rejects(begin(tx), err => err instanceof sql.TransactionError && err.code === 'EINJECT',
+        `${JSON.stringify(name)} should be rejected`)
+      assert.strictEqual(pool.acquired, 0, 'no connection should have been taken')
+    }
+  })
+})

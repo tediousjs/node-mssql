@@ -1099,6 +1099,16 @@ transaction.begin(err => {
 })
 ```
 
+__Transaction name__
+
+Set `transaction.name` before calling `begin` to give the transaction a name. The server shows it in `sys.dm_tran_active_transactions`. It must be a string, or `null` or `undefined` for no name, and the server refuses a name longer than 32 characters, counted in UTF-16 code units. The `msnodesqlv8` driver doesn't send it. See [Transaction names](#transaction-names).
+
+```javascript
+const transaction = new sql.Transaction(/* [pool] */)
+transaction.name = 'nightly import'
+await transaction.begin()
+```
+
 ### Events
 
 - **begin** - Dispatched when transaction begin.
@@ -1128,6 +1138,7 @@ transaction.begin(err => {
 __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - EALREADYBEGUN (`TransactionError`) - Transaction has already begun.
+- EINJECT (`TransactionError`) - Transaction name is not a string (`tedious` driver). See [Transaction names](#transaction-names).
 
 ---------------------------------------
 
@@ -1838,8 +1849,8 @@ Results in:
 
 Values are sent to the server as parameters and may hold anything. A few things
 are not values, and cannot be: the name of a parameter, the name of a column in a
-bulk load, the type a parameter is declared as, and the name of a stored procedure.
-Those are *identifiers*, and
+bulk load, the type a parameter is declared as, the name of a stored procedure, and
+the name of a transaction. Those are *identifiers*, and
 no SQL database can bind them, so this library builds them into the statement it
 sends. It checks them, and rejects anything that could end the identifier and have
 the rest of the value read as SQL.
@@ -1926,6 +1937,20 @@ Anything else raises `EINJECT`. Numbered procedures — the deprecated
 `procedure;1` form — are rejected, because the `;` cannot be told apart from the
 end of a statement.
 
+### Transaction names
+
+With the `tedious` driver, `transaction.name` must be a string, or `null` or
+`undefined` for no name; anything else raises `EINJECT`. From TDS 7.2 (the default
+`tdsVersion` is `7_4`) the driver sends the name to the server as data, so it may
+hold any character. On a connection that uses TDS 7.1, because `options.tdsVersion`
+is `7_1` or because the server supports nothing newer, the driver builds the name
+into a `BEGIN TRAN` statement instead, so there it is sent as a quoted identifier
+with any `]` doubled. It cannot end the statement, and the server stores the name
+exactly as given, as it does on newer TDS versions, except that over TDS 7.1 it
+refuses a name containing a NUL character or U+FFFF.
+
+The `msnodesqlv8` driver doesn't send the name.
+
 ---------------------------------------
 
 ## Errors
@@ -1960,6 +1985,7 @@ Name | Code | Message
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
 `TransactionError` | EREQINPROG | Can't commit/rollback transaction. There is a request in progress.
 `TransactionError` | EABORT | Transaction has been aborted.
+`TransactionError` | EINJECT | Transaction name is not a string.
 `RequestError` | EREQUEST | Message from SQL Server. Error object contains additional details.
 `RequestError` | ECANCEL | Cancelled.
 `RequestError` | ETIMEOUT | Request timeout.
