@@ -315,6 +315,7 @@ describe('msnodesqlv8', function () {
     it('pausing and resuming a stream once it has completed', done => TESTS['pausing and resuming a stream once it is over']('completed', done))
     it('pausing and resuming a stream once an error has ended it', done => TESTS['pausing and resuming a stream once it is over']('failed', done))
     it('pausing and resuming a stream once it has been cancelled', done => TESTS['pausing and resuming a stream once it is over']('cancelled', done))
+    it('cancelling a stream held back while its query moves on to its first result set', done => TESTS['cancelling a stream held back while its query moves on to its first result set'](done))
 
     after(done => sql.close(done))
   })
