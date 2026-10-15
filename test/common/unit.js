@@ -1988,6 +1988,28 @@ describe('msnodesqlv8 query events', () => {
     notify.emit('column', 0, value, false)
   }
 
+  // a pool that lends `connection` through the pool's own acquire(), and counts the times it
+  // gets it back
+  const lend = connection => {
+    const pool = new BasePool({})
+    pool._connected = true
+    pool.released = 0
+    pool._acquire = () => Promise.resolve(connection)
+    pool.release = () => {
+      pool.released++
+      return pool
+    }
+    return pool
+  }
+
+  const bulkTable = (create = false) => {
+    const table = new sql.Table('t')
+    table.create = create
+    table.columns.add('a', sql.Int)
+    table.rows.add(1)
+    return table
+  }
+
   it('should reject when an error ends the batch', async () => {
     const { request, pool } = setup(notify => {
       notify.fail(PRIMARY_KEY(), false)
@@ -2402,6 +2424,62 @@ describe('msnodesqlv8 query events', () => {
       })
     } finally {
       clearTimeout(timer)
+    }
+  })
+
+  // msnodesqlv8 throws, rather than calls back, for a query on a connection it has closed
+  describe('a request msnodesqlv8 throws on', () => {
+    const CLOSED = () => { throw new Error('[msnodesql] Connection is closed.') }
+
+    // stands in for an msnodesqlv8 connection, which bulk loads through its table manager
+    const connect = driver => Object.assign({
+      useNumericString: true,
+      setUseNumericString (value) { this.useNumericString = value }
+    }, driver)
+
+    // a request that never settles would otherwise only end at mocha's timeout
+    const settled = async (promise, what) => {
+      let timer
+      const hang = new Promise((resolve, reject) => {
+        timer = setTimeout(reject, 1000, new Error(`${what} should settle`))
+      })
+      try {
+        return await Promise.race([promise, hang])
+      } finally {
+        clearTimeout(timer)
+      }
+    }
+
+    const isWhatWasThrown = err => {
+      assert.ok(err instanceof RequestError, `the rejection should be a RequestError, got ${err.name}`)
+      assert.strictEqual(err.code, 'EREQUEST', 'the rejection should be a request error')
+      assert.strictEqual(err.message, '[msnodesql] Connection is closed.', 'the rejection should carry what msnodesqlv8 threw')
+      return true
+    }
+
+    it('should reject a query and give the connection back', async () => {
+      const pool = lend(connect({ queryRaw: CLOSED }))
+
+      await assert.rejects(settled(new Request(pool).query('select 1'), 'query()'), isWhatWasThrown)
+      assert.strictEqual(pool.released, 1, 'the connection should be released once')
+    })
+
+    const created = (statement, callback) => {
+      setImmediate(callback, null)
+      return new EventEmitter()
+    }
+    for (const [step, create, driver] of [
+      ['looking the table up', false, { tableMgr: () => ({ bind: CLOSED }) }],
+      ['creating the table', true, { queryRaw: CLOSED }],
+      ['looking up the table it created', true, { queryRaw: created, tableMgr: () => ({ bind: CLOSED }) }]
+    ]) {
+      it(`should reject a bulk load when it throws ${step}, and give the connection back`, async () => {
+        const connection = connect(driver)
+        const pool = lend(connection)
+        await assert.rejects(settled(new Request(pool).bulk(bulkTable(create)), 'bulk()'), isWhatWasThrown)
+        assert.strictEqual(pool.released, 1, 'the connection should be released once')
+        assert.strictEqual(connection.useNumericString, true, 'the connection should go back with numeric strings on')
+      })
     }
   })
 
