@@ -934,6 +934,7 @@ __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
+- EREQINPROG (`TransactionError`) - Can't acquire connection for the request. There is another request in progress.
 - EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
 
 ---------------------------------------
@@ -1157,6 +1158,7 @@ __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
+- EREQINPROG (`TransactionError`) - Can't acquire connection for the request. There is another request in progress.
 - EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
 - EINJECT (`RequestError`) - Parameter type is not a valid identifier. See [Identifiers](#identifiers).
 
@@ -1204,6 +1206,7 @@ __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
+- EREQINPROG (`TransactionError`) - Can't acquire connection for the request. There is another request in progress.
 - EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
 - EINJECT (`RequestError`) - Parameter type is not a valid identifier. See [Identifiers](#identifiers).
 
@@ -1251,6 +1254,7 @@ __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
+- EREQINPROG (`TransactionError`) - Can't acquire connection for the request. There is another request in progress.
 - EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
 - EINJECT (`RequestError`) - Column name or parameter type is not a valid identifier. See [Identifiers](#identifiers).
 
@@ -2215,7 +2219,7 @@ Name | Code | Message
 `ConnectionError` | ECONNCLOSED | Connection is closed.
 `TransactionError` | ENOTBEGUN | Transaction has not begun.
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
-`TransactionError` | EREQINPROG | Can't commit/rollback transaction. There is a request in progress.
+`TransactionError` | EREQINPROG | Can't commit/rollback transaction or acquire connection for the request. There is a request in progress.
 `TransactionError` | EABORT | Transaction has been aborted.
 `RequestError` | EREQUEST | Message from SQL Server. Error object contains additional details.
 `RequestError` | ECANCEL | Cancelled.
