@@ -3303,6 +3303,52 @@ module.exports = (sql, driver) => {
       setTimeout(() => req.resume(), 300)
     },
 
+    'cancelling a stream held back while its query executes' (done) {
+      // a stream paused before its query runs, as toReadableStream() leaves it, read while the query
+      // executes and then cancelled: the query stays held back until its first result set, and is
+      // cancelled there. With one connection in the pool, the query that follows the stream runs on
+      // the connection the stream had
+      const config = readConfig()
+      config.driver = driver
+      config.pool = { max: 1, min: 0 }
+      let timer
+      let held = false
+
+      const pool = new sql.ConnectionPool(config)
+      pool.connect().then(() => new Promise(resolve => {
+        const errors = []
+        const rows = []
+        const req = new sql.Request(pool)
+        req.stream = true
+        req.on('error', err => errors.push(err.code))
+        req.on('row', row => rows.push(row))
+        req.once('done', () => resolve({ errors, rows }))
+        req.pause()
+        req.query('waitfor delay \'00:00:01\'; select 1 as a')
+        setTimeout(() => req.resume(), 200)
+        setTimeout(() => req.cancel(), 400)
+      })).then(({ errors, rows }) => {
+        assert.deepStrictEqual(errors, ['ECANCEL'], 'the stream should end as cancelled')
+        assert.deepStrictEqual(rows, [], 'no row should be streamed')
+        return new Promise((resolve, reject) => {
+          timer = setTimeout(() => {
+            held = true
+            reject(new Error('the next query on the connection should run'))
+          }, 5000)
+          pool.request().query('select 1 as a').then(resolve, reject)
+        })
+      }).then(result => {
+        clearTimeout(timer)
+        assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'the next query should return its result')
+        return pool.close()
+      }).then(() => done(), err => {
+        clearTimeout(timer)
+        // a connection that is held up cannot be closed either, so the pool is left as it is
+        if (held) return done(err)
+        pool.close().then(() => done(err), () => done(err))
+      })
+    },
+
     'pausing and resuming a stream once it is over' (ending, done) {
       // msnodesqlv8 does not check that a query is still running when it is paused or resumed,
       // and can put one that has ended back on its connection's work queue, where it holds up

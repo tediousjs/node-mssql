@@ -319,6 +319,7 @@ describe('msnodesqlv8', function () {
     it('cancelling a stream held back while its query moves on to its first result set', done => TESTS['cancelling a stream held back while its query moves on to its first result set'](done))
     it('resuming a stream held back while its query executes', done => TESTS['resuming a stream held back while its query executes'](false, done))
     it('resuming a stream held back while its failing query executes', done => TESTS['resuming a stream held back while its query executes'](true, done))
+    it('cancelling a stream held back while its query executes', done => TESTS['cancelling a stream held back while its query executes'](done))
 
     after(done => sql.close(done))
   })
