@@ -3158,6 +3158,37 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'resuming a stream held back while its query executes' (failing, done) {
+      // a stream paused before its query runs, as toReadableStream() leaves it, and read while
+      // the query still executes: msnodesqlv8 fetches from the query at once, which can fail with a
+      // 'Function sequence error' (HY010), lose the error the query raises, or crash the process
+      const rows = []
+      const errors = []
+      const req = new sql.Request()
+      req.stream = true
+      req.on('row', row => rows.push(row))
+      req.on('error', err => errors.push(err))
+      req.once('done', () => {
+        try {
+          if (failing) {
+            assert.deepStrictEqual(errors.map(e => e.number), [208], `only the error the query raised should be streamed, not: ${errors.map(e => e.message).join(' / ')}`)
+            assert.deepStrictEqual(rows, [], 'no row should be streamed')
+          } else {
+            assert.deepStrictEqual(errors.map(e => e.message), [], 'no error should be streamed')
+            assert.deepStrictEqual(rows, [{ a: 1 }], 'the row should be streamed once')
+          }
+          done()
+        } catch (e) {
+          done(e)
+        }
+      })
+      req.pause()
+      req.query(failing
+        ? 'waitfor delay \'00:00:01\'; select * from notexistingtable'
+        : 'waitfor delay \'00:00:01\'; select 1 as a')
+      setTimeout(() => req.resume(), 300)
+    },
+
     'pausing and resuming a stream once it is over' (ending, done) {
       // msnodesqlv8 does not check that a query is still running when it is paused or resumed,
       // and can put one that has ended back on its connection's work queue, where it holds up
