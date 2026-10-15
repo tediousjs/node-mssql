@@ -1547,6 +1547,7 @@ __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - EALREADYPREPARED (`PreparedStatementError`) - Statement is already prepared.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
+- EREQINPROG (`TransactionError`) - Can't acquire connection for the request. There is another request in progress.
 
 ---------------------------------------
 
@@ -1623,6 +1624,7 @@ __Errors__
 - EREQUEST (`RequestError`) - *Message from SQL Server*
 - EPARAM (`RequestError`) - A parameter value is not valid for its type.
 - ECANCEL (`RequestError`) - Cancelled.
+- EREQINPROG (`TransactionError`) - Can't acquire connection for the request. There is another request in progress.
 
 ---------------------------------------
 
@@ -1651,6 +1653,7 @@ ps.prepare('select @param as value', err => {
 
 __Errors__
 - ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
+- EREQINPROG (`TransactionError`) - Can't unprepare the statement. There is a request in progress.
 
 ## CLI
 
@@ -2219,7 +2222,7 @@ Name | Code | Message
 `ConnectionError` | ECONNCLOSED | Connection is closed.
 `TransactionError` | ENOTBEGUN | Transaction has not begun.
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
-`TransactionError` | EREQINPROG | Can't commit/rollback transaction or acquire connection for the request. There is a request in progress.
+`TransactionError` | EREQINPROG | Can't commit/rollback transaction, unprepare the statement or acquire connection for the request. There is a request in progress.
 `TransactionError` | EABORT | Transaction has been aborted.
 `RequestError` | EREQUEST | Message from SQL Server. Error object contains additional details.
 `RequestError` | ECANCEL | Cancelled.
