@@ -2268,6 +2268,27 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'calls to begin or prepare while the pool is not connected reject with ECONNCLOSED' (config, done) {
+      const pool = new sql.ConnectionPool(config)
+      const poolErrors = []
+      pool.on('error', err => poolErrors.push(err))
+      const attempt = () => Promise.allSettled([
+        new sql.Transaction(pool).begin(),
+        new sql.PreparedStatement(pool).prepare('select 1')
+      ]).then(results => results.map(result => result.reason?.code))
+
+      const connecting = pool.connect()
+      attempt().then(duringConnect => connecting
+        .then(() => pool.close())
+        .then(attempt)
+        .then(afterClose => {
+          assert.deepStrictEqual(duringConnect, ['ECONNCLOSED', 'ECONNCLOSED'], 'begin() and prepare() during connect should reject with ECONNCLOSED')
+          assert.deepStrictEqual(afterClose, ['ECONNCLOSED', 'ECONNCLOSED'], 'begin() and prepare() after close should reject with ECONNCLOSED')
+          assert.deepStrictEqual(poolErrors, [], 'there should be no pool error event from a call made while the pool is not connected')
+        })
+      ).then(() => done(), done)
+    },
+
     'connection healthy works' (config, done) {
       const pool = new sql.ConnectionPool(config)
       assert.ok(!pool.healthy)

@@ -1382,7 +1382,9 @@ transaction.begin(err => {
 ```
 
 __Errors__
+- ENOCONN (`TransactionError`) - No connection is specified for that transaction.
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
+- ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - EALREADYBEGUN (`TransactionError`) - Transaction has already begun.
 
 If the transaction fails to begin once it has a connection, the error is a `TransactionError`, with the error it comes from as its `originalError`. The connection goes back to the pool, and the transaction can be begun again. A connection that may have sent the request to begin the transaction is closed rather than lent out again, as the server may have begun the transaction even though the request failed (for example, when it timed out).
@@ -1544,7 +1546,8 @@ ps.prepare('select @param as value', err => {
 ```
 
 __Errors__
-- ENOTOPEN (`ConnectionError`) - Connection not yet open.
+- ENOCONN (`PreparedStatementError`) - No connection is specified for that prepared statement.
+- ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - EALREADYPREPARED (`PreparedStatementError`) - Statement is already prepared.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 
@@ -2221,6 +2224,7 @@ Name | Code | Message
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
 `TransactionError` | EREQINPROG | Can't commit/rollback transaction or acquire connection for the request. There is a request in progress.
 `TransactionError` | EABORT | Transaction has been aborted.
+`TransactionError` | ENOCONN | No connection is specified for that transaction.
 `RequestError` | EREQUEST | Message from SQL Server. Error object contains additional details.
 `RequestError` | ECANCEL | Cancelled.
 `RequestError` | ETIMEOUT | Request timeout.
@@ -2231,6 +2235,7 @@ Name | Code | Message
 `PreparedStatementError` | EINJECT | Parameter name is not a valid identifier.
 `PreparedStatementError` | EALREADYPREPARED | Statement is already prepared.
 `PreparedStatementError` | ENOTPREPARED | Statement is not prepared.
+`PreparedStatementError` | ENOCONN | No connection is specified for that prepared statement.
 
 ### Detailed SQL Errors
 
