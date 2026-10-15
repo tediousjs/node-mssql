@@ -2528,6 +2528,70 @@ describe('msnodesqlv8 query events', () => {
         assert.strictEqual(pool.released, 1, 'the connection should be released once')
       })
     }
+
+    // stands in for an msnodesqlv8 connection, whose table manager calls back as the driver's
+    // does: from within the promise chains that look the table up and insert its rows, which
+    // catch what the callback throws and call it again, with that as the driver's error
+    const connect = lookUp => ({
+      useNumericString: true,
+      setUseNumericString (value) { this.useNumericString = value },
+      tableMgr: () => ({
+        bind (name, cb) {
+          Promise.resolve(name).then(lookUp).then(columns => {
+            const bulkMgr = {
+              columns,
+              insertRows (rows, callback) {
+                Promise.resolve(rows).then(res => {
+                  callback(null, res)
+                }).catch(e => callback(e, null))
+              }
+            }
+            cb(bulkMgr)
+          }).catch(err => {
+            cb(null, err)
+          })
+        }
+      })
+    })
+
+    // what reaches the process; a throw the table manager catches never does, and would
+    // otherwise only end the test at mocha's timeout
+    const reachingProcess = () => {
+      let timer
+      const never = new Promise((resolve, reject) => {
+        timer = setTimeout(reject, 1000, new Error('what the callback throws should reach the process'))
+      })
+      return Promise.race([nextUnhandledError(), never]).finally(() => clearTimeout(timer))
+    }
+
+    for (const [when, lookUp, calledBackWith] of [
+      ['when the table is not found', () => [], 'Table was not found on the server.'],
+      ['when a column changed after it was checked', table => {
+        table.columns[0].name = 'a]'
+        return [{ name: 'a' }]
+      }, 'Invalid column name \'a]\'. A \']\' in a column name must be written as \']]\'.'],
+      ['once the rows are inserted', () => [{ name: 'a' }], 1]
+    ]) {
+      it(`should be called once by msnodesqlv8 bulk() ${when}`, async () => {
+        const table = bulkTable()
+        const connection = connect(() => lookUp(table))
+        const pool = lend(connection)
+        const thrown = new Error('thrown by the callback')
+        const calls = []
+        const unhandled = reachingProcess()
+
+        new Request(pool).bulk(table, (err, result) => {
+          calls.push(err ? err.message : result.rowsAffected)
+          throw thrown
+        })
+
+        assert.strictEqual(await unhandled, thrown, 'what the callback throws should reach the process')
+        await tick()
+        assert.deepStrictEqual(calls, [calledBackWith], 'the callback should be called once, with how the bulk load ended')
+        assert.strictEqual(pool.released, 1, 'the connection should be released once')
+        assert.strictEqual(connection.useNumericString, true, 'the connection should go back with numeric strings on')
+      })
+    }
   })
 
   // msnodesqlv8 throws, rather than calls back, for a query on a connection it has closed
