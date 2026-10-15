@@ -13,6 +13,26 @@ const ConnectionPool = require('../../lib/tedious/connection-pool')
 
 require('./diagnostics')
 
+// mocha takes any error that nothing handles, so this takes the next one from it, and
+// handBackUnhandledErrors, which a suite that uses it runs after each test, hands it back
+let mochaListeners = null
+const nextUnhandledError = () => new Promise(resolve => {
+  mochaListeners = {}
+  for (const event of ['uncaughtException', 'unhandledRejection']) {
+    mochaListeners[event] = process.listeners(event)
+    process.removeAllListeners(event)
+    process.once(event, resolve)
+  }
+})
+const handBackUnhandledErrors = () => {
+  if (!mochaListeners) return
+  for (const [event, listeners] of Object.entries(mochaListeners)) {
+    process.removeAllListeners(event)
+    for (const listener of listeners) process.on(event, listener)
+  }
+  mochaListeners = null
+}
+
 describe('Unit', () => {
   it('table', done => {
     let t = new sql.Table('MyTable')
@@ -2427,6 +2447,36 @@ describe('msnodesqlv8 query events', () => {
     }
   })
 
+  describe('a callback that throws', () => {
+    afterEach(handBackUnhandledErrors)
+
+    for (const [method, args] of [['query', () => ['select 1']], ['bulk', () => [bulkTable()]]]) {
+      it(`should be called once by ${method}()`, async () => {
+        const pool = lend({})
+        const request = new Request(pool)
+        // cancelled while the pool finds it a connection, so that it calls back as soon as it has one
+        const acquire = pool._acquire
+        pool._acquire = () => {
+          request.cancel()
+          return acquire()
+        }
+        const thrown = new Error('thrown by the callback')
+        const calls = []
+        const unhandled = nextUnhandledError()
+
+        request[method](...args(), err => {
+          calls.push(err)
+          throw thrown
+        })
+
+        assert.strictEqual(await unhandled, thrown, 'what the callback throws should reach the process')
+        await tick()
+        assert.deepStrictEqual(calls.map(err => err.message), ['Canceled.'], 'the callback should be called once, with the cancel')
+        assert.strictEqual(pool.released, 1, 'the connection should be released once')
+      })
+    }
+  })
+
   // msnodesqlv8 throws, rather than calls back, for a query on a connection it has closed
   describe('a request msnodesqlv8 throws on', () => {
     const CLOSED = () => { throw new Error('[msnodesql] Connection is closed.') }
@@ -3659,6 +3709,28 @@ describe('msnodesqlv8 query events', () => {
   })
 })
 
+describe('pool acquire', () => {
+  afterEach(handBackUnhandledErrors)
+
+  it('should leave what the callback throws to the process', async () => {
+    const connection = {}
+    const pool = new BasePool({})
+    pool._acquire = () => Promise.resolve(connection)
+    const thrown = new Error('thrown by the callback')
+    const calls = []
+    const unhandled = nextUnhandledError()
+
+    pool.acquire({}, (...args) => {
+      calls.push(args)
+      throw thrown
+    })
+
+    assert.strictEqual(await unhandled, thrown, 'what the callback throws should reach the process')
+    await new Promise(resolve => setImmediate(resolve))
+    assert.deepStrictEqual(calls, [[null, connection, pool.config]], 'the callback should be called once, with the connection')
+  })
+})
+
 describe('transaction begin failures', () => {
   const Module = require('node:module')
   const { EventEmitter } = require('node:events')
@@ -3685,25 +3757,7 @@ describe('transaction begin failures', () => {
     return pool
   }
 
-  // mocha takes any error that nothing handles, so this takes the next one from it, and the
-  // hook below hands it back
-  let mochaListeners = null
-  const nextUnhandledError = () => new Promise(resolve => {
-    mochaListeners = {}
-    for (const event of ['uncaughtException', 'unhandledRejection']) {
-      mochaListeners[event] = process.listeners(event)
-      process.removeAllListeners(event)
-      process.once(event, resolve)
-    }
-  })
-  afterEach(() => {
-    if (!mochaListeners) return
-    for (const [event, listeners] of Object.entries(mochaListeners)) {
-      process.removeAllListeners(event)
-      for (const listener of listeners) process.on(event, listener)
-    }
-    mochaListeners = null
-  })
+  afterEach(handBackUnhandledErrors)
 
   const tick = () => new Promise(resolve => setImmediate(resolve))
 
