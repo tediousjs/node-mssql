@@ -2165,8 +2165,9 @@ module.exports = (sql, driver) => {
           pool: { min: 0, max: 1, acquireTimeoutMillis: 5000 }
         }))
         pool.connect().then(() => {
-          // the pool's one connection is logged in before anything is held back
-          return pool.request().query('select 1 as v')
+          // the pool's one connection is logged in before anything is held back, with time to
+          // spare, as the begin below is the only request meant to run out of it
+          return pool.request({ requestTimeout: 15000 }).query('select 1 as v')
         }).then(() => {
           delay = 1500
           return new sql.Transaction(pool).begin().then(() => {
@@ -2175,6 +2176,11 @@ module.exports = (sql, driver) => {
             assert.ok(err instanceof sql.TransactionError, `the rejection should be a TransactionError, got ${err.name}: ${err.message}`)
             assert.strictEqual(err.code, 'ETIMEOUT', 'begin() should time out')
             delay = 0
+            // a connection takes its request timeout from the pool's config as it is made, so
+            // the one that replaces this connection has the usual timeout: a slow server can
+            // take more than 300ms over a begin or commit that nothing is holding back, and
+            // the timeout of a transaction's begin and commit cannot be set per request
+            pool.config.requestTimeout = 15000
           })
         }).then(() => {
           // the next transaction gets the pool's one connection, so it has to be one with
