@@ -1,6 +1,7 @@
 'use strict'
 
 const assert = require('node:assert')
+const net = require('node:net')
 const stream = require('node:stream')
 const { join } = require('node:path')
 const { format } = require('node:util')
@@ -2092,6 +2093,112 @@ module.exports = (sql, driver) => {
           tran.rollback(done)
         })
       }).catch(done)
+    },
+
+    'gives the connection back when a transaction fails to begin' (config, done) {
+      // with one connection in the pool, nothing more can run unless the transaction gives
+      // back any connection it borrowed
+      const pool = new sql.ConnectionPool(Object.assign({}, config, { pool: { min: 0, max: 1, acquireTimeoutMillis: 5000 } }))
+      pool.connect().then(() => {
+        const tran = new sql.Transaction(pool)
+        tran.isolationLevel = 99
+        return tran.begin().then(() => {
+          throw new Error('begin() should reject an isolation level that does not exist')
+        }, err => {
+          assert.ok(err instanceof sql.TransactionError, `the rejection should be a TransactionError, got ${err.name}: ${err.message}`)
+        })
+      }).then(() => {
+        return pool.request().query('select 1 as v')
+      }).then(result => {
+        assert.strictEqual(result.recordset[0].v, 1, 'the pool should lend the connection out again')
+        return pool.close()
+      }).then(() => done(), err => {
+        // a pool that is missing a connection never finishes closing
+        pool.close().catch(() => {})
+        done(err)
+      })
+    },
+
+    'closes the connection when the request to begin a transaction times out' (config, done) {
+      // what the server sends is held back once `delay` is set, so the server has begun the
+      // transaction by the time the client gives up waiting to hear that it has
+      let delay = 0
+      // where the pool would have connected: tedious takes options.port over port, and the pool
+      // defaults port to 1433
+      const port = (config.options && config.options.port) || config.port || 1433
+      const sockets = new Set()
+      const proxy = net.createServer(client => {
+        const server = net.connect(port, config.server)
+        for (const socket of [client, server]) {
+          sockets.add(socket)
+          socket.on('error', () => {})
+          socket.on('close', () => {
+            client.destroy()
+            server.destroy()
+          })
+        }
+        client.pipe(server)
+        // each chunk goes on `delay` after it arrives, in the order it arrived
+        let sent = Promise.resolve()
+        server.on('data', chunk => {
+          const due = Date.now() + delay
+          sent = sent.then(() => new Promise(resolve => setTimeout(resolve, Math.max(0, due - Date.now())))).then(() => client.write(chunk))
+        })
+      })
+
+      let pool
+      const stopProxy = () => {
+        for (const socket of sockets) socket.destroy()
+        return new Promise(resolve => proxy.close(resolve))
+      }
+
+      proxy.listen(0, 'localhost', () => {
+        pool = new sql.ConnectionPool(Object.assign({}, config, {
+          server: 'localhost',
+          port: proxy.address().port,
+          options: Object.assign({}, config.options, { port: undefined }),
+          requestTimeout: 300,
+          validateConnection: 'socket',
+          pool: { min: 0, max: 1, acquireTimeoutMillis: 5000 }
+        }))
+        pool.connect().then(() => {
+          // the pool's one connection is logged in before anything is held back
+          return pool.request().query('select 1 as v')
+        }).then(() => {
+          delay = 1500
+          return new sql.Transaction(pool).begin().then(() => {
+            throw new Error('begin() should time out')
+          }, err => {
+            assert.ok(err instanceof sql.TransactionError, `the rejection should be a TransactionError, got ${err.name}: ${err.message}`)
+            assert.strictEqual(err.code, 'ETIMEOUT', 'begin() should time out')
+            delay = 0
+          })
+        }).then(() => {
+          // the next transaction gets the pool's one connection, so it has to be one with
+          // nothing left open on it for what it commits to last
+          const tran = new sql.Transaction(pool)
+          return tran.begin()
+            .then(() => tran.request().query('insert into tran_begin_test values (\'committed\')'))
+            .then(() => tran.commit())
+        }).then(() => {
+          return pool.request().query('select @@trancount as n')
+        }).then(result => {
+          assert.strictEqual(result.recordset[0].n, 0, 'the commit should end the only transaction on the connection')
+          return pool.close()
+        }).then(() => {
+          // read on a connection of its own, which nothing else has set up
+          const reader = new sql.ConnectionPool(config)
+          return reader.connect()
+            .then(() => reader.request().query('select data from tran_begin_test'))
+            .finally(() => reader.close())
+        }).then(result => {
+          assert.deepStrictEqual(result.recordset, [{ data: 'committed' }], 'the committed row should outlast the connection that committed it')
+        }).then(() => stopProxy().then(() => done()), err => {
+          // a pool that is missing a connection never finishes closing
+          if (pool) pool.close().catch(() => {})
+          stopProxy().then(() => done(err))
+        })
+      })
     },
 
     'cancel request' (done, message) {

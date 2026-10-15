@@ -159,6 +159,10 @@ exec('create table [dbo].[tran_test] (
 	data varchar(50) not null
 )')
 
+exec('create table [dbo].[tran_begin_test] (
+	data varchar(50) not null
+)')
+
 exec('create table [dbo].[bulk_table] (
 	a int not null,
 	b varchar (50) null,

@@ -151,6 +151,8 @@ describe('msnodesqlv8', function () {
     it('transaction uses default isolation level', done => TESTS['transaction uses default isolation level'](done))
     it.skip('transaction with error (XACT_ABORT set to ON) (not supported by msnodesqlv8)', done => TESTS['transaction with error'](done))
     it('transaction with synchronous error', done => TESTS['transaction with synchronous error'](done))
+    it('gives the connection back when a transaction fails to begin', done => TESTS['gives the connection back when a transaction fails to begin'](config(), done))
+    it.skip('closes the connection when the request to begin a transaction times out (msnodesqlv8 timeouts are whole seconds)', done => TESTS['closes the connection when the request to begin a transaction times out'](config(), done))
     it('cancel request', done => TESTS['cancel request'](done))
     it('cancel a running request', done => TESTS['cancel a running request'](cancelsRunningQueries, done))
     it('allows repeat calls to connect', done => TESTS['repeat calls to connect resolve'](config(), done))
