@@ -3647,6 +3647,38 @@ describe('msnodesqlv8 query events', () => {
     assert.deepStrictEqual(received, [{ a: 1 }], 'the rows after the error should be streamed')
   })
 
+  // msnodesqlv8 fetches as soon as it is resumed, and again once 'meta' is handled
+  it('should resume a query that goes on to a result set after the stream was resumed on an error with nothing more to follow', async () => {
+    const calls = []
+    let atMeta
+    let resumed
+    const { request, pool } = setup(async notify => {
+      notify.fail(PRIMARY_KEY(), false)
+      await tick()
+      request.resume()
+      await tick()
+      notify.emit('meta', [{ name: 'a', sqlType: 'int', size: 4, nullable: false }])
+      atMeta = calls.slice()
+      await tick()
+      resumed = calls.slice()
+      notify.emit('row', 0)
+      notify.emit('column', 0, 1, false)
+      notify.emit('done')
+      notify.emit('free')
+    }, pausable(calls))
+    request.stream = true
+    const received = []
+    request.on('error', () => {})
+    request.on('row', row => received.push(row))
+    // as toReadableStream() pauses a request before it runs it
+    request.pause()
+    await completion(request, r => r.query('insert into t values (1); select 1 as a'))
+    assert.deepStrictEqual(atMeta, ['pause'], 'the query should stay held until it has handled the start of its result set')
+    assert.deepStrictEqual(resumed, ['pause', 'resume'], 'the resume should reach the query once it goes on to a result set')
+    assert.deepStrictEqual(received, [{ a: 1 }], 'the rows after the error should be streamed')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
   it('should cancel a query that goes on to a result set after it was cancelled on an error with nothing more to follow', async () => {
     const calls = []
     const { request } = setup(async notify => {
