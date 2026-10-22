@@ -148,6 +148,7 @@ describe('tedious', () => {
     it('request timeout', done => TESTS['request timeout'](done, 'tedious', /Timeout: Request failed to complete in 1000ms/))
     it('BigInt parameters', done => TESTS['BigInt parameters'](done))
     it('BigInt casted types', done => TESTS['BigInt casted types'](done))
+    it('identity columns', done => TESTS['identity columns'](done))
     it('per-request timeout overrides pool default', done => TESTS['per-request timeout overrides pool default'](done, 'tedious', /Timeout: Request failed to complete in 1000ms/))
     it('per-request timeout does not affect other requests', done => TESTS['per-request timeout does not affect other requests'](done, 'tedious', /Timeout: Request failed to complete in 1000ms/))
     it('per-request timeout in transaction', done => TESTS['per-request timeout in transaction'](done, 'tedious', /Timeout: Request failed to complete in 1000ms/))

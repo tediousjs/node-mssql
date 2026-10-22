@@ -170,14 +170,16 @@ module.exports = (sql, driver) => {
       let bigIntCalls = 0
       let intCalls = 0
       let tinyIntCalls = 0
-      sql.valueHandler.set(sql.TYPES.BigInt, (value) => { bigIntCalls++; return value })
-      sql.valueHandler.set(sql.TYPES.Int, (value) => { intCalls++; return value })
-      sql.valueHandler.set(sql.TYPES.TinyInt, (value) => { tinyIntCalls++; return value })
+      const given = []
+      sql.valueHandler.set(sql.TYPES.BigInt, (value) => { bigIntCalls++; given.push(value); return value })
+      sql.valueHandler.set(sql.TYPES.Int, (value) => { intCalls++; given.push(value); return value })
+      sql.valueHandler.set(sql.TYPES.TinyInt, (value) => { tinyIntCalls++; given.push(value); return value })
       sql.query('SELECT CAST(1 AS bigint) AS big, CAST(2 AS int) AS med, CAST(3 AS tinyint) AS tiny').then((result) => {
         assert.strictEqual(result.recordset.length, 1)
         assert.strictEqual(bigIntCalls, 1, 'BigInt handler should be called once')
         assert.strictEqual(intCalls, 1, 'Int handler should be called once')
         assert.strictEqual(tinyIntCalls, 1, 'TinyInt handler should be called once')
+        assert.deepStrictEqual(given, ['1', 2, 3], 'each handler should be given the value as it is read: a bigint as a string, and any other integer as a number')
         done()
       }).catch(done)
     },
@@ -2595,6 +2597,38 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'identity columns' (done) {
+      // each type an identity column can have, the value of its first row and the type it is
+      // described by; a bigint is read as a string, as it is from any other bigint column
+      const types = [
+        ['tinyint', 'tinyint', 7, sql.TinyInt],
+        ['smallint', 'smallint', 709, sql.SmallInt],
+        ['int', 'int', 70000, sql.Int],
+        ['bigint', 'bigint', '9007199254740993', sql.BigInt],
+        ['decimal', 'decimal(10, 0)', 709, sql.Decimal],
+        ['numeric', 'numeric(10, 0)', 709, sql.Numeric]
+      ]
+      // the row of each is read back as it is inserted, and then selected
+      const batch = types.map(([name, declaration, value]) => [
+        `declare @${name} table (id ${declaration} identity(${value}, 1))`,
+        `insert into @${name} output inserted.id default values`,
+        `select id from @${name}`
+      ].join(';')).join(';')
+
+      const req = new TestRequest()
+      req.query(batch).then(result => {
+        assert.strictEqual(result.recordsets.length, types.length * 2, 'there should be a recordset for each insert and each select')
+        types.forEach(([name, , value, type], index) => {
+          for (const recordset of result.recordsets.slice(index * 2, index * 2 + 2)) {
+            assert.strictEqual(recordset[0].id, value, `the value of a ${name} identity column should be read as it is from any other ${name} column`)
+            assert.strictEqual(recordset.columns.id.type, type, `a ${name} identity column should be described by the type it holds`)
+            assert.strictEqual(recordset.columns.id.identity, true, `a ${name} identity column should be marked as one`)
+          }
+        })
+        done()
+      }).catch(done)
+    },
+
     'dataLength type correction' (done) {
       sql.on('error', err => console.error(err))
       const req = new TestRequest()
@@ -3310,10 +3344,10 @@ module.exports = (sql, driver) => {
         const tvp = result.recordset.toTable('#tvp_test')
 
         assert.strictEqual(tvp.columns[1].nullable, true, 'the nullable property is not set as true')
+        assert.strictEqual(tvp.columns[0].identity, true, 'the identity property is not set as true')
 
-        // note: msnodesqlv8 does not provide the identity and readOnly column metadata
+        // note: msnodesqlv8 does not provide the readOnly column metadata
         if (driver !== 'msnodesqlv8') {
-          assert.strictEqual(tvp.columns[0].identity, true, 'the identity property is not set as true')
           assert.strictEqual(tvp.columns[2].readOnly, true, 'the readOnly property is not set as true')
         }
 
