@@ -156,6 +156,7 @@ describe('msnodesqlv8', function () {
     it('request timeout', done => TESTS['request timeout'](done))
     it('BigInt parameters', done => TESTS['BigInt parameters'](done))
     it('BigInt casted types', done => TESTS['BigInt casted types'](done))
+    it('identity columns', done => TESTS['identity columns'](done))
     it('per-request timeout overrides pool default', done => TESTS['per-request timeout overrides pool default'](done))
     it('per-request timeout does not affect other requests', done => TESTS['per-request timeout does not affect other requests'](done))
     it('per-request timeout in transaction', done => TESTS['per-request timeout in transaction'](done))

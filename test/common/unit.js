@@ -2500,6 +2500,85 @@ describe('msnodesqlv8 query events', () => {
     }
   })
 
+  // ODBC names the type of an identity column after the type it holds, as 'int identity'
+  describe('identity columns', () => {
+    afterEach(() => sql.valueHandler.clear())
+
+    // msnodesqlv8 hands these numbers over as strings, as it is asked to
+    const identity = (sqlType, value) => notify => {
+      notify.emit('meta', [{ name: 'id', sqlType, size: 10, nullable: false }])
+      notify.emit('row', 0)
+      notify.emit('column', 0, value, false)
+      notify.emit('done')
+    }
+
+    for (const [sqlType, value, expected, type] of [
+      ['tinyint identity', '7', 7, sql.TinyInt],
+      ['smallint identity', '709', 709, sql.SmallInt],
+      ['int identity', '709', 709, sql.Int],
+      // a bigint is read as a string, as it is from any other bigint column
+      ['bigint identity', '9007199254740993', '9007199254740993', sql.BigInt],
+      ['decimal() identity', '709', 709, sql.Decimal],
+      ['numeric() identity', '709', 709, sql.Numeric]
+    ]) {
+      it(`should read a column whose type ODBC names '${sqlType}' as one of the type it holds`, async () => {
+        const { request } = setup(identity(sqlType, value))
+        const { recordset } = await request.query('select id from t')
+        assert.strictEqual(recordset[0].id, expected, 'the value should be read as one of the type the column holds')
+        assert.strictEqual(recordset.columns.id.type, type, 'the column should have the type it holds')
+        assert.strictEqual(recordset.columns.id.identity, true, 'the column should be marked as an identity column')
+      })
+    }
+
+    it('should hand the value of an identity column to the handler for the type it holds', async () => {
+      sql.valueHandler.set(sql.TYPES.Int, () => 'handled')
+      const { request } = setup(identity('int identity', '709'))
+      const { recordset } = await request.query('select id from t')
+      assert.strictEqual(recordset[0].id, 'handled', 'the value should be the one the handler returns')
+    })
+
+    it('should make a table that can be declared from a recordset with an identity column', async () => {
+      const { request } = setup(identity('int identity', '709'))
+      const { recordset } = await request.query('select id from t')
+      assert.strictEqual(recordset.toTable('#t').declare(), 'create table [#t] ([id] int not null)', 'the column should be declared as the type it holds')
+    })
+
+    it('should stream an identity column as one of the type it holds', async () => {
+      const { request } = setup(identity('int identity', '709'))
+      request.stream = true
+      const events = []
+      request.on('recordset', columns => events.push(columns.id.type))
+      request.on('row', row => events.push(row.id))
+      await new Promise((resolve, reject) => {
+        request.on('done', resolve)
+        request.on('error', reject)
+        request.query('select id from t')
+      })
+      assert.deepStrictEqual(events, [sql.Int, 709], 'the stream should emit the type the column holds, then a row read as one of that type')
+    })
+
+    it('should read an identity column as one of the type it holds in array row mode', async () => {
+      const { request } = setup(identity('int identity', '709'))
+      request.arrayRowMode = true
+      const { recordset, columns } = await request.query('select id from t')
+      assert.deepStrictEqual(recordset[0], [709], 'the row should be read as one of the type the column holds')
+      assert.strictEqual(columns[0][0].type, sql.Int, 'the column should have the type it holds')
+    })
+
+    it('should mark only the identity columns as identity columns', async () => {
+      const { request } = setup(notify => {
+        notify.emit('meta', [
+          { name: 'id', sqlType: 'int identity', size: 10, nullable: false },
+          { name: 'n', sqlType: 'int', size: 10, nullable: false }
+        ])
+        notify.emit('done')
+      })
+      const { recordset } = await request.query('select id, n from t')
+      assert.strictEqual(recordset.columns.id.identity, true, 'the identity column should be marked as one')
+      assert.strictEqual(recordset.columns.n.identity, false, 'the other column should be marked as not being one')
+    })
+  })
+
   describe('a callback that throws', () => {
     afterEach(handBackUnhandledErrors)
 

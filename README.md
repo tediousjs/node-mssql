@@ -2318,6 +2318,8 @@ Columns structure for example above:
 }
 ```
 
+The MSNodeSQLv8 driver describes a column only by `index`, `name`, `length`, `type`, `nullable` and `identity` (and `udt.name` for a CLR type); it has no `scale`, `precision`, `caseSensitive` or `readOnly` to give. Its `length` is the size ODBC reports for the column, which for a number is its precision rather than its length in bytes. ODBC names the type of a column of an alias type (`CREATE TYPE dbo.MyInt FROM int`) after the alias, so with this driver such a column has no `type`, and is not marked as an `identity` column even when it is one.
+
 ## Data Types
 
 You can define data types with length/precision/scale:
