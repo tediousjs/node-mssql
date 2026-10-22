@@ -316,6 +316,8 @@ describe('msnodesqlv8', function () {
     it('pausing and resuming a stream once it has completed', done => TESTS['pausing and resuming a stream once it is over']('completed', done))
     it('pausing and resuming a stream once an error has ended it', done => TESTS['pausing and resuming a stream once it is over']('failed', done))
     it('pausing and resuming a stream once it has been cancelled', done => TESTS['pausing and resuming a stream once it is over']('cancelled', done))
+    it('resuming a stream held back while its query executes', done => TESTS['resuming a stream held back while its query executes'](false, done))
+    it('resuming a stream held back while its failing query executes', done => TESTS['resuming a stream held back while its query executes'](true, done))
 
     after(done => sql.close(done))
   })
