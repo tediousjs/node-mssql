@@ -2579,6 +2579,29 @@ describe('msnodesqlv8 query events', () => {
     })
   })
 
+  describe('numbers', () => {
+    afterEach(() => sql.valueHandler.clear())
+
+    const column = (sqlType, value) => notify => {
+      notify.emit('meta', [{ name: 'n', sqlType, size: 10, nullable: true }])
+      notify.emit('row', 0)
+      notify.emit('column', 0, value, false)
+      notify.emit('done')
+    }
+
+    it('should hand a value handler a number msnodesqlv8 hands over as a string as a number', async () => {
+      const given = []
+      sql.valueHandler.set(sql.TYPES.Int, value => {
+        given.push(value)
+        return value + 1
+      })
+      const { request } = setup(column('int', '41'))
+      const { recordset } = await request.query('select n from t')
+      assert.deepStrictEqual(given, [41], 'the handler should be given the number')
+      assert.strictEqual(recordset[0].n, 42, 'the value should be the one the handler returns')
+    })
+  })
+
   describe('a callback that throws', () => {
     afterEach(handBackUnhandledErrors)
 

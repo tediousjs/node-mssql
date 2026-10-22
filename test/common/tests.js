@@ -170,14 +170,16 @@ module.exports = (sql, driver) => {
       let bigIntCalls = 0
       let intCalls = 0
       let tinyIntCalls = 0
-      sql.valueHandler.set(sql.TYPES.BigInt, (value) => { bigIntCalls++; return value })
-      sql.valueHandler.set(sql.TYPES.Int, (value) => { intCalls++; return value })
-      sql.valueHandler.set(sql.TYPES.TinyInt, (value) => { tinyIntCalls++; return value })
+      const given = []
+      sql.valueHandler.set(sql.TYPES.BigInt, (value) => { bigIntCalls++; given.push(value); return value })
+      sql.valueHandler.set(sql.TYPES.Int, (value) => { intCalls++; given.push(value); return value })
+      sql.valueHandler.set(sql.TYPES.TinyInt, (value) => { tinyIntCalls++; given.push(value); return value })
       sql.query('SELECT CAST(1 AS bigint) AS big, CAST(2 AS int) AS med, CAST(3 AS tinyint) AS tiny').then((result) => {
         assert.strictEqual(result.recordset.length, 1)
         assert.strictEqual(bigIntCalls, 1, 'BigInt handler should be called once')
         assert.strictEqual(intCalls, 1, 'Int handler should be called once')
         assert.strictEqual(tinyIntCalls, 1, 'TinyInt handler should be called once')
+        assert.deepStrictEqual(given, ['1', 2, 3], 'each handler should be given the value as it is read: a bigint as a string, and any other integer as a number')
         done()
       }).catch(done)
     },
