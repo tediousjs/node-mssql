@@ -2602,6 +2602,56 @@ describe('msnodesqlv8 query events', () => {
     })
   })
 
+  describe('ODBC message prefixes', () => {
+    // what goes in front of a message from the server through each driver, from the driver
+    // itself, and from the driver manager
+    const PREFIXES = [
+      ['the server through SQL Server Native Client 11.0', '[Microsoft][SQL Server Native Client 11.0][SQL Server]'],
+      ['SQL Server Native Client 11.0', '[Microsoft][SQL Server Native Client 11.0]'],
+      ['the server through ODBC Driver 17', '[Microsoft][ODBC Driver 17 for SQL Server][SQL Server]'],
+      ['ODBC Driver 17', '[Microsoft][ODBC Driver 17 for SQL Server]'],
+      ['the server through ODBC Driver 18', '[Microsoft][ODBC Driver 18 for SQL Server][SQL Server]'],
+      ['ODBC Driver 18', '[Microsoft][ODBC Driver 18 for SQL Server]'],
+      ['the Windows driver manager', '[Microsoft][ODBC Driver Manager] '],
+      ['the unixODBC driver manager', '[unixODBC][Driver Manager]']
+    ]
+
+    const informs = message => notify => {
+      notify.emit('info', odbcError(message, 0, '01000'), false)
+      notify.emit('done')
+      notify.emit('free')
+    }
+    const infoMessages = async request => {
+      const messages = []
+      request.on('info', info => messages.push(info.message))
+      await request.query('print \'Something to note\'')
+      return messages
+    }
+
+    for (const [source, prefix] of PREFIXES) {
+      it(`should take the prefix off an error from ${source}`, async () => {
+        const { request } = setup(notify => {
+          notify.fail(odbcError(`${prefix}Something went wrong`, 50000, '42000'), false)
+          notify.emit('free')
+        })
+        await assert.rejects(request.query('select 1'), err => {
+          assert.strictEqual(err.message, 'Something went wrong', 'the error should have the prefix taken off its message')
+          return true
+        })
+      })
+
+      it(`should take the prefix off an info message from ${source}`, async () => {
+        const { request } = setup(informs(`${prefix}Something to note`))
+        assert.deepStrictEqual(await infoMessages(request), ['Something to note'], 'the info message should have the prefix taken off')
+      })
+    }
+
+    it('should keep what the server sent after the prefix', async () => {
+      const { request } = setup(informs('[Microsoft][ODBC Driver 18 for SQL Server][SQL Server]  [Microsoft][ODBC Driver 18 for SQL Server]indented'))
+      assert.deepStrictEqual(await infoMessages(request), ['  [Microsoft][ODBC Driver 18 for SQL Server]indented'], 'the info message should be what the server sent')
+    })
+  })
+
   describe('a callback that throws', () => {
     afterEach(handBackUnhandledErrors)
 
