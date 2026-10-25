@@ -2811,7 +2811,10 @@ describe('msnodesqlv8 query events', () => {
     // it does after a pause part way through a batch is what differs: up to 4.x it goes on as if
     // the batch was handed over; 5.0 to 5.5 do too, and when resumed after the last batch of a
     // result set, move on to the next one a second time; 5.6 waits for the rest of the batch,
-    // unless it was paused on the batch's last row. `timeOutAtFetch` names a fetch that does not
+    // unless it was paused on the batch's last row, and 6 waits whatever comes next. 6 also ends a
+    // cancelled query itself, after calling the cancel back: at once if it was paused when the
+    // cancel went out, otherwise at its next fetch, which never comes if it is paused before
+    // then. `timeOutAtFetch` names a fetch that does not
     // come back before the request times out, and `failAtEnd` ends the query on an error; a query
     // that ends on an error emits 'free' and no 'done', as msnodesqlv8 does. `beginDelay` holds
     // back the end of the first statement, and `stallBegin` keeps it from ending.
@@ -2830,6 +2833,7 @@ describe('msnodesqlv8 query events', () => {
       let index = 0
       let paused = false
       let running = true
+      let cancelled = false
 
       const meta = () => [{ name: recordsets[set][0], sqlType: 'int', size: 4, nullable: false }]
 
@@ -2853,6 +2857,7 @@ describe('msnodesqlv8 query events', () => {
 
       const nextResult = () => setImmediate(() => {
         if (!running) return
+        if (cancelled) return endCancelled()
         set++
         read = 0
         if (set < recordsets.length) {
@@ -2873,8 +2878,19 @@ describe('msnodesqlv8 query events', () => {
         setImmediate(() => notify.emit('free'))
       }
 
+      // 6 ends a cancelled query with 'done' as well as 'free'
+      const endCancelled = () => {
+        running = false
+        notify.fail(CANCELED(), false)
+        setImmediate(() => {
+          notify.emit('done')
+          notify.emit('free')
+        })
+      }
+
       const dispatch = () => {
         if (!running || paused) return
+        if (cancelled) return endCancelled()
         if (++fetches === timeOutAtFetch) {
           return setTimeout(fail, 10, Object.assign(new Error('Query timeout expired'), { code: 0, sqlstate: 'HYT00' }))
         }
@@ -2884,6 +2900,7 @@ describe('msnodesqlv8 query events', () => {
           index = 0
           dispatchRows()
           if (version === '5.6' && paused && index < batch.data.length) return
+          if (version === '6' && paused) return
           if (batch.endOfRows) {
             nextResult()
           } else {
@@ -2892,9 +2909,21 @@ describe('msnodesqlv8 query events', () => {
         })
       }
 
-      // every version cancels a paused query, and ends it with 'done' before calling back;
-      // before 5.6 a query that is neither paused nor polling is not cancelled
+      // up to 5.6 every version cancels a paused query, and ends it with 'done' before calling
+      // back; before 5.6 a query that is neither paused nor polling is not cancelled
       const sendCancel = callback => {
+        if (version === '6') {
+          calls.push('cancel')
+          const pausedWhenSent = paused
+          return setImmediate(() => {
+            callback(null)
+            if (pausedWhenSent) {
+              endCancelled()
+            } else {
+              cancelled = true
+            }
+          })
+        }
         if (version !== '5.6' && !paused) {
           calls.push('cancel refused')
           return setImmediate(callback, new Error('Error: [msnodesql] cancel only supported for statements where polling is enabled.'))
@@ -3356,6 +3385,56 @@ describe('msnodesqlv8 query events', () => {
       await completed
       assert.deepStrictEqual(calls, ['pause', 'cancel'], 'the driver should be paused at once, so that the cancel is accepted')
       assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
+    })
+
+    // a stream that is paused after it is cancelled, by its listener or by the stream it is piped
+    // into, within the batch msnodesqlv8 is handing over
+    for (const [cancelAt, pauseAt] of [[10, 10], [10, 20]]) {
+      it(`should leave a stream cancelled while it was flowing to end in msnodesqlv8 6 when it is paused after the cancel (rows ${cancelAt} and ${pauseAt})`, async () => {
+        const { request, notify, calls, pool } = setupReader('6', [['a', 75]])
+        request.stream = true
+        const errors = []
+        let rows = 0
+        request.on('error', err => errors.push(err.code))
+        request.on('row', () => {
+          if (++rows === cancelAt) request.cancel()
+          if (rows === pauseAt) request.pause()
+        })
+        const freed = new Promise(resolve => notify.once('free', () => resolve(true)))
+        const completed = new Promise(resolve => request.on('done', resolve))
+        request.query('select a')
+
+        await completed
+        const ended = await Promise.race([freed, new Promise(resolve => setTimeout(resolve, 100, false))])
+        assert.deepStrictEqual(calls, ['cancel'], 'the driver should not be paused once the cancel has gone out')
+        assert.strictEqual(ended, true, 'msnodesqlv8 should end the cancelled query and release its statement')
+        assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
+        assert.strictEqual(pool.released, 1, 'the connection should be released once')
+      })
+    }
+
+    it('should hold the driver back again once a cancel made while the stream was flowing is refused', async () => {
+      const { request, calls } = setupReader('5.0 to 5.5', [['a', 175]])
+      request.stream = true
+      const errors = []
+      let rows = 0
+      request.on('error', err => errors.push(err.code))
+      request.on('row', () => {
+        if (++rows === 10) {
+          request.cancel()
+          request.pause()
+        }
+      })
+      const completed = request.query('select a')
+
+      // msnodesqlv8 5.0 to 5.5 refuse to cancel a query that is still reading, so it goes on to its
+      // next full batch
+      while (!calls.includes('pause')) await tick()
+      assert.deepStrictEqual(calls, ['cancel refused', 'pause'], 'the driver should be paused at the end of a batch once the cancel is refused')
+      request.resume()
+      await completed
+      assert.strictEqual(rows, 175, 'every row should be streamed once the stream is resumed')
+      assert.deepStrictEqual(errors, [], 'a refused cancel should not be streamed as an error')
     })
 
     it('should not emit the rows of a cancelled paused stream that a listener resumes', async () => {
