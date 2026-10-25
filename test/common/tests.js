@@ -3219,6 +3219,136 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'cancelling a stream held back while its query moves on to its first result set' (done) {
+      // a stream paused before its query runs, as toReadableStream() leaves it, and cancelled once
+      // msnodesqlv8 has moved on from a statement with no result set: the server has sent that
+      // statement's row count, so msnodesqlv8 is reading on when the cancel arrives, and freeing
+      // the statement then can crash the process. With one connection in the pool, the query that
+      // follows the stream runs on the connection the stream had
+      const config = readConfig()
+      config.driver = driver
+      config.pool = { max: 1, min: 0 }
+      let timer
+      let held = false
+
+      const pool = new sql.ConnectionPool(config)
+      pool.connect().then(() => new Promise((resolve, reject) => {
+        const errors = []
+        const rows = []
+        const req = new sql.Request(pool)
+        req.stream = true
+        req.on('error', err => errors.push(err.code))
+        req.on('row', row => rows.push(row))
+        timer = setTimeout(() => {
+          held = true
+          reject(new Error('the cancelled stream should complete'))
+        }, 10000)
+        req.once('done', () => {
+          clearTimeout(timer)
+          resolve({ errors, rows })
+        })
+        req.pause()
+        req.query('set nocount off; declare @t table (a int); insert @t values (1); raiserror(\'flush\', 0, 1) with nowait; waitfor delay \'00:00:02\'; select 1 as a')
+        setTimeout(() => req.cancel(), 500)
+      })).then(({ errors, rows }) => {
+        assert.deepStrictEqual(errors, ['ECANCEL'], 'the stream should end as cancelled')
+        assert.deepStrictEqual(rows, [], 'no row should be streamed')
+        return new Promise((resolve, reject) => {
+          timer = setTimeout(() => {
+            held = true
+            reject(new Error('the next query on the connection should run'))
+          }, 5000)
+          pool.request().query('select 1 as a').then(resolve, reject)
+        })
+      }).then(result => {
+        clearTimeout(timer)
+        assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'the next query should return its result')
+        return pool.close()
+      }).then(() => done(), err => {
+        clearTimeout(timer)
+        // a connection that is held up cannot be closed either, so the pool is left as it is
+        if (held) return done(err)
+        pool.close().then(() => done(err), () => done(err))
+      })
+    },
+
+    'resuming a stream held back while its query executes' (failing, done) {
+      // a stream paused before its query runs, as toReadableStream() leaves it, and read while
+      // the query still executes: msnodesqlv8 fetches from the query at once, which can fail with a
+      // 'Function sequence error' (HY010), lose the error the query raises, or crash the process
+      const rows = []
+      const errors = []
+      const req = new sql.Request()
+      req.stream = true
+      req.on('row', row => rows.push(row))
+      req.on('error', err => errors.push(err))
+      req.once('done', () => {
+        try {
+          if (failing) {
+            assert.deepStrictEqual(errors.map(e => e.number), [208], `only the error the query raised should be streamed, not: ${errors.map(e => e.message).join(' / ')}`)
+            assert.deepStrictEqual(rows, [], 'no row should be streamed')
+          } else {
+            assert.deepStrictEqual(errors.map(e => e.message), [], 'no error should be streamed')
+            assert.deepStrictEqual(rows, [{ a: 1 }], 'the row should be streamed once')
+          }
+          done()
+        } catch (e) {
+          done(e)
+        }
+      })
+      req.pause()
+      req.query(failing
+        ? 'waitfor delay \'00:00:01\'; select * from notexistingtable'
+        : 'waitfor delay \'00:00:01\'; select 1 as a')
+      setTimeout(() => req.resume(), 300)
+    },
+
+    'cancelling a stream held back while its query executes' (done) {
+      // a stream paused before its query runs, as toReadableStream() leaves it, read while the query
+      // executes and then cancelled: the query stays held back until its first result set, and is
+      // cancelled there. With one connection in the pool, the query that follows the stream runs on
+      // the connection the stream had
+      const config = readConfig()
+      config.driver = driver
+      config.pool = { max: 1, min: 0 }
+      let timer
+      let held = false
+
+      const pool = new sql.ConnectionPool(config)
+      pool.connect().then(() => new Promise(resolve => {
+        const errors = []
+        const rows = []
+        const req = new sql.Request(pool)
+        req.stream = true
+        req.on('error', err => errors.push(err.code))
+        req.on('row', row => rows.push(row))
+        req.once('done', () => resolve({ errors, rows }))
+        req.pause()
+        req.query('waitfor delay \'00:00:01\'; select 1 as a')
+        setTimeout(() => req.resume(), 200)
+        setTimeout(() => req.cancel(), 400)
+      })).then(({ errors, rows }) => {
+        assert.deepStrictEqual(errors, ['ECANCEL'], 'the stream should end as cancelled')
+        assert.deepStrictEqual(rows, [], 'no row should be streamed')
+        return new Promise((resolve, reject) => {
+          timer = setTimeout(() => {
+            held = true
+            reject(new Error('the next query on the connection should run'))
+          }, 5000)
+          pool.request().query('select 1 as a').then(resolve, reject)
+        })
+      }).then(result => {
+        clearTimeout(timer)
+        assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'the next query should return its result')
+        return pool.close()
+      }).then(() => done(), err => {
+        clearTimeout(timer)
+        // a connection that is held up cannot be closed either, so the pool is left as it is
+        if (held) return done(err)
+        pool.close().then(() => done(err), () => done(err))
+      })
+    },
+
     'pausing and resuming a stream once it is over' (ending, done) {
       // msnodesqlv8 does not check that a query is still running when it is paused or resumed,
       // and can put one that has ended back on its connection's work queue, where it holds up
