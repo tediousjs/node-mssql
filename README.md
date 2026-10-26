@@ -1281,7 +1281,11 @@ request.cancel()
 
 A cancelled stream emits an `error` event with code `ECANCEL`, followed by `done`.
 
-With the `msnodesqlv8` driver, a request that is already running can only be cancelled from msnodesqlv8 5.6. Earlier versions can cancel a paused stream, but let any other running request run to the end and complete as if `cancel()` had not been called. A paused stream is cancelled once the driver stops reading, at the end of a batch of 50 rows or the start of the next result set; a query that ends first, or times out, completes as cancelled.
+With the `msnodesqlv8` driver, a request that is already running can only be cancelled from msnodesqlv8 5.6. Earlier versions can cancel a paused stream, but let any other running request run to the end and complete as if `cancel()` had not been called. A paused stream is cancelled once the driver stops reading, at the end of a batch of 50 rows or the start of the next result set.
+
+Before msnodesqlv8 6, that includes a stream paused before its query reaches its first result set, as `toReadableStream()` leaves one until it is read. Cancelling it while msnodesqlv8 is still working through the statements ahead of that result set can crash the process, so the cancel waits for them: they run to the end and keep their effects, however long they take. The request timeout ends the wait if it is at least a second. With `requestTimeout: 0`, or anything under a second, which msnodesqlv8 takes as no timeout, nothing ends it. msnodesqlv8 6 cancels such a stream at once.
+
+A query that ends before the cancel takes effect, or times out, completes as cancelled, after emitting any error it ended with.
 
 ## Transaction
 
