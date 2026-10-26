@@ -3311,6 +3311,66 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'cancelling a stream and then pausing it' (pauseAt, cancelsRunningQueries, done) {
+      // a stream cancelled while it flows, and paused straight after or a few rows later, as the
+      // stream it is piped into can pause it: msnodesqlv8 6 never ends a query that is paused once
+      // it has been sent a cancel, and the query keeps its connection. With one connection in the
+      // pool, not checked when it is lent out again, the query that follows the stream runs on
+      // the connection the stream had. A driver that cannot cancel a running query lets the stream
+      // run to its end once it is resumed
+      const config = readConfig()
+      config.driver = driver
+      config.pool = { max: 1, min: 0 }
+      config.validateConnection = false
+      let timer
+      let held = false
+
+      const pool = new sql.ConnectionPool(config)
+      pool.connect().then(() => new Promise((resolve, reject) => {
+        const errors = []
+        let rows = 0
+        const req = new sql.Request(pool)
+        req.stream = true
+        req.on('error', err => errors.push(err.code))
+        req.on('row', () => {
+          if (++rows === 10) req.cancel()
+          if (rows === pauseAt) {
+            req.pause()
+            if (!cancelsRunningQueries) setTimeout(() => req.resume(), 200)
+          }
+        })
+        timer = setTimeout(() => reject(new Error('the cancelled stream should complete')), 10000)
+        req.once('done', () => {
+          clearTimeout(timer)
+          resolve({ errors, rows })
+        })
+        req.query('select top 300 a.object_id from sys.all_objects a cross join sys.all_objects b')
+      })).then(({ errors, rows }) => {
+        if (cancelsRunningQueries) {
+          assert.deepStrictEqual(errors, ['ECANCEL'], 'the stream should end as cancelled')
+        } else {
+          assert.deepStrictEqual(errors, [], 'a cancel the driver refuses should not be streamed as an error')
+          assert.strictEqual(rows, 300, 'the stream should run to its end')
+        }
+        return new Promise((resolve, reject) => {
+          timer = setTimeout(() => {
+            held = true
+            reject(new Error('the next query on the connection should run'))
+          }, 5000)
+          pool.request().query('select 1 as a').then(resolve, reject)
+        })
+      }).then(result => {
+        clearTimeout(timer)
+        assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'the next query should return its result')
+        return pool.close()
+      }).then(() => done(), err => {
+        clearTimeout(timer)
+        // a connection that is held up cannot be closed either, so the pool is left as it is
+        if (held) return done(err)
+        pool.close().then(() => done(err), () => done(err))
+      })
+    },
+
     'new Table' (done) {
       const tvp = new MSSQLTestType()
       tvp.rows.add('asdf', 15)
