@@ -24,6 +24,9 @@ const cancelsRunningQueries = major > 5 || (major === 5 && minor >= 6)
 // binding for xml, sql_variant or the spatial types, which it refuses as an invalid parameter
 const itBulkLoadsAnyColumnType = major < 3 ? it : (title, fn) => it.skip(`${title} (not supported by msnodesqlv8 3 and later)`, fn)
 
+// before 6 msnodesqlv8 hands over a float, real or decimal as text with six decimal places
+const itReadsNumbersAtFullPrecision = major >= 6 ? it : (title, fn) => it.skip(`${title} (msnodesqlv8 before 6 rounds to six decimal places)`, fn)
+
 const config = function () {
   const cfg = JSON.parse(readFileSync(join(__dirname, '../.mssql.json')))
   cfg.driver = 'msnodesqlv8'
@@ -157,6 +160,7 @@ describe('msnodesqlv8', function () {
     it('BigInt parameters', done => TESTS['BigInt parameters'](done))
     it('BigInt casted types', done => TESTS['BigInt casted types'](done))
     it('identity columns', done => TESTS['identity columns'](done))
+    itReadsNumbersAtFullPrecision('numbers read at full precision', done => TESTS['numbers read at full precision'](done))
     it('per-request timeout overrides pool default', done => TESTS['per-request timeout overrides pool default'](done))
     it('per-request timeout does not affect other requests', done => TESTS['per-request timeout does not affect other requests'](done))
     it('per-request timeout in transaction', done => TESTS['per-request timeout in transaction'](done))

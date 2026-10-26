@@ -2629,6 +2629,29 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'numbers read at full precision' (done) {
+      // each value has digits beyond the sixth decimal place, and its text reads back as the same
+      // double (the real as the same float32), from a column and from an output parameter alike
+      const values = [
+        ['f', sql.Float, 'float', 1e-10],
+        ['g', sql.Float, 'float', 1.2345678901234567],
+        ['r', sql.Real, 'real', Math.fround(1.2345678)],
+        ['d', sql.Decimal(38, 10), 'decimal(38, 10)', 1.0123456789],
+        ['n', sql.Decimal(38, 10), 'decimal(38, 10)', -1e-10]
+      ]
+      const req = new TestRequest()
+      for (const [name, type] of values) req.output(name, type)
+      const sets = values.map(([name, , declaration, value]) => `set @${name} = cast(${value} as ${declaration})`)
+      const columns = values.map(([name]) => `@${name} as ${name}`)
+      req.query(`${sets.join(';')};select ${columns.join(', ')}`).then(result => {
+        for (const [name, , declaration, value] of values) {
+          assert.strictEqual(result.recordset[0][name], value, `a ${declaration} column should read ${value} at full precision`)
+          assert.strictEqual(result.output[name], value, `a ${declaration} output parameter should read ${value} at full precision`)
+        }
+        done()
+      }).catch(done)
+    },
+
     'dataLength type correction' (done) {
       sql.on('error', err => console.error(err))
       const req = new TestRequest()

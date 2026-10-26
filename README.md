@@ -7,7 +7,7 @@
 Supported TDS drivers:
 
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
-- [MSNodeSQLv8][msnodesqlv8-url] (Microsoft / Contributors Node V8 Driver for Node.js for SQL Server, v2-v5 native - Windows or Linux/macOS 64 bits only)
+- [MSNodeSQLv8][msnodesqlv8-url] (Microsoft / Contributors Node V8 Driver for Node.js for SQL Server, v2-v6 native - Windows or Linux/macOS 64 bits only)
 
 ## Installation
 
@@ -22,6 +22,8 @@ npm install mssql
 ```
 npm install mssql msnodesqlv8
 ```
+
+msnodesqlv8 6 needs Node.js 22 or later. On an older Node.js, install msnodesqlv8 5 (`npm install mssql msnodesqlv8@5`).
 
 ## SQL Server prerequisites
 
@@ -753,6 +755,8 @@ const sql = require('mssql/msnodesqlv8')
 ```
 
 Note: If you use import into your lib to prepare your request (`const { VarChar } = require('mssql')`) you also need to upgrade all your types import into your code (`const { VarChar } = require('mssql/msnodesqlv8')`) or a `connection.on is not a function` error will be thrown.
+
+msnodesqlv8 5 and earlier round `float` and `real` values, and `decimal` values with more than six decimal places, to six decimal places, output parameters included, so a value such as `1e-10` is read as `0`. `numeric`, `money` and `smallmoney` values are not affected. msnodesqlv8 6 reads them in full, as the tedious driver does; use its latest release.
 
 
 **Extra options:**
