@@ -162,7 +162,7 @@ jobs:
       # a combo without a prebuild falls back to a node-gyp source build, which is
       # brittle on the GitHub Windows images (e.g. the VS 2026 rollout on
       # windows-2025 that node-gyp cannot detect). Coverage:
-      #   v2: Node 18    v3: Node 18-20    v4: Node 18-24    v5: Node 20-24
+      #   v2: Node 18    v3: Node 18-20    v4: Node 18-24    v5: Node 20-24    v6: Node 22-24
       #
       # v5 is split: msnodesqlv8 5.2.2 dropped the Node 20 (ABI 115) win32-x64
       # prebuild, so `@^5` is gated to Node 22-24 and Node 20 is pinned to 5.2.1,
@@ -171,6 +171,9 @@ jobs:
       # outright on windows-2025. From 5.3.0 msnodesqlv8 ships a single Node-API
       # binary instead of one per ABI, which may load on Node 20 again but has not
       # been tried here.
+      #
+      # v6 needs Node 22 or later (its `engines`), and ships its Node-API binary
+      # inside the npm package, so it installs without a download or a build.
       - name: Install msnodesqlv8 v2
         if: ${{ matrix.node == '18.x' }}
         run: npm install --no-save msnodesqlv8@^2
@@ -199,6 +202,12 @@ jobs:
         if: ${{ matrix.node == '22.x' || matrix.node == '24.x' }}
         run: npm install --no-save msnodesqlv8@^5
       - name: Run msnodesqlv8 v5 tests
+        if: ${{ matrix.node == '22.x' || matrix.node == '24.x' }}
+        run: npm run test-msnodesqlv8
+      - name: Install msnodesqlv8 v6
+        if: ${{ matrix.node == '22.x' || matrix.node == '24.x' }}
+        run: npm install --no-save msnodesqlv8@^6
+      - name: Run msnodesqlv8 v6 tests
         if: ${{ matrix.node == '22.x' || matrix.node == '24.x' }}
         run: npm run test-msnodesqlv8
   release:
