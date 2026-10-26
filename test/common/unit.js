@@ -4274,6 +4274,63 @@ describe('msnodesqlv8 query events', () => {
     assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
     assert.strictEqual(pool.released, 1, 'the connection should be released once')
   })
+
+  // msnodesqlv8 6 takes one cancel per query. It refuses any other in its callback, a tick later,
+  // and ends the query on the one it took: the cancel's callback, HY008, 'done' and 'free'
+  const cancellableOnceOn6 = calls => pausable(calls, {
+    cancelQuery (callback) {
+      if (calls.includes('cancel')) {
+        calls.push('cancel refused')
+        setImmediate(callback, new Error('[msnodesql] cannot cancel query (cancel already requested)'))
+        return
+      }
+      calls.push('cancel')
+      setImmediate(() => setImmediate(() => {
+        callback(null)
+        this.fail(odbcError('Operation canceled', 0, 'HY008'), false)
+        this.emit('done')
+        this.emit('free')
+      }))
+    }
+  })
+
+  it('should reject a request cancelled twice as cancelled with msnodesqlv8 6', async () => {
+    driverPackage.version = '6.0.0'
+    const calls = []
+    const { request, pool } = setup(notify => {
+      notify.emit('submitted')
+      request.cancel()
+      request.cancel()
+    }, cancellableOnceOn6(calls))
+    let timer
+    const settled = new Promise((resolve, reject) => {
+      timer = setTimeout(reject, 1000, new Error('the cancelled request should settle'))
+      request.query('waitfor delay \'00:00:02\'; select 1 as a').then(resolve, resolve)
+    }).finally(() => clearTimeout(timer))
+    const result = await settled
+    assert.strictEqual(result && result.code, 'ECANCEL', 'the request should be rejected as cancelled')
+    assert.deepStrictEqual(calls, ['cancel'], 'msnodesqlv8 should be sent one cancel')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  it('should report a paused stream cancelled twice as cancelled with msnodesqlv8 6', async () => {
+    driverPackage.version = '6.0.0'
+    const calls = []
+    const { request, pool } = setup(notify => {
+      notify.emit('submitted')
+      request.cancel()
+      request.cancel()
+    }, cancellableOnceOn6(calls))
+    request.stream = true
+    const errors = []
+    request.on('error', err => errors.push(err.code))
+    // as toReadableStream() pauses a request before it runs it
+    request.pause()
+    await cancelled(request, r => r.query('waitfor delay \'00:00:02\'; select 1 as a'))
+    assert.deepStrictEqual(calls, ['pause', 'cancel'], 'msnodesqlv8 should be sent one cancel')
+    assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
 })
 
 describe('pool acquire', () => {

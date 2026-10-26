@@ -3272,6 +3272,73 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'cancelling a request twice as soon as it is sent' (stream, cancels, done) {
+      // msnodesqlv8 6 takes one cancel per query and refuses any other, while the one it took goes on
+      // to end the query. msnodesqlv8 < 5.6 cancels only a paused query, and lets any other run to
+      // the end. With one connection in the pool, the query that follows runs on the connection the
+      // request had
+      const config = readConfig()
+      config.driver = driver
+      config.pool = { max: 1, min: 0 }
+      let timer
+      let held = false
+
+      const pool = new sql.ConnectionPool(config)
+      pool.connect().then(() => new Promise((resolve, reject) => {
+        const errors = []
+        const req = new sql.Request(pool)
+        timer = setTimeout(() => {
+          held = true
+          reject(new Error('the cancelled request should settle'))
+        }, 10000)
+        const settle = outcome => {
+          clearTimeout(timer)
+          resolve(outcome)
+        }
+        if (stream) {
+          req.stream = true
+          req.on('error', err => errors.push(err.code))
+          req.once('done', () => settle(errors))
+          req.pause()
+          req.query('waitfor delay \'00:00:02\'; select 1 as a')
+        } else {
+          req.query('waitfor delay \'00:00:02\'; select 1 as a').then(() => settle([]), err => settle([err.code]))
+        }
+        // as soon as the driver has the query
+        const cancelTwice = () => {
+          if (!req._currentRequest) return setImmediate(cancelTwice)
+          req.cancel()
+          req.cancel()
+        }
+        cancelTwice()
+      })).then(errors => {
+        if (cancels) {
+          // a cancel that lands as the batch starts can have SQL Server report the batch as aborted
+          // first
+          assert.strictEqual(errors[errors.length - 1], 'ECANCEL', 'the request should end as cancelled')
+          assert.strictEqual(errors.filter(code => code === 'ECANCEL').length, 1, 'the cancel should be reported once')
+        } else {
+          assert.deepStrictEqual(errors, [], 'a request that cannot be cancelled should run to the end')
+        }
+        return new Promise((resolve, reject) => {
+          timer = setTimeout(() => {
+            held = true
+            reject(new Error('the next query on the connection should run'))
+          }, 5000)
+          pool.request().query('select 1 as a').then(resolve, reject)
+        })
+      }).then(result => {
+        clearTimeout(timer)
+        assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'the next query should return its result')
+        return pool.close()
+      }).then(() => done(), err => {
+        clearTimeout(timer)
+        // a connection that is held up cannot be closed either, so the pool is left as it is
+        if (held) return done(err)
+        pool.close().then(() => done(err), () => done(err))
+      })
+    },
+
     'pausing and resuming a stream once it is over' (ending, done) {
       // msnodesqlv8 does not check that a query is still running when it is paused or resumed,
       // and can put one that has ended back on its connection's work queue, where it holds up
