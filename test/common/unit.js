@@ -4092,6 +4092,67 @@ describe('msnodesqlv8 query events', () => {
 describe('pool acquire', () => {
   afterEach(handBackUnhandledErrors)
 
+  for (const callback of [false, true]) {
+    it(`should explain a pool acquire timeout through the ${callback ? 'callback' : 'promise'} API`, async () => {
+      const tarn = require('tarn')
+      const pool = new BasePool({})
+      pool.pool = new tarn.Pool({
+        create: () => Promise.resolve({}),
+        destroy: () => Promise.resolve(),
+        min: 0,
+        max: 1,
+        acquireTimeoutMillis: 20
+      })
+      const connection = await pool.pool.acquire().promise
+      const emitted = []
+      pool.on('error', err => emitted.push(err))
+      try {
+        const acquiring = callback
+          ? new Promise((resolve, reject) => {
+            assert.strictEqual(pool.acquire({}, (err, connection) => err ? reject(err) : resolve(connection)), pool)
+          })
+          : pool.acquire({})
+        await assert.rejects(acquiring, err => {
+          assert.ok(err instanceof tarn.TimeoutError)
+          assert.strictEqual(err.message, 'Failed to acquire a connection from the pool: operation timed out for an unknown reason')
+          assert.ok(err.stack.startsWith(`${err.name}: ${err.message}`))
+          assert.deepStrictEqual(emitted, [err])
+          return true
+        })
+      } finally {
+        pool.pool.release(connection)
+        await pool.pool.destroy()
+      }
+    })
+  }
+
+  it('should preserve the timeout error and its original message', async () => {
+    const { TimeoutError } = require('tarn')
+    const pool = new BasePool({})
+    const timeout = new TimeoutError('Failed to connect to localhost:1433 in 15000ms')
+    timeout.code = 'CUSTOM'
+    pool.pool = { acquire: () => ({ promise: Promise.reject(timeout) }) }
+    pool.on('error', () => {})
+    await assert.rejects(pool.acquire({}), err => {
+      assert.strictEqual(err, timeout)
+      assert.strictEqual(err.code, 'CUSTOM')
+      assert.strictEqual(err.message, 'Failed to acquire a connection from the pool: Failed to connect to localhost:1433 in 15000ms')
+      return true
+    })
+  })
+
+  it('should leave other acquire errors unchanged', async () => {
+    const pool = new BasePool({})
+    const failure = new Error('aborted')
+    pool.pool = { acquire: () => ({ promise: Promise.reject(failure) }) }
+    pool.on('error', () => {})
+    await assert.rejects(pool.acquire({}), err => {
+      assert.strictEqual(err, failure)
+      assert.strictEqual(err.message, 'aborted')
+      return true
+    })
+  })
+
   it('should leave what the callback throws to the process', async () => {
     const connection = {}
     const pool = new BasePool({})
