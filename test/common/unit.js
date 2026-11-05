@@ -4220,6 +4220,30 @@ describe('pool connect while closing', () => {
     assert.strictEqual(calls.length, 1, 'the connect() callback should be called once')
     await pool.close()
   })
+
+  it('should leave a pool that replaced the one it was closing in place', async () => {
+    const tarn = require('tarn')
+    const pool = await connectedPool()
+    const closingPool = pool.pool
+    const connection = await pool.acquire({})
+    const closing = pool.close()
+    // connect() can no longer replace a pool while it closes, so this stands in for anything that might
+    const replacement = new tarn.Pool({
+      create: () => Promise.resolve({}),
+      destroy: () => Promise.resolve(),
+      min: 0,
+      max: 1
+    })
+    pool.pool = replacement
+    // back to the pool it was borrowed from, as pool.release() would now give it to the replacement
+    closingPool.release(connection)
+    await closing
+
+    const borrowed = await pool.acquire({})
+    assert.strictEqual(replacement.numUsed(), 1, 'the pool that replaced the closed one should still lend its connections')
+    replacement.release(borrowed)
+    await replacement.destroy()
+  })
 })
 
 describe('transaction begin failures', () => {
