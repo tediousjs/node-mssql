@@ -4172,6 +4172,56 @@ describe('pool acquire', () => {
   })
 })
 
+describe('pool connect while closing', () => {
+  // the pool lends plain objects, so it can connect and close without a server
+  const connectedPool = () => {
+    const pool = new BasePool({})
+    pool._poolCreate = () => Promise.resolve({})
+    pool._poolValidate = () => true
+    pool._poolDestroy = () => Promise.resolve()
+    return pool.connect()
+  }
+
+  it('should refuse to connect while a close waits for a borrowed connection', async () => {
+    const pool = await connectedPool()
+    const connection = await pool.acquire({})
+    const closing = pool.close()
+
+    await assert.rejects(pool.connect(), { name: 'ConnectionError', message: 'Cannot connect a pool while it is closing' },
+      'connect() should be refused while the pool is closing')
+
+    // the close finishes once the connection is back, and the pool can then connect again
+    pool.release(connection)
+    await closing
+    await pool.connect()
+    assert.strictEqual(pool.connected, true, 'the pool should connect again once its close has finished')
+    await pool.close()
+  })
+
+  it('should call the connect() callback once with the error while the pool is closing', async () => {
+    const pool = await connectedPool()
+    const connection = await pool.acquire({})
+    const closing = pool.close()
+    const calls = []
+
+    await new Promise(resolve => {
+      assert.strictEqual(pool.connect(err => {
+        calls.push(err)
+        resolve()
+      }), pool)
+    })
+    assert.ok(calls[0] instanceof sql.ConnectionError, 'connect() should call back with a ConnectionError while the pool is closing')
+    assert.strictEqual(calls[0].message, 'Cannot connect a pool while it is closing')
+
+    // had the refused callback been queued as well, the next connect() would call it again
+    pool.release(connection)
+    await closing
+    await pool.connect()
+    assert.strictEqual(calls.length, 1, 'the connect() callback should be called once')
+    await pool.close()
+  })
+})
+
 describe('transaction begin failures', () => {
   const Module = require('node:module')
   const { EventEmitter } = require('node:events')
