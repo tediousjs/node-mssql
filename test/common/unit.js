@@ -1725,6 +1725,89 @@ describe('operations with no connection', () => {
       { name: 'ConnectionError', code: 'ECONNCLOSED' },
       'prepare() on a transaction with no pool should reject with ConnectionError ECONNCLOSED')
   })
+
+  it('preparedStatement.execute() rejects with ENOCONN', async () => {
+    await assert.rejects(() => new sql.PreparedStatement().execute({}),
+      { name: 'PreparedStatementError', code: 'ENOCONN' },
+      'execute() with no connection should reject with PreparedStatementError ENOCONN')
+  })
+
+  it('preparedStatement.execute() calls back with ENOCONN', async () => {
+    const err = await new Promise(resolve => new sql.PreparedStatement().execute({}, resolve))
+    assert.strictEqual(err && err.code, 'ENOCONN',
+      'execute() with no connection should call back with ENOCONN')
+  })
+
+  it('preparedStatement.execute() in stream mode emits ENOCONN', async () => {
+    const ps = new sql.PreparedStatement()
+    ps.stream = true
+    const request = ps.execute({})
+    const err = await new Promise(resolve => request.on('error', resolve))
+    assert.strictEqual(err.code, 'ENOCONN',
+      'execute() in stream mode with no connection should emit ENOCONN')
+  })
+
+  it('reading config and connected with no pool does not throw', () => {
+    const tx = new sql.Transaction()
+    const ps = new sql.PreparedStatement()
+    assert.doesNotThrow(() => tx.config, 'transaction.config should not throw with no pool')
+    assert.doesNotThrow(() => ps.config, 'preparedStatement.config should not throw with no pool')
+    assert.strictEqual(ps.connected, false, 'preparedStatement.connected should be false with no pool')
+  })
+})
+
+describe('requests on a transaction or prepared statement with no pool', () => {
+  // the parent exists, so this is not ENOCONN, but it can never be connected
+  const bulkTable = () => {
+    const table = new sql.Table('#bulk')
+    table.columns.add('a', sql.Int)
+    table.rows.add(1)
+    return table
+  }
+  const cases = [
+    ['transaction.request().query()', () => new sql.Transaction().request().query('select 1')],
+    ['a tagged template transaction.request().query``', () => new sql.Transaction().request().query`select ${1}`],
+    ['transaction.request().batch()', () => new sql.Transaction().request().batch('select 1')],
+    ['transaction.request().execute()', () => new sql.Transaction().request().execute('sp_who')],
+    ['transaction.request().bulk()', () => new sql.Transaction().request().bulk(bulkTable())],
+    ['a request on a prepared statement', () => new sql.Request(new sql.PreparedStatement()).query('select 1')]
+  ]
+
+  for (const [name, run] of cases) {
+    it(`${name} rejects with ECONNCLOSED`, async () => {
+      await assert.rejects(run, { name: 'ConnectionError', code: 'ECONNCLOSED' },
+        `${name} should reject with ConnectionError ECONNCLOSED`)
+    })
+  }
+
+  it('transaction.request().query() calls back with ECONNCLOSED', async () => {
+    const err = await new Promise(resolve => new sql.Transaction().request().query('select 1', resolve))
+    assert.strictEqual(err && err.code, 'ECONNCLOSED',
+      'query() on a transaction with no pool should call back with ECONNCLOSED')
+  })
+
+  it('transaction.request().query() in stream mode emits ECONNCLOSED', async () => {
+    const request = new sql.Transaction().request()
+    request.stream = true
+    const err = await new Promise(resolve => {
+      request.on('error', resolve)
+      request.query('select 1')
+    })
+    assert.strictEqual(err.code, 'ECONNCLOSED',
+      'query() in stream mode on a transaction with no pool should emit ECONNCLOSED')
+  })
+
+  it('toReadableStream() on a transaction request ends with ECONNCLOSED', async () => {
+    const request = new sql.Transaction().request()
+    const readable = request.toReadableStream()
+    const err = await new Promise(resolve => {
+      readable.on('error', resolve)
+      readable.resume()
+      request.query('select 1')
+    })
+    assert.strictEqual(err.code, 'ECONNCLOSED',
+      'a readable stream on a transaction with no pool should end with ECONNCLOSED')
+  })
 })
 
 describe('operations on a pool that is not connected', () => {
