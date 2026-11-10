@@ -1830,6 +1830,19 @@ describe('global pool', () => {
       sql.removeListener('error', handler)
     }
   })
+
+  it('should leave a newer global pool in place when an older pool is closed', async () => {
+    const older = await sql.connect({})
+    await sql.close()
+    const newer = await sql.connect({})
+    assert.notStrictEqual(newer, older)
+
+    // the older pool keeps the close it was given while it was the global pool
+    await older.close()
+    assert.strictEqual(globalConnection.pool, newer, 'closing an older pool should leave the newer global pool in place')
+    await sql.close()
+    assert.strictEqual(newer.connected, false, 'sql.close() should close the newer global pool')
+  })
 })
 
 describe('parameter name validation', () => {
