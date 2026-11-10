@@ -1788,6 +1788,48 @@ describe('global pool', () => {
     assert.strictEqual(pool.connected, false, 'sql.close() should close the global pool')
     assert.strictEqual(globalConnection.pool, null, 'sql.close() should clear the global pool')
   })
+
+  it('should keep the global pool when sql.close() is refused while it connects', async () => {
+    const connecting = sql.connect({})
+    const pool = globalConnection.pool
+
+    await assert.rejects(sql.close(), { name: 'ConnectionError', message: 'Cannot close a pool while it is connecting' },
+      'sql.close() should be refused while the global pool connects')
+    assert.strictEqual(await connecting, pool)
+    assert.strictEqual(globalConnection.pool, pool, 'the pool should still be the global pool after the refused close')
+    assert.strictEqual(await sql.connect({}), pool, 'sql.connect() should not create a second global pool')
+
+    await sql.close()
+    assert.strictEqual(pool.connected, false, 'sql.close() should close the pool it was refused for earlier')
+    assert.strictEqual(globalConnection.pool, null)
+  })
+
+  it('should call the sql.close() callback with the refusal and keep the global pool', async () => {
+    const connecting = new Promise((resolve, reject) => {
+      sql.connect({}, (err, pool) => err ? reject(err) : resolve(pool))
+    })
+    const pool = globalConnection.pool
+
+    const err = await new Promise(resolve => sql.close(resolve))
+    assert.ok(err instanceof sql.ConnectionError, 'sql.close() should call back with a ConnectionError while the global pool connects')
+    assert.strictEqual(err.message, 'Cannot close a pool while it is connecting')
+    assert.strictEqual(await connecting, pool)
+    assert.strictEqual(globalConnection.pool, pool, 'the pool should still be the global pool after the refused close')
+  })
+
+  it('should keep the sql.on() handlers on the global pool when sql.close() is refused', async () => {
+    const handler = () => {}
+    sql.on('error', handler)
+    try {
+      const connecting = sql.connect({})
+      await assert.rejects(sql.close(), { message: 'Cannot close a pool while it is connecting' })
+      const pool = await connecting
+      assert.deepStrictEqual(pool.listeners('error'), [handler],
+        'the refused close should leave the handlers added with sql.on() as they were')
+    } finally {
+      sql.removeListener('error', handler)
+    }
+  })
 })
 
 describe('parameter name validation', () => {
