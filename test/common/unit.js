@@ -1843,6 +1843,86 @@ describe('global pool', () => {
     await sql.close()
     assert.strictEqual(newer.connected, false, 'sql.close() should close the newer global pool')
   })
+
+  describe('when a connect fails', () => {
+    let refuse
+
+    const failNextConnect = () => {
+      createConnection = () => new Promise((resolve, reject) => { refuse = reject })
+    }
+
+    // the pool stops connecting straight away, but only reports the error in a later setImmediate, so anything
+    // the test does in the same turn of the event loop happens before the failure is reported
+    const refuseConnection = async pool => {
+      refuse(new Error('Login failed'))
+      for (let i = 0; pool.connecting; i++) {
+        assert.ok(i < 100, 'the pool should stop connecting once its connection is refused')
+        await null
+      }
+      // the pool drops its connect callbacks a microtask later, before it can be connected again
+      for (let i = 0; i < 10; i++) await null
+    }
+
+    for (const callback of [false, true]) {
+      it(`should clear the global pool that failed to connect (${callback ? 'callback' : 'promise'} API)`, async () => {
+        failNextConnect()
+        const failing = callback
+          ? new Promise((resolve, reject) => sql.connect({}, err => err ? reject(err) : resolve()))
+          : sql.connect({})
+        const failed = globalConnection.pool
+        await refuseConnection(failed)
+        await assert.rejects(failing, { message: 'Login failed' })
+        assert.strictEqual(globalConnection.pool, null, 'a pool that failed to connect should not stay the global pool')
+
+        createConnection = connectWithoutServer
+        assert.notStrictEqual(await sql.connect({}), failed, 'the next sql.connect() should create a new pool')
+      })
+
+      it(`should leave a newer global pool in place when an older one fails to connect (${callback ? 'callback' : 'promise'} API)`, async () => {
+        failNextConnect()
+        const failing = callback
+          ? new Promise((resolve, reject) => sql.connect({}, err => err ? reject(err) : resolve()))
+          : sql.connect({})
+        const older = globalConnection.pool
+        await refuseConnection(older)
+
+        // before the failure is reported, the global pool can be closed and replaced
+        createConnection = connectWithoutServer
+        const closing = sql.close()
+        const connecting = sql.connect({})
+        const newer = globalConnection.pool
+        assert.notStrictEqual(newer, older)
+
+        await assert.rejects(failing, { message: 'Login failed' })
+        await closing
+        assert.strictEqual(await connecting, newer)
+        assert.strictEqual(globalConnection.pool, newer, 'the older pool failing to connect should leave the newer global pool in place')
+      })
+    }
+
+    for (const connected of [false, true]) {
+      it(`should keep the global pool when it ${connected ? 'has connected' : 'is connecting'} again as its earlier failure is reported`, async () => {
+        failNextConnect()
+        const failing = sql.connect({})
+        const pool = globalConnection.pool
+        await refuseConnection(pool)
+
+        // before the failure is reported, sql.connect() can connect the same pool again
+        let accept
+        createConnection = connected ? connectWithoutServer : () => new Promise(resolve => { accept = resolve })
+        const connecting = sql.connect({})
+        assert.strictEqual(globalConnection.pool, pool)
+
+        await assert.rejects(failing, { message: 'Login failed' })
+        assert.strictEqual(connected ? pool.connected : pool.connecting, true,
+          `the pool should ${connected ? 'have connected' : 'still be connecting'} again when the earlier failure is reported`)
+        assert.strictEqual(globalConnection.pool, pool, 'the earlier failure should leave the pool that is connecting again global')
+        if (accept) accept({})
+        assert.strictEqual(await connecting, pool)
+        assert.strictEqual(globalConnection.pool, pool)
+      })
+    }
+  })
 })
 
 describe('parameter name validation', () => {
