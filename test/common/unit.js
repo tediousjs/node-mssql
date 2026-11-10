@@ -1747,6 +1747,184 @@ describe('operations on a pool that is not connected', () => {
   }
 })
 
+describe('global pool', () => {
+  const shared = require('../../lib/shared')
+  const globalConnection = require('../../lib/global-connection')
+  const connectWithoutServer = () => Promise.resolve({})
+  let createConnection = connectWithoutServer
+  let driverPool
+
+  // the global pool lends plain objects, so it can connect and close without a server
+  class StubPool extends BasePool {
+    _poolCreate () { return createConnection() }
+    _poolValidate () { return true }
+    _poolDestroy () { return Promise.resolve() }
+  }
+
+  before(() => {
+    driverPool = shared.driver.ConnectionPool
+    shared.driver.ConnectionPool = StubPool
+  })
+
+  after(() => {
+    shared.driver.ConnectionPool = driverPool
+  })
+
+  afterEach(async () => {
+    createConnection = connectWithoutServer
+    // a failed test can leave the global pool connecting, and it can only be closed once that has finished
+    await new Promise(resolve => setImmediate(resolve))
+    await sql.close().catch(() => {})
+  })
+
+  it('should connect and close after sql.off() removed the last handler of an event', async () => {
+    const handler = () => {}
+    sql.on('error', handler)
+    sql.off('error', handler)
+
+    const pool = await sql.connect({})
+    assert.deepStrictEqual(pool.listeners('error'), [], 'a handler removed with sql.off() should not be added to the global pool')
+    await sql.close()
+    assert.strictEqual(pool.connected, false, 'sql.close() should close the global pool')
+    assert.strictEqual(globalConnection.pool, null, 'sql.close() should clear the global pool')
+  })
+
+  it('should keep the global pool when sql.close() is refused while it connects', async () => {
+    const connecting = sql.connect({})
+    const pool = globalConnection.pool
+
+    await assert.rejects(sql.close(), { name: 'ConnectionError', message: 'Cannot close a pool while it is connecting' },
+      'sql.close() should be refused while the global pool connects')
+    assert.strictEqual(await connecting, pool)
+    assert.strictEqual(globalConnection.pool, pool, 'the pool should still be the global pool after the refused close')
+    assert.strictEqual(await sql.connect({}), pool, 'sql.connect() should not create a second global pool')
+
+    await sql.close()
+    assert.strictEqual(pool.connected, false, 'sql.close() should close the pool it was refused for earlier')
+    assert.strictEqual(globalConnection.pool, null)
+  })
+
+  it('should call the sql.close() callback with the refusal and keep the global pool', async () => {
+    const connecting = new Promise((resolve, reject) => {
+      sql.connect({}, (err, pool) => err ? reject(err) : resolve(pool))
+    })
+    const pool = globalConnection.pool
+
+    const err = await new Promise(resolve => sql.close(resolve))
+    assert.ok(err instanceof sql.ConnectionError, 'sql.close() should call back with a ConnectionError while the global pool connects')
+    assert.strictEqual(err.message, 'Cannot close a pool while it is connecting')
+    assert.strictEqual(await connecting, pool)
+    assert.strictEqual(globalConnection.pool, pool, 'the pool should still be the global pool after the refused close')
+  })
+
+  it('should keep the sql.on() handlers on the global pool when sql.close() is refused', async () => {
+    const handler = () => {}
+    sql.on('error', handler)
+    try {
+      const connecting = sql.connect({})
+      await assert.rejects(sql.close(), { message: 'Cannot close a pool while it is connecting' })
+      const pool = await connecting
+      assert.deepStrictEqual(pool.listeners('error'), [handler],
+        'the refused close should leave the handlers added with sql.on() as they were')
+    } finally {
+      sql.removeListener('error', handler)
+    }
+  })
+
+  it('should leave a newer global pool in place when an older pool is closed', async () => {
+    const older = await sql.connect({})
+    await sql.close()
+    const newer = await sql.connect({})
+    assert.notStrictEqual(newer, older)
+
+    // the older pool keeps the close it was given while it was the global pool
+    await older.close()
+    assert.strictEqual(globalConnection.pool, newer, 'closing an older pool should leave the newer global pool in place')
+    await sql.close()
+    assert.strictEqual(newer.connected, false, 'sql.close() should close the newer global pool')
+  })
+
+  describe('when a connect fails', () => {
+    let refuse
+
+    const failNextConnect = () => {
+      createConnection = () => new Promise((resolve, reject) => { refuse = reject })
+    }
+
+    // the pool stops connecting straight away, but only reports the error in a later setImmediate, so anything
+    // the test does in the same turn of the event loop happens before the failure is reported
+    const refuseConnection = async pool => {
+      refuse(new Error('Login failed'))
+      for (let i = 0; pool.connecting; i++) {
+        assert.ok(i < 100, 'the pool should stop connecting once its connection is refused')
+        await null
+      }
+      // the pool drops its connect callbacks a microtask later, before it can be connected again
+      for (let i = 0; i < 10; i++) await null
+    }
+
+    for (const callback of [false, true]) {
+      it(`should clear the global pool that failed to connect (${callback ? 'callback' : 'promise'} API)`, async () => {
+        failNextConnect()
+        const failing = callback
+          ? new Promise((resolve, reject) => sql.connect({}, err => err ? reject(err) : resolve()))
+          : sql.connect({})
+        const failed = globalConnection.pool
+        await refuseConnection(failed)
+        await assert.rejects(failing, { message: 'Login failed' })
+        assert.strictEqual(globalConnection.pool, null, 'a pool that failed to connect should not stay the global pool')
+
+        createConnection = connectWithoutServer
+        assert.notStrictEqual(await sql.connect({}), failed, 'the next sql.connect() should create a new pool')
+      })
+
+      it(`should leave a newer global pool in place when an older one fails to connect (${callback ? 'callback' : 'promise'} API)`, async () => {
+        failNextConnect()
+        const failing = callback
+          ? new Promise((resolve, reject) => sql.connect({}, err => err ? reject(err) : resolve()))
+          : sql.connect({})
+        const older = globalConnection.pool
+        await refuseConnection(older)
+
+        // before the failure is reported, the global pool can be closed and replaced
+        createConnection = connectWithoutServer
+        const closing = sql.close()
+        const connecting = sql.connect({})
+        const newer = globalConnection.pool
+        assert.notStrictEqual(newer, older)
+
+        await assert.rejects(failing, { message: 'Login failed' })
+        await closing
+        assert.strictEqual(await connecting, newer)
+        assert.strictEqual(globalConnection.pool, newer, 'the older pool failing to connect should leave the newer global pool in place')
+      })
+    }
+
+    for (const connected of [false, true]) {
+      it(`should keep the global pool when it ${connected ? 'has connected' : 'is connecting'} again as its earlier failure is reported`, async () => {
+        failNextConnect()
+        const failing = sql.connect({})
+        const pool = globalConnection.pool
+        await refuseConnection(pool)
+
+        // before the failure is reported, sql.connect() can connect the same pool again
+        let accept
+        createConnection = connected ? connectWithoutServer : () => new Promise(resolve => { accept = resolve })
+        const connecting = sql.connect({})
+        assert.strictEqual(globalConnection.pool, pool)
+
+        await assert.rejects(failing, { message: 'Login failed' })
+        assert.strictEqual(connected ? pool.connected : pool.connecting, true,
+          `the pool should ${connected ? 'have connected' : 'still be connecting'} again when the earlier failure is reported`)
+        assert.strictEqual(globalConnection.pool, pool, 'the earlier failure should leave the pool that is connecting again global')
+        if (accept) accept({})
+        assert.strictEqual(await connecting, pool)
+        assert.strictEqual(globalConnection.pool, pool)
+      })
+    }
+  })
+})
+
 describe('parameter name validation', () => {
   // Names verified to produce working SQL against SQL Server. The library prepends '@',
   // so the name itself sits in an identifier's subsequent position, where T-SQL also
