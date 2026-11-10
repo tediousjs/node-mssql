@@ -176,6 +176,9 @@ describe('msnodesqlv8', function () {
 
   describe('global connection', () => {
     it('repeat calls to connect resolve in order', done => TESTS['repeat calls to connect resolve in order'](sql.connect.bind(sql, config()), done))
+    it('sql.close() during connect keeps the pool global', done => TESTS['sql.close() during connect keeps the pool global'](config(), done))
+    it('closing an old global pool leaves its replacement global', done => TESTS['closing an old global pool leaves its replacement global'](config(), done))
+    it('sql.off() of the last handler leaves sql.connect() working', done => TESTS['sql.off() of the last handler leaves sql.connect() working'](config(), done))
     afterEach(done => sql.close(done))
   })
 
