@@ -1747,6 +1747,49 @@ describe('operations on a pool that is not connected', () => {
   }
 })
 
+describe('global pool', () => {
+  const shared = require('../../lib/shared')
+  const globalConnection = require('../../lib/global-connection')
+  const connectWithoutServer = () => Promise.resolve({})
+  let createConnection = connectWithoutServer
+  let driverPool
+
+  // the global pool lends plain objects, so it can connect and close without a server
+  class StubPool extends BasePool {
+    _poolCreate () { return createConnection() }
+    _poolValidate () { return true }
+    _poolDestroy () { return Promise.resolve() }
+  }
+
+  before(() => {
+    driverPool = shared.driver.ConnectionPool
+    shared.driver.ConnectionPool = StubPool
+  })
+
+  after(() => {
+    shared.driver.ConnectionPool = driverPool
+  })
+
+  afterEach(async () => {
+    createConnection = connectWithoutServer
+    // a failed test can leave the global pool connecting, and it can only be closed once that has finished
+    await new Promise(resolve => setImmediate(resolve))
+    await sql.close().catch(() => {})
+  })
+
+  it('should connect and close after sql.off() removed the last handler of an event', async () => {
+    const handler = () => {}
+    sql.on('error', handler)
+    sql.off('error', handler)
+
+    const pool = await sql.connect({})
+    assert.deepStrictEqual(pool.listeners('error'), [], 'a handler removed with sql.off() should not be added to the global pool')
+    await sql.close()
+    assert.strictEqual(pool.connected, false, 'sql.close() should close the global pool')
+    assert.strictEqual(globalConnection.pool, null, 'sql.close() should clear the global pool')
+  })
+})
+
 describe('parameter name validation', () => {
   // Names verified to produce working SQL against SQL Server. The library prepends '@',
   // so the name itself sits in an identifier's subsequent position, where T-SQL also
