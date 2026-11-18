@@ -815,6 +815,60 @@ describe('connection string boolean options', () => {
   })
 })
 
+describe('connection string encrypt option', () => {
+  it('does not set encrypt when Encrypt is left out', () => {
+    const config = BasePool._parseConnectionString('Server=localhost')
+    assert.strictEqual('encrypt' in config.options, false)
+  })
+
+  it('does not set encrypt when Encrypt is empty', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=')
+    assert.strictEqual('encrypt' in config.options, false)
+  })
+
+  it('does not set encrypt when Encrypt is empty and parses the next pair', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=;Database=db')
+    assert.strictEqual('encrypt' in config.options, false)
+    assert.strictEqual(config.database, 'db')
+  })
+
+  it('does not set encrypt when Encrypt is only whitespace', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt={ }')
+    assert.strictEqual('encrypt' in config.options, false)
+  })
+
+  it('parses Encrypt=true as true', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=true')
+    assert.strictEqual(config.options.encrypt, true)
+  })
+
+  it('parses Encrypt=yes as true', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=yes')
+    assert.strictEqual(config.options.encrypt, true)
+  })
+
+  it('parses Encrypt=false as false', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=false')
+    assert.strictEqual(config.options.encrypt, false)
+  })
+
+  it('parses Encrypt=no as false', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=no')
+    assert.strictEqual(config.options.encrypt, false)
+  })
+
+  it('uses the tedious default when Encrypt is empty', () => {
+    const config = new ConnectionPool('Server=localhost;Encrypt=;Database=db')._config()
+    assert.strictEqual(config.options.encrypt, true)
+    assert.strictEqual(config.options.database, 'db')
+  })
+
+  it('uses Encrypt=false in the tedious config', () => {
+    const config = new ConnectionPool('Server=localhost;Encrypt=false')._config()
+    assert.strictEqual(config.options.encrypt, false)
+  })
+})
+
 describe('connection string auth - base', () => {
   it('parses basic login', () => {
     const config = BasePool._parseConnectionString('Server=database.test.com;Database=test;User Id=test;Password=admin')
