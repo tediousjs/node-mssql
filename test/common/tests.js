@@ -2761,14 +2761,15 @@ module.exports = (sql, driver) => {
 
     'sql.close() during connect keeps the pool global' (config, done) {
       const connecting = sql.connect(config)
-      sql.close().then(() => {
+      // check the result of sql.close() after the connect, so that afterEach can close the pool if a check fails
+      sql.close().then(() => connecting.catch(() => {}).then(() => {
         throw new Error('sql.close() should be refused while the global pool is connecting')
-      }, err => {
+      }), err => connecting.then(pool => {
         assert.ok(err instanceof sql.ConnectionError, 'sql.close() during connect should reject with a ConnectionError')
         assert.strictEqual(err.code, 'ECONNECTING')
         assert.strictEqual(err.message, 'Cannot close a pool while it is connecting')
-        return connecting
-      }).then(pool => {
+        return pool
+      })).then(pool => {
         return sql.query`select 1 as a`.then(result => {
           assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'sql.query should use the pool sql.close() refused to close')
           return sql.close()
