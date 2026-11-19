@@ -468,6 +468,8 @@ Awaiting or `.then`-ing the pool creation is a safe way to ensure that the pool 
 
 Also notice that we do *not* close the global pool by calling `sql.close()` after the query is executed, because other queries may need to be run against this pool and closing it will add additional overhead to running subsequent queries. You should only ever close the global pool if you're certain the application is finished. Or for example, if you are running some kind of CLI tool or a CRON job you can close the pool at the end of the script.
 
+While `sql.connect()` is in progress, `sql.close()` rejects with `ECONNECTING` and the global pool continues to connect. Wait for `sql.connect()` to finish before you call `sql.close()`. While `sql.close()` is in progress, `sql.connect()` creates a new global pool and does not reject with `ECLOSING`. If `sql.connect()` fails, the next `sql.connect()` call creates a new global pool.
+
 ### Global Pool Single Instance
 
 The ability to call `connect()` and `close()` repeatedly on the global pool is intended to make pool management easier, however it is better to maintain your own reference to the pool, where `connect()` is called **once**, and the resulting global pool's connection promise is re-used throughout the entire application.
