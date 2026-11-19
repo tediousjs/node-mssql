@@ -2468,6 +2468,43 @@ module.exports = (sql, driver) => {
       })
     },
 
+    'connect during close while a prepared statement holds a connection' (config, done) {
+      // close() waits for the statement to give its connection back. connect() is refused until
+      // then: a new tarn pool would take the connection in place of the one that closes
+      const pool = new sql.ConnectionPool(config)
+      const statement = new sql.PreparedStatement(pool)
+      let lender
+      let conn
+      let closing
+      let closed = false
+
+      pool.connect().then(() => statement.prepare('select 1 as value')).then(() => {
+        lender = pool.pool
+        conn = statement._acquiredConnection
+        closing = pool.close().then(() => { closed = true })
+        return within(pool.connect().then(() => {
+          throw new Error('connect() should be refused while the pool is closing')
+        }, err => {
+          assert.ok(err instanceof sql.ConnectionError, 'connect() during close should reject with a ConnectionError')
+          assert.strictEqual(err.code, 'ECLOSING')
+        }), 'connect() during close should settle')
+      }).then(() => {
+        assert.strictEqual(closed, false, 'close should wait for the prepared statement')
+        return within(statement.unprepare(), 'unprepare() during close should settle')
+      }).then(() => {
+        assert.strictEqual(statement.prepared, false)
+        return within(closing, 'unprepare() should let close finish')
+      }).then(() => {
+        assert.strictEqual(pool.connected, false, 'the pool should not be connected once its close has finished')
+      }).then(() => done(), err => {
+        // On a regression, the close cannot finish until the tarn pool that lent the connection has
+        // it back. tarn does nothing with a connection that it has not lent
+        if (conn) lender.release(conn)
+        within(Promise.resolve(closing).catch(() => {}).then(() => pool.close()), 'the pool should close')
+          .then(() => done(err), () => done(err))
+      })
+    },
+
     'calls to begin or prepare while the pool is not connected reject with ECONNCLOSED' (config, done) {
       const pool = new sql.ConnectionPool(config)
       const poolErrors = []
