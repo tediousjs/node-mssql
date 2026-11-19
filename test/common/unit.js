@@ -940,6 +940,48 @@ describe('connection string empty values', () => {
   })
 })
 
+describe('connection string number values that are not a number', () => {
+  const keys = [
+    'Connection Timeout',
+    'ConnectRetryInterval',
+    'Max Pool Size',
+    'Min Pool Size',
+    'Packet Size',
+    'Request Timeout'
+  ]
+
+  for (const key of keys) {
+    it(`throws for ${key}=abc`, () => {
+      assert.throws(() => BasePool._parseConnectionString(`Server=localhost;${key}=abc`), {
+        name: 'Error',
+        message: `Invalid value for connection string key "${key.toLowerCase()}": "abc" is not a number.`
+      })
+    })
+  }
+
+  it('ignores a number key that is not used', () => {
+    const expected = BasePool._parseConnectionString('Server=localhost')
+    assert.deepStrictEqual(BasePool._parseConnectionString('Server=localhost;Connection Lifetime=abc'), expected)
+  })
+
+  it('names the alias that the connection string uses', () => {
+    assert.throws(() => BasePool._parseConnectionString('Server=localhost;Connect Timeout=abc'), {
+      message: 'Invalid value for connection string key "connect timeout": "abc" is not a number.'
+    })
+  })
+
+  it('throws from the ConnectionPool constructor', () => {
+    assert.throws(() => new ConnectionPool('Server=localhost;Max Pool Size=undefined'), {
+      message: 'Invalid value for connection string key "max pool size": "undefined" is not a number.'
+    })
+  })
+
+  it('parses a value that starts with a number as that number', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Connection Timeout=30s')
+    assert.strictEqual(config.connectionTimeout, 30000)
+  })
+})
+
 describe('connection string auth - base', () => {
   it('parses basic login', () => {
     const config = BasePool._parseConnectionString('Server=database.test.com;Database=test;User Id=test;Password=admin')
