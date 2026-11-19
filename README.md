@@ -2498,7 +2498,7 @@ dc.subscribe(CHANNELS.CONNECTION_RELEASE, ({ connectionId, poolId }) => {
 | `TRANSACTION_COMMIT` | `mssql:transaction:commit` | Transaction committed |
 | `TRANSACTION_ROLLBACK` | `mssql:transaction:rollback` | Transaction rolled back (includes `aborted` flag) |
 | `REQUEST_CANCEL` | `mssql:request:cancel` | Request cancelled |
-| `PREPARED_STATEMENT_UNPREPARE` | `mssql:prepared-statement:unprepare` | Prepared statement released |
+| `PREPARED_STATEMENT_UNPREPARE` | `mssql:prepared-statement:unprepare` | Prepared statement unprepared (only when `unprepare()` succeeds) |
 
 ### Example: OpenTelemetry Spans
 
