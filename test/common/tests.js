@@ -1938,6 +1938,55 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'unprepare gives the connection back when it fails' (config, failure, onTransaction, done) {
+      const pool = new sql.ConnectionPool(config)
+      const admin = new sql.ConnectionPool(config)
+      const transaction = onTransaction ? new sql.Transaction(pool) : null
+      const statement = new sql.PreparedStatement(transaction || pool)
+      let connection
+
+      Promise.all([pool.connect(), admin.connect()]).then(() => {
+        return transaction && transaction.begin()
+      }).then(() => {
+        return statement.prepare('select @@spid as spid')
+      }).then(() => statement.execute({})).then(result => {
+        connection = statement._acquiredConnection
+        if (failure === 'session killed') {
+          // the connection is dead
+          return admin.request().query(`kill ${result.recordset[0].spid}`)
+        }
+        // the connection is alive, and the statement stays prepared on it
+        statement._handle += 1000
+      }).then(() => {
+        return statement.unprepare().then(() => {
+          throw new Error('unprepare should reject')
+        }, err => {
+          if (failure === 'unknown handle') {
+            assert.strictEqual(err.number, 8179, `unprepare should reject with the error the server reported, got ${err}`)
+          }
+        })
+      }).then(() => {
+        assert.strictEqual(statement.prepared, false, 'the statement should no longer be prepared')
+        assert.strictEqual(statement._acquiredConnection, null, 'the statement should give its connection back')
+        return pool._poolValidate(connection)
+      }).then(valid => {
+        assert.strictEqual(valid, false, 'the pool should not lend the connection out again')
+        if (!transaction) return
+        return transaction.rollback().catch(err => {
+          // a dead connection cannot roll back, and with abortTransactionOnError the server ends the
+          // transaction at the error, but the statement should not hold up the transaction
+          if (failure === 'unknown handle' ? err.code !== 'EABORT' : err.code === 'EREQINPROG') throw err
+        })
+      }).then(() => {
+        return pool.close()
+      }).then(() => admin.close()).then(() => done(), err => {
+        // on a regression the statement still holds its connection, and closing the pool waits for it
+        if (statement._acquiredConnection) statement.parent.release(statement._acquiredConnection)
+        if (transaction && transaction._acquiredConnection) pool.release(transaction._acquiredConnection)
+        Promise.all([pool.close(), admin.close()]).then(() => done(err), () => done(err))
+      })
+    },
+
     'transaction with rollback' (done) {
       let tbegin = false
       let tcommit = false

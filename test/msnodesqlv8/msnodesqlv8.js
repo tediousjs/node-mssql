@@ -138,6 +138,11 @@ describe('msnodesqlv8', function () {
     it.skip('prepared statement in a transaction the server rolls back (not supported by msnodesqlv8)', done => TESTS['prepared statement in a transaction the server rolls back'](config(), done))
     it('prepared statement with duplicate output column names', done => TESTS['prepared statement with duplicate output column names'](done))
     it('prepared statement with streaming and no callback', done => TESTS['prepared statement with streaming and no callback'](done))
+    for (const failure of ['session killed', 'unknown handle']) {
+      for (const onTransaction of [false, true]) {
+        it(`unprepare gives the connection back when it fails (${failure}, ${onTransaction ? 'transaction' : 'pool'})`, done => TESTS['unprepare gives the connection back when it fails'](config(), failure, onTransaction, done))
+      }
+    }
     it('transaction with rollback', done => TESTS['transaction with rollback'](done))
     it('transaction with commit', done => TESTS['transaction with commit'](done))
     it('commit rejects when the server has already ended the transaction', done => TESTS['commit or rollback rejects when the server has already ended the transaction']('commit', done))

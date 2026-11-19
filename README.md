@@ -1642,6 +1642,10 @@ __Errors__
 
 Unprepare a prepared statement. If the server has rolled back the transaction that the statement was prepared in, `unprepare` releases the statement without sending anything to the server.
 
+If the request to unprepare the statement fails (for example, because the connection has died), the statement still gives its connection back and is no longer prepared, and the error is passed on. The pool then closes that connection instead of lending it out again. In a transaction, the connection stays with the transaction until you commit or roll it back, or until the transaction is aborted because the server has rolled it back.
+
+If `unprepare` rejects with `EREQINPROG` because another request on the statement is in progress, nothing changes: the statement stays prepared and keeps its connection, so call `unprepare` again when that request has finished.
+
 __Arguments__
 
 - **callback(err)** - A callback which is called after unpreparation has completed, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
