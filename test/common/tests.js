@@ -2045,6 +2045,42 @@ module.exports = (sql, driver) => {
       }).then(() => done()).catch(done)
     },
 
+    'abort reason when a prepared statement has the server roll the transaction back' (config, done) {
+      const pool = new sql.ConnectionPool(Object.assign({}, config, {
+        options: Object.assign({}, config.options, { abortTransactionOnError: true })
+      }))
+      pool.connect().then(async () => {
+        const tran = new sql.Transaction(pool)
+        await tran.begin()
+        const ps = new sql.PreparedStatement(tran)
+        ps.input('divisor', sql.Int)
+        await ps.prepare('select 1 / @divisor as quotient')
+
+        // the error has the server roll the transaction back
+        let reason
+        await assert.rejects(ps.execute({ divisor: 0 }), err => {
+          assert.strictEqual(err.code, 'EREQUEST')
+          reason = err
+          return true
+        })
+
+        for (const method of ['commit', 'rollback']) {
+          await assert.rejects(tran[method](), err => {
+            assert.ok(err instanceof sql.TransactionError, `${method}() should reject with a TransactionError, got ${err}`)
+            assert.strictEqual(err.code, 'EABORT')
+            assert.strictEqual(err.originalError, reason, `${method}() should give the error of the statement as originalError, got ${err.originalError}`)
+            return true
+          })
+        }
+
+        await ps.unprepare()
+      }).then(() => pool.close()).then(() => done(), err => {
+        // reported first, as closing the pool waits for a connection that is still lent out
+        done(err)
+        pool.close().catch(() => {})
+      })
+    },
+
     'rollback while a request is in progress reports a rollback error' (done) {
       const tran = new TestTransaction()
       tran.begin().then(() => {
