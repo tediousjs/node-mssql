@@ -4676,6 +4676,31 @@ describe('pool connect while closing', () => {
     await pool.close()
   })
 
+  it('should let a POOL_CLOSE subscriber connect the pool again', async () => {
+    const dc = require('node:diagnostics_channel')
+    const { CHANNELS } = require('../../lib/diagnostics')
+    const pool = await connectedPool()
+    const sizes = []
+    let reconnecting
+    const onClose = () => {
+      sizes.push(pool.size)
+      reconnecting = pool.connect()
+      // handled here so that a refusal fails the test below rather than the process
+      reconnecting.catch(() => {})
+    }
+    dc.subscribe(CHANNELS.POOL_CLOSE, onClose)
+    try {
+      await pool.close()
+    } finally {
+      dc.unsubscribe(CHANNELS.POOL_CLOSE, onClose)
+    }
+
+    assert.deepStrictEqual(sizes, [0], 'a POOL_CLOSE subscriber should see a pool with no connections')
+    assert.strictEqual(await reconnecting, pool, 'connect() from a POOL_CLOSE subscriber should resolve to the pool')
+    assert.strictEqual(pool.connected, true, 'connect() from a POOL_CLOSE subscriber should connect the pool again')
+    await pool.close()
+  })
+
   it('should leave a pool that replaced the one it was closing in place', async () => {
     const tarn = require('tarn')
     const pool = await connectedPool()
