@@ -675,7 +675,7 @@ Server=localhost,1433;Database=database;User Id=username;Password=password;Encry
 Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
 ```
 
-`Encrypt` takes a boolean value (`true`, `yes` or `1` to encrypt, and `false`, `no` or `0` to not encrypt), or `strict` in any case. `Encrypt=strict` sets `options.encrypt` to `'strict'`, which turns on TDS 8.0 strict encryption with the [tedious](#tedious) and [MSNodeSQLv8](#msnodesqlv8) drivers.
+`Encrypt` takes `true`, `yes`, `mandatory` or `1` to encrypt, and `false`, `no`, `optional` or `0` to not encrypt. It also takes `strict`, which sets `options.encrypt` to `'strict'` and turns on TDS 8.0 strict encryption with the [tedious](#tedious) and [MSNodeSQLv8](#msnodesqlv8) drivers. These values are not case sensitive. With the tedious driver, a connection that does not encrypt fails if the server requires encryption.
 
 ##### Azure Active Directory Authentication Connection String
 

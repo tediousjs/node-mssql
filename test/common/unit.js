@@ -872,6 +872,21 @@ describe('connection string encrypt option', () => {
     assert.strictEqual(config.options.encrypt, false)
   })
 
+  it('parses Encrypt=mandatory as true', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=mandatory')
+    assert.strictEqual(config.options.encrypt, true)
+  })
+
+  it('parses Encrypt=optional as false', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=optional')
+    assert.strictEqual(config.options.encrypt, false)
+  })
+
+  it('parses Encrypt=Optional as false', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=Optional')
+    assert.strictEqual(config.options.encrypt, false)
+  })
+
   it('parses Encrypt=strict as strict', () => {
     const config = BasePool._parseConnectionString('Server=localhost;Encrypt=strict')
     assert.strictEqual(config.options.encrypt, 'strict')
@@ -959,6 +974,14 @@ describe('connection string encrypt option', () => {
 
     it('writes Encrypt=No for Encrypt=false', async () => {
       assert.match(await open('Server=localhost;Encrypt=false'), /;Encrypt=No$/)
+    })
+
+    it('writes Encrypt=Yes for Encrypt=mandatory', async () => {
+      assert.match(await open('Server=localhost;Encrypt=mandatory'), /;Encrypt=Yes$/)
+    })
+
+    it('writes Encrypt=No for Encrypt=optional', async () => {
+      assert.match(await open('Server=localhost;Encrypt=optional'), /;Encrypt=No$/)
     })
 
     it('writes Encrypt=No when Encrypt is left out', async () => {
