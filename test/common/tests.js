@@ -37,6 +37,16 @@ const readConfig = () => {
   return JSON.parse(readFileSync(join(__dirname, '../.mssql.json'), 'utf8'))
 }
 
+// waits for `promise`, and fails with `message` if it does not settle within `ms`, so a test
+// whose wait never ends fails at once and does not wait for the mocha timeout
+const within = (promise, message, ms = 5000) => {
+  let timer
+  const timeout = new Promise((resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(message)), ms)
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
+}
+
 module.exports = (sql, driver) => {
   class TestRequest extends sql.Request {
     execute (method) {
@@ -2425,22 +2435,37 @@ module.exports = (sql, driver) => {
 
     'calls to connect during close throw' (config, done) {
       const pool = new sql.ConnectionPool(config)
-      pool.connect().then(() => pool.acquire()).then(conn => {
+      let lender
+      let conn
+      let closing
+      pool.connect().then(() => {
+        lender = pool.pool
+        return pool.acquire()
+      }).then(acquired => {
+        conn = acquired
         // the close waits for the borrowed connection, and connect() is refused until it has finished
-        const closing = pool.close()
-        return pool.connect().then(() => {
+        closing = pool.close()
+        return within(pool.connect().then(() => {
           throw new Error('connect() should be refused while the pool is closing')
         }, err => {
           assert.ok(err instanceof sql.ConnectionError, 'connect() during close should reject with a ConnectionError')
           assert.strictEqual(err.code, 'ECLOSING')
           assert.strictEqual(err.message, 'Cannot connect a pool while it is closing')
-          pool.release(conn)
-          return closing
-        })
+        }), 'connect() during close should settle')
+      }).then(() => {
+        pool.release(conn)
+        return within(closing, 'close() should finish once the connection is released')
       }).then(() => pool.connect()).then(() => pool.request().query('select 1 as a')).then(result => {
         assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'the pool should work again once its close has finished')
         return pool.close()
-      }).then(() => done()).catch(done)
+      }).then(() => done(), err => {
+        // On a regression, connect() replaces the tarn pool that lent the connection. The close
+        // finishes only when that tarn pool has the connection back, so it is given back there.
+        // tarn does nothing with a connection that it has not lent
+        if (conn) lender.release(conn)
+        within(Promise.resolve(closing).catch(() => {}).then(() => pool.close()), 'the pool should close')
+          .then(() => done(err), () => done(err))
+      })
     },
 
     'calls to begin or prepare while the pool is not connected reject with ECONNCLOSED' (config, done) {
