@@ -2231,6 +2231,27 @@ describe('global pool', () => {
       })
     }
   })
+
+  it('should create a new global pool when sql.connect() is called while sql.close() waits', async () => {
+    const older = await sql.connect({})
+    // the tarn pool that lends the connection, which gets it back even if a regression replaces it
+    const lender = older.pool
+    const connection = await older.acquire({})
+    // the close waits for the borrowed connection
+    const closing = sql.close()
+    let newer
+    try {
+      newer = await within(sql.connect({}), 'sql.connect() during sql.close() should settle')
+      assert.notStrictEqual(newer, older, 'sql.connect() should not give the pool that closes')
+      assert.strictEqual(newer.connected, true, 'the new pool should be connected')
+      assert.strictEqual(globalConnection.pool, newer, 'the new pool should be the global pool')
+    } finally {
+      lender.release(connection)
+    }
+    await within(closing, 'the close should finish once the connection is back')
+    assert.strictEqual(older.connected, false, 'the close should close the older pool')
+    assert.strictEqual(globalConnection.pool, newer, 'the finished close should leave the new global pool in place')
+  })
 })
 
 describe('parameter name validation', () => {
