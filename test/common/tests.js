@@ -2253,6 +2253,7 @@ module.exports = (sql, driver) => {
       Promise.all([
         pool.connect(),
         pool.close().catch((err) => {
+          assert.strictEqual(err.code, 'ECONNECTING')
           assert.strictEqual(err.message, 'Cannot close a pool while it is connecting')
         })
       ]).then(() => {
@@ -2271,9 +2272,30 @@ module.exports = (sql, driver) => {
       connecting.then(() => {
         assert.strictEqual(calls.length, 1, 'close() during connect should invoke its callback exactly once')
         assert.ok(calls[0] instanceof Error, 'close() during connect should call back with an error')
+        assert.strictEqual(calls[0].code, 'ECONNECTING')
         assert.strictEqual(calls[0].message, 'Cannot close a pool while it is connecting')
         pool.close(done)
       }).catch(done)
+    },
+
+    'calls to connect during close throw' (config, done) {
+      const pool = new sql.ConnectionPool(config)
+      pool.connect().then(() => pool.acquire()).then(conn => {
+        // the close waits for the borrowed connection, and connect() is refused until it has finished
+        const closing = pool.close()
+        return pool.connect().then(() => {
+          throw new Error('connect() should be refused while the pool is closing')
+        }, err => {
+          assert.ok(err instanceof sql.ConnectionError, 'connect() during close should reject with a ConnectionError')
+          assert.strictEqual(err.code, 'ECLOSING')
+          assert.strictEqual(err.message, 'Cannot connect a pool while it is closing')
+          pool.release(conn)
+          return closing
+        })
+      }).then(() => pool.connect()).then(() => pool.request().query('select 1 as a')).then(result => {
+        assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'the pool should work again once its close has finished')
+        return pool.close()
+      }).then(() => done()).catch(done)
     },
 
     'calls to begin or prepare while the pool is not connected reject with ECONNCLOSED' (config, done) {

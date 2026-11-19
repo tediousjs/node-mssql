@@ -4475,6 +4475,100 @@ describe('pool acquire', () => {
   })
 })
 
+describe('pool connect while closing', () => {
+  // the pool lends plain objects, so it can connect and close without a server
+  const connectedPool = () => {
+    const pool = new BasePool({})
+    pool._poolCreate = () => Promise.resolve({})
+    pool._poolValidate = () => true
+    pool._poolDestroy = () => Promise.resolve()
+    return pool.connect()
+  }
+
+  it('should refuse to connect while a close waits for a borrowed connection', async () => {
+    const pool = await connectedPool()
+    const connection = await pool.acquire({})
+    const closing = pool.close()
+
+    await assert.rejects(pool.connect(), { name: 'ConnectionError', code: 'ECLOSING', message: 'Cannot connect a pool while it is closing' },
+      'connect() should be refused while the pool is closing')
+
+    // the close finishes once the connection is back, and the pool can then connect again
+    pool.release(connection)
+    await closing
+    await pool.connect()
+    assert.strictEqual(pool.connected, true, 'the pool should connect again once its close has finished')
+    await pool.close()
+  })
+
+  it('should call the connect() callback once with the error while the pool is closing', async () => {
+    const pool = await connectedPool()
+    const connection = await pool.acquire({})
+    const closing = pool.close()
+    const calls = []
+
+    await new Promise(resolve => {
+      assert.strictEqual(pool.connect(err => {
+        calls.push(err)
+        resolve()
+      }), pool)
+    })
+    assert.ok(calls[0] instanceof sql.ConnectionError, 'connect() should call back with a ConnectionError while the pool is closing')
+    assert.strictEqual(calls[0].code, 'ECLOSING')
+    assert.strictEqual(calls[0].message, 'Cannot connect a pool while it is closing')
+
+    // had the refused callback been queued as well, the next connect() would call it again
+    pool.release(connection)
+    await closing
+    await pool.connect()
+    assert.strictEqual(calls.length, 1, 'the connect() callback should be called once')
+    await pool.close()
+  })
+
+  it('should leave a pool that replaced the one it was closing in place', async () => {
+    const tarn = require('tarn')
+    const pool = await connectedPool()
+    const closingPool = pool.pool
+    const connection = await pool.acquire({})
+    const closing = pool.close()
+    // connect() can no longer replace a pool while it closes, so this stands in for anything that might
+    const replacement = new tarn.Pool({
+      create: () => Promise.resolve({}),
+      destroy: () => Promise.resolve(),
+      min: 0,
+      max: 1
+    })
+    pool.pool = replacement
+    // back to the pool it was borrowed from, as pool.release() would now give it to the replacement
+    closingPool.release(connection)
+    await closing
+
+    const borrowed = await pool.acquire({})
+    assert.strictEqual(replacement.numUsed(), 1, 'the pool that replaced the closed one should still lend its connections')
+    replacement.release(borrowed)
+    await replacement.destroy()
+  })
+})
+
+describe('pool close while connecting', () => {
+  it('should refuse to close while the pool is connecting', async () => {
+    const pool = new BasePool({})
+    let created
+    pool._poolCreate = () => new Promise(resolve => { created = resolve })
+    pool._poolValidate = () => true
+    pool._poolDestroy = () => Promise.resolve()
+    const connecting = pool.connect()
+
+    await assert.rejects(pool.close(), { name: 'ConnectionError', code: 'ECONNECTING', message: 'Cannot close a pool while it is connecting' },
+      'close() should be refused while the pool is connecting')
+
+    created({})
+    await connecting
+    assert.strictEqual(pool.connected, true, 'the refused close() should leave the pool to connect')
+    await pool.close()
+  })
+})
+
 describe('transaction begin failures', () => {
   const Module = require('node:module')
   const { EventEmitter } = require('node:events')

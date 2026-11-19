@@ -801,6 +801,8 @@ const pool = new sql.ConnectionPool({ /* config */ })
 
 Create a new connection pool. The initial probe connection is created to find out whether the configuration is valid.
 
+While a `close()` is in progress, `connect()` rejects with `ECLOSING`. Wait for `close()` to finish before you connect the pool again, or create a new `ConnectionPool`.
+
 __Arguments__
 
 - **callback(err)** - A callback which is called after initial probe connection has established, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
@@ -827,6 +829,7 @@ __Errors__
 - EALREADYCONNECTING (`ConnectionError`) - Already connecting to database!
 - EINSTLOOKUP (`ConnectionError`) - Instance lookup failed.
 - ESOCKET (`ConnectionError`) - Socket error.
+- ECLOSING (`ConnectionError`) - Cannot connect a pool while it is closing.
 
 ---------------------------------------
 
@@ -839,6 +842,9 @@ __Example__
 ```javascript
 pool.close()
 ```
+
+__Errors__
+- ECONNECTING (`ConnectionError`) - Cannot close a pool while it is connecting.
 
 ---------------------------------------
 
@@ -2227,6 +2233,8 @@ Name | Code | Message
 `ConnectionError` | EINSTLOOKUP | Instance lookup failed.
 `ConnectionError` | ESOCKET | Socket error.
 `ConnectionError` | ECONNCLOSED | Connection is closed.
+`ConnectionError` | ECLOSING | Cannot connect a pool while it is closing.
+`ConnectionError` | ECONNECTING | Cannot close a pool while it is connecting.
 `TransactionError` | ENOTBEGUN | Transaction has not begun.
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
 `TransactionError` | EREQINPROG | Can't commit/rollback transaction, unprepare the statement or acquire connection for the request. There is a request in progress.
