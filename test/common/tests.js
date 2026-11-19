@@ -2253,6 +2253,7 @@ module.exports = (sql, driver) => {
       Promise.all([
         pool.connect(),
         pool.close().catch((err) => {
+          assert.strictEqual(err.code, 'ECONNECTING')
           assert.strictEqual(err.message, 'Cannot close a pool while it is connecting')
         })
       ]).then(() => {
@@ -2271,6 +2272,7 @@ module.exports = (sql, driver) => {
       connecting.then(() => {
         assert.strictEqual(calls.length, 1, 'close() during connect should invoke its callback exactly once')
         assert.ok(calls[0] instanceof Error, 'close() during connect should call back with an error')
+        assert.strictEqual(calls[0].code, 'ECONNECTING')
         assert.strictEqual(calls[0].message, 'Cannot close a pool while it is connecting')
         pool.close(done)
       }).catch(done)
@@ -2285,6 +2287,7 @@ module.exports = (sql, driver) => {
           throw new Error('connect() should be refused while the pool is closing')
         }, err => {
           assert.ok(err instanceof sql.ConnectionError, 'connect() during close should reject with a ConnectionError')
+          assert.strictEqual(err.code, 'ECLOSING')
           assert.strictEqual(err.message, 'Cannot connect a pool while it is closing')
           pool.release(conn)
           return closing

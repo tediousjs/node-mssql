@@ -4187,7 +4187,7 @@ describe('pool connect while closing', () => {
     const connection = await pool.acquire({})
     const closing = pool.close()
 
-    await assert.rejects(pool.connect(), { name: 'ConnectionError', message: 'Cannot connect a pool while it is closing' },
+    await assert.rejects(pool.connect(), { name: 'ConnectionError', code: 'ECLOSING', message: 'Cannot connect a pool while it is closing' },
       'connect() should be refused while the pool is closing')
 
     // the close finishes once the connection is back, and the pool can then connect again
@@ -4211,6 +4211,7 @@ describe('pool connect while closing', () => {
       }), pool)
     })
     assert.ok(calls[0] instanceof sql.ConnectionError, 'connect() should call back with a ConnectionError while the pool is closing')
+    assert.strictEqual(calls[0].code, 'ECLOSING')
     assert.strictEqual(calls[0].message, 'Cannot connect a pool while it is closing')
 
     // had the refused callback been queued as well, the next connect() would call it again
@@ -4243,6 +4244,25 @@ describe('pool connect while closing', () => {
     assert.strictEqual(replacement.numUsed(), 1, 'the pool that replaced the closed one should still lend its connections')
     replacement.release(borrowed)
     await replacement.destroy()
+  })
+})
+
+describe('pool close while connecting', () => {
+  it('should refuse to close while the pool is connecting', async () => {
+    const pool = new BasePool({})
+    let created
+    pool._poolCreate = () => new Promise(resolve => { created = resolve })
+    pool._poolValidate = () => true
+    pool._poolDestroy = () => Promise.resolve()
+    const connecting = pool.connect()
+
+    await assert.rejects(pool.close(), { name: 'ConnectionError', code: 'ECONNECTING', message: 'Cannot close a pool while it is connecting' },
+      'close() should be refused while the pool is connecting')
+
+    created({})
+    await connecting
+    assert.strictEqual(pool.connected, true, 'the refused close() should leave the pool to connect')
+    await pool.close()
   })
 })
 
