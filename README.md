@@ -23,7 +23,7 @@ npm install mssql
 npm install mssql msnodesqlv8
 ```
 
-msnodesqlv8 6 needs Node.js 22 or later. On an older Node.js, install msnodesqlv8 5 (`npm install mssql msnodesqlv8@5`).
+msnodesqlv8 6 needs Node.js 22 or later. On an older Node.js, install msnodesqlv8 5 (`npm install mssql msnodesqlv8@5`). With msnodesqlv8 6, use its latest release, 6.2.1 or later: 6.0.0 to 6.2.0 keep hold of the connection of a stream that is paused after it is cancelled.
 
 ## SQL Server prerequisites
 

@@ -3596,11 +3596,11 @@ module.exports = (sql, driver) => {
 
     'cancelling a stream and then pausing it' (pauseAt, cancelsRunningQueries, done) {
       // a stream cancelled while it flows, and paused straight after or a few rows later, as the
-      // stream it is piped into can pause it: msnodesqlv8 6 never ends a query that is paused once
-      // it has been sent a cancel, and the query keeps its connection. With one connection in the
-      // pool, not checked when it is lent out again, the query that follows the stream runs on
-      // the connection the stream had. A driver that cannot cancel a running query lets the stream
-      // run to its end once it is resumed
+      // stream it is piped into can pause it: msnodesqlv8 6.0.0 to 6.2.0 never end a query that is
+      // paused once it has been sent a cancel, and the query keeps its connection. With one
+      // connection in the pool, not checked when it is lent out again, the query that follows the
+      // stream runs on the connection the stream had. A driver that cannot cancel a running query
+      // lets the stream run to its end once it is resumed
       const config = readConfig()
       config.driver = driver
       config.pool = { max: 1, min: 0 }
