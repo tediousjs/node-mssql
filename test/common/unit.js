@@ -5284,3 +5284,81 @@ describe('prepared statement unprepare failures', () => {
     assert.ok(destroyed.includes(connection), 'the pool should destroy the connection as it closes')
   })
 })
+
+describe('msnodesqlv8 connection pool', () => {
+  const Module = require('node:module')
+  const ConnectionError = require('../../lib/error/connection-error')
+
+  // msnodesqlv8 is a native module that only the Windows CI jobs install, so a bare object
+  // stands in for it, and each test gives it the open() that the pool connects with
+  const STUB = 'msnodesqlv8-stub'
+  const POOL = require.resolve('../../lib/msnodesqlv8/connection-pool')
+  const driver = {}
+  let resolveFilename
+  let ConnectionPool
+
+  before(() => {
+    resolveFilename = Module._resolveFilename
+    Module._resolveFilename = function (request, ...rest) {
+      return request === 'msnodesqlv8' ? STUB : resolveFilename.call(this, request, ...rest)
+    }
+    require.cache[STUB] = { id: STUB, filename: STUB, loaded: true, exports: driver }
+    delete require.cache[POOL]
+    ConnectionPool = require(POOL)
+  })
+
+  after(() => {
+    Module._resolveFilename = resolveFilename
+    delete require.cache[STUB]
+    delete require.cache[POOL]
+    delete driver.open
+  })
+
+  // stands in for an msnodesqlv8 connection, and records what the pool calls on it;
+  // msnodesqlv8 added setUseNumericString() in 2.4.8
+  const connection = ({ numericString }) => {
+    const calls = []
+    const tds = {
+      calls,
+      setUseUTC: useUTC => calls.push(['setUseUTC', useUTC]),
+      close: callback => {
+        calls.push(['close'])
+        setImmediate(callback, null)
+      }
+    }
+    if (numericString) {
+      tds.setUseNumericString = value => calls.push(['setUseNumericString', value])
+    }
+    return tds
+  }
+
+  // msnodesqlv8 calls back from open() on a later tick
+  const opens = tds => {
+    driver.open = (cfg, callback) => setImmediate(callback, null, tds)
+  }
+
+  it('should refuse to connect with an msnodesqlv8 older than 2.4.8, and close its connection', async () => {
+    const tds = connection({ numericString: false })
+    opens(tds)
+    const pool = new ConnectionPool({ server: 'localhost' })
+
+    await assert.rejects(pool.connect(), err => {
+      assert.ok(err instanceof ConnectionError, `the rejection should be a ConnectionError, got ${err.name}`)
+      assert.strictEqual(err.code, 'EDRIVER', 'the rejection should have the code for a driver that cannot be used')
+      assert.strictEqual(err.message, 'msnodesqlv8 2.4.8 or later is required.', 'the rejection should say which msnodesqlv8 is required')
+      return true
+    })
+    assert.deepStrictEqual(tds.calls, [['close']], 'the pool should close the connection, and call nothing else on it')
+    assert.strictEqual(pool.connected, false, 'the pool should be left unconnected')
+  })
+
+  it('should ask msnodesqlv8 2.4.8 or later for numbers as strings', async () => {
+    const tds = connection({ numericString: true })
+    opens(tds)
+    const pool = new ConnectionPool({ server: 'localhost', options: { useUTC: false } })
+
+    await pool.connect()
+    await pool.close()
+    assert.deepStrictEqual(tds.calls, [['setUseNumericString', true], ['setUseUTC', false], ['close']], 'the pool should ask for numbers as strings and set useUTC on the connection, then close it once it has checked it')
+  })
+})
