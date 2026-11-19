@@ -834,6 +834,12 @@ __Errors__
 
 Close all active connections in the pool.
 
+`close()` waits for running requests, open transactions and prepared statements to release their connections back to the pool. This wait has no timeout.
+
+After you call `close()`, `pool.connected` is `false`. New work then fails with `ECONNCLOSED` (`ConnectionError`): new requests (on the pool or on an open transaction), `begin()`, `prepare()` and a prepared statement's `execute()`.
+
+A prepared statement or a transaction can still release its connection while the pool closes: `unprepare()`, `commit()` and `rollback()` work as usual. `close()` does not complete until every prepared statement is unprepared and every transaction has ended.
+
 __Example__
 
 ```javascript
