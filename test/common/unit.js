@@ -5245,6 +5245,22 @@ describe('a transaction the server rolls back (tedious)', () => {
       assert.strictEqual(lent, second, 'the transaction should lend the connection it has begun again on')
     })
   }
+
+  it('should let the pool close while a statement prepared in it is still prepared', async () => {
+    const pool = new BasePool({})
+    pool._poolCreate = () => Promise.resolve(connect())
+    pool._poolValidate = () => true
+    pool._poolDestroy = () => Promise.resolve()
+    await pool.connect()
+    const { holder: ps, connection } = await beginAndAbort(pool, prepare)
+
+    // the transaction has given the connection back, so the close does not wait for the statement
+    await within(pool.close(), 'the close should not wait for the statement')
+    assert.strictEqual(ps.prepared, true, 'the statement should still be prepared when the close completes')
+    await within(ps.unprepare(), 'unprepare() should end')
+    assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+    assert.deepStrictEqual(connection.sent, [], 'nothing should be sent on the connection the transaction gave back')
+  })
 })
 
 describe('prepared statement unprepare failures', () => {
