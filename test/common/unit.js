@@ -1893,6 +1893,27 @@ describe('connection string auth - tedious', () => {
           }
         })
       }
+
+      it('should keep the error of a prepared statement as the reason for the EABORT error of its next execute()', async () => {
+        const tx = new TediousTransaction(lend(connect()))
+        await tx.begin()
+        const ps = await prepare(tx)
+
+        let reason
+        await assert.rejects(ps.execute({}), err => {
+          assert.strictEqual(err.number, 8134)
+          reason = err
+          return true
+        })
+
+        // the transaction has given its connection back, so the statement does not use it again
+        await assert.rejects(ps.execute({}), err => {
+          assert.ok(err instanceof sql.TransactionError, `execute() should reject with a TransactionError, got ${err.name}`)
+          assert.strictEqual(err.code, 'EABORT')
+          assert.strictEqual(err.originalError, reason, `execute() should give the server error as originalError, got ${err.originalError}`)
+          return true
+        })
+      })
     })
   })
 })
