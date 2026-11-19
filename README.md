@@ -1638,6 +1638,8 @@ ps.prepare('select @param as value', err => {
 **TIP**: To learn more about how number of affected rows works, see section [Affected Rows](#affected-rows).
 
 __Errors__
+- ENOCONN (`PreparedStatementError`) - No connection is specified for that prepared statement.
+- ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTPREPARED (`PreparedStatementError`) - Statement is not prepared.
 - ETIMEOUT (`RequestError`) - Request timeout.
 - EREQUEST (`RequestError`) - *Message from SQL Server*
