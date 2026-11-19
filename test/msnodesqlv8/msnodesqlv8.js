@@ -140,6 +140,7 @@ describe('msnodesqlv8', function () {
     it('transaction with commit', done => TESTS['transaction with commit'](done))
     it('commit rejects when the server has already ended the transaction', done => TESTS['commit or rollback rejects when the server has already ended the transaction']('commit', done))
     it('rollback rejects when the server has already ended the transaction', done => TESTS['commit or rollback rejects when the server has already ended the transaction']('rollback', done))
+    it.skip('abort reason when a prepared statement has the server roll the transaction back (not supported by msnodesqlv8)', done => TESTS['abort reason when a prepared statement has the server roll the transaction back'](config(), done))
     it('rollback while a request is in progress reports a rollback error', done => TESTS['rollback while a request is in progress reports a rollback error'](done))
     it('transaction throws on bad isolation level', done => TESTS['transaction throws on bad isolation level'](done))
     it('transaction accepts good isolation levels', done => TESTS['transaction accepts good isolation levels'](done))

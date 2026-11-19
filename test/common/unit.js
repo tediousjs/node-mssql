@@ -1816,6 +1816,74 @@ describe('connection string auth - tedious', () => {
         done()
       })
     })
+
+    describe('tedious, when the server rolls the transaction back', () => {
+      const { EventEmitter } = require('node:events')
+      const TediousTransaction = require('../../lib/tedious/transaction')
+
+      const MESSAGE = 'Divide by zero error encountered.'
+
+      before(() => { sql.Promise = Promise })
+
+      // stands in for a tedious connection on which each request fails with a server error
+      // that has the server roll the transaction back
+      const connect = () => {
+        const connection = new EventEmitter()
+        const fail = request => setImmediate(() => {
+          connection.emit('errorMessage', { message: MESSAGE, number: 8134, state: 1, class: 16 })
+          connection.emit('rollbackTransaction')
+          request.callback(new Error(MESSAGE))
+        })
+        return Object.assign(connection, {
+          beginTransaction (callback) { setImmediate(callback) },
+          callProcedure: fail,
+          execSql: fail
+        })
+      }
+
+      const lend = connection => {
+        const pool = new BasePool({})
+        pool._connected = true
+        pool._acquire = () => Promise.resolve(connection)
+        pool.release = () => pool
+        return pool
+      }
+
+      // leaves the statement as prepare() does: holding the connection of the transaction
+      const prepare = tx => new Promise((resolve, reject) => {
+        const ps = new sql.PreparedStatement(tx)
+        tx.acquire(ps, (err, connection, config) => {
+          if (err) return reject(err)
+          ps._acquiredConnection = connection
+          ps._acquiredConfig = config
+          ps._handle = 1
+          ps.prepared = true
+          resolve(ps)
+        })
+      })
+
+      const RUNNERS = [
+        ['a request', tx => tx.request().query('select 1 / 0')],
+        ['a request of a prepared statement', tx => prepare(tx).then(ps => ps.execute({}))]
+      ]
+
+      for (const [runner, run] of RUNNERS) {
+        it(`should keep the error of ${runner} as the reason for the EABORT error`, async () => {
+          const tx = new TediousTransaction(lend(connect()))
+          await tx.begin()
+
+          await assert.rejects(run(tx), { message: MESSAGE })
+
+          for (const method of ['commit', 'rollback']) {
+            await assert.rejects(tx[method](), err => {
+              assert.strictEqual(err.code, 'EABORT')
+              assert.strictEqual(err.originalError && err.originalError.message, MESSAGE, `${method}() should give the server error as originalError`)
+              return true
+            })
+          }
+        })
+      }
+    })
   })
 })
 
