@@ -5326,6 +5326,41 @@ describe('prepared statement unprepare failures', () => {
     })
   }
 
+  // the server rolls the transaction back after the first call passes its checks, but before its
+  // sp_unprepare request borrows the connection. The second call then unprepares the statement
+  // without the connection, so the request of the first call finds no connection to borrow
+  it('should change nothing when unprepare() finds no connection because another call has unprepared the statement', async () => {
+    const sent = []
+    const connection = connect(req => {
+      sent.push(req.sqlTextOrProcedure)
+      UNPREPARES(req)
+    })
+    const pool = lend(connection)
+    const tx = new sql.Transaction(pool)
+    await tx.begin()
+    const ps = new sql.PreparedStatement(tx)
+    await ps.prepare('select 1')
+    const given = []
+    const release = tx.release.bind(tx)
+    tx.release = held => {
+      given.push(held)
+      return release(held)
+    }
+
+    const first = ps.unprepare()
+    connection.emit('rollbackTransaction')
+    const second = ps.unprepare()
+    const results = await within(Promise.allSettled([first, second]), 'both calls should end')
+    assert.deepStrictEqual(results.map(result => result.reason?.code), ['ENOTPREPARED', undefined], 'the first call should be refused with ENOTPREPARED, and the second should succeed')
+    assert.ok(results[0].reason instanceof sql.PreparedStatementError, `the rejection should be a PreparedStatementError, got ${results[0].reason?.name}`)
+    assert.deepStrictEqual(sent, [], 'sp_unprepare should not be sent')
+    assert.deepStrictEqual(given, [], 'the statement should give nothing back to the transaction')
+    assert.deepStrictEqual(pool.returned, [{ hasError: false }], 'the transaction should give the connection back to the pool once, as it was')
+    assert.strictEqual(connection.hasError, false, 'the connection should not be marked as failed')
+    assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+    await assert.rejects(ps.execute({}), { code: 'ENOTPREPARED' })
+  })
+
   it('should give the connection back once, and let the pool close, when unprepare() is called twice as the pool closes', async () => {
     const destroyed = []
     const returned = []
