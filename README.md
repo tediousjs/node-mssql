@@ -837,11 +837,13 @@ __Errors__
 
 Close all active connections in the pool.
 
-`close()` waits for running requests, open transactions and prepared statements to release their connections back to the pool. This wait has no timeout.
+`close()` waits for running requests, open transactions and prepared statements to release their connections back to the pool. This wait has no timeout. A request on the pool, `begin()` or `prepare()` that waits for a free connection does not get one, even if you called it before `close()`. It fails before `close()` completes, or earlier if its wait for a connection times out (`pool.acquireTimeoutMillis`, default `30000`). This error does not always have a `code`.
 
 After you call `close()`, `pool.connected` is `false`. New work then fails with `ECONNCLOSED` (`ConnectionError`): new requests (on the pool or on an open transaction), `begin()`, `prepare()` and a prepared statement's `execute()`.
 
-A prepared statement or a transaction can still release its connection while the pool closes: `unprepare()`, `commit()` and `rollback()` work as usual. `close()` does not complete until every prepared statement is unprepared and every transaction has ended.
+A prepared statement or a transaction can still release its connection while the pool closes: `unprepare()`, `commit()` and `rollback()` work as usual. `close()` does not complete until every prepared statement is unprepared and every transaction has ended. With tedious, if the server rolls back a transaction, `close()` does not wait for the statements prepared in it (see [Prepared Statement](#prepared-statement)).
+
+Until `close()` is complete, `connect()` rejects with `ECLOSING`. Thus a prepared statement that you do not unprepare, or a transaction that you do not end, stops the pool from connecting again. To connect while `close()` waits, create a new `ConnectionPool`.
 
 __Example__
 
