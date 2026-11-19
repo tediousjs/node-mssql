@@ -33,6 +33,16 @@ const handBackUnhandledErrors = () => {
   mochaListeners = null
 }
 
+// waits for `promise`, and fails with `message` if it does not settle within `ms`, so a test
+// whose wait never ends fails at once and does not wait for mocha's timeout
+const within = (promise, message, ms = 1000) => {
+  let timer
+  const timeout = new Promise((resolve, reject) => {
+    timer = setTimeout(reject, ms, new Error(message))
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
+}
+
 describe('Unit', () => {
   it('table', done => {
     let t = new sql.Table('MyTable')
@@ -4624,6 +4634,70 @@ describe('pool acquire', () => {
     await new Promise(resolve => setImmediate(resolve))
     assert.deepStrictEqual(calls, [[null, connection, pool.config]], 'the callback should be called once, with the connection')
   })
+})
+
+describe('pool connect while connected or connecting', () => {
+  // the pool connects with plain objects, so it needs no server
+  const stubPool = createConnection => {
+    const pool = new BasePool({})
+    pool._poolCreate = createConnection
+    pool._poolValidate = () => true
+    pool._poolDestroy = () => Promise.resolve()
+    return pool
+  }
+
+  it('should resolve with the pool and not connect again when the pool is connected', async () => {
+    let probes = 0
+    const pool = stubPool(() => {
+      probes++
+      return Promise.resolve({})
+    })
+    try {
+      await within(pool.connect(), 'connect() should settle')
+      assert.strictEqual(await within(pool.connect(), 'connect() should settle'), pool, 'connect() should resolve with the connected pool')
+      const args = await within(new Promise(resolve => pool.connect((...args) => resolve(args))), 'connect() should settle')
+      assert.strictEqual(args[0], null, 'the connect() callback should get no error')
+      assert.strictEqual(args[1], pool, 'the connect() callback should get the connected pool')
+      assert.strictEqual(probes, 1, 'connect() should not make a probe connection for a connected pool')
+    } finally {
+      // a pool that is still connecting refuses to close, and that error would hide the first one
+      if (!pool.connecting) await pool.close()
+    }
+  })
+
+  for (const fails of [false, true]) {
+    it(`should give a connect() made while the pool is connecting the ${fails ? 'error' : 'pool'} of the first connect()`, async () => {
+      const failure = new Error('Login failed')
+      let probes = 0
+      let finishProbe
+      const pool = stubPool(() => {
+        probes++
+        return new Promise((resolve, reject) => {
+          finishProbe = fails ? () => reject(failure) : () => resolve({})
+        })
+      })
+      try {
+        const first = pool.connect()
+        const second = pool.connect()
+        finishProbe()
+        const results = await within(Promise.allSettled([first, second]), 'connect() should settle')
+        for (const [i, result] of results.entries()) {
+          assert.strictEqual(result.status, fails ? 'rejected' : 'fulfilled', `connect() call ${i + 1} should ${fails ? 'reject' : 'resolve'}`)
+          if (fails) {
+            assert.strictEqual(result.reason, failure, `connect() call ${i + 1} should reject with the probe error`)
+          } else {
+            assert.strictEqual(result.value, pool, `connect() call ${i + 1} should resolve with the pool`)
+          }
+        }
+        assert.strictEqual(probes, 1, 'the second connect() should not make another probe connection')
+        assert.strictEqual(pool.connected, !fails)
+        assert.strictEqual(pool.connecting, false, 'the pool should stop connecting')
+      } finally {
+        // a pool that is still connecting refuses to close, and that error would hide the first one
+        if (!pool.connecting) await pool.close()
+      }
+    })
+  }
 })
 
 describe('pool connect while closing', () => {
