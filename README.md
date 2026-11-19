@@ -803,6 +803,8 @@ const pool = new sql.ConnectionPool({ /* config */ })
 
 Create a new connection pool. The initial probe connection is created to find out whether the configuration is valid.
 
+If the pool is already connected, `connect()` resolves with the pool. If the pool is connecting, `connect()` waits for the connection attempt in progress and gets its result.
+
 While a `close()` is in progress, `connect()` rejects with `ECLOSING`. Wait for `close()` to finish before you connect the pool again, or create a new `ConnectionPool`.
 
 __Arguments__
@@ -827,8 +829,6 @@ pool.connect(err => {
 __Errors__
 - ELOGIN (`ConnectionError`) - Login failed.
 - ETIMEOUT (`ConnectionError`) - Connection timeout.
-- EALREADYCONNECTED (`ConnectionError`) - Database is already connected!
-- EALREADYCONNECTING (`ConnectionError`) - Already connecting to database!
 - EINSTLOOKUP (`ConnectionError`) - Instance lookup failed.
 - ESOCKET (`ConnectionError`) - Socket error.
 - ECLOSING (`ConnectionError`) - Cannot connect a pool while it is closing.
@@ -2252,8 +2252,6 @@ Name | Code | Message
 `ConnectionError` | ELOGIN | Login failed.
 `ConnectionError` | ETIMEOUT | Connection timeout.
 `ConnectionError` | EDRIVER | Unknown driver, or a driver version that is not supported.
-`ConnectionError` | EALREADYCONNECTED | Database is already connected!
-`ConnectionError` | EALREADYCONNECTING | Already connecting to database!
 `ConnectionError` | ENOTOPEN | Connection not yet open.
 `ConnectionError` | EINSTLOOKUP | Instance lookup failed.
 `ConnectionError` | ESOCKET | Socket error.
