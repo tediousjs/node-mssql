@@ -869,6 +869,77 @@ describe('connection string encrypt option', () => {
   })
 })
 
+describe('connection string empty values', () => {
+  const keys = [
+    'Connection Timeout',
+    'ConnectRetryInterval',
+    'Encrypt',
+    'Max Pool Size',
+    'Min Pool Size',
+    'MultiSubnetFailover',
+    'Packet Size',
+    'ParseJSON',
+    'Request Timeout',
+    'Stream',
+    'TrustServerCertificate',
+    'UseUTC'
+  ]
+
+  for (const key of keys) {
+    it(`parses an empty ${key} the same as a left-out ${key}`, () => {
+      const expected = BasePool._parseConnectionString('Server=localhost')
+      assert.deepStrictEqual(BasePool._parseConnectionString(`Server=localhost;${key}=`), expected)
+      assert.deepStrictEqual(BasePool._parseConnectionString(`Server=localhost;${key}={ }`), expected)
+    })
+  }
+
+  it('parses the pair after an empty number value', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Packet Size=;Database=db')
+    assert.strictEqual('packetSize' in config.options, false)
+    assert.strictEqual(config.database, 'db')
+  })
+
+  it('uses the tedious default when UseUTC is empty', () => {
+    const config = new ConnectionPool('Server=localhost;UseUTC=')._config()
+    assert.strictEqual('useUTC' in config.options, false)
+  })
+
+  it('parses Connection Timeout=30 as 30000 ms', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Connection Timeout=30')
+    assert.strictEqual(config.connectionTimeout, 30000)
+  })
+
+  it('parses ConnectRetryInterval=5 as 5000 ms', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;ConnectRetryInterval=5')
+    assert.strictEqual(config.options.connectionRetryInterval, 5000)
+  })
+
+  it('parses Max Pool Size=5 and Min Pool Size=2', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Max Pool Size=5;Min Pool Size=2')
+    assert.deepStrictEqual(config.pool, { max: 5, min: 2 })
+  })
+
+  it('parses MultiSubnetFailover=true as true', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;MultiSubnetFailover=true')
+    assert.strictEqual(config.options.multiSubnetFailover, true)
+  })
+
+  it('parses Packet Size=4096 as 4096', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Packet Size=4096')
+    assert.strictEqual(config.options.packetSize, 4096)
+  })
+
+  it('parses Request Timeout=30000 as 30000', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Request Timeout=30000')
+    assert.strictEqual(config.requestTimeout, 30000)
+  })
+
+  it('parses TrustServerCertificate=true as true', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;TrustServerCertificate=true')
+    assert.strictEqual(config.options.trustServerCertificate, true)
+  })
+})
+
 describe('connection string auth - base', () => {
   it('parses basic login', () => {
     const config = BasePool._parseConnectionString('Server=database.test.com;Database=test;User Id=test;Password=admin')
