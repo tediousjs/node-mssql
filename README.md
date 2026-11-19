@@ -675,6 +675,8 @@ Server=localhost,1433;Database=database;User Id=username;Password=password;Encry
 Driver=msnodesqlv8;Server=(local)\INSTANCE;Database=database;UID=DOMAIN\username;PWD=password;Encrypt=true
 ```
 
+`Encrypt` takes a boolean value (`true`, `yes` or `1` to encrypt, and `false`, `no` or `0` to not encrypt), or `strict` in any case. `Encrypt=strict` sets `options.encrypt` to `'strict'`, which turns on TDS 8.0 strict encryption with the [tedious](#tedious) and [MSNodeSQLv8](#msnodesqlv8) drivers.
+
 ##### Azure Active Directory Authentication Connection String
 
 Several types of Azure Authentication are supported:
@@ -726,7 +728,7 @@ require('mssql').connect({...config, beforeConnect: conn => {
 ```
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1434 on the database server must be reachable.
 - **options.useUTC** - A boolean determining whether or not use UTC time for values without time zone offset (default: `true`).
-- **options.encrypt** - A boolean determining whether or not the connection will be encrypted (default: `true`).
+- **options.encrypt** - A boolean determining whether or not the connection will be encrypted, or `'strict'` to use TDS 8.0 strict encryption (default: `true`). In a connection string, `Encrypt=strict` sets `'strict'`.
 - **options.tdsVersion** - The version of TDS to use (default: `7_4`, available: `7_1`, `7_2`, `7_3_A`, `7_3_B`, `7_4`).
 - **options.appName** - Application name used for SQL server logging.
 - **options.abortTransactionOnError** - A boolean determining whether to rollback a transaction automatically if any error is encountered during the given transaction's execution. This sets the value for `XACT_ABORT` during the initial SQL phase of a connection.
@@ -765,6 +767,7 @@ msnodesqlv8 5 and earlier round `float` and `real` values, and `decimal` values 
 - **connectionString** - Connection string (default: see below).
 - **options.instanceName** - The instance name to connect to. The SQL Server Browser service must be running on the database server, and UDP port 1444 on the database server must be reachable.
 - **options.trustedConnection** - Use Windows Authentication (default: `false`).
+- **options.encrypt** - A boolean determining whether or not the connection will be encrypted, or `'strict'` to use TDS 8.0 strict encryption (default: `false`). `'strict'` writes `Encrypt=Strict` to the connection string, which needs ODBC Driver 18 or later, so set `driver` to that driver, for example `driver: 'ODBC Driver 18 for SQL Server'`.
 - **options.useUTC** - A boolean determining whether or not to use UTC time for values without time zone offset (default: `true`).
 
 Default connection string when connecting to port:
