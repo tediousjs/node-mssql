@@ -4797,6 +4797,56 @@ describe('pool connect while closing', () => {
   })
 })
 
+describe('pool close while an acquire waits', () => {
+  // the pool lends plain objects, so it can connect and close without a server
+  const connectedPool = config => {
+    const pool = new BasePool(config)
+    pool._poolCreate = () => Promise.resolve({})
+    pool._poolValidate = () => true
+    pool._poolDestroy = () => Promise.resolve()
+    return pool.connect()
+  }
+
+  it('should fail an acquire that waits for a connection before the close completes', async () => {
+    const pool = await connectedPool({ pool: { max: 1 } })
+    const emitted = []
+    pool.on('error', err => emitted.push(err))
+    const connection = await pool.acquire({})
+    const events = []
+    // the acquire is made before the close, and waits for the borrowed connection
+    const waiting = pool.acquire({}).then(() => events.push('acquired'), err => {
+      events.push('rejected')
+      return err
+    })
+    const closing = pool.close().then(() => events.push('closed'))
+
+    await new Promise(resolve => setTimeout(resolve, 20))
+    assert.deepStrictEqual(events, [], 'the acquire should wait while the close waits for the borrowed connection')
+    pool.release(connection)
+    await within(closing, 'the close should finish once the connection is back')
+    assert.deepStrictEqual(events, ['rejected', 'closed'], 'the acquire should fail before the close completes')
+    assert.deepStrictEqual(emitted, [await waiting], 'the pool should emit the error of the acquire')
+  })
+
+  it('should fail an acquire that waits for a connection when it times out, while the close still waits', async () => {
+    const tarn = require('tarn')
+    const pool = await connectedPool({ pool: { max: 1, acquireTimeoutMillis: 20 } })
+    pool.on('error', () => {})
+    const connection = await pool.acquire({})
+    // the acquire is made before the close, and waits for the borrowed connection
+    const waiting = pool.acquire({})
+    let closed = false
+    const closing = pool.close().then(() => { closed = true })
+    try {
+      await assert.rejects(within(waiting, 'the acquire should time out'), err => err instanceof tarn.TimeoutError)
+      assert.strictEqual(closed, false, 'the close should still wait for the borrowed connection')
+    } finally {
+      pool.release(connection)
+      await within(closing, 'the close should finish once the connection is back')
+    }
+  })
+})
+
 describe('pool close while connecting', () => {
   it('should refuse to close while the pool is connecting', async () => {
     const pool = new BasePool({})
