@@ -127,6 +127,58 @@ module.exports = (sql, driver) => {
     }
   }
 
+  // prepares a statement in a transaction, has the server roll the transaction back, and then
+  // has the next caller get the connection: another transaction, or with `beginsAgain` the same
+  // transaction begun again
+  const preparedStatementInTransactionTheServerRollsBack = (config, beginsAgain, done) => {
+    // with one connection in the pool, the connection that the transaction gives back is
+    // the one that the next caller gets
+    const pool = new sql.ConnectionPool(Object.assign({}, config, {
+      pool: { min: 0, max: 1, acquireTimeoutMillis: 5000 },
+      options: Object.assign({}, config.options, { abortTransactionOnError: true })
+    }))
+    pool.connect().then(async () => {
+      const tran = new sql.Transaction(pool)
+      await tran.begin()
+      const ps = new sql.PreparedStatement(tran)
+      ps.input('divisor', sql.Int)
+      await ps.prepare('select 1 / @divisor as quotient')
+      const handle = ps._handle
+
+      // the error has the server roll the transaction back
+      await assert.rejects(ps.execute({ divisor: 0 }), { code: 'EREQUEST' })
+
+      const next = beginsAgain ? tran : new sql.Transaction(pool)
+      await next.begin()
+      try {
+        await assert.rejects(ps.execute({ divisor: 1 }), err => {
+          assert.ok(err instanceof sql.TransactionError, `execute() should reject with a TransactionError, got ${err}`)
+          assert.strictEqual(err.code, 'EABORT')
+          return true
+        }, 'the statement should not run in the transaction that now has the connection')
+        await ps.unprepare()
+        assert.strictEqual(ps.prepared, false, 'unprepare() should release the statement')
+        // the handle is still allocated, so unprepare() did not free it on the session, and the
+        // transaction that now has the connection can still use it
+        const result = await next.request().input('handle', sql.Int, handle).query('select @@trancount as trancount; exec sp_execute @handle, 1')
+        assert.strictEqual(result.recordsets[0][0].trancount, 1, 'the transaction that now has the connection should still be open')
+        assert.strictEqual(result.recordsets[1][0].quotient, 1)
+      } finally {
+        // an assertion that failed above may have had the server roll this back too
+        await next.rollback().catch(() => {})
+      }
+
+      await tran.begin()
+      const result = await tran.request().query('select @@trancount as trancount')
+      assert.strictEqual(result.recordset[0].trancount, 1, 'the transaction should begin again')
+      await tran.commit()
+    }).then(() => pool.close()).then(() => done(), err => {
+      // reported first, as closing the pool waits for a connection that is still lent out
+      done(err)
+      pool.close().catch(() => {})
+    })
+  }
+
   return {
     'config validation' (done) {
       const config = {
@@ -1837,6 +1889,14 @@ module.exports = (sql, driver) => {
           }).catch(done)
         }).catch(done)
       }).catch(done)
+    },
+
+    'prepared statement in a transaction the server rolls back' (config, done) {
+      preparedStatementInTransactionTheServerRollsBack(config, false, done)
+    },
+
+    'prepared statement in a transaction the server rolls back, which then begins again' (config, done) {
+      preparedStatementInTransactionTheServerRollsBack(config, true, done)
     },
 
     'prepared statement with duplicate output column names' (done) {
