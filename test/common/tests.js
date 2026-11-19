@@ -2516,6 +2516,46 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'sql.close() during connect keeps the pool global' (config, done) {
+      const connecting = sql.connect(config)
+      sql.close().then(() => {
+        throw new Error('sql.close() should be refused while the global pool is connecting')
+      }, err => {
+        assert.ok(err instanceof sql.ConnectionError, 'sql.close() during connect should reject with a ConnectionError')
+        assert.strictEqual(err.message, 'Cannot close a pool while it is connecting')
+        return connecting
+      }).then(pool => {
+        return sql.query`select 1 as a`.then(result => {
+          assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'sql.query should use the pool sql.close() refused to close')
+          return sql.close()
+        }).then(() => {
+          assert.strictEqual(pool.connected, false, 'the next sql.close() should close that pool')
+        })
+      }).then(() => done()).catch(done)
+    },
+
+    'closing an old global pool leaves its replacement global' (config, done) {
+      let first
+      sql.connect(config).then(pool => {
+        first = pool
+        return sql.close()
+      }).then(() => sql.connect(config)).then(second => {
+        return first.close().then(() => sql.query`select 1 as a`).then(result => {
+          assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'sql.query should still use the pool that replaced the closed one')
+          assert.strictEqual(second.connected, true, 'closing the old pool should leave the new one connected')
+        })
+      }).then(() => done()).catch(done)
+    },
+
+    'sql.off() of the last handler leaves sql.connect() working' (config, done) {
+      const handler = () => {}
+      sql.on('error', handler)
+      sql.off('error', handler)
+      sql.connect(config).then(() => sql.query`select 1 as a`).then(result => {
+        assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'sql.connect() should still work once sql.off() has removed the last error handler')
+      }).then(() => done()).catch(done)
+    },
+
     'json parser' (done) {
       const req = new TestRequest()
       req.query("select 1 as 'a.b.c', 2 as 'a.b.d', 3 as 'a.x', 4 as 'a.y' for json path;select 5 as 'a.b.c', 6 as 'a.b.d', 7 as 'a.x', 8 as 'a.y' for json path;with n(n) as (select 1 union all select n  +1 from n where n < 1000) select n from n order by n option (maxrecursion 1000) for json auto;").then(result => {
