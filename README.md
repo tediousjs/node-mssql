@@ -1497,6 +1497,8 @@ You can execute multiple queries against the same prepared statement but you *mu
 
 **TIP**: You can also create prepared statements in transactions (`new sql.PreparedStatement(transaction)`), but keep in mind you can't execute other requests in the transaction until you call `unprepare`.
 
+If the server rolls back a transaction that has a prepared statement (for example, when `abortTransactionOnError` is on and a statement fails), the transaction gives its connection back to the pool, and the pool can lend it to another caller, or to the same transaction when it begins again. From then on, `execute` rejects with `EABORT` and doesn't use the connection. Still call `unprepare`: it releases the statement without sending anything to the server. The server keeps the statement's handle on that connection until the connection closes. The msnodesqlv8 driver can't tell when the server rolls a transaction back (see [Aborted transactions](#transaction)), so with msnodesqlv8 the statement keeps its connection.
+
 ---------------------------------------
 
 ### input (name, type)
@@ -1646,12 +1648,13 @@ __Errors__
 - EPARAM (`RequestError`) - A parameter value is not valid for its type.
 - ECANCEL (`RequestError`) - Cancelled.
 - EREQINPROG (`TransactionError`) - Can't acquire connection for the request. There is another request in progress.
+- EABORT (`TransactionError`) - The transaction that the statement was prepared in has been aborted.
 
 ---------------------------------------
 
 ### unprepare ([callback])
 
-Unprepare a prepared statement.
+Unprepare a prepared statement. If the server has rolled back the transaction that the statement was prepared in, `unprepare` releases the statement without sending anything to the server.
 
 __Arguments__
 

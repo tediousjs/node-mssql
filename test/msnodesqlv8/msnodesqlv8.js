@@ -134,6 +134,8 @@ describe('msnodesqlv8', function () {
     it('prepared statement parameters can be replaced', done => TESTS['prepared statement parameters can be replaced'](done))
     it('prepared statement with affected rows', done => TESTS['prepared statement with affected rows'](done))
     it('prepared statement in transaction', done => TESTS['prepared statement in transaction'](done))
+    it.skip('prepared statement in a transaction the server rolls back, which then begins again (not supported by msnodesqlv8)', done => TESTS['prepared statement in a transaction the server rolls back, which then begins again'](config(), done))
+    it.skip('prepared statement in a transaction the server rolls back (not supported by msnodesqlv8)', done => TESTS['prepared statement in a transaction the server rolls back'](config(), done))
     it('prepared statement with duplicate output column names', done => TESTS['prepared statement with duplicate output column names'](done))
     it('prepared statement with streaming and no callback', done => TESTS['prepared statement with streaming and no callback'](done))
     it('transaction with rollback', done => TESTS['transaction with rollback'](done))

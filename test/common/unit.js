@@ -4876,3 +4876,138 @@ describe('transaction begin failures', () => {
     }
   })
 })
+
+describe('a transaction the server rolls back (tedious)', () => {
+  const { EventEmitter } = require('node:events')
+  const Transaction = require('../../lib/tedious/transaction')
+  const TransactionError = require('../../lib/error/transaction-error')
+
+  before(() => { sql.Promise = Promise })
+
+  const tick = () => new Promise(resolve => setImmediate(resolve))
+
+  // stands in for a tedious connection that begins transactions, and notes each request sent
+  // on it, which then fails
+  const connect = () => Object.assign(new EventEmitter(), {
+    sent: [],
+    beginTransaction (callback) { setImmediate(callback) },
+    callProcedure (request) {
+      this.sent.push(request.sqlTextOrProcedure)
+      setImmediate(() => request.callback(new Error('sent on the connection')))
+    }
+  })
+
+  // a pool that lends `connections` in turn, and notes each one it gets back
+  const lend = (...connections) => {
+    const pool = new BasePool({})
+    pool._connected = true
+    pool.returned = []
+    pool._acquire = () => Promise.resolve(connections.shift())
+    pool.release = connection => {
+      pool.returned.push(connection)
+      return pool
+    }
+    return pool
+  }
+
+  const acquire = (tx, request) => new Promise((resolve, reject) => {
+    tx.acquire(request, (err, connection, config) => err ? reject(err) : resolve([connection, config]))
+  })
+
+  // begins a transaction and has `hold` borrow its connection, then has the server roll the
+  // transaction back
+  const beginAndAbort = async (pool, hold) => {
+    const tx = new Transaction(pool)
+    await tx.begin()
+    const connection = tx._acquiredConnection
+    const holder = await hold(tx)
+    connection.emit('rollbackTransaction')
+    // the transaction gives the connection back on the next tick
+    await tick()
+    return { tx, holder, connection }
+  }
+
+  // leaves the statement as prepare() does: holding the connection of the transaction
+  const prepare = async tx => {
+    const ps = new sql.PreparedStatement(tx)
+    const [connection, config] = await acquire(tx, ps)
+    ps._acquiredConnection = connection
+    ps._acquiredConfig = config
+    ps._handle = 1
+    ps.prepared = true
+    return ps
+  }
+
+  it('should reject execute() on a statement prepared in it with EABORT, and send nothing', async () => {
+    const pool = lend(connect())
+    const { holder: ps, connection } = await beginAndAbort(pool, prepare)
+
+    await assert.rejects(ps.execute({}), err => {
+      assert.ok(err instanceof TransactionError, `the rejection should be a TransactionError, got ${err.name}`)
+      assert.strictEqual(err.code, 'EABORT')
+      return true
+    })
+    assert.deepStrictEqual(connection.sent, [], 'nothing should be sent on the connection the transaction gave back')
+  })
+
+  it('should unprepare a statement prepared in it without sending anything', async () => {
+    const pool = lend(connect())
+    const { holder: ps, connection } = await beginAndAbort(pool, prepare)
+
+    await ps.unprepare()
+    assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+    assert.deepStrictEqual(connection.sent, [], 'nothing should be sent on the connection the transaction gave back')
+    assert.deepStrictEqual(pool.returned, [connection], 'the connection should go back to the pool once, when the transaction is rolled back')
+    await assert.rejects(ps.execute({}), { code: 'ENOTPREPARED' })
+  })
+
+  // has the server roll the transaction back while a statement is prepared in it, then begins
+  // the transaction again on the same connection, as a pool of one connection does, and has a
+  // request of the new transaction borrow the connection
+  const abortAndBeginAgain = async () => {
+    const connection = connect()
+    const pool = lend(connection, connection)
+    const { tx, holder: ps } = await beginAndAbort(pool, prepare)
+    await tx.begin()
+    const request = tx.request()
+    await acquire(tx, request)
+    return { pool, tx, ps, request, connection }
+  }
+
+  it('should reject execute() on a statement prepared in it with EABORT once it has begun again on the same connection', async () => {
+    const { ps, connection } = await abortAndBeginAgain()
+
+    await assert.rejects(ps.execute({}), err => {
+      assert.ok(err instanceof TransactionError, `the rejection should be a TransactionError, got ${err.name}`)
+      assert.strictEqual(err.code, 'EABORT')
+      return true
+    })
+    assert.deepStrictEqual(connection.sent, [], 'nothing should be sent on the connection of the new transaction')
+  })
+
+  it('should unprepare a statement prepared in it once it has begun again on the same connection, and leave the new transaction alone', async () => {
+    const { pool, tx, ps, request, connection } = await abortAndBeginAgain()
+
+    await ps.unprepare()
+    assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+    assert.deepStrictEqual(connection.sent, [], 'nothing should be sent on the connection of the new transaction')
+    assert.strictEqual(tx._acquiredConnection, connection, 'the new transaction should keep its connection')
+    assert.strictEqual(tx._activeRequest, request, 'the new transaction should still lend its connection to its own request')
+    assert.strictEqual(connection.hasError, undefined, 'the connection should not be marked to be closed')
+    assert.deepStrictEqual(pool.returned, [connection], 'the connection should go back to the pool once, when the transaction is rolled back')
+  })
+
+  for (const [holder, hold] of [['a request', tx => acquire(tx, tx.request())], ['a prepared statement', prepare]]) {
+    it(`should begin again when it was rolled back while ${holder} held its connection`, async () => {
+      const second = connect()
+      const pool = lend(connect(), second)
+      const { tx, connection } = await beginAndAbort(pool, hold)
+      // what the request does when it ends
+      tx.release(connection)
+
+      await tx.begin()
+      const [lent] = await acquire(tx, tx.request())
+      assert.strictEqual(lent, second, 'the transaction should lend the connection it has begun again on')
+    })
+  }
+})
