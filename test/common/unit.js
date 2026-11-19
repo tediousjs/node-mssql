@@ -5393,6 +5393,41 @@ describe('prepared statement unprepare failures', () => {
     })]).finally(() => clearTimeout(timer))
     assert.ok(destroyed.includes(connection), 'the pool should destroy the connection as it closes')
   })
+
+  for (const [failure, unprepare, code] of [['the connection has died', DIES, 'EINVALIDSTATE'], ['sp_unprepare times out', TIMES_OUT, 'ETIMEOUT']]) {
+    it(`should give the connection back, marked as failed, and let the pool close, when unprepare() is called as the pool closes and ${failure}`, async () => {
+      const destroyed = []
+      const returned = []
+      const pool = new ConnectionPool({ server: 'localhost', validateConnection: false })
+      pool._poolCreate = () => Promise.resolve(connect(unprepare))
+      pool._poolDestroy = connection => {
+        destroyed.push(connection)
+        return Promise.resolve()
+      }
+      await pool.connect()
+      const release = pool.release.bind(pool)
+      pool.release = connection => {
+        returned.push({ connection, hasError: connection.hasError })
+        return release(connection)
+      }
+      const ps = new sql.PreparedStatement(pool)
+      await ps.prepare('select 1')
+      const connection = ps._acquiredConnection
+
+      const closing = pool.close()
+      try {
+        // sp_unprepare runs while the pool closes, so the call ends with the error of sp_unprepare
+        await within(assert.rejects(ps.unprepare(), { code }), 'unprepare() should end')
+        assert.deepStrictEqual(returned, [{ connection, hasError: true }], 'the connection should go back to the pool once, marked as failed')
+        assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+        await within(closing, 'the pool should close once it has the connection back')
+        assert.ok(destroyed.includes(connection), 'the pool should destroy the connection as it closes')
+      } finally {
+        // if the statement still holds the connection, it is given back here, so that the pool can close
+        if (ps._acquiredConnection) release(ps._acquiredConnection)
+      }
+    })
+  }
 })
 
 describe('msnodesqlv8 connection pool', () => {
