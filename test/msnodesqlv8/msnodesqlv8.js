@@ -155,6 +155,14 @@ describe('msnodesqlv8', function () {
     it('calls to close during connection call back exactly once', done => TESTS['calls to close during connection call back exactly once'](config(), done))
     it('calls to connect during close throw', done => TESTS['calls to connect during close throw'](config(), done))
     it('calls to begin or prepare while the pool is not connected reject with ECONNCLOSED', done => TESTS['calls to begin or prepare while the pool is not connected reject with ECONNCLOSED'](config(), done))
+    for (const transactionEnd of [null, 'commit', 'rollback']) {
+      for (const callback of [false, true]) {
+        it(`unprepare while pool is closing (${transactionEnd || 'pool'}, ${callback ? 'callback' : 'promise'})`, done => TESTS['unprepare while pool is closing'](config(), transactionEnd, callback, done))
+      }
+    }
+    for (const transactionEnd of ['commit', 'rollback']) {
+      it(`${transactionEnd} transaction while pool is closing`, done => TESTS['finish transaction while pool is closing'](config(), transactionEnd, done))
+    }
     it('connection healthy works', done => TESTS['connection healthy works'](config(), done))
     it('healthy connection goes bad', done => TESTS['healthy connection goes bad'](config(), done))
     it('request timeout', done => TESTS['request timeout'](done))

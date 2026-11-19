@@ -2319,6 +2319,82 @@ module.exports = (sql, driver) => {
       ).then(() => done(), done)
     },
 
+    'unprepare while pool is closing' (config, transactionEnd, useCallback, done) {
+      const pool = new sql.ConnectionPool(config)
+      const transaction = transactionEnd ? new sql.Transaction(pool) : null
+      const statement = new sql.PreparedStatement(transaction || pool)
+      let closing
+      let closed = false
+      let unprepareCallbacks = 0
+
+      pool.connect().then(() => transaction && transaction.begin()).then(() => {
+        return statement.prepare('select 1 as value')
+      }).then(() => {
+        closing = pool.close().then(() => { closed = true })
+        assert.strictEqual(pool.connected, false)
+        return Promise.all([
+          assert.rejects(statement.execute({}), { code: 'ECONNCLOSED' }),
+          assert.rejects(pool.request().query('select 2'), { code: 'ECONNCLOSED' }),
+          assert.rejects(new sql.Transaction(pool).begin(), { code: 'ECONNCLOSED' }),
+          assert.rejects(new sql.PreparedStatement(pool).prepare('select 2'), { code: 'ECONNCLOSED' })
+        ])
+      }).then(() => {
+        assert.strictEqual(closed, false, 'close should wait for the prepared statement')
+        if (transaction) {
+          return assert.rejects(transaction[transactionEnd](), { code: 'EREQINPROG' })
+        }
+      }).then(() => {
+        if (!useCallback) return statement.unprepare()
+        return new Promise((resolve, reject) => {
+          statement.unprepare(err => {
+            unprepareCallbacks++
+            return err ? reject(err) : resolve()
+          })
+        })
+      }).then(() => {
+        assert.strictEqual(statement.prepared, false)
+        assert.strictEqual(statement._acquiredConnection, null)
+        if (transaction) return transaction[transactionEnd]()
+      }).then(() => closing).then(() => {
+        assert.strictEqual(closed, true, 'unprepare should let close finish')
+        assert.strictEqual(unprepareCallbacks, useCallback ? 1 : 0)
+        return assert.rejects(statement.unprepare(), { code: 'ENOTPREPARED' })
+      }).then(() => done(), err => {
+        // On a regression, close cannot finish until the held connection is returned.
+        if (statement._acquiredConnection) statement.parent.release(statement._acquiredConnection)
+        if (transaction && transaction._acquiredConnection) pool.release(transaction._acquiredConnection)
+        pool.close().then(() => done(err), () => done(err))
+      })
+    },
+
+    'finish transaction while pool is closing' (config, transactionEnd, done) {
+      const pool = new sql.ConnectionPool(config)
+      const transaction = new sql.Transaction(pool)
+      let closing
+      let closed = false
+
+      pool.connect().then(() => {
+        return pool.request().query('delete from tran_test where data = \'shutdown\'')
+      }).then(() => transaction.begin()).then(() => {
+        return transaction.request().query('insert into tran_test values (\'shutdown\')')
+      }).then(() => {
+        closing = pool.close().then(() => { closed = true })
+        return assert.rejects(transaction.request().query('select 2'), { code: 'ECONNCLOSED' })
+      }).then(() => {
+        assert.strictEqual(closed, false, 'close should wait for the transaction')
+        return transaction[transactionEnd]()
+      }).then(() => closing).then(() => {
+        assert.strictEqual(closed, true, 'ending the transaction should let close finish')
+        assert.strictEqual(transaction._acquiredConnection, null)
+        return new sql.Request().query('select data from tran_test where data = \'shutdown\'')
+      }).then(result => {
+        assert.deepStrictEqual(result.recordset, transactionEnd === 'commit' ? [{ data: 'shutdown' }] : [], 'the transaction outcome should outlast its connection')
+      }).catch(err => {
+        if (transaction._acquiredConnection) pool.release(transaction._acquiredConnection)
+        return pool.close().then(() => { throw err })
+      }).finally(() => new sql.Request().query('delete from tran_test where data = \'shutdown\'')).then(() => done(), done)
+    },
+
     'connection healthy works' (config, done) {
       const pool = new sql.ConnectionPool(config)
       assert.ok(!pool.healthy)
