@@ -2079,7 +2079,7 @@ describe('global pool', () => {
     const connecting = sql.connect({})
     const pool = globalConnection.pool
 
-    await assert.rejects(sql.close(), { name: 'ConnectionError', message: 'Cannot close a pool while it is connecting' },
+    await assert.rejects(sql.close(), { name: 'ConnectionError', code: 'ECONNECTING', message: 'Cannot close a pool while it is connecting' },
       'sql.close() should be refused while the global pool connects')
     assert.strictEqual(await connecting, pool)
     assert.strictEqual(globalConnection.pool, pool, 'the pool should still be the global pool after the refused close')
@@ -2098,6 +2098,7 @@ describe('global pool', () => {
 
     const err = await new Promise(resolve => sql.close(resolve))
     assert.ok(err instanceof sql.ConnectionError, 'sql.close() should call back with a ConnectionError while the global pool connects')
+    assert.strictEqual(err.code, 'ECONNECTING')
     assert.strictEqual(err.message, 'Cannot close a pool while it is connecting')
     assert.strictEqual(await connecting, pool)
     assert.strictEqual(globalConnection.pool, pool, 'the pool should still be the global pool after the refused close')
@@ -2108,7 +2109,7 @@ describe('global pool', () => {
     sql.on('error', handler)
     try {
       const connecting = sql.connect({})
-      await assert.rejects(sql.close(), { message: 'Cannot close a pool while it is connecting' })
+      await assert.rejects(sql.close(), { name: 'ConnectionError', code: 'ECONNECTING', message: 'Cannot close a pool while it is connecting' })
       const pool = await connecting
       assert.deepStrictEqual(pool.listeners('error'), [handler],
         'the refused close should leave the handlers added with sql.on() as they were')

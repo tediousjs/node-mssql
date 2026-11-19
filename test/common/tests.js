@@ -2765,6 +2765,7 @@ module.exports = (sql, driver) => {
         throw new Error('sql.close() should be refused while the global pool is connecting')
       }, err => {
         assert.ok(err instanceof sql.ConnectionError, 'sql.close() during connect should reject with a ConnectionError')
+        assert.strictEqual(err.code, 'ECONNECTING')
         assert.strictEqual(err.message, 'Cannot close a pool while it is connecting')
         return connecting
       }).then(pool => {
