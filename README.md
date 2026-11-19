@@ -1656,11 +1656,17 @@ __Errors__
 
 ### unprepare ([callback])
 
-Unprepare a prepared statement. If the server has rolled back the transaction that the statement was prepared in, `unprepare` releases the statement without sending anything to the server.
+Unprepare a prepared statement. With the tedious driver, if the server has rolled back the transaction of the statement, `unprepare` releases the statement and sends nothing to the server.
 
-If the request to unprepare the statement fails (for example, because the connection has died), the statement still gives its connection back and is no longer prepared, and the error is passed on. The pool then closes that connection instead of lending it out again. In a transaction, the connection stays with the transaction until you commit or roll it back, or until the transaction is aborted because the server has rolled it back.
+If the request to unprepare the statement fails (for example, because the connection has died), `unprepare` rejects with that error. The statement still gives its connection back and is no longer prepared. The pool then closes that connection instead of lending it out again. In a transaction, the connection stays with the transaction until you commit or roll it back. With the tedious driver, the transaction also gives the connection back if the server rolls the transaction back.
 
-If `unprepare` rejects with `EREQINPROG` because another request on the statement is in progress, nothing changes: the statement stays prepared and keeps its connection, so call `unprepare` again when that request has finished.
+If another request on the statement is in progress, `unprepare` rejects and changes nothing:
+
+- While `prepare` is in progress, `unprepare` rejects with `ENOTPREPARED`. Call `unprepare` when `prepare` has finished.
+- While `execute` is in progress, `unprepare` rejects with `EREQINPROG`. The statement stays prepared and keeps its connection. Call `unprepare` again when `execute` has finished.
+- While an earlier `unprepare` call is in progress, `unprepare` rejects with `EREQINPROG`. The earlier call releases the statement, so a later `unprepare` call rejects with `ENOTPREPARED`.
+
+With the tedious driver, after the server has rolled back the transaction, `unprepare` releases the statement at once. A second call then rejects with `ENOTPREPARED`.
 
 __Arguments__
 
