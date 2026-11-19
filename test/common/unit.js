@@ -5079,3 +5079,208 @@ describe('a transaction the server rolls back (tedious)', () => {
     })
   }
 })
+
+describe('prepared statement unprepare failures', () => {
+  const { EventEmitter } = require('node:events')
+
+  before(() => { sql.Promise = Promise })
+
+  // a pool that lends `connections` in turn through the pool's own acquire(), and notes whether
+  // each one it gets back is marked as failed
+  const lend = (...connections) => {
+    const pool = new BasePool({})
+    pool._connected = true
+    pool.returned = []
+    pool._acquire = () => Promise.resolve(connections.shift())
+    pool.release = connection => {
+      pool.returned.push({ hasError: connection.hasError })
+      return pool
+    }
+    return pool
+  }
+
+  // stands in for a tedious connection that prepares and executes any statement and ends any
+  // transaction, and does what `unprepare` says with the call to sp_unprepare
+  const connect = unprepare => Object.assign(new EventEmitter(), {
+    closed: false,
+    hasError: false,
+    callProcedure (req) {
+      if (req.sqlTextOrProcedure === 'sp_unprepare') return unprepare(req)
+      setImmediate(() => {
+        req.emit('returnValue', 'handle', 1, {})
+        req.callback(null)
+      })
+    },
+    beginTransaction (callback) { setImmediate(callback) },
+    commitTransaction (callback) { setImmediate(callback) },
+    rollbackTransaction (callback) { setImmediate(callback) },
+    cancel () {}
+  })
+
+  // once the connection has died, tedious calls back at once, without sending anything
+  const DIES = req => req.callback(Object.assign(new Error('Requests can only be made in the LoggedIn state, not the Final state'), { code: 'EINVALIDSTATE' }))
+  // the connection lives on, and the statement may still be prepared on it
+  const TIMES_OUT = req => setImmediate(() => req.callback(Object.assign(new Error('Timeout: Request failed to complete in 15000ms'), { code: 'ETIMEOUT' })))
+  const UNPREPARES = req => setImmediate(() => req.callback(null))
+
+  it('should give the connection back as it was when sp_unprepare succeeds', async () => {
+    const pool = lend(connect(UNPREPARES))
+    const ps = new sql.PreparedStatement(pool)
+    await ps.prepare('select 1')
+
+    await ps.unprepare()
+    assert.deepStrictEqual(pool.returned, [{ hasError: false }], 'the connection should go back to the pool once, as it was')
+    assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+  })
+
+  for (const [failure, unprepare, code] of [['the connection has died', DIES, 'EINVALIDSTATE'], ['sp_unprepare times out', TIMES_OUT, 'ETIMEOUT']]) {
+    it(`should give the connection back, marked as failed, when ${failure}`, async () => {
+      const connection = connect(unprepare)
+      const pool = lend(connection, connect(UNPREPARES))
+      const ps = new sql.PreparedStatement(pool)
+      await ps.prepare('select 1')
+
+      await assert.rejects(ps.unprepare(), err => {
+        assert.strictEqual(err.code, code, 'the rejection should keep the code of the error tedious called back with')
+        return true
+      })
+      assert.deepStrictEqual(pool.returned, [{ hasError: true }], 'the connection should go back to the pool once, marked as failed')
+      assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+      for (const validateConnection of [true, false, 'socket']) {
+        assert.strictEqual(await new ConnectionPool({ validateConnection })._poolValidate(connection), false, `the pool should refuse to lend the connection again (validateConnection: ${validateConnection})`)
+      }
+
+      await assert.rejects(ps.unprepare(), { code: 'ENOTPREPARED' })
+      assert.strictEqual(pool.returned.length, 1, 'the connection should not be given back twice')
+
+      await ps.prepare()
+      await ps.unprepare()
+      assert.deepStrictEqual(pool.returned, [{ hasError: true }, { hasError: false }], 'the statement should prepare again on another connection')
+    })
+  }
+
+  it('should call the unprepare() callback once, with the connection back in the pool', done => {
+    const pool = lend(connect(DIES))
+    const ps = new sql.PreparedStatement(pool)
+    const calls = []
+    ps.prepare('select 1').then(() => {
+      ps.unprepare(err => {
+        calls.push(err)
+        setImmediate(() => {
+          try {
+            assert.strictEqual(calls.length, 1, 'the callback should be called once')
+            assert.strictEqual(calls[0].code, 'EINVALIDSTATE', 'the callback should be given the error tedious called back with')
+            assert.deepStrictEqual(pool.returned, [{ hasError: true }], 'the connection should be back in the pool by the time of the callback')
+            done()
+          } catch (err) {
+            done(err)
+          }
+        })
+      })
+    }, done)
+  })
+
+  for (const method of ['commit', 'rollback']) {
+    it(`should let the transaction ${method} once sp_unprepare fails on its connection`, async () => {
+      const pool = lend(connect(TIMES_OUT))
+      const tx = new sql.Transaction(pool)
+      await tx.begin()
+      const ps = new sql.PreparedStatement(tx)
+      await ps.prepare('select 1')
+
+      await assert.rejects(ps.unprepare(), { code: 'ETIMEOUT' })
+      assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+      assert.deepStrictEqual(pool.returned, [], 'the connection should stay with the transaction')
+
+      await tx[method]()
+      assert.deepStrictEqual(pool.returned, [{ hasError: true }], `the transaction should ${method}, and give the connection back marked as failed`)
+    })
+  }
+
+  // the second call passes the check for a request in progress, as the first has not yet borrowed
+  // the connection, and is refused when it tries to
+  for (const [outcome, unprepare, code, hasError] of [['succeeds', UNPREPARES, undefined, false], ['fails as the connection has died', DIES, 'EINVALIDSTATE', true], ['times out', TIMES_OUT, 'ETIMEOUT', true]]) {
+    it(`should give the connection back once when unprepare() is called twice at once and sp_unprepare ${outcome}`, async () => {
+      const pool = lend(connect(unprepare))
+      const ps = new sql.PreparedStatement(pool)
+      await ps.prepare('select 1')
+
+      const results = await Promise.allSettled([ps.unprepare(), ps.unprepare()])
+      assert.deepStrictEqual(results.map(result => result.reason?.code), [code, 'EREQINPROG'], 'the first call should end as sp_unprepare did, and the second should be refused')
+      assert.deepStrictEqual(pool.returned, [{ hasError }], 'the connection should go back to the pool once')
+      assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+    })
+  }
+
+  it('should leave the connection to an execute() that holds it when unprepare() is called at once', async () => {
+    const pool = lend(connect(UNPREPARES))
+    const ps = new sql.PreparedStatement(pool)
+    await ps.prepare('select 1')
+
+    const [executed, unprepared] = await Promise.allSettled([ps.execute({}), ps.unprepare()])
+    assert.strictEqual(executed.status, 'fulfilled', 'the execute() should succeed')
+    assert.strictEqual(unprepared.reason?.code, 'EREQINPROG', 'the unprepare() should be refused')
+    assert.strictEqual(ps.prepared, true, 'the statement should still be prepared')
+    assert.deepStrictEqual(pool.returned, [], 'the connection should stay with the statement')
+
+    await ps.unprepare()
+    assert.deepStrictEqual(pool.returned, [{ hasError: false }], 'a later unprepare() should give the connection back, as it was')
+    assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+  })
+
+  for (const [outcome, unprepare, code, hasError] of [['succeeds', UNPREPARES, undefined, false], ['times out', TIMES_OUT, 'ETIMEOUT', true]]) {
+    it(`should keep the transaction waiting for the statement when unprepare() is called twice at once and sp_unprepare ${outcome}`, async () => {
+      const waitingFor = []
+      const pool = lend(connect(req => setImmediate(() => {
+        // the second call has been refused by the time sp_unprepare ends
+        waitingFor.push(tx._activeRequest)
+        unprepare(req)
+      })))
+      const tx = new sql.Transaction(pool)
+      await tx.begin()
+      const ps = new sql.PreparedStatement(tx)
+      await ps.prepare('select 1')
+
+      const results = await Promise.allSettled([ps.unprepare(), ps.unprepare()])
+      assert.deepStrictEqual(results.map(result => result.reason?.code), [code, 'EREQINPROG'], 'the first call should end as sp_unprepare did, and the second should be refused')
+      assert.deepStrictEqual(waitingFor, [ps], 'the transaction should wait for the statement while sp_unprepare runs')
+      assert.deepStrictEqual(pool.returned, [], 'the connection should stay with the transaction')
+
+      await tx.commit()
+      assert.deepStrictEqual(pool.returned, [{ hasError }], 'the transaction should commit, and give the connection back')
+    })
+  }
+
+  it('should give the connection back once, and let the pool close, when unprepare() is called twice as the pool closes', async () => {
+    const destroyed = []
+    const returned = []
+    const pool = new ConnectionPool({ server: 'localhost', validateConnection: false })
+    pool._poolCreate = () => Promise.resolve(connect(UNPREPARES))
+    pool._poolDestroy = connection => {
+      destroyed.push(connection)
+      return Promise.resolve()
+    }
+    await pool.connect()
+    const release = pool.release.bind(pool)
+    pool.release = connection => {
+      returned.push(connection)
+      return release(connection)
+    }
+    const ps = new sql.PreparedStatement(pool)
+    await ps.prepare('select 1')
+    const connection = ps._acquiredConnection
+
+    const closing = pool.close()
+    // whether unprepare() may run while the pool closes decides how each call ends, so only what
+    // happens to the connection is checked
+    await Promise.allSettled([ps.unprepare(), ps.unprepare()])
+    assert.deepStrictEqual(returned, [connection], 'the connection should go back to the pool once')
+    assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+
+    let timer
+    await Promise.race([closing, new Promise((resolve, reject) => {
+      timer = setTimeout(reject, 1000, new Error('the pool should close once it has the connection back'))
+    })]).finally(() => clearTimeout(timer))
+    assert.ok(destroyed.includes(connection), 'the pool should destroy the connection as it closes')
+  })
+})
