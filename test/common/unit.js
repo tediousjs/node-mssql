@@ -857,6 +857,56 @@ describe('connection string encrypt option', () => {
     assert.strictEqual(config.options.encrypt, false)
   })
 
+  it('parses Encrypt=1 as true', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=1')
+    assert.strictEqual(config.options.encrypt, true)
+  })
+
+  it('parses Encrypt=0 as false', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=0')
+    assert.strictEqual(config.options.encrypt, false)
+  })
+
+  it('parses Encrypt=FALSE as false', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=FALSE')
+    assert.strictEqual(config.options.encrypt, false)
+  })
+
+  it('parses Encrypt=mandatory as true', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=mandatory')
+    assert.strictEqual(config.options.encrypt, true)
+  })
+
+  it('parses Encrypt=optional as false', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=optional')
+    assert.strictEqual(config.options.encrypt, false)
+  })
+
+  it('parses Encrypt=Optional as false', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=Optional')
+    assert.strictEqual(config.options.encrypt, false)
+  })
+
+  it('parses Encrypt=strict as strict', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=strict')
+    assert.strictEqual(config.options.encrypt, 'strict')
+  })
+
+  it('parses Encrypt=Strict as strict', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=Strict')
+    assert.strictEqual(config.options.encrypt, 'strict')
+  })
+
+  it('parses Encrypt=STRICT as strict', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt=STRICT')
+    assert.strictEqual(config.options.encrypt, 'strict')
+  })
+
+  it('parses a quoted Encrypt strict value as strict', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;Encrypt={strict}')
+    assert.strictEqual(config.options.encrypt, 'strict')
+  })
+
   it('uses the tedious default when Encrypt is empty', () => {
     const config = new ConnectionPool('Server=localhost;Encrypt=;Database=db')._config()
     assert.strictEqual(config.options.encrypt, true)
@@ -866,6 +916,77 @@ describe('connection string encrypt option', () => {
   it('uses Encrypt=false in the tedious config', () => {
     const config = new ConnectionPool('Server=localhost;Encrypt=false')._config()
     assert.strictEqual(config.options.encrypt, false)
+  })
+
+  it('uses Encrypt=Strict in the tedious config', () => {
+    const config = new ConnectionPool('Server=localhost;Encrypt=Strict')._config()
+    assert.strictEqual(config.options.encrypt, 'strict')
+  })
+
+  describe('msnodesqlv8', () => {
+    const Module = require('node:module')
+    // msnodesqlv8 is a native module that only the Windows CI jobs install, so a stand-in
+    // keeps the connection string that the pool opens, and refuses the connection
+    const STUB = 'msnodesqlv8-stub'
+    const POOL = require.resolve('../../lib/msnodesqlv8/connection-pool')
+    let resolveFilename
+    let MsnodesqlPool
+    let connectionString
+
+    before(() => {
+      resolveFilename = Module._resolveFilename
+      Module._resolveFilename = function (request, ...rest) {
+        return request === 'msnodesqlv8' ? STUB : resolveFilename.call(this, request, ...rest)
+      }
+      const exports = {
+        open (cfg, callback) {
+          connectionString = cfg.conn_str
+          setImmediate(callback, new Error('no server'))
+        }
+      }
+      require.cache[STUB] = { id: STUB, filename: STUB, loaded: true, exports }
+      MsnodesqlPool = require(POOL)
+    })
+
+    after(() => {
+      Module._resolveFilename = resolveFilename
+      delete require.cache[STUB]
+      delete require.cache[POOL]
+    })
+
+    const open = async config => {
+      connectionString = undefined
+      await assert.rejects(new MsnodesqlPool(config)._poolCreate(), /no server/)
+      return connectionString
+    }
+
+    it('writes Encrypt=Strict for Encrypt=strict', async () => {
+      assert.match(await open('Server=localhost;Encrypt=strict'), /;Encrypt=Strict$/)
+    })
+
+    it('writes Encrypt=Strict for an encrypt option of strict', async () => {
+      assert.match(await open({ server: 'localhost', options: { encrypt: 'strict' } }), /;Encrypt=Strict$/)
+    })
+
+    it('writes Encrypt=Yes for Encrypt=true', async () => {
+      assert.match(await open('Server=localhost;Encrypt=true'), /;Encrypt=Yes$/)
+    })
+
+    it('writes Encrypt=No for Encrypt=false', async () => {
+      assert.match(await open('Server=localhost;Encrypt=false'), /;Encrypt=No$/)
+    })
+
+    it('writes Encrypt=Yes for Encrypt=mandatory', async () => {
+      assert.match(await open('Server=localhost;Encrypt=mandatory'), /;Encrypt=Yes$/)
+    })
+
+    it('writes Encrypt=No for Encrypt=optional', async () => {
+      assert.match(await open('Server=localhost;Encrypt=optional'), /;Encrypt=No$/)
+    })
+
+    it('writes Encrypt=No when Encrypt is left out', async () => {
+      assert.match(await open('Server=localhost'), /;Encrypt=No$/)
+    })
   })
 })
 
