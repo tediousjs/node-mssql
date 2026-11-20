@@ -663,6 +663,8 @@ Complete list of pool options can be found [here](https://github.com/vincit/tarn
 
 In addition to configuration object there is an option to pass config as a connection string. Connection strings are supported.
 
+The number keys `Connection Timeout`, `ConnectRetryInterval`, `Max Pool Size`, `Min Pool Size`, `Packet Size` and `Request Timeout` must have a value that starts with a number. For a value such as `abc`, the parser throws an error that names the key and the value.
+
 ##### Classic Connection String
 
 ###### Standard configuration using tedious driver
