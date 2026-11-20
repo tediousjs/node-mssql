@@ -869,8 +869,46 @@ describe('connection string encrypt option', () => {
   })
 })
 
+describe('connection string application intent option', () => {
+  it('does not set readOnlyIntent when ApplicationIntent is left out', () => {
+    const config = BasePool._parseConnectionString('Server=localhost')
+    assert.strictEqual('readOnlyIntent' in config.options, false)
+  })
+
+  it('does not set readOnlyIntent when ApplicationIntent is empty', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;ApplicationIntent=;Database=db')
+    assert.strictEqual('readOnlyIntent' in config.options, false)
+    assert.strictEqual(config.database, 'db')
+  })
+
+  it('does not set readOnlyIntent when ApplicationIntent is only whitespace', () => {
+    const config = BasePool._parseConnectionString('Server=localhost;ApplicationIntent={ }')
+    assert.strictEqual('readOnlyIntent' in config.options, false)
+  })
+
+  for (const value of ['ReadOnly', 'readonly', 'READONLY', ' ReadOnly ', '{ ReadOnly }']) {
+    it(`parses ApplicationIntent=${value} as read-only intent`, () => {
+      const config = BasePool._parseConnectionString(`Server=localhost;ApplicationIntent=${value}`)
+      assert.strictEqual(config.options.readOnlyIntent, true)
+    })
+  }
+
+  for (const value of ['ReadWrite', 'readwrite']) {
+    it(`parses ApplicationIntent=${value} as read-write intent`, () => {
+      const config = BasePool._parseConnectionString(`Server=localhost;ApplicationIntent=${value}`)
+      assert.strictEqual(config.options.readOnlyIntent, false)
+    })
+  }
+
+  it('uses ApplicationIntent=ReadOnly in the tedious config', () => {
+    const config = new ConnectionPool('Server=localhost;ApplicationIntent=ReadOnly')._config()
+    assert.strictEqual(config.options.readOnlyIntent, true)
+  })
+})
+
 describe('connection string empty values', () => {
   const keys = [
+    'ApplicationIntent',
     'Connection Timeout',
     'ConnectRetryInterval',
     'Encrypt',
