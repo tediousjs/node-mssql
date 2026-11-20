@@ -1101,7 +1101,7 @@ transaction.begin(err => {
 
 __Transaction name__
 
-Set `transaction.name` before calling `begin` to give the transaction a name. The server shows it in `sys.dm_tran_active_transactions`. It must be a string, or `null` or `undefined` for no name, and the server refuses a name longer than 32 characters, counted in UTF-16 code units. The `msnodesqlv8` driver doesn't send it. See [Transaction names](#transaction-names).
+Set `transaction.name` before calling `begin` to give the transaction a name. The server shows it in `sys.dm_tran_active_transactions`. It must be a string of at most 32 characters, counted in UTF-16 code units, or `null` or `undefined` for no name. The `msnodesqlv8` driver doesn't send it. See [Transaction names](#transaction-names).
 
 ```javascript
 const transaction = new sql.Transaction(/* [pool] */)
@@ -1138,7 +1138,7 @@ transaction.begin(err => {
 __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - EALREADYBEGUN (`TransactionError`) - Transaction has already begun.
-- EINJECT (`TransactionError`) - Transaction name is not a string (`tedious` driver). See [Transaction names](#transaction-names).
+- EINJECT (`TransactionError`) - Transaction name is not a string, or is longer than 32 characters (`tedious` driver). See [Transaction names](#transaction-names).
 
 ---------------------------------------
 
@@ -1939,10 +1939,12 @@ end of a statement.
 
 ### Transaction names
 
-With the `tedious` driver, `transaction.name` must be a string, or `null` or
-`undefined` for no name; anything else raises `EINJECT`. From TDS 7.2 (the default
-`tdsVersion` is `7_4`) the driver sends the name to the server as data, so it may
-hold any character. On a connection that uses TDS 7.1, because `options.tdsVersion`
+With the `tedious` driver, `transaction.name` must be a string of at most 32
+characters, counted in UTF-16 code units, or `null` or `undefined` for no name;
+anything else raises `EINJECT` before a connection is taken. The server refuses a
+longer name. From TDS 7.2 (the default `tdsVersion` is `7_4`) the driver sends the
+name to the server as data, so it may hold any character. On a connection that uses
+TDS 7.1, because `options.tdsVersion`
 is `7_1` or because the server supports nothing newer, the driver builds the name
 into a `BEGIN TRAN` statement instead, so there it is sent as a quoted identifier
 with any `]` doubled. It cannot end the statement, and the server stores the name
@@ -1985,7 +1987,7 @@ Name | Code | Message
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
 `TransactionError` | EREQINPROG | Can't commit/rollback transaction. There is a request in progress.
 `TransactionError` | EABORT | Transaction has been aborted.
-`TransactionError` | EINJECT | Transaction name is not a string.
+`TransactionError` | EINJECT | Transaction name is not a string, or is longer than 32 characters.
 `RequestError` | EREQUEST | Message from SQL Server. Error object contains additional details.
 `RequestError` | ECANCEL | Cancelled.
 `RequestError` | ETIMEOUT | Request timeout.

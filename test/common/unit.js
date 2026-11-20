@@ -711,8 +711,8 @@ describe('transaction name', () => {
 
   it('should send the name as a quoted identifier where the driver builds it into SQL', async () => {
     assert.strictEqual(await sentName('7_1', 'tx'), '[tx]', 'a plain name should be quoted')
-    assert.strictEqual(await sentName('7_1', "x;EXEC sp_executesql N'CREATE TABLE dbo.canary (z int)';--"),
-      "[x;EXEC sp_executesql N'CREATE TABLE dbo.canary (z int)';--]", 'a name holding SQL should be quoted')
+    assert.strictEqual(await sentName('7_1', 'x;create table canary(z int)--'),
+      '[x;create table canary(z int)--]', 'a name holding SQL should be quoted')
     assert.strictEqual(await sentName('7_1', 'commit'), '[commit]', 'a keyword should be quoted, or it runs as a statement')
     assert.strictEqual(await sentName('7_1', 'a];commit--'), '[a]];commit--]', 'a ] in the name should be doubled')
     assert.strictEqual(await sentName('7_1', ''), '', 'no name should be sent as no name')
@@ -758,6 +758,27 @@ describe('transaction name', () => {
       await assert.rejects(begin(tx), err => err instanceof sql.TransactionError && err.code === 'EINJECT',
         `${JSON.stringify(name)} should be rejected`)
       assert.strictEqual(pool.acquired, 0, 'no connection should have been taken')
+    }
+  })
+
+  it('should reject a name longer than 32 UTF-16 code units without taking a connection', async () => {
+    // 'é' is one code unit, '😀' is two
+    for (const name of ['x'.repeat(33), 'é'.repeat(33), '😀'.repeat(16) + 'x', 'x'.repeat(128)]) {
+      for (const tdsVersion of ['7_1', '7_4']) {
+        const pool = setup(tdsVersion, () => assert.fail('beginTransaction should not be called'))
+        const tx = new TediousTransaction(pool)
+        tx.name = name
+        await assert.rejects(begin(tx), err => err instanceof sql.TransactionError && err.code === 'EINJECT',
+          `a name of ${name.length} code units should be rejected on TDS ${tdsVersion}`)
+        assert.strictEqual(pool.acquired, 0, 'no connection should have been taken')
+      }
+    }
+  })
+
+  it('should send a name of 32 UTF-16 code units', async () => {
+    for (const name of ['x'.repeat(32), '😀'.repeat(16), ']'.repeat(32)]) {
+      assert.strictEqual(await sentName('7_4', name), name, `a name of ${name.length} code units should be sent on TDS 7.4`)
+      assert.strictEqual(await sentName('7_1', name), `[${name.replace(/]/g, ']]')}]`, `a name of ${name.length} code units should be sent quoted on TDS 7.1`)
     }
   })
 })
