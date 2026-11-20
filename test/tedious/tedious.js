@@ -368,6 +368,7 @@ describe('tedious', () => {
     it('pausing and resuming a stream once it has been cancelled', done => TESTS['pausing and resuming a stream once it is over']('cancelled', done))
     it('cancelling a stream and then pausing it', done => TESTS['cancelling a stream and then pausing it'](10, true, done))
     it('cancelling a stream and then pausing it a few rows later', done => TESTS['cancelling a stream and then pausing it'](20, true, done))
+    it('cancelling a stream held back while its query moves on to its first result set', done => TESTS['cancelling a stream held back while its query moves on to its first result set'](done))
 
     after(done => sql.close(done))
   })
