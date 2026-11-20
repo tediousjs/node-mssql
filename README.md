@@ -861,7 +861,7 @@ __Errors__
 
 ### Pool properties
 
-These properties are available on a connected `ConnectionPool` instance (after `connect()` has resolved):
+These properties are available on a connected `ConnectionPool` instance (after `connect()` has resolved). Before the pool has connected, and after `close()` has finished, `size`, `available`, `pending` and `borrowed` are `0`:
 
 - **pool.healthy** - `Boolean` - Whether the pool is able to create new connections.
 - **pool.size** - `Number` - Total number of connections in the pool (free + used + pending creation).

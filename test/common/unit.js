@@ -5405,6 +5405,31 @@ describe('pool connect while closing', () => {
     await pool.close()
   })
 
+  it('should let a POOL_CLOSE subscriber connect the pool again', async () => {
+    const dc = require('node:diagnostics_channel')
+    const { CHANNELS } = require('../../lib/diagnostics')
+    const pool = await connectedPool()
+    const sizes = []
+    let reconnecting
+    const onClose = () => {
+      sizes.push(pool.size)
+      reconnecting = pool.connect()
+      // handled here so that a refusal fails the test below rather than the process
+      reconnecting.catch(() => {})
+    }
+    dc.subscribe(CHANNELS.POOL_CLOSE, onClose)
+    try {
+      await pool.close()
+    } finally {
+      dc.unsubscribe(CHANNELS.POOL_CLOSE, onClose)
+    }
+
+    assert.deepStrictEqual(sizes, [0], 'a POOL_CLOSE subscriber should see a pool with no connections')
+    assert.strictEqual(await reconnecting, pool, 'connect() from a POOL_CLOSE subscriber should resolve to the pool')
+    assert.strictEqual(pool.connected, true, 'connect() from a POOL_CLOSE subscriber should connect the pool again')
+    await pool.close()
+  })
+
   it('should leave a pool that replaced the one it was closing in place', async () => {
     const tarn = require('tarn')
     const pool = await connectedPool()
@@ -5446,6 +5471,38 @@ describe('pool close while connecting', () => {
     await connecting
     assert.strictEqual(pool.connected, true, 'the refused close() should leave the pool to connect')
     await pool.close()
+  })
+})
+
+describe('pool sizes', () => {
+  // the pool lends plain objects, so it can connect and close without a server
+  const stubbedPool = () => {
+    const pool = new BasePool({})
+    pool._poolCreate = () => Promise.resolve({})
+    pool._poolValidate = () => true
+    pool._poolDestroy = () => Promise.resolve()
+    return pool
+  }
+  const counts = pool => ({ size: pool.size, available: pool.available, pending: pool.pending, borrowed: pool.borrowed })
+  const none = { size: 0, available: 0, pending: 0, borrowed: 0 }
+
+  it('should report no connections before the pool has connected', () => {
+    assert.deepStrictEqual(counts(stubbedPool()), none, 'a pool that has not connected should report no connections')
+  })
+
+  it('should count the connections of a connected pool', async () => {
+    const pool = await stubbedPool().connect()
+    const connection = await pool.acquire({})
+    assert.deepStrictEqual(counts(pool), { size: 1, available: 0, pending: 0, borrowed: 1 },
+      'a connected pool should count the connection that it has lent')
+    pool.release(connection)
+    await pool.close()
+  })
+
+  it('should report no connections once the pool has closed', async () => {
+    const pool = await stubbedPool().connect()
+    await pool.close()
+    assert.deepStrictEqual(counts(pool), none, 'a closed pool should report no connections')
   })
 })
 
