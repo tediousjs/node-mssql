@@ -829,6 +829,7 @@ pool.connect(err => {
 __Errors__
 - ELOGIN (`ConnectionError`) - Login failed.
 - ETIMEOUT (`ConnectionError`) - Connection timeout.
+- EDRIVER (`ConnectionError`) - Driver version not supported (msnodesqlv8 older than 2.4.8).
 - EINSTLOOKUP (`ConnectionError`) - Instance lookup failed.
 - ESOCKET (`ConnectionError`) - Socket error.
 - ECLOSING (`ConnectionError`) - Cannot connect a pool while it is closing.
