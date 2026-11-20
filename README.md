@@ -7,7 +7,7 @@
 Supported TDS drivers:
 
 - [Tedious][tedious-url] (pure JavaScript - Windows/macOS/Linux, default)
-- [MSNodeSQLv8][msnodesqlv8-url] (Microsoft / Contributors Node V8 Driver for Node.js for SQL Server, v2-v6 native - Windows or Linux/macOS 64 bits only)
+- [MSNodeSQLv8][msnodesqlv8-url] (Microsoft / Contributors Node V8 Driver for Node.js for SQL Server, v2.4.8-v6 native - Windows or Linux/macOS 64 bits only)
 
 ## Installation
 
@@ -2250,7 +2250,7 @@ Name | Code | Message
 :--- | :--- | :---
 `ConnectionError` | ELOGIN | Login failed.
 `ConnectionError` | ETIMEOUT | Connection timeout.
-`ConnectionError` | EDRIVER | Unknown driver.
+`ConnectionError` | EDRIVER | Unknown driver, or a driver version that is not supported.
 `ConnectionError` | EALREADYCONNECTED | Database is already connected!
 `ConnectionError` | EALREADYCONNECTING | Already connecting to database!
 `ConnectionError` | ENOTOPEN | Connection not yet open.
