@@ -810,7 +810,7 @@ Create a new connection pool. The initial probe connection is created to find ou
 
 If the pool is already connected, `connect()` resolves with the pool. If the pool is connecting, `connect()` waits for the connection attempt in progress and gets its result.
 
-While a `close()` is in progress, `connect()` rejects with `ECLOSING`. Wait for `close()` to finish before you connect the pool again, or create a new `ConnectionPool`.
+Until the pool has closed, `connect()` rejects with `ECLOSING`. Wait for `close()` to finish before you connect the pool again, or create a new `ConnectionPool`. The pool has closed when it publishes `mssql:pool:close` (`POOL_CLOSE`), just before `close()` completes. Thus a subscriber to that channel can connect the pool again.
 
 __Arguments__
 
@@ -851,7 +851,7 @@ After you call `close()`, `pool.connected` is `false`. New work then fails with 
 
 A prepared statement or a transaction can still release its connection while the pool closes: `unprepare()`, `commit()` and `rollback()` work as usual. `close()` does not complete until every prepared statement is unprepared and every transaction has ended. With tedious, if the server rolls back a transaction, `close()` does not wait for the statements prepared in it (see [Prepared Statement](#prepared-statement)).
 
-Until `close()` is complete, `connect()` rejects with `ECLOSING`. Thus a prepared statement that you do not unprepare, or a transaction that you do not end, stops the pool from connecting again. To connect while `close()` waits, create a new `ConnectionPool`.
+Until the pool has closed, `connect()` rejects with `ECLOSING`. Thus a prepared statement that you do not unprepare, or a transaction that you do not end, stops the pool from connecting again. To connect while `close()` waits, create a new `ConnectionPool`.
 
 __Example__
 
