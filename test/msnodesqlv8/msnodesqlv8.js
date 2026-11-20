@@ -162,6 +162,7 @@ describe('msnodesqlv8', function () {
     it('calls to close during connection throw', done => TESTS['calls to close during connection throw'](config(), done))
     it('calls to close during connection call back exactly once', done => TESTS['calls to close during connection call back exactly once'](config(), done))
     it('calls to connect during close throw', done => TESTS['calls to connect during close throw'](config(), done))
+    it('connect during close while a prepared statement holds a connection', done => TESTS['connect during close while a prepared statement holds a connection'](config(), done))
     it('calls to begin or prepare while the pool is not connected reject with ECONNCLOSED', done => TESTS['calls to begin or prepare while the pool is not connected reject with ECONNCLOSED'](config(), done))
     for (const transactionEnd of [null, 'commit', 'rollback']) {
       for (const callback of [false, true]) {

@@ -33,6 +33,16 @@ const handBackUnhandledErrors = () => {
   mochaListeners = null
 }
 
+// waits for `promise`, and fails with `message` if it does not settle within `ms`, so a test
+// whose wait never ends fails at once and does not wait for mocha's timeout
+const within = (promise, message, ms = 1000) => {
+  let timer
+  const timeout = new Promise((resolve, reject) => {
+    timer = setTimeout(reject, ms, new Error(message))
+  })
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
+}
+
 describe('Unit', () => {
   it('table', done => {
     let t = new sql.Table('MyTable')
@@ -2084,6 +2094,27 @@ describe('connection string auth - tedious', () => {
           }
         })
       }
+
+      it('should keep the error of a prepared statement as the reason for the EABORT error of its next execute()', async () => {
+        const tx = new TediousTransaction(lend(connect()))
+        await tx.begin()
+        const ps = await prepare(tx)
+
+        let reason
+        await assert.rejects(ps.execute({}), err => {
+          assert.strictEqual(err.number, 8134)
+          reason = err
+          return true
+        })
+
+        // the transaction has given its connection back, so the statement does not use it again
+        await assert.rejects(ps.execute({}), err => {
+          assert.ok(err instanceof sql.TransactionError, `execute() should reject with a TransactionError, got ${err.name}`)
+          assert.strictEqual(err.code, 'EABORT')
+          assert.strictEqual(err.originalError, reason, `execute() should give the server error as originalError, got ${err.originalError}`)
+          return true
+        })
+      })
     })
   })
 })
@@ -2270,7 +2301,7 @@ describe('global pool', () => {
     const connecting = sql.connect({})
     const pool = globalConnection.pool
 
-    await assert.rejects(sql.close(), { name: 'ConnectionError', message: 'Cannot close a pool while it is connecting' },
+    await assert.rejects(sql.close(), { name: 'ConnectionError', code: 'ECONNECTING', message: 'Cannot close a pool while it is connecting' },
       'sql.close() should be refused while the global pool connects')
     assert.strictEqual(await connecting, pool)
     assert.strictEqual(globalConnection.pool, pool, 'the pool should still be the global pool after the refused close')
@@ -2289,6 +2320,7 @@ describe('global pool', () => {
 
     const err = await new Promise(resolve => sql.close(resolve))
     assert.ok(err instanceof sql.ConnectionError, 'sql.close() should call back with a ConnectionError while the global pool connects')
+    assert.strictEqual(err.code, 'ECONNECTING')
     assert.strictEqual(err.message, 'Cannot close a pool while it is connecting')
     assert.strictEqual(await connecting, pool)
     assert.strictEqual(globalConnection.pool, pool, 'the pool should still be the global pool after the refused close')
@@ -2299,7 +2331,7 @@ describe('global pool', () => {
     sql.on('error', handler)
     try {
       const connecting = sql.connect({})
-      await assert.rejects(sql.close(), { message: 'Cannot close a pool while it is connecting' })
+      await assert.rejects(sql.close(), { name: 'ConnectionError', code: 'ECONNECTING', message: 'Cannot close a pool while it is connecting' })
       const pool = await connecting
       assert.deepStrictEqual(pool.listeners('error'), [handler],
         'the refused close should leave the handlers added with sql.on() as they were')
@@ -2399,6 +2431,27 @@ describe('global pool', () => {
         assert.strictEqual(globalConnection.pool, pool)
       })
     }
+  })
+
+  it('should create a new global pool when sql.connect() is called while sql.close() waits', async () => {
+    const older = await sql.connect({})
+    // the tarn pool that lends the connection, which gets it back even if a regression replaces it
+    const lender = older.pool
+    const connection = await older.acquire({})
+    // the close waits for the borrowed connection
+    const closing = sql.close()
+    let newer
+    try {
+      newer = await within(sql.connect({}), 'sql.connect() during sql.close() should settle')
+      assert.notStrictEqual(newer, older, 'sql.connect() should not give the pool that closes')
+      assert.strictEqual(newer.connected, true, 'the new pool should be connected')
+      assert.strictEqual(globalConnection.pool, newer, 'the new pool should be the global pool')
+    } finally {
+      lender.release(connection)
+    }
+    await within(closing, 'the close should finish once the connection is back')
+    assert.strictEqual(older.connected, false, 'the close should close the older pool')
+    assert.strictEqual(globalConnection.pool, newer, 'the finished close should leave the new global pool in place')
   })
 })
 
@@ -5355,6 +5408,70 @@ describe('pool acquire', () => {
   })
 })
 
+describe('pool connect while connected or connecting', () => {
+  // the pool connects with plain objects, so it needs no server
+  const stubPool = createConnection => {
+    const pool = new BasePool({})
+    pool._poolCreate = createConnection
+    pool._poolValidate = () => true
+    pool._poolDestroy = () => Promise.resolve()
+    return pool
+  }
+
+  it('should resolve with the pool and not connect again when the pool is connected', async () => {
+    let probes = 0
+    const pool = stubPool(() => {
+      probes++
+      return Promise.resolve({})
+    })
+    try {
+      await within(pool.connect(), 'connect() should settle')
+      assert.strictEqual(await within(pool.connect(), 'connect() should settle'), pool, 'connect() should resolve with the connected pool')
+      const args = await within(new Promise(resolve => pool.connect((...args) => resolve(args))), 'connect() should settle')
+      assert.strictEqual(args[0], null, 'the connect() callback should get no error')
+      assert.strictEqual(args[1], pool, 'the connect() callback should get the connected pool')
+      assert.strictEqual(probes, 1, 'connect() should not make a probe connection for a connected pool')
+    } finally {
+      // a pool that is still connecting refuses to close, and that error would hide the first one
+      if (!pool.connecting) await pool.close()
+    }
+  })
+
+  for (const fails of [false, true]) {
+    it(`should give a connect() made while the pool is connecting the ${fails ? 'error' : 'pool'} of the first connect()`, async () => {
+      const failure = new Error('Login failed')
+      let probes = 0
+      let finishProbe
+      const pool = stubPool(() => {
+        probes++
+        return new Promise((resolve, reject) => {
+          finishProbe = fails ? () => reject(failure) : () => resolve({})
+        })
+      })
+      try {
+        const first = pool.connect()
+        const second = pool.connect()
+        finishProbe()
+        const results = await within(Promise.allSettled([first, second]), 'connect() should settle')
+        for (const [i, result] of results.entries()) {
+          assert.strictEqual(result.status, fails ? 'rejected' : 'fulfilled', `connect() call ${i + 1} should ${fails ? 'reject' : 'resolve'}`)
+          if (fails) {
+            assert.strictEqual(result.reason, failure, `connect() call ${i + 1} should reject with the probe error`)
+          } else {
+            assert.strictEqual(result.value, pool, `connect() call ${i + 1} should resolve with the pool`)
+          }
+        }
+        assert.strictEqual(probes, 1, 'the second connect() should not make another probe connection')
+        assert.strictEqual(pool.connected, !fails)
+        assert.strictEqual(pool.connecting, false, 'the pool should stop connecting')
+      } finally {
+        // a pool that is still connecting refuses to close, and that error would hide the first one
+        if (!pool.connecting) await pool.close()
+      }
+    })
+  }
+})
+
 describe('pool connect while closing', () => {
   // the pool lends plain objects, so it can connect and close without a server
   const connectedPool = () => {
@@ -5452,6 +5569,56 @@ describe('pool connect while closing', () => {
     assert.strictEqual(replacement.numUsed(), 1, 'the pool that replaced the closed one should still lend its connections')
     replacement.release(borrowed)
     await replacement.destroy()
+  })
+})
+
+describe('pool close while an acquire waits', () => {
+  // the pool lends plain objects, so it can connect and close without a server
+  const connectedPool = config => {
+    const pool = new BasePool(config)
+    pool._poolCreate = () => Promise.resolve({})
+    pool._poolValidate = () => true
+    pool._poolDestroy = () => Promise.resolve()
+    return pool.connect()
+  }
+
+  it('should fail an acquire that waits for a connection before the close completes', async () => {
+    const pool = await connectedPool({ pool: { max: 1 } })
+    const emitted = []
+    pool.on('error', err => emitted.push(err))
+    const connection = await pool.acquire({})
+    const events = []
+    // the acquire is made before the close, and waits for the borrowed connection
+    const waiting = pool.acquire({}).then(() => events.push('acquired'), err => {
+      events.push('rejected')
+      return err
+    })
+    const closing = pool.close().then(() => events.push('closed'))
+
+    await new Promise(resolve => setTimeout(resolve, 20))
+    assert.deepStrictEqual(events, [], 'the acquire should wait while the close waits for the borrowed connection')
+    pool.release(connection)
+    await within(closing, 'the close should finish once the connection is back')
+    assert.deepStrictEqual(events, ['rejected', 'closed'], 'the acquire should fail before the close completes')
+    assert.deepStrictEqual(emitted, [await waiting], 'the pool should emit the error of the acquire')
+  })
+
+  it('should fail an acquire that waits for a connection when it times out, while the close still waits', async () => {
+    const tarn = require('tarn')
+    const pool = await connectedPool({ pool: { max: 1, acquireTimeoutMillis: 20 } })
+    pool.on('error', () => {})
+    const connection = await pool.acquire({})
+    // the acquire is made before the close, and waits for the borrowed connection
+    const waiting = pool.acquire({})
+    let closed = false
+    const closing = pool.close().then(() => { closed = true })
+    try {
+      await assert.rejects(within(waiting, 'the acquire should time out'), err => err instanceof tarn.TimeoutError)
+      assert.strictEqual(closed, false, 'the close should still wait for the borrowed connection')
+    } finally {
+      pool.release(connection)
+      await within(closing, 'the close should finish once the connection is back')
+    }
   })
 })
 
@@ -5864,6 +6031,22 @@ describe('a transaction the server rolls back (tedious)', () => {
       assert.strictEqual(lent, second, 'the transaction should lend the connection it has begun again on')
     })
   }
+
+  it('should let the pool close while a statement prepared in it is still prepared', async () => {
+    const pool = new BasePool({})
+    pool._poolCreate = () => Promise.resolve(connect())
+    pool._poolValidate = () => true
+    pool._poolDestroy = () => Promise.resolve()
+    await pool.connect()
+    const { holder: ps, connection } = await beginAndAbort(pool, prepare)
+
+    // the transaction has given the connection back, so the close does not wait for the statement
+    await within(pool.close(), 'the close should not wait for the statement')
+    assert.strictEqual(ps.prepared, true, 'the statement should still be prepared when the close completes')
+    await within(ps.unprepare(), 'unprepare() should end')
+    assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+    assert.deepStrictEqual(connection.sent, [], 'nothing should be sent on the connection the transaction gave back')
+  })
 })
 
 describe('prepared statement unprepare failures', () => {
@@ -6037,6 +6220,41 @@ describe('prepared statement unprepare failures', () => {
     })
   }
 
+  // the server rolls the transaction back after the first call passes its checks, but before its
+  // sp_unprepare request borrows the connection. The second call then unprepares the statement
+  // without the connection, so the request of the first call finds no connection to borrow
+  it('should change nothing when unprepare() finds no connection because another call has unprepared the statement', async () => {
+    const sent = []
+    const connection = connect(req => {
+      sent.push(req.sqlTextOrProcedure)
+      UNPREPARES(req)
+    })
+    const pool = lend(connection)
+    const tx = new sql.Transaction(pool)
+    await tx.begin()
+    const ps = new sql.PreparedStatement(tx)
+    await ps.prepare('select 1')
+    const given = []
+    const release = tx.release.bind(tx)
+    tx.release = held => {
+      given.push(held)
+      return release(held)
+    }
+
+    const first = ps.unprepare()
+    connection.emit('rollbackTransaction')
+    const second = ps.unprepare()
+    const results = await within(Promise.allSettled([first, second]), 'both calls should end')
+    assert.deepStrictEqual(results.map(result => result.reason?.code), ['ENOTPREPARED', undefined], 'the first call should be refused with ENOTPREPARED, and the second should succeed')
+    assert.ok(results[0].reason instanceof sql.PreparedStatementError, `the rejection should be a PreparedStatementError, got ${results[0].reason?.name}`)
+    assert.deepStrictEqual(sent, [], 'sp_unprepare should not be sent')
+    assert.deepStrictEqual(given, [], 'the statement should give nothing back to the transaction')
+    assert.deepStrictEqual(pool.returned, [{ hasError: false }], 'the transaction should give the connection back to the pool once, as it was')
+    assert.strictEqual(connection.hasError, false, 'the connection should not be marked as failed')
+    assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+    await assert.rejects(ps.execute({}), { code: 'ENOTPREPARED' })
+  })
+
   it('should give the connection back once, and let the pool close, when unprepare() is called twice as the pool closes', async () => {
     const destroyed = []
     const returned = []
@@ -6069,6 +6287,41 @@ describe('prepared statement unprepare failures', () => {
     })]).finally(() => clearTimeout(timer))
     assert.ok(destroyed.includes(connection), 'the pool should destroy the connection as it closes')
   })
+
+  for (const [failure, unprepare, code] of [['the connection has died', DIES, 'EINVALIDSTATE'], ['sp_unprepare times out', TIMES_OUT, 'ETIMEOUT']]) {
+    it(`should give the connection back, marked as failed, and let the pool close, when unprepare() is called as the pool closes and ${failure}`, async () => {
+      const destroyed = []
+      const returned = []
+      const pool = new ConnectionPool({ server: 'localhost', validateConnection: false })
+      pool._poolCreate = () => Promise.resolve(connect(unprepare))
+      pool._poolDestroy = connection => {
+        destroyed.push(connection)
+        return Promise.resolve()
+      }
+      await pool.connect()
+      const release = pool.release.bind(pool)
+      pool.release = connection => {
+        returned.push({ connection, hasError: connection.hasError })
+        return release(connection)
+      }
+      const ps = new sql.PreparedStatement(pool)
+      await ps.prepare('select 1')
+      const connection = ps._acquiredConnection
+
+      const closing = pool.close()
+      try {
+        // sp_unprepare runs while the pool closes, so the call ends with the error of sp_unprepare
+        await within(assert.rejects(ps.unprepare(), { code }), 'unprepare() should end')
+        assert.deepStrictEqual(returned, [{ connection, hasError: true }], 'the connection should go back to the pool once, marked as failed')
+        assert.strictEqual(ps.prepared, false, 'the statement should no longer be prepared')
+        await within(closing, 'the pool should close once it has the connection back')
+        assert.ok(destroyed.includes(connection), 'the pool should destroy the connection as it closes')
+      } finally {
+        // if the statement still holds the connection, it is given back here, so that the pool can close
+        if (ps._acquiredConnection) release(ps._acquiredConnection)
+      }
+    })
+  }
 })
 
 describe('msnodesqlv8 connection pool', () => {

@@ -468,6 +468,8 @@ Awaiting or `.then`-ing the pool creation is a safe way to ensure that the pool 
 
 Also notice that we do *not* close the global pool by calling `sql.close()` after the query is executed, because other queries may need to be run against this pool and closing it will add additional overhead to running subsequent queries. You should only ever close the global pool if you're certain the application is finished. Or for example, if you are running some kind of CLI tool or a CRON job you can close the pool at the end of the script.
 
+While `sql.connect()` is in progress, `sql.close()` rejects with `ECONNECTING` and the global pool continues to connect. Wait for `sql.connect()` to finish before you call `sql.close()`. While `sql.close()` is in progress, `sql.connect()` creates a new global pool and does not reject with `ECLOSING`. If `sql.connect()` fails, the next `sql.connect()` call creates a new global pool.
+
 ### Global Pool Single Instance
 
 The ability to call `connect()` and `close()` repeatedly on the global pool is intended to make pool management easier, however it is better to maintain your own reference to the pool, where `connect()` is called **once**, and the resulting global pool's connection promise is re-used throughout the entire application.
@@ -806,6 +808,8 @@ const pool = new sql.ConnectionPool({ /* config */ })
 
 Create a new connection pool. The initial probe connection is created to find out whether the configuration is valid.
 
+If the pool is already connected, `connect()` resolves with the pool. If the pool is connecting, `connect()` waits for the connection attempt in progress and gets its result.
+
 While a `close()` is in progress, `connect()` rejects with `ECLOSING`. Wait for `close()` to finish before you connect the pool again, or create a new `ConnectionPool`.
 
 __Arguments__
@@ -830,8 +834,6 @@ pool.connect(err => {
 __Errors__
 - ELOGIN (`ConnectionError`) - Login failed.
 - ETIMEOUT (`ConnectionError`) - Connection timeout.
-- EALREADYCONNECTED (`ConnectionError`) - Database is already connected!
-- EALREADYCONNECTING (`ConnectionError`) - Already connecting to database!
 - EINSTLOOKUP (`ConnectionError`) - Instance lookup failed.
 - ESOCKET (`ConnectionError`) - Socket error.
 - ECLOSING (`ConnectionError`) - Cannot connect a pool while it is closing.
@@ -842,11 +844,13 @@ __Errors__
 
 Close all active connections in the pool.
 
-`close()` waits for running requests, open transactions and prepared statements to release their connections back to the pool. This wait has no timeout.
+`close()` waits for running requests, open transactions and prepared statements to release their connections back to the pool. This wait has no timeout. A request on the pool, `begin()` or `prepare()` that waits for a free connection does not get one, even if you called it before `close()`. It fails before `close()` completes, or earlier if its wait for a connection times out (`pool.acquireTimeoutMillis`, default `30000`). This error does not always have a `code`.
 
 After you call `close()`, `pool.connected` is `false`. New work then fails with `ECONNCLOSED` (`ConnectionError`): new requests (on the pool or on an open transaction), `begin()`, `prepare()` and a prepared statement's `execute()`.
 
-A prepared statement or a transaction can still release its connection while the pool closes: `unprepare()`, `commit()` and `rollback()` work as usual. `close()` does not complete until every prepared statement is unprepared and every transaction has ended.
+A prepared statement or a transaction can still release its connection while the pool closes: `unprepare()`, `commit()` and `rollback()` work as usual. `close()` does not complete until every prepared statement is unprepared and every transaction has ended. With tedious, if the server rolls back a transaction, `close()` does not wait for the statements prepared in it (see [Prepared Statement](#prepared-statement)).
+
+Until `close()` is complete, `connect()` rejects with `ECLOSING`. Thus a prepared statement that you do not unprepare, or a transaction that you do not end, stops the pool from connecting again. To connect while `close()` waits, create a new `ConnectionPool`.
 
 __Example__
 
@@ -1663,11 +1667,17 @@ __Errors__
 
 ### unprepare ([callback])
 
-Unprepare a prepared statement. If the server has rolled back the transaction that the statement was prepared in, `unprepare` releases the statement without sending anything to the server.
+Unprepare a prepared statement. With the tedious driver, if the server has rolled back the transaction of the statement, `unprepare` releases the statement and sends nothing to the server.
 
-If the request to unprepare the statement fails (for example, because the connection has died), the statement still gives its connection back and is no longer prepared, and the error is passed on. The pool then closes that connection instead of lending it out again. In a transaction, the connection stays with the transaction until you commit or roll it back, or until the transaction is aborted because the server has rolled it back.
+If the request to unprepare the statement fails (for example, because the connection has died), `unprepare` rejects with that error. The statement still gives its connection back and is no longer prepared. The pool then closes that connection instead of lending it out again. In a transaction, the connection stays with the transaction until you commit or roll it back. With the tedious driver, the transaction also gives the connection back if the server rolls the transaction back.
 
-If `unprepare` rejects with `EREQINPROG` because another request on the statement is in progress, nothing changes: the statement stays prepared and keeps its connection, so call `unprepare` again when that request has finished.
+If another request on the statement is in progress, `unprepare` rejects and changes nothing:
+
+- While `prepare` is in progress, `unprepare` rejects with `ENOTPREPARED`. Call `unprepare` when `prepare` has finished.
+- While `execute` is in progress, `unprepare` rejects with `EREQINPROG`. The statement stays prepared and keeps its connection. Call `unprepare` again when `execute` has finished.
+- While an earlier `unprepare` call is in progress, `unprepare` rejects with `EREQINPROG`. The earlier call releases the statement, so a later `unprepare` call rejects with `ENOTPREPARED`.
+
+With the tedious driver, after the server has rolled back the transaction, `unprepare` releases the statement at once. A second call then rejects with `ENOTPREPARED`.
 
 __Arguments__
 
@@ -2251,8 +2261,6 @@ Name | Code | Message
 `ConnectionError` | ELOGIN | Login failed.
 `ConnectionError` | ETIMEOUT | Connection timeout.
 `ConnectionError` | EDRIVER | Unknown driver, or a driver version that is not supported.
-`ConnectionError` | EALREADYCONNECTED | Database is already connected!
-`ConnectionError` | EALREADYCONNECTING | Already connecting to database!
 `ConnectionError` | ENOTOPEN | Connection not yet open.
 `ConnectionError` | EINSTLOOKUP | Instance lookup failed.
 `ConnectionError` | ESOCKET | Socket error.
@@ -2499,7 +2507,7 @@ dc.subscribe(CHANNELS.CONNECTION_RELEASE, ({ connectionId, poolId }) => {
 | `TRANSACTION_COMMIT` | `mssql:transaction:commit` | Transaction committed |
 | `TRANSACTION_ROLLBACK` | `mssql:transaction:rollback` | Transaction rolled back (includes `aborted` flag) |
 | `REQUEST_CANCEL` | `mssql:request:cancel` | Request cancelled |
-| `PREPARED_STATEMENT_UNPREPARE` | `mssql:prepared-statement:unprepare` | Prepared statement released |
+| `PREPARED_STATEMENT_UNPREPARE` | `mssql:prepared-statement:unprepare` | Prepared statement unprepared (only when `unprepare()` succeeds) |
 
 ### Example: OpenTelemetry Spans
 
