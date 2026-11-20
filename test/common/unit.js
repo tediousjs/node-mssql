@@ -3278,9 +3278,8 @@ describe('msnodesqlv8 query events', () => {
     // the batch was handed over; 5.0 to 5.5 do too, and when resumed after the last batch of a
     // result set, move on to the next one a second time; 5.6 waits for the rest of the batch,
     // unless it was paused on the batch's last row, and 6 waits whatever comes next. 6 also ends a
-    // cancelled query itself, after calling the cancel back: at once if it was paused when the
-    // cancel went out, otherwise at its next fetch, which never comes if it is paused before
-    // then. `timeOutAtFetch` names a fetch that does not
+    // cancelled query itself, after calling the cancel back: at its next fetch, or as soon as it is
+    // paused, whether it is paused already or only later, as 6.2.1 does. `timeOutAtFetch` names a fetch that does not
     // come back before the request times out, and `failAtEnd` ends the query on an error; a query
     // that ends on an error emits 'free' and no 'done', as msnodesqlv8 does. The query emits
     // 'submitted' as soon as it is sent, and `beginDelay` holds back the end of its first statement.
@@ -3344,8 +3343,9 @@ describe('msnodesqlv8 query events', () => {
         setImmediate(() => notify.emit('free'))
       }
 
-      // 6 ends a cancelled query with 'done' as well as 'free'
+      // 6 ends a cancelled query with 'done' as well as 'free', once
       const endCancelled = () => {
+        if (!running) return
         running = false
         notify.fail(CANCELED(), false)
         setImmediate(() => {
@@ -3380,14 +3380,10 @@ describe('msnodesqlv8 query events', () => {
       const sendCancel = callback => {
         if (version === '6') {
           calls.push('cancel')
-          const pausedWhenSent = paused
           return setImmediate(() => {
             callback(null)
-            if (pausedWhenSent) {
-              endCancelled()
-            } else {
-              cancelled = true
-            }
+            cancelled = true
+            if (paused) endCancelled()
           })
         }
         if (version !== '5.6' && !paused) {
@@ -3408,6 +3404,7 @@ describe('msnodesqlv8 query events', () => {
           calls.push('pause')
           pausedAt.push(batch ? `${index} of ${batch.data.length}` : 'before the first batch')
           paused = true
+          if (version === '6' && cancelled) endCancelled()
         },
         resumeQuery () {
           calls.push('resume')
@@ -3879,7 +3876,7 @@ describe('msnodesqlv8 query events', () => {
 
         await completed
         const ended = await Promise.race([freed, new Promise(resolve => setTimeout(resolve, 100, false))])
-        assert.deepStrictEqual(calls, ['cancel'], 'the driver should not be paused once the cancel has gone out')
+        assert.deepStrictEqual(calls, ['cancel', 'pause'], 'the driver should be cancelled, then paused at the end of its batch')
         assert.strictEqual(ended, true, 'msnodesqlv8 should end the cancelled query and release its statement')
         assert.deepStrictEqual(errors, ['ECANCEL'], 'the cancel should be streamed as an error')
         assert.strictEqual(pool.released, 1, 'the connection should be released once')
