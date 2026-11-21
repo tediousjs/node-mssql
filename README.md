@@ -1977,6 +1977,12 @@ request.input('note', sql.VarChar('max'), value)
 A size is checked wherever it is built into SQL, which includes the declaration a
 bulk load sends and the parameter list a query sends, not only `sql.TVP()`.
 
+A type that is not one of `sql.TYPES` is declared with its own `declaration`. That
+declaration is checked by the same rule as the name of a table type, and may end with a
+size in parentheses: one or two numbers, or `max`, as in `nvarchar(50)` or
+`decimal(10, 2)`. A type given directly as a `tedious` type is declared by `tedious`
+itself, not by this library.
+
 ### Procedure names
 
 `request.execute()` takes the name of a stored procedure, optionally qualified with

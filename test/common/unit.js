@@ -714,6 +714,46 @@ describe('type size validation', () => {
   })
 })
 
+describe('type declaration validation', () => {
+  // A type that is not one of sql.TYPES writes its own declaration into the SQL that declares a
+  // parameter or creates a table. None of these runs anything on its own: each only fails to
+  // compile.
+  const unsafe = ['int;x', 'int )', 'int x y', 'int--', '', 'int(5);x', 'int(5) x', 'nvarchar(50))', 'int(x)', 'int(5, 2, 1)']
+
+  it('should write the declaration of every type in sql.TYPES as before', () => {
+    for (const key of Object.keys(sql.TYPES)) {
+      const type = sql.TYPES[key]
+      assert.ok(declare(type, { tvpType: 'dbo.T' }).startsWith(key === 'TVP' ? 'dbo.T' : type.declaration), `sql.${key} should be declared as before`)
+    }
+  })
+
+  it('should reject a type of its own whose declaration is not a type name', () => {
+    for (const declaration of unsafe) {
+      assert.throws(() => declare({ declaration }, {}), err => err.code === 'EINJECT' && /Invalid type declaration/.test(err.message),
+        `the declaration ${JSON.stringify(declaration)} should be rejected`)
+    }
+  })
+
+  it('should write the declaration of a type of its own that is a type name', () => {
+    for (const declaration of ['int', 'dbo.MyType', '[my type]', 'nvarchar(50)', 'decimal(10, 2)', 'varchar (max)', 'VARCHAR(MAX)']) {
+      assert.strictEqual(declare({ declaration }, {}), declaration, `the declaration ${JSON.stringify(declaration)} should be written as it is`)
+    }
+  })
+
+  it('should write the declaration it read, so a second read cannot differ', () => {
+    let reads = 0
+    const type = { get declaration () { return ++reads === 1 ? 'int' : 'int;x' } }
+    assert.strictEqual(declare(type, {}), 'int', 'the declaration written should be the one checked')
+  })
+
+  it('declare should reject a column whose type of its own has a declaration that is not a type name', () => {
+    const table = new sql.Table('dbo.t')
+    table.columns.add('a', sql.Int, { nullable: true })
+    table.columns[0].type = { declaration: 'int;x' }
+    assert.throws(() => table.declare(), err => err.code === 'EINJECT', 'declare() should reject the column type')
+  })
+})
+
 describe('procedure name validation', () => {
   it('should accept the names a caller can reasonably supply', () => {
     assert.strictEqual(assertSafeProcedureName('sp_help'), 'sp_help', 'a bare name should be accepted')
