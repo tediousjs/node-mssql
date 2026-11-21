@@ -1315,6 +1315,38 @@ describe('tedious bulk load table path', () => {
     assert.deepStrictEqual(paths, ['[dbo].[t]'], 'tedious should be given the path without the space around it')
   })
 
+  it('should refuse a column type that tedious has no type for, before borrowing a connection', async () => {
+    for (const create of [false, true]) {
+      const { request, pool, paths, batches } = setup()
+      const t = table(undefined, create)
+      t.columns[0].type = { declaration: 'int' }
+      await assert.rejects(bulk(request, t), err => err instanceof sql.RequestError && /cannot bulk load/.test(err.message),
+        'a column type tedious cannot bulk load should be refused')
+      assert.strictEqual(pool.acquired, 0, 'a connection should not be borrowed')
+      assert.deepStrictEqual(paths, [], 'tedious should not be given the table')
+      assert.deepStrictEqual(batches, [], 'no statement should be sent')
+    }
+  })
+
+  it('should bulk load a column whose type is a tedious type given directly', async () => {
+    const { request, paths } = setup()
+    const t = table()
+    t.columns[0].type = require('tedious').TYPES.Int
+    const result = await bulk(request, t)
+    assert.deepStrictEqual(paths, ['[dbo].[t]'], 'tedious should be given the table')
+    assert.strictEqual(result.rowsAffected, 1, 'the bulk load should report the row')
+  })
+
+  it('should refuse a column type that changes after it was checked, and release the connection', async () => {
+    const { request, pool, paths } = setup()
+    const t = table()
+    let reads = 0
+    Object.defineProperty(t.columns[0], 'type', { get () { return ++reads <= 2 ? sql.Int().type : { declaration: 'int' } } })
+    await assert.rejects(bulk(request, t), err => /cannot bulk load/.test(err.message), 'a column type that changed should be refused where tedious is given it')
+    assert.deepStrictEqual(paths, ['[dbo].[t]'], 'the bulk load should have been started')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
   it('should give tedious the path it checked, so a later read cannot differ', async () => {
     const { request, paths } = setup()
     const t = table()
