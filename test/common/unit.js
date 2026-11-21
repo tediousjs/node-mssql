@@ -541,6 +541,89 @@ describe('column name validation', () => {
   })
 })
 
+describe('table path validation', () => {
+  // `create table` takes the table's path as it is, so a path changed after the table was built
+  // must still be a name the server reads as one identifier. None of these runs anything on its
+  // own: each only fails to compile.
+  const unsafe = ['[t];x', 'dbo.t x', '[t] (', '[a]b]', 'db.dbo.', '']
+
+  const declared = (path, name) => {
+    const table = new sql.Table('dbo.t')
+    table.columns.add('a', sql.Int, { nullable: true })
+    if (path !== undefined) table.path = path
+    if (name !== undefined) table.name = name
+    return table
+  }
+
+  it('declare should reject a path that is not a qualified name', () => {
+    for (const path of unsafe) {
+      assert.throws(() => declared(path).declare(), err => err.code === 'EINJECT' && /Invalid table name/.test(err.message),
+        `declare() should reject the path ${JSON.stringify(path)}`)
+    }
+  })
+
+  it('declare should write the path the table was built with unchanged', () => {
+    for (const name of ['t', 'dbo.t', 'db.dbo.[x y]', '#tmp', '[#t m p]', '"q".dbo.t', '[a.b].c', "[O''Brien]", '[dash--dash]', '[ünï]']) {
+      const table = new sql.Table(name)
+      table.columns.add('a', sql.Int, { nullable: true })
+      assert.strictEqual(table.declare(), `create table ${table.path} ([a] int null)`, `declare() should write the path of ${JSON.stringify(name)} as it was built`)
+    }
+  })
+
+  it('declare should accept a path set by hand that is a qualified name', () => {
+    for (const path of ['dbo.t', '[db].[dbo].[t]', '"q".dbo.t', '[a]]b]', '[db]..[t]', '#tmp']) {
+      assert.strictEqual(declared(path).declare(), `create table ${path} ([a] int null)`, `declare() should write the path ${JSON.stringify(path)} as it was set`)
+    }
+  })
+
+  it('declare should write the path it read, so a second read cannot differ', () => {
+    const table = declared()
+    let reads = 0
+    Object.defineProperty(table, 'path', { get () { return ++reads === 1 ? '[dbo].[t]' : '[t];x' } })
+    assert.strictEqual(table.declare(), 'create table [dbo].[t] ([a] int null)', 'declare() should write the path it checked')
+  })
+
+  it('declare should reject a table name with a single ] when it names the primary key constraint', () => {
+    const table = declared(undefined, 'a] x')
+    table.columns.length = 0
+    table.columns.add('a', sql.Int, { primary: true })
+    table.columns.add('b', sql.Int, { primary: true })
+    assert.throws(() => table.declare(), err => err.code === 'EINJECT' && /Invalid table name/.test(err.message),
+      'declare() should reject a constraint name that the ] would end')
+  })
+
+  it('declare should check the constraint name of a temporary table as it is written, without its #', () => {
+    for (const temporary of [true, false]) {
+      const table = declared(undefined, ']]a b')
+      table.temporary = temporary
+      table.columns.length = 0
+      table.columns.add('a', sql.Int, { primary: true })
+      table.columns.add('b', sql.Int, { primary: true })
+      if (temporary) {
+        assert.throws(() => table.declare(), err => err.code === 'EINJECT',
+          'declare() should reject a name whose first character it drops, leaving a single ]')
+      } else {
+        assert.match(table.declare(), /constraint \[PK_\]\]a b\] primary key/, 'declare() should keep a doubled ] in the constraint name')
+      }
+    }
+  })
+
+  it('declare should accept a path set by hand with any character a parameter name may hold', () => {
+    for (const path of ['a・b', 'a･b', 'a\u200Cb', 'a\u200Db']) {
+      assert.strictEqual(declared(path).declare(), `create table ${path} ([a] int null)`, `declare() should write the path ${JSON.stringify(path)} as it was set`)
+    }
+  })
+
+  it('declare should accept a table name with a doubled ] in the primary key constraint', () => {
+    const table = declared('[a]]b]', 'a]]b')
+    table.columns.length = 0
+    table.columns.add('a', sql.Int, { primary: true })
+    table.columns.add('b', sql.Int, { primary: true })
+    assert.strictEqual(table.declare(), 'create table [a]]b] ([a] int, [b] int, constraint [PK_a]]b] primary key ([a], [b]))',
+      'declare() should write an escaped bracket in the constraint name unchanged')
+  })
+})
+
 describe('table-valued parameter type name validation', () => {
   it('should accept type names that produce working SQL', () => {
     for (const name of ['MSSQLTestType', 'AI.UDT_StringArray', 'dbo.T1', '用户型',
@@ -1078,5 +1161,126 @@ describe('msnodesqlv8 bulk load table names', () => {
       column('c]c', 'db', { isReadOnly: () => true })
     ]
     await loads({ plain: 'plain' }, [column('a'), ...readOnly])
+  })
+
+  it('should reject a path set by hand that is not a qualified name, before borrowing, when the table is to be created', async () => {
+    for (const path of ['[t];x', 'dbo.t x']) {
+      const { request, pool, bound, queried } = setup()
+      const t = table('dbo.t', true)
+      t.path = path
+      await rejectsAsInjection(bulk(request, t), /Invalid table name/)
+      assert.deepStrictEqual(bound, [], `the table manager should not be given ${JSON.stringify(path)}`)
+      assert.deepStrictEqual(queried, [], `no statement should be sent for ${JSON.stringify(path)}`)
+      assert.strictEqual(pool.acquired, 0, `a connection should not be borrowed for ${JSON.stringify(path)}`)
+    }
+  })
+
+  it('should give the table manager a path set by hand as before when the table is not to be created', async () => {
+    const { request, bound, inserted } = setup()
+    const t = table('dbo.t')
+    t.path = 'dbo.my table'
+    await bulk(request, t)
+    assert.deepStrictEqual(bound, ['dbo.my table'], 'the table manager should be given the path it was given before')
+    assert.deepStrictEqual(inserted, [[{ a: 1 }]], 'the row should be inserted')
+  })
+})
+
+describe('tedious bulk load table path', () => {
+  const TediousRequest = require('../../lib/tedious/request')
+  const { EventEmitter } = require('events')
+
+  // tedious writes the table's path as it is into `insert bulk`. The connection stands in for
+  // tedious and records the path it is given.
+  const setup = () => {
+    const paths = []
+    const batches = []
+    const connection = Object.assign(new EventEmitter(), {
+      cancel () {},
+      newBulkLoad (path, options, done) {
+        paths.push(path)
+        return { addColumn () {}, done }
+      },
+      execBulkLoad (bulk, rows) {
+        setImmediate(bulk.done, null, rows.length)
+      },
+      execSqlBatch (req) {
+        batches.push(req.sqlTextOrProcedure)
+        setImmediate(() => req.callback(null))
+      }
+    })
+    const pool = {
+      connected: true,
+      config: {},
+      acquired: 0,
+      released: 0,
+      acquire (request, callback) {
+        this.acquired++
+        callback(null, connection, {})
+      },
+      release () { this.released++ }
+    }
+    return { request: new TediousRequest(pool), pool, paths, batches }
+  }
+
+  const table = (path, create = false) => {
+    const t = new sql.Table('dbo.t')
+    if (path !== undefined) t.path = path
+    t.create = create
+    t.columns.add('a', sql.Int, { nullable: true })
+    t.rows.add(1)
+    return t
+  }
+
+  // the callback form, so that a Promise library another test set on `sql` is not used here
+  const bulk = (request, t) => new Promise((resolve, reject) => {
+    request.bulk(t, (err, result) => err ? reject(err) : resolve(result))
+  })
+
+  it('should reject a path that is not a qualified name before borrowing a connection', async () => {
+    for (const path of ['[t];x', 'dbo.t x', '[a]b]']) {
+      for (const create of [false, true]) {
+        const { request, pool, paths, batches } = setup()
+        await assert.rejects(bulk(request, table(path, create)), err => err instanceof sql.RequestError && err.code === 'EINJECT',
+          `the path ${JSON.stringify(path)} should be rejected with EINJECT`)
+        assert.strictEqual(pool.acquired, 0, `a connection should not be borrowed for ${JSON.stringify(path)}`)
+        assert.deepStrictEqual(paths, [], `tedious should not be given ${JSON.stringify(path)}`)
+        assert.deepStrictEqual(batches, [], `no statement should be sent for ${JSON.stringify(path)}`)
+      }
+    }
+  })
+
+  it('should give tedious the path the table was built with', async () => {
+    for (const create of [false, true]) {
+      const { request, pool, paths } = setup()
+      const result = await bulk(request, table(undefined, create))
+      assert.deepStrictEqual(paths, ['[dbo].[t]'], 'tedious should be given the path as it was built')
+      assert.strictEqual(result.rowsAffected, 1, 'the bulk load should report the row')
+      assert.strictEqual(pool.released, 1, 'the connection should be released once')
+    }
+  })
+
+  it('should look the table up by the path as a string, not by a replace() of its own', async () => {
+    const { request, batches } = setup()
+    const path = { toString: () => '[dbo].[t]', trim: () => '[dbo].[t]', replace: () => 'REPLACED' }
+    await bulk(request, table(path, true))
+    assert.strictEqual(batches.length, 1, 'one create statement should be sent')
+    assert.ok(batches[0].startsWith("if object_id('[dbo].[t]') is null create table [dbo].[t] "), `the create statement should look the table up by its path, got ${batches[0]}`)
+    assert.ok(!batches[0].includes('REPLACED'), 'the path\'s own replace() should not be used')
+  })
+
+  it('should look the table up by the path it creates, with the space around it removed', async () => {
+    const { request, batches, paths } = setup()
+    await bulk(request, table(' [dbo].[t] ', true))
+    assert.ok(batches[0].startsWith("if object_id('[dbo].[t]') is null create table [dbo].[t] "), `the table looked up should be the one created, got ${batches[0]}`)
+    assert.deepStrictEqual(paths, ['[dbo].[t]'], 'tedious should be given the path without the space around it')
+  })
+
+  it('should give tedious the path it checked, so a later read cannot differ', async () => {
+    const { request, paths } = setup()
+    const t = table()
+    let reads = 0
+    Object.defineProperty(t, 'path', { get () { return ++reads === 1 ? '[dbo].[t]' : '[t];x' } })
+    await assert.rejects(bulk(request, t), err => err.code === 'EINJECT', 'a path that changes after it was checked should be rejected where it is written')
+    assert.deepStrictEqual(paths, [], 'tedious should not be given the changed path')
   })
 })

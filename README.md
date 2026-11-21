@@ -1949,6 +1949,18 @@ failure here releases the connection:
 A name that fails one of these checks raises `EINJECT`. The `tedious` driver does not
 make these checks.
 
+### Table paths
+
+`new sql.Table(name)` builds the table's `path` from the name, with each part in
+brackets. `table.declare()` writes that path into a `create table` statement, which a bulk
+load with `create` set sends with either driver. The `tedious` driver also writes the path
+into the `insert bulk` statement of every bulk load. If you set `table.path` yourself, those
+statements need it to be a qualified name: parts separated by `.`, each either bare, holding
+only the characters a parameter name may, or in brackets or double quotes. A part between
+two others may be empty, as in `db..table`, and space around the whole path is removed.
+Anything else raises `EINJECT`. When `table.declare()` names a primary key constraint after
+`table.name`, a `]` in that name must be written as `]]`.
+
 ### Type names and sizes
 
 `sql.TVP()` takes the name of a table type, optionally qualified with a schema and
