@@ -1,6 +1,6 @@
 'use strict'
 
-/* globals describe, it, afterEach */
+/* globals describe, it, before, after, afterEach */
 
 const sql = require('../../')
 const assert = require('assert')
@@ -780,5 +780,303 @@ describe('transaction name', () => {
       assert.strictEqual(await sentName('7_4', name), name, `a name of ${name.length} code units should be sent on TDS 7.4`)
       assert.strictEqual(await sentName('7_1', name), `[${name.replace(/]/g, ']]')}]`, `a name of ${name.length} code units should be sent quoted on TDS 7.1`)
     }
+  })
+})
+
+describe('msnodesqlv8 bulk load table names', () => {
+  const Module = require('module')
+
+  // msnodesqlv8's table manager looks a bulk load's table up by writing the name it is given
+  // into a query of its own, then builds an INSERT from what it found. The stub stands in for
+  // the driver; its table manager records the names it is given and finds `found` for each.
+  const STUB = 'msnodesqlv8-stub'
+  const REQUEST = require.resolve('../../lib/msnodesqlv8/request')
+  let resolveFilename
+  let Request
+
+  before(() => {
+    resolveFilename = Module._resolveFilename
+    Module._resolveFilename = function (request, ...rest) {
+      return request === 'msnodesqlv8' ? STUB : resolveFilename.call(this, request, ...rest)
+    }
+    require.cache[STUB] = { id: STUB, filename: STUB, loaded: true, exports: {} }
+    delete require.cache[REQUEST]
+    Request = require(REQUEST)
+  })
+
+  after(() => {
+    Module._resolveFilename = resolveFilename
+    delete require.cache[STUB]
+    delete require.cache[REQUEST]
+  })
+
+  // a column as the table manager reports it, in a table the server found
+  const column = (name, catalog = 'db', extra = {}) => Object.assign({ name, table_catalog: catalog, table_schema: 'dbo', table_name: 't' }, extra)
+
+  const setup = (found = [column('a')]) => {
+    const bound = []
+    const inserted = []
+    const queried = []
+    const connection = {
+      setUseNumericString () {},
+      queryRaw (statement, callback) {
+        queried.push(statement)
+        setImmediate(callback, null)
+      },
+      tableMgr: () => ({
+        bind (name, callback) {
+          bound.push(name)
+          setImmediate(callback, {
+            columns: found,
+            insertRows (rows, done) {
+              inserted.push(rows)
+              setImmediate(done, null)
+            }
+          })
+        }
+      })
+    }
+    const pool = {
+      connected: true,
+      config: {},
+      acquired: 0,
+      released: 0,
+      acquire (request, callback) {
+        this.acquired++
+        callback(null, connection, { requestTimeout: 15000 })
+      },
+      release () { this.released++ }
+    }
+    return { request: new Request(pool), pool, bound, inserted, queried }
+  }
+
+  const table = (name, create = false) => {
+    const t = new sql.Table(name)
+    t.create = create
+    t.columns.add('a', sql.Int, { nullable: true })
+    t.rows.add(1)
+    return t
+  }
+
+  // the callback form, so that a Promise library another test set on `sql` is not used here
+  const bulk = (request, t) => new Promise((resolve, reject) => {
+    request.bulk(t, (err, result) => err ? reject(err) : resolve(result))
+  })
+
+  const rejectsAsInjection = async (bulk, message) => {
+    await assert.rejects(bulk, err => {
+      assert.ok(err instanceof sql.RequestError, `the rejection should be a RequestError, got ${err}`)
+      assert.strictEqual(err.code, 'EINJECT', 'the rejection should carry the identifier error code')
+      assert.match(err.message, message, `the rejection should say why, got '${err.message}'`)
+      return true
+    })
+  }
+
+  // Rejected before a connection is borrowed, so neither the table manager nor the server
+  // should see the name, even when the table is to be created.
+  const rejectsBeforeBorrowing = async (names, message) => {
+    for (const name of names) {
+      for (const create of [false, true]) {
+        const { request, pool, bound, queried } = setup()
+        await rejectsAsInjection(bulk(request, table(name, create)), message)
+        assert.deepStrictEqual(bound, [], `the table manager should not be given '${name}'`)
+        assert.deepStrictEqual(queried, [], `no statement should be sent for '${name}'`)
+        assert.strictEqual(pool.acquired, 0, `a connection should not be borrowed for '${name}'`)
+      }
+    }
+  }
+
+  // Rejected once the table manager has found the table, so the connection that was borrowed
+  // should go back, and no row should be sent.
+  const rejectsAfterLookup = async (found, t, message) => {
+    const { request, pool, bound, inserted } = setup(found)
+    await rejectsAsInjection(bulk(request, t), message)
+    assert.strictEqual(bound.length, 1, `the table manager should be given '${t.path}' to look up`)
+    assert.deepStrictEqual(inserted, [], `there should be no INSERT into '${t.path}'`)
+    assert.strictEqual(pool.acquired, 1, 'one connection should be borrowed')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  }
+
+  const loads = async (names, found) => {
+    for (const [name, expected] of Object.entries(names)) {
+      const { request, pool, bound, inserted } = setup(found)
+      const result = await bulk(request, table(name))
+      assert.deepStrictEqual(bound, [expected], `the table manager should be given '${expected}' for '${name}'`)
+      assert.deepStrictEqual(inserted, [[{ a: 1 }]], `the row should be inserted into '${name}'`)
+      assert.strictEqual(result.rowsAffected, 1, `the bulk load into '${name}' should report the row`)
+      assert.strictEqual(pool.released, 1, 'the connection should be released once')
+    }
+  }
+
+  // names that are looked up today and found, whose bulk loads therefore work
+  it('should give the table manager the name it was given before', async () => {
+    await loads({
+      plain: 'plain',
+      'dbo.plain': 'dbo.plain',
+      'mydb.dbo.plain': 'mydb.dbo.plain',
+      '[mydb].[dbo].[plain]': 'mydb.dbo.plain',
+      'notexistingdb.dbo.plain': 'notexistingdb.dbo.plain',
+      '#temp': '#temp',
+      '##global_temp': '##global_temp',
+      '#tëmp_$1': '#tëmp_$1',
+      '[with space]': 'with space',
+      '[my schema].[dash-name]': 'my schema.dash-name',
+      'dbo.[semi;colon]': 'dbo.semi;colon',
+      '[dash--dash]': 'dash--dash',
+      '[slash/*star*/]': 'slash/*star*/',
+      '[close)paren]': 'close)paren',
+      '[double"quote]': 'double"quote',
+      '[ünï]': 'ünï',
+      // a `$` is only replaced by the table manager when a `, ' or & follows it
+      'dbo.[cost$]': 'dbo.cost$',
+      'dbo.[a$1]': 'dbo.a$1',
+      // a doubled quote is read as one by the table manager's lookup
+      "[O''Brien]": "O''Brien",
+      "[O''Schema].plain": "O''Schema.plain",
+      // the table manager splits this on its `.` and looks up table b in schema a
+      '[a.b]': 'a.b'
+    })
+  })
+
+  it('should give the table manager a database name with space around it or in double quotes as before', async () => {
+    await loads({
+      '"mydb".dbo.plain': '"mydb".dbo.plain',
+      '"my db".[dbo].[plain]': '"my db".dbo.plain',
+      '[mydb ].dbo.plain': 'mydb .dbo.plain',
+      '[ mydb].dbo.plain': ' mydb.dbo.plain',
+      '[\tmydb\n].dbo.plain': '\tmydb\n.dbo.plain',
+      // the server reads these as space, though JavaScript does not
+      '[mydb\u0085].dbo.plain': 'mydb\u0085.dbo.plain',
+      '[mydb\u200b].dbo.plain': 'mydb\u200b.dbo.plain',
+      '[ "mydb" ].dbo.plain': ' "mydb" .dbo.plain'
+    })
+  })
+
+  it('should reject a table or schema name that would end the quoted string it is looked up by', async () => {
+    await rejectsBeforeBorrowing([
+      "[O'Brien]",
+      "[O'''Brien]",
+      "dbo.[it's]",
+      "[it's].plain",
+      "mydb.[dbo'].plain"
+    ], /quoted string/)
+  })
+
+  it('should reject a database name that is neither a bare identifier nor in double quotes', async () => {
+    await rejectsBeforeBorrowing([
+      '[my db].dbo.plain',
+      '[my;db].dbo.plain',
+      '[my-db].dbo.plain',
+      "[d''b].dbo.plain",
+      '[my/*db*/].dbo.plain',
+      // NUL is not space to the server
+      '[mydb\0].dbo.plain',
+      '"mydb.dbo.plain',
+      '[mydb"].dbo.plain',
+      '[my"d"b].dbo.plain',
+      '[""].dbo.plain',
+      // a part before the database is held to the same rule, though the table manager drops it
+      '[my server.mydb].dbo.plain'
+    ], /database name/)
+  })
+
+  it('should reject a database name with a quote in it, with space around it or in double quotes', async () => {
+    await rejectsBeforeBorrowing([
+      "[d'b].dbo.plain",
+      "\"my'db\".dbo.plain",
+      "\"mydb'\".dbo.plain",
+      "[my'db ].dbo.plain",
+      "[ 'mydb].dbo.plain"
+    ], /database name/)
+  })
+
+  it('should reject a temporary table name that is not a bare identifier', async () => {
+    await rejectsBeforeBorrowing([
+      '[#with space]',
+      '[#dash-name]',
+      '[#semi;colon]',
+      "[#O''Brien]",
+      '[#temp ]',
+      '[my db].dbo.#temp'
+    ], /temporary table/)
+  })
+
+  it('should reject a name with a $ that the table manager would replace with part of its query', async () => {
+    await rejectsBeforeBorrowing([
+      'dbo.[a$&b]',
+      'dbo.[a$`b]',
+      "dbo.[a$''b]",
+      '[a$&b].plain',
+      '"my$&db".dbo.plain',
+      '"my$`db".dbo.plain'
+    ], /replaces/)
+  })
+
+  it('should check the path the table manager is given, not the name the table was made with', async () => {
+    const { request, pool, bound } = setup()
+    const t = table('plain')
+    t.path = "[it's]"
+    await rejectsAsInjection(bulk(request, t), /quoted string/)
+    assert.deepStrictEqual(bound, [], 'the table manager should not be given a path set after the table was made')
+    assert.strictEqual(pool.acquired, 0, 'a connection should not be borrowed')
+  })
+
+  it('should give the table manager the path that was checked', async () => {
+    const { request, pool, bound } = setup()
+    const t = table('plain')
+    // a path that changes once the connection is borrowed, after it was checked
+    Object.defineProperty(t, 'path', {
+      get () { return pool.acquired ? "[it's]" : '[plain]' },
+      configurable: true
+    })
+    await bulk(request, t)
+    assert.deepStrictEqual(bound, ['plain'], 'the table manager should be given the path as it was checked')
+  })
+
+  it('should reject a table in tempdb with a part that is neither bare nor in double quotes, once it is found', async () => {
+    // the connection's own database can be tempdb, so a name found there need not say so
+    for (const name of ['[with space]', 'tempdb.dbo.[with space]', 'TEMPDB.dbo.[semi;colon]', '[tempdb ].dbo.[a b]', 'tempdb.dbo.[a"b]', '"tempdb".dbo.[""]']) {
+      await rejectsAfterLookup([column('a', 'tempdb')], table(name, true), /in tempdb/)
+    }
+  })
+
+  it('should load a table in tempdb whose parts are bare, have space around them or are in double quotes', async () => {
+    await loads({
+      '#temp': '#temp',
+      'tempdb.dbo.plain': 'tempdb.dbo.plain',
+      plain: 'plain',
+      '[tempdb ].dbo.plain': 'tempdb .dbo.plain',
+      '"tempdb".dbo.plain': '"tempdb".dbo.plain',
+      'tempdb.dbo."plain table"': 'tempdb.dbo."plain table"',
+      'dbo."plain table"': 'dbo."plain table"'
+    }, [column('a', 'tempdb')])
+  })
+
+  it('should reject a table whose name, as the server reports it, contains a ]', async () => {
+    // the table manager writes the names it found as `[database].[schema].[table]`
+    for (const key of ['table_catalog', 'table_schema', 'table_name']) {
+      await rejectsAfterLookup([column('a', 'db', { [key]: 'x]y' }), column('b')], table('plain'), /Invalid table name '[^']*x\]y/)
+    }
+  })
+
+  it('should load a table in tempdb by the name it was given, whatever the server reports its name as', async () => {
+    // the table manager writes a table in tempdb as the name it was given, not the name it found
+    await loads({ '#temp': '#temp' }, [column('a', 'tempdb', { table_schema: 'x]y', table_name: '#temp]' })])
+  })
+
+  it('should reject a table with a column the driver would write with a ] in its name', async () => {
+    // node-mssql creates `a]]b` as the column `a]b`, which the driver then writes as `[a]b]`
+    const t = table('plain', true)
+    t.columns.add('a]]b', sql.Int, { nullable: true })
+    t.rows[0].push(2)
+    await rejectsAfterLookup([column('a'), column('a]b')], t, /Invalid column name 'a\]b'/)
+  })
+
+  it('should load a table whose only column with a ] in its name is one the driver does not write', async () => {
+    const readOnly = [
+      column('i]d', 'db', { is_identity: true }),
+      column('c]c', 'db', { isReadOnly: () => true })
+    ]
+    await loads({ plain: 'plain' }, [column('a'), ...readOnly])
   })
 })

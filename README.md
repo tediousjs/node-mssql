@@ -1008,7 +1008,7 @@ __Errors__
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - ENOTBEGUN (`TransactionError`) - Transaction has not begun.
 - EABORT (`TransactionError`) - Transaction was aborted (by user or because of an error).
-- EINJECT (`RequestError`) - Column name or parameter type is not a valid identifier. See [Identifiers](#identifiers).
+- EINJECT (`RequestError`) - Table name, column name or parameter type is not a valid identifier. See [Identifiers](#identifiers).
 
 ---------------------------------------
 
@@ -1848,9 +1848,9 @@ Results in:
 ## Identifiers
 
 Values are sent to the server as parameters and may hold anything. A few things
-are not values, and cannot be: the name of a parameter, the name of a column in a
-bulk load, the type a parameter is declared as, the name of a stored procedure, and
-the name of a transaction. Those are *identifiers*, and
+are not values, and cannot be: the name of a parameter, the name of a table or a
+column in a bulk load, the type a parameter is declared as, the name of a stored
+procedure, and the name of a transaction. Those are *identifiers*, and
 no SQL database can bind them, so this library builds them into the statement it
 sends. It checks them, and rejects anything that could end the identifier and have
 the rest of the value read as SQL.
@@ -1892,6 +1892,10 @@ table.columns.add('a]]b', sql.Int)   // the column named a]b
 A single `]` raises `EINJECT`. Column names are not otherwise restricted: spaces,
 punctuation and reserved words are all fine, because the quoting handles them.
 
+With the `msnodesqlv8` driver, a bulk load into a column whose name holds a `]`
+raises `EINJECT`, because that driver cannot write such a name. See
+[Bulk load table names](#bulk-load-table-names).
+
 The keys of `options.order` are also identifiers, but the driver writes them into the bulk
 statement's `ORDER (...)` clause *unquoted* rather than as `[name]`. They follow the type
 name rule instead: bare, or quoted with brackets or double quotes.
@@ -1900,6 +1904,50 @@ name rule instead: bare, or quoted with brackets or double quotes.
 request.bulk(table, { order: { created_at: 'ASC' } })
 request.bulk(table, { order: { '[Created At]': 'DESC' } })   // quote a spaced name yourself
 ```
+
+### Bulk load table names
+
+With the `msnodesqlv8` driver, a bulk load finds its table through the driver's table
+manager. The table manager writes the table name into a query of its own, and then
+writes an `INSERT` from what it found. This library gives it the name without its
+brackets, and the table manager splits that name on every `.`. Before a connection is
+taken, this library checks each part:
+
+- The table and schema names are written into a quoted string, so they must not hold a
+  single `'`. The table manager reads a doubled `''` as one `'`. The `tedious` driver
+  does not, so there the same name is a different table.
+- The database name is written unquoted. It may hold the characters a parameter name
+  may, with space around it, or it may be in double quotes. It must not hold a `'`. Any
+  part before the database is checked in the same way. The table manager reads double
+  quotes as quoting, but the `tedious` driver reads them as part of the name.
+- The name of a temporary table, one that starts with `#`, is written unquoted into the
+  `INSERT`, so every part may hold only the characters a parameter name may.
+- No part may hold a `$` followed by a backtick, a `'` or a `&`. The table manager
+  replaces each of these pairs with a part of its own query.
+
+```javascript
+// what request.bulk(table) does with the msnodesqlv8 driver, for each of these tables
+new sql.Table('dbo.[My Table]')        // fine
+new sql.Table("[O'Brien]")             // EINJECT: a single ' in the table name
+new sql.Table('[my db].dbo.orders')    // EINJECT: a space in an unquoted database name
+new sql.Table('[#my temp]')            // EINJECT: a space in a temporary table name
+```
+
+When the table manager has found the table, this library checks what it found. A
+failure here releases the connection:
+
+- A table in `tempdb` is written into the `INSERT` as the name you gave, so each part of
+  that name is checked as the database name is. This applies when the connection's own
+  database is `tempdb`, too.
+- Any other table is written as `[database].[schema].[table]`, from the names the
+  server reported, without doubling a `]`. A table whose database, schema or table name
+  holds a `]` is rejected.
+- Each column the driver writes to is written as `[name]`, without doubling a `]`, so a
+  column whose name holds one is rejected. The driver does not write to identity,
+  computed and other read-only columns, so their names may hold one.
+
+A name that fails one of these checks raises `EINJECT`. The `tedious` driver does not
+make these checks.
 
 ### Type names and sizes
 
@@ -1992,7 +2040,7 @@ Name | Code | Message
 `RequestError` | ECANCEL | Cancelled.
 `RequestError` | ETIMEOUT | Request timeout.
 `RequestError` | EARGS | Invalid number of arguments.
-`RequestError` | EINJECT | Parameter name, column name or type is not a valid identifier.
+`RequestError` | EINJECT | Parameter name, table name, column name or type is not a valid identifier.
 `RequestError` | ENOCONN | No connection is specified for that request.
 `PreparedStatementError` | EARGS | Invalid number of arguments.
 `PreparedStatementError` | EINJECT | Parameter name is not a valid identifier.
