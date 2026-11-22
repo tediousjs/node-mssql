@@ -1,6 +1,6 @@
 'use strict'
 
-/* globals describe, it, afterEach */
+/* globals describe, it, before, after, afterEach */
 
 const sql = require('../../')
 const assert = require('assert')
@@ -855,6 +855,89 @@ describe('column name validation', () => {
   })
 })
 
+describe('table path validation', () => {
+  // `create table` takes the table's path as it is, so a path changed after the table was built
+  // must still be a name the server reads as one identifier. None of these runs anything on its
+  // own: each only fails to compile.
+  const unsafe = ['[t];x', 'dbo.t x', '[t] (', '[a]b]', 'db.dbo.', '']
+
+  const declared = (path, name) => {
+    const table = new sql.Table('dbo.t')
+    table.columns.add('a', sql.Int, { nullable: true })
+    if (path !== undefined) table.path = path
+    if (name !== undefined) table.name = name
+    return table
+  }
+
+  it('declare should reject a path that is not a qualified name', () => {
+    for (const path of unsafe) {
+      assert.throws(() => declared(path).declare(), err => err.code === 'EINJECT' && /Invalid table name/.test(err.message),
+        `declare() should reject the path ${JSON.stringify(path)}`)
+    }
+  })
+
+  it('declare should write the path the table was built with unchanged', () => {
+    for (const name of ['t', 'dbo.t', 'db.dbo.[x y]', '#tmp', '[#t m p]', '"q".dbo.t', '[a.b].c', "[O''Brien]", '[dash--dash]', '[ünï]']) {
+      const table = new sql.Table(name)
+      table.columns.add('a', sql.Int, { nullable: true })
+      assert.strictEqual(table.declare(), `create table ${table.path} ([a] int null)`, `declare() should write the path of ${JSON.stringify(name)} as it was built`)
+    }
+  })
+
+  it('declare should accept a path set by hand that is a qualified name', () => {
+    for (const path of ['dbo.t', '[db].[dbo].[t]', '"q".dbo.t', '[a]]b]', '[db]..[t]', '#tmp']) {
+      assert.strictEqual(declared(path).declare(), `create table ${path} ([a] int null)`, `declare() should write the path ${JSON.stringify(path)} as it was set`)
+    }
+  })
+
+  it('declare should write the path it read, so a second read cannot differ', () => {
+    const table = declared()
+    let reads = 0
+    Object.defineProperty(table, 'path', { get () { return ++reads === 1 ? '[dbo].[t]' : '[t];x' } })
+    assert.strictEqual(table.declare(), 'create table [dbo].[t] ([a] int null)', 'declare() should write the path it checked')
+  })
+
+  it('declare should reject a table name with a single ] when it names the primary key constraint', () => {
+    const table = declared(undefined, 'a] x')
+    table.columns.length = 0
+    table.columns.add('a', sql.Int, { primary: true })
+    table.columns.add('b', sql.Int, { primary: true })
+    assert.throws(() => table.declare(), err => err.code === 'EINJECT' && /Invalid table name/.test(err.message),
+      'declare() should reject a constraint name that the ] would end')
+  })
+
+  it('declare should check the constraint name of a temporary table as it is written, without its #', () => {
+    for (const temporary of [true, false]) {
+      const table = declared(undefined, ']]a b')
+      table.temporary = temporary
+      table.columns.length = 0
+      table.columns.add('a', sql.Int, { primary: true })
+      table.columns.add('b', sql.Int, { primary: true })
+      if (temporary) {
+        assert.throws(() => table.declare(), err => err.code === 'EINJECT',
+          'declare() should reject a name whose first character it drops, leaving a single ]')
+      } else {
+        assert.match(table.declare(), /constraint \[PK_\]\]a b\] primary key/, 'declare() should keep a doubled ] in the constraint name')
+      }
+    }
+  })
+
+  it('declare should accept a path set by hand with any character a parameter name may hold', () => {
+    for (const path of ['a・b', 'a･b', 'a\u200Cb', 'a\u200Db']) {
+      assert.strictEqual(declared(path).declare(), `create table ${path} ([a] int null)`, `declare() should write the path ${JSON.stringify(path)} as it was set`)
+    }
+  })
+
+  it('declare should accept a table name with a doubled ] in the primary key constraint', () => {
+    const table = declared('[a]]b]', 'a]]b')
+    table.columns.length = 0
+    table.columns.add('a', sql.Int, { primary: true })
+    table.columns.add('b', sql.Int, { primary: true })
+    assert.strictEqual(table.declare(), 'create table [a]]b] ([a] int, [b] int, constraint [PK_a]]b] primary key ([a], [b]))',
+      'declare() should write an escaped bracket in the constraint name unchanged')
+  })
+})
+
 describe('table-valued parameter type name validation', () => {
   it('should accept type names that produce working SQL', () => {
     for (const name of ['MSSQLTestType', 'AI.UDT_StringArray', 'dbo.T1', '用户型',
@@ -945,6 +1028,46 @@ describe('type size validation', () => {
   })
 })
 
+describe('type declaration validation', () => {
+  // A type that is not one of sql.TYPES writes its own declaration into the SQL that declares a
+  // parameter or creates a table. None of these runs anything on its own: each only fails to
+  // compile.
+  const unsafe = ['int;x', 'int )', 'int x y', 'int--', '', 'int(5);x', 'int(5) x', 'nvarchar(50))', 'int(x)', 'int(5, 2, 1)']
+
+  it('should write the declaration of every type in sql.TYPES as before', () => {
+    for (const key of Object.keys(sql.TYPES)) {
+      const type = sql.TYPES[key]
+      assert.ok(declare(type, { tvpType: 'dbo.T' }).startsWith(key === 'TVP' ? 'dbo.T' : type.declaration), `sql.${key} should be declared as before`)
+    }
+  })
+
+  it('should reject a type of its own whose declaration is not a type name', () => {
+    for (const declaration of unsafe) {
+      assert.throws(() => declare({ declaration }, {}), err => err.code === 'EINJECT' && /Invalid type declaration/.test(err.message),
+        `the declaration ${JSON.stringify(declaration)} should be rejected`)
+    }
+  })
+
+  it('should write the declaration of a type of its own that is a type name', () => {
+    for (const declaration of ['int', 'dbo.MyType', '[my type]', 'nvarchar(50)', 'decimal(10, 2)', 'varchar (max)', 'VARCHAR(MAX)']) {
+      assert.strictEqual(declare({ declaration }, {}), declaration, `the declaration ${JSON.stringify(declaration)} should be written as it is`)
+    }
+  })
+
+  it('should write the declaration it read, so a second read cannot differ', () => {
+    let reads = 0
+    const type = { get declaration () { return ++reads === 1 ? 'int' : 'int;x' } }
+    assert.strictEqual(declare(type, {}), 'int', 'the declaration written should be the one checked')
+  })
+
+  it('declare should reject a column whose type of its own has a declaration that is not a type name', () => {
+    const table = new sql.Table('dbo.t')
+    table.columns.add('a', sql.Int, { nullable: true })
+    table.columns[0].type = { declaration: 'int;x' }
+    assert.throws(() => table.declare(), err => err.code === 'EINJECT', 'declare() should reject the column type')
+  })
+})
+
 describe('procedure name validation', () => {
   it('should accept the names a caller can reasonably supply', () => {
     assert.strictEqual(assertSafeProcedureName('sp_help'), 'sp_help', 'a bare name should be accepted')
@@ -982,5 +1105,568 @@ describe('procedure name validation', () => {
       assert.throws(() => assertSafeProcedureName(payload), err => err.code === 'EINJECT',
         `${JSON.stringify(payload)} should be rejected`)
     }
+  })
+})
+
+describe('transaction name', () => {
+  const { EventEmitter } = require('events')
+  const TediousTransaction = require('../../lib/tedious/transaction')
+
+  // A pool holding one connection whose beginTransaction is supplied by the test.
+  const setup = (tdsVersion, beginTransaction) => {
+    const connection = new EventEmitter()
+    connection.config = { options: { tdsVersion } }
+    connection.beginTransaction = beginTransaction
+    const pool = {
+      acquired: 0,
+      acquire (requester, callback) {
+        pool.acquired++
+        setImmediate(callback, null, connection, {})
+        return pool
+      },
+      release () {
+        return pool
+      }
+    }
+    return pool
+  }
+
+  // Uses the callback form, so the result does not depend on whichever promise library is set.
+  const begin = tx => new Promise((resolve, reject) => tx.begin(err => err ? reject(err) : resolve()))
+
+  // Begin a transaction with the given name and report what the driver was asked to send.
+  const sentName = (tdsVersion, name) => new Promise((resolve, reject) => {
+    let sent
+    const pool = setup(tdsVersion, (callback, n) => {
+      sent = n
+      setImmediate(callback, null)
+    })
+    const tx = new TediousTransaction(pool)
+    tx.name = name
+    tx.begin(err => err ? reject(err) : resolve(sent))
+  })
+
+  it('should send the name as a quoted identifier where the driver builds it into SQL', async () => {
+    assert.strictEqual(await sentName('7_1', 'tx'), '[tx]', 'a plain name should be quoted')
+    assert.strictEqual(await sentName('7_1', 'x;create table canary(z int)--'),
+      '[x;create table canary(z int)--]', 'a name holding SQL should be quoted')
+    assert.strictEqual(await sentName('7_1', 'commit'), '[commit]', 'a keyword should be quoted, or it runs as a statement')
+    assert.strictEqual(await sentName('7_1', 'a];commit--'), '[a]];commit--]', 'a ] in the name should be doubled')
+    assert.strictEqual(await sentName('7_1', ''), '', 'no name should be sent as no name')
+    assert.strictEqual(await sentName('7_1', null), '', 'a null name should be sent as no name')
+    assert.strictEqual(await sentName('7_1', undefined), '', 'an undefined name should be sent as no name')
+  })
+
+  it('should send the name as given where the driver sends it as data', async () => {
+    for (const tdsVersion of ['7_2', '7_3_A', '7_3_B', '7_4']) {
+      for (const name of ['tx', 'my tx', "x;drop table t;--'", '[x]', '']) {
+        assert.strictEqual(await sentName(tdsVersion, name), name, `${JSON.stringify(name)} should be sent unchanged on TDS ${tdsVersion}`)
+      }
+    }
+  })
+
+  it('should send the name it read, so a second read cannot differ', async () => {
+    let sent
+    const pool = setup('7_1', (callback, n) => {
+      sent = n
+      setImmediate(callback, null)
+    })
+    const tx = new TediousTransaction(pool)
+    let reads = 0
+    Object.defineProperty(tx, 'name', { get () { return ++reads === 1 ? 'safe' : 'x;commit--' } })
+    await begin(tx)
+    assert.strictEqual(sent, '[safe]', 'the name sent should be the one first read')
+  })
+
+  it('should reject with what reading the name throws, without taking a connection', async () => {
+    const thrown = new Error('no name')
+    const pool = setup('7_4', () => assert.fail('beginTransaction should not be called'))
+    const tx = new TediousTransaction(pool)
+    Object.defineProperty(tx, 'name', { get () { throw thrown } })
+    await assert.rejects(begin(tx), err => err === thrown, 'begin should reject with the error the name threw')
+    assert.strictEqual(pool.acquired, 0, 'no connection should have been taken')
+  })
+
+  it('should reject a name that is not a string without taking a connection', async () => {
+    for (const name of [5, true, ['tx'], { toString () { return 'tx' } }]) {
+      const pool = setup('7_4', () => assert.fail('beginTransaction should not be called'))
+      const tx = new TediousTransaction(pool)
+      tx.name = name
+      await assert.rejects(begin(tx), err => err instanceof sql.TransactionError && err.code === 'EINJECT',
+        `${JSON.stringify(name)} should be rejected`)
+      assert.strictEqual(pool.acquired, 0, 'no connection should have been taken')
+    }
+  })
+
+  it('should reject a name longer than 32 UTF-16 code units without taking a connection', async () => {
+    // 'é' is one code unit, '😀' is two
+    for (const name of ['x'.repeat(33), 'é'.repeat(33), '😀'.repeat(16) + 'x', 'x'.repeat(128)]) {
+      for (const tdsVersion of ['7_1', '7_4']) {
+        const pool = setup(tdsVersion, () => assert.fail('beginTransaction should not be called'))
+        const tx = new TediousTransaction(pool)
+        tx.name = name
+        await assert.rejects(begin(tx), err => err instanceof sql.TransactionError && err.code === 'EINJECT',
+          `a name of ${name.length} code units should be rejected on TDS ${tdsVersion}`)
+        assert.strictEqual(pool.acquired, 0, 'no connection should have been taken')
+      }
+    }
+  })
+
+  it('should send a name of 32 UTF-16 code units', async () => {
+    for (const name of ['x'.repeat(32), '😀'.repeat(16), ']'.repeat(32)]) {
+      assert.strictEqual(await sentName('7_4', name), name, `a name of ${name.length} code units should be sent on TDS 7.4`)
+      assert.strictEqual(await sentName('7_1', name), `[${name.replace(/]/g, ']]')}]`, `a name of ${name.length} code units should be sent quoted on TDS 7.1`)
+    }
+  })
+})
+
+describe('msnodesqlv8 bulk load table names', () => {
+  const Module = require('module')
+
+  // msnodesqlv8's table manager looks a bulk load's table up by writing the name it is given
+  // into a query of its own, then builds an INSERT from what it found. The stub stands in for
+  // the driver; its table manager records the names it is given and finds `found` for each.
+  const STUB = 'msnodesqlv8-stub'
+  const REQUEST = require.resolve('../../lib/msnodesqlv8/request')
+  let resolveFilename
+  let Request
+
+  before(() => {
+    resolveFilename = Module._resolveFilename
+    Module._resolveFilename = function (request, ...rest) {
+      return request === 'msnodesqlv8' ? STUB : resolveFilename.call(this, request, ...rest)
+    }
+    require.cache[STUB] = { id: STUB, filename: STUB, loaded: true, exports: {} }
+    delete require.cache[REQUEST]
+    Request = require(REQUEST)
+  })
+
+  after(() => {
+    Module._resolveFilename = resolveFilename
+    delete require.cache[STUB]
+    delete require.cache[REQUEST]
+  })
+
+  // a column as the table manager reports it, in a table the server found
+  const column = (name, catalog = 'db', extra = {}) => Object.assign({ name, table_catalog: catalog, table_schema: 'dbo', table_name: 't' }, extra)
+
+  const setup = (found = [column('a')]) => {
+    const bound = []
+    const inserted = []
+    const queried = []
+    const connection = {
+      setUseNumericString () {},
+      queryRaw (statement, callback) {
+        queried.push(statement)
+        setImmediate(callback, null)
+      },
+      tableMgr: () => ({
+        bind (name, callback) {
+          bound.push(name)
+          setImmediate(callback, {
+            columns: found,
+            insertRows (rows, done) {
+              inserted.push(rows)
+              setImmediate(done, null)
+            }
+          })
+        }
+      })
+    }
+    const pool = {
+      connected: true,
+      config: {},
+      acquired: 0,
+      released: 0,
+      acquire (request, callback) {
+        this.acquired++
+        callback(null, connection, { requestTimeout: 15000 })
+      },
+      release () { this.released++ }
+    }
+    return { request: new Request(pool), pool, bound, inserted, queried }
+  }
+
+  const table = (name, create = false) => {
+    const t = new sql.Table(name)
+    t.create = create
+    t.columns.add('a', sql.Int, { nullable: true })
+    t.rows.add(1)
+    return t
+  }
+
+  // the callback form, so that a Promise library another test set on `sql` is not used here
+  const bulk = (request, t) => new Promise((resolve, reject) => {
+    request.bulk(t, (err, result) => err ? reject(err) : resolve(result))
+  })
+
+  const rejectsAsInjection = async (bulk, message) => {
+    await assert.rejects(bulk, err => {
+      assert.ok(err instanceof sql.RequestError, `the rejection should be a RequestError, got ${err}`)
+      assert.strictEqual(err.code, 'EINJECT', 'the rejection should carry the identifier error code')
+      assert.match(err.message, message, `the rejection should say why, got '${err.message}'`)
+      return true
+    })
+  }
+
+  // Rejected before a connection is borrowed, so neither the table manager nor the server
+  // should see the name, even when the table is to be created.
+  const rejectsBeforeBorrowing = async (names, message) => {
+    for (const name of names) {
+      for (const create of [false, true]) {
+        const { request, pool, bound, queried } = setup()
+        await rejectsAsInjection(bulk(request, table(name, create)), message)
+        assert.deepStrictEqual(bound, [], `the table manager should not be given '${name}'`)
+        assert.deepStrictEqual(queried, [], `no statement should be sent for '${name}'`)
+        assert.strictEqual(pool.acquired, 0, `a connection should not be borrowed for '${name}'`)
+      }
+    }
+  }
+
+  // Rejected once the table manager has found the table, so the connection that was borrowed
+  // should go back, and no row should be sent.
+  const rejectsAfterLookup = async (found, t, message) => {
+    const { request, pool, bound, inserted } = setup(found)
+    await rejectsAsInjection(bulk(request, t), message)
+    assert.strictEqual(bound.length, 1, `the table manager should be given '${t.path}' to look up`)
+    assert.deepStrictEqual(inserted, [], `there should be no INSERT into '${t.path}'`)
+    assert.strictEqual(pool.acquired, 1, 'one connection should be borrowed')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  }
+
+  const loads = async (names, found) => {
+    for (const [name, expected] of Object.entries(names)) {
+      const { request, pool, bound, inserted } = setup(found)
+      const result = await bulk(request, table(name))
+      assert.deepStrictEqual(bound, [expected], `the table manager should be given '${expected}' for '${name}'`)
+      assert.deepStrictEqual(inserted, [[{ a: 1 }]], `the row should be inserted into '${name}'`)
+      assert.strictEqual(result.rowsAffected, 1, `the bulk load into '${name}' should report the row`)
+      assert.strictEqual(pool.released, 1, 'the connection should be released once')
+    }
+  }
+
+  // names that are looked up today and found, whose bulk loads therefore work
+  it('should give the table manager the name it was given before', async () => {
+    await loads({
+      plain: 'plain',
+      'dbo.plain': 'dbo.plain',
+      'mydb.dbo.plain': 'mydb.dbo.plain',
+      '[mydb].[dbo].[plain]': 'mydb.dbo.plain',
+      'notexistingdb.dbo.plain': 'notexistingdb.dbo.plain',
+      '#temp': '#temp',
+      '##global_temp': '##global_temp',
+      '#tëmp_$1': '#tëmp_$1',
+      '[with space]': 'with space',
+      '[my schema].[dash-name]': 'my schema.dash-name',
+      'dbo.[semi;colon]': 'dbo.semi;colon',
+      '[dash--dash]': 'dash--dash',
+      '[slash/*star*/]': 'slash/*star*/',
+      '[close)paren]': 'close)paren',
+      '[double"quote]': 'double"quote',
+      '[ünï]': 'ünï',
+      // a `$` is only replaced by the table manager when a `, ' or & follows it
+      'dbo.[cost$]': 'dbo.cost$',
+      'dbo.[a$1]': 'dbo.a$1',
+      // a doubled quote is read as one by the table manager's lookup
+      "[O''Brien]": "O''Brien",
+      "[O''Schema].plain": "O''Schema.plain",
+      // the table manager splits this on its `.` and looks up table b in schema a
+      '[a.b]': 'a.b'
+    })
+  })
+
+  it('should give the table manager a database name with space around it or in double quotes as before', async () => {
+    await loads({
+      '"mydb".dbo.plain': '"mydb".dbo.plain',
+      '"my db".[dbo].[plain]': '"my db".dbo.plain',
+      '[mydb ].dbo.plain': 'mydb .dbo.plain',
+      '[ mydb].dbo.plain': ' mydb.dbo.plain',
+      '[\tmydb\n].dbo.plain': '\tmydb\n.dbo.plain',
+      // the server reads these as space, though JavaScript does not
+      '[mydb\u0085].dbo.plain': 'mydb\u0085.dbo.plain',
+      '[mydb\u200b].dbo.plain': 'mydb\u200b.dbo.plain',
+      '[ "mydb" ].dbo.plain': ' "mydb" .dbo.plain'
+    })
+  })
+
+  it('should reject a table or schema name that would end the quoted string it is looked up by', async () => {
+    await rejectsBeforeBorrowing([
+      "[O'Brien]",
+      "[O'''Brien]",
+      "dbo.[it's]",
+      "[it's].plain",
+      "mydb.[dbo'].plain"
+    ], /quoted string/)
+  })
+
+  it('should reject a database name that is neither a bare identifier nor in double quotes', async () => {
+    await rejectsBeforeBorrowing([
+      '[my db].dbo.plain',
+      '[my;db].dbo.plain',
+      '[my-db].dbo.plain',
+      "[d''b].dbo.plain",
+      '[my/*db*/].dbo.plain',
+      // NUL is not space to the server
+      '[mydb\0].dbo.plain',
+      '"mydb.dbo.plain',
+      '[mydb"].dbo.plain',
+      '[my"d"b].dbo.plain',
+      '[""].dbo.plain',
+      // a part before the database is held to the same rule, though the table manager drops it
+      '[my server.mydb].dbo.plain'
+    ], /database name/)
+  })
+
+  it('should reject a database name with a quote in it, with space around it or in double quotes', async () => {
+    await rejectsBeforeBorrowing([
+      "[d'b].dbo.plain",
+      "\"my'db\".dbo.plain",
+      "\"mydb'\".dbo.plain",
+      "[my'db ].dbo.plain",
+      "[ 'mydb].dbo.plain"
+    ], /database name/)
+  })
+
+  it('should reject a temporary table name that is not a bare identifier', async () => {
+    await rejectsBeforeBorrowing([
+      '[#with space]',
+      '[#dash-name]',
+      '[#semi;colon]',
+      "[#O''Brien]",
+      '[#temp ]',
+      '[my db].dbo.#temp'
+    ], /temporary table/)
+  })
+
+  it('should reject a name with a $ that the table manager would replace with part of its query', async () => {
+    await rejectsBeforeBorrowing([
+      'dbo.[a$&b]',
+      'dbo.[a$`b]',
+      "dbo.[a$''b]",
+      '[a$&b].plain',
+      '"my$&db".dbo.plain',
+      '"my$`db".dbo.plain'
+    ], /replaces/)
+  })
+
+  it('should check the path the table manager is given, not the name the table was made with', async () => {
+    const { request, pool, bound } = setup()
+    const t = table('plain')
+    t.path = "[it's]"
+    await rejectsAsInjection(bulk(request, t), /quoted string/)
+    assert.deepStrictEqual(bound, [], 'the table manager should not be given a path set after the table was made')
+    assert.strictEqual(pool.acquired, 0, 'a connection should not be borrowed')
+  })
+
+  it('should give the table manager the path that was checked', async () => {
+    const { request, pool, bound } = setup()
+    const t = table('plain')
+    // a path that changes once the connection is borrowed, after it was checked
+    Object.defineProperty(t, 'path', {
+      get () { return pool.acquired ? "[it's]" : '[plain]' },
+      configurable: true
+    })
+    await bulk(request, t)
+    assert.deepStrictEqual(bound, ['plain'], 'the table manager should be given the path as it was checked')
+  })
+
+  it('should reject a table in tempdb with a part that is neither bare nor in double quotes, once it is found', async () => {
+    // the connection's own database can be tempdb, so a name found there need not say so
+    for (const name of ['[with space]', 'tempdb.dbo.[with space]', 'TEMPDB.dbo.[semi;colon]', '[tempdb ].dbo.[a b]', 'tempdb.dbo.[a"b]', '"tempdb".dbo.[""]']) {
+      await rejectsAfterLookup([column('a', 'tempdb')], table(name, true), /in tempdb/)
+    }
+  })
+
+  it('should load a table in tempdb whose parts are bare, have space around them or are in double quotes', async () => {
+    await loads({
+      '#temp': '#temp',
+      'tempdb.dbo.plain': 'tempdb.dbo.plain',
+      plain: 'plain',
+      '[tempdb ].dbo.plain': 'tempdb .dbo.plain',
+      '"tempdb".dbo.plain': '"tempdb".dbo.plain',
+      'tempdb.dbo."plain table"': 'tempdb.dbo."plain table"',
+      'dbo."plain table"': 'dbo."plain table"'
+    }, [column('a', 'tempdb')])
+  })
+
+  it('should reject a table whose name, as the server reports it, contains a ]', async () => {
+    // the table manager writes the names it found as `[database].[schema].[table]`
+    for (const key of ['table_catalog', 'table_schema', 'table_name']) {
+      await rejectsAfterLookup([column('a', 'db', { [key]: 'x]y' }), column('b')], table('plain'), /Invalid table name '[^']*x\]y/)
+    }
+  })
+
+  it('should load a table in tempdb by the name it was given, whatever the server reports its name as', async () => {
+    // the table manager writes a table in tempdb as the name it was given, not the name it found
+    await loads({ '#temp': '#temp' }, [column('a', 'tempdb', { table_schema: 'x]y', table_name: '#temp]' })])
+  })
+
+  it('should reject a table with a column the driver would write with a ] in its name', async () => {
+    // node-mssql creates `a]]b` as the column `a]b`, which the driver then writes as `[a]b]`
+    const t = table('plain', true)
+    t.columns.add('a]]b', sql.Int, { nullable: true })
+    t.rows[0].push(2)
+    await rejectsAfterLookup([column('a'), column('a]b')], t, /Invalid column name 'a\]b'/)
+  })
+
+  it('should load a table whose only column with a ] in its name is one the driver does not write', async () => {
+    const readOnly = [
+      column('i]d', 'db', { is_identity: true }),
+      column('c]c', 'db', { isReadOnly: () => true })
+    ]
+    await loads({ plain: 'plain' }, [column('a'), ...readOnly])
+  })
+
+  it('should reject a path set by hand that is not a qualified name, before borrowing, when the table is to be created', async () => {
+    for (const path of ['[t];x', 'dbo.t x']) {
+      const { request, pool, bound, queried } = setup()
+      const t = table('dbo.t', true)
+      t.path = path
+      await rejectsAsInjection(bulk(request, t), /Invalid table name/)
+      assert.deepStrictEqual(bound, [], `the table manager should not be given ${JSON.stringify(path)}`)
+      assert.deepStrictEqual(queried, [], `no statement should be sent for ${JSON.stringify(path)}`)
+      assert.strictEqual(pool.acquired, 0, `a connection should not be borrowed for ${JSON.stringify(path)}`)
+    }
+  })
+
+  it('should give the table manager a path set by hand as before when the table is not to be created', async () => {
+    const { request, bound, inserted } = setup()
+    const t = table('dbo.t')
+    t.path = 'dbo.my table'
+    await bulk(request, t)
+    assert.deepStrictEqual(bound, ['dbo.my table'], 'the table manager should be given the path it was given before')
+    assert.deepStrictEqual(inserted, [[{ a: 1 }]], 'the row should be inserted')
+  })
+})
+
+describe('tedious bulk load table path', () => {
+  const TediousRequest = require('../../lib/tedious/request')
+  const { EventEmitter } = require('events')
+
+  // tedious writes the table's path as it is into `insert bulk`. The connection stands in for
+  // tedious and records the path it is given.
+  const setup = () => {
+    const paths = []
+    const batches = []
+    const connection = Object.assign(new EventEmitter(), {
+      cancel () {},
+      newBulkLoad (path, options, done) {
+        paths.push(path)
+        return { addColumn () {}, done }
+      },
+      execBulkLoad (bulk, rows) {
+        setImmediate(bulk.done, null, rows.length)
+      },
+      execSqlBatch (req) {
+        batches.push(req.sqlTextOrProcedure)
+        setImmediate(() => req.callback(null))
+      }
+    })
+    const pool = {
+      connected: true,
+      config: {},
+      acquired: 0,
+      released: 0,
+      acquire (request, callback) {
+        this.acquired++
+        callback(null, connection, {})
+      },
+      release () { this.released++ }
+    }
+    return { request: new TediousRequest(pool), pool, paths, batches }
+  }
+
+  const table = (path, create = false) => {
+    const t = new sql.Table('dbo.t')
+    if (path !== undefined) t.path = path
+    t.create = create
+    t.columns.add('a', sql.Int, { nullable: true })
+    t.rows.add(1)
+    return t
+  }
+
+  // the callback form, so that a Promise library another test set on `sql` is not used here
+  const bulk = (request, t) => new Promise((resolve, reject) => {
+    request.bulk(t, (err, result) => err ? reject(err) : resolve(result))
+  })
+
+  it('should reject a path that is not a qualified name before borrowing a connection', async () => {
+    for (const path of ['[t];x', 'dbo.t x', '[a]b]']) {
+      for (const create of [false, true]) {
+        const { request, pool, paths, batches } = setup()
+        await assert.rejects(bulk(request, table(path, create)), err => err instanceof sql.RequestError && err.code === 'EINJECT',
+          `the path ${JSON.stringify(path)} should be rejected with EINJECT`)
+        assert.strictEqual(pool.acquired, 0, `a connection should not be borrowed for ${JSON.stringify(path)}`)
+        assert.deepStrictEqual(paths, [], `tedious should not be given ${JSON.stringify(path)}`)
+        assert.deepStrictEqual(batches, [], `no statement should be sent for ${JSON.stringify(path)}`)
+      }
+    }
+  })
+
+  it('should give tedious the path the table was built with', async () => {
+    for (const create of [false, true]) {
+      const { request, pool, paths } = setup()
+      const result = await bulk(request, table(undefined, create))
+      assert.deepStrictEqual(paths, ['[dbo].[t]'], 'tedious should be given the path as it was built')
+      assert.strictEqual(result.rowsAffected, 1, 'the bulk load should report the row')
+      assert.strictEqual(pool.released, 1, 'the connection should be released once')
+    }
+  })
+
+  it('should look the table up by the path as a string, not by a replace() of its own', async () => {
+    const { request, batches } = setup()
+    const path = { toString: () => '[dbo].[t]', trim: () => '[dbo].[t]', replace: () => 'REPLACED' }
+    await bulk(request, table(path, true))
+    assert.strictEqual(batches.length, 1, 'one create statement should be sent')
+    assert.ok(batches[0].startsWith("if object_id('[dbo].[t]') is null create table [dbo].[t] "), `the create statement should look the table up by its path, got ${batches[0]}`)
+    assert.ok(!batches[0].includes('REPLACED'), 'the path\'s own replace() should not be used')
+  })
+
+  it('should look the table up by the path it creates, with the space around it removed', async () => {
+    const { request, batches, paths } = setup()
+    await bulk(request, table(' [dbo].[t] ', true))
+    assert.ok(batches[0].startsWith("if object_id('[dbo].[t]') is null create table [dbo].[t] "), `the table looked up should be the one created, got ${batches[0]}`)
+    assert.deepStrictEqual(paths, ['[dbo].[t]'], 'tedious should be given the path without the space around it')
+  })
+
+  it('should refuse a column type that tedious has no type for, before borrowing a connection', async () => {
+    for (const create of [false, true]) {
+      const { request, pool, paths, batches } = setup()
+      const t = table(undefined, create)
+      t.columns[0].type = { declaration: 'int' }
+      await assert.rejects(bulk(request, t), err => err instanceof sql.RequestError && /cannot bulk load/.test(err.message),
+        'a column type tedious cannot bulk load should be refused')
+      assert.strictEqual(pool.acquired, 0, 'a connection should not be borrowed')
+      assert.deepStrictEqual(paths, [], 'tedious should not be given the table')
+      assert.deepStrictEqual(batches, [], 'no statement should be sent')
+    }
+  })
+
+  it('should bulk load a column whose type is a tedious type given directly', async () => {
+    const { request, paths } = setup()
+    const t = table()
+    t.columns[0].type = require('tedious').TYPES.Int
+    const result = await bulk(request, t)
+    assert.deepStrictEqual(paths, ['[dbo].[t]'], 'tedious should be given the table')
+    assert.strictEqual(result.rowsAffected, 1, 'the bulk load should report the row')
+  })
+
+  it('should refuse a column type that changes after it was checked, and release the connection', async () => {
+    const { request, pool, paths } = setup()
+    const t = table()
+    let reads = 0
+    Object.defineProperty(t.columns[0], 'type', { get () { return ++reads <= 2 ? sql.Int().type : { declaration: 'int' } } })
+    await assert.rejects(bulk(request, t), err => /cannot bulk load/.test(err.message), 'a column type that changed should be refused where tedious is given it')
+    assert.deepStrictEqual(paths, ['[dbo].[t]'], 'the bulk load should have been started')
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+  })
+
+  it('should give tedious the path it checked, so a later read cannot differ', async () => {
+    const { request, paths } = setup()
+    const t = table()
+    let reads = 0
+    Object.defineProperty(t, 'path', { get () { return ++reads === 1 ? '[dbo].[t]' : '[t];x' } })
+    await assert.rejects(bulk(request, t), err => err.code === 'EINJECT', 'a path that changes after it was checked should be rejected where it is written')
+    assert.deepStrictEqual(paths, [], 'tedious should not be given the changed path')
   })
 })
