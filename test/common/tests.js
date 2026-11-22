@@ -1627,7 +1627,10 @@ module.exports = (sql, driver) => {
       req.bulk(table).then(() => {
         assert.fail('bulk() should reject a value that is not a string')
       }).catch(err => {
-        assert.strictEqual(err.message, 'Invalid string.')
+        // tedious 20.4.1 and later report the column and row, and keep the validation error as
+        // the cause; earlier versions report the validation error itself
+        const validation = err.originalError && err.originalError.cause ? err.originalError.cause : err
+        assert.strictEqual(validation.message, 'Invalid string.', 'the error should be the string validation error, or have it as its cause')
         assert.strictEqual(err.code, 'EREQUEST')
         assert.strictEqual(err.name, 'RequestError')
         done()
