@@ -153,6 +153,7 @@ describe('msnodesqlv8', function () {
     it('bulk converts dates', done => TESTS['bulk converts dates'](done))
     it('bulk load rejects unsafe column names without leaking a connection', done => TESTS['bulk load rejects unsafe column names without leaking a connection']('bulk_table_unsafe', done))
     it('bulk load releases the connection when a column name changes after the check', done => TESTS['bulk load releases the connection when a column name changes after the check']('bulk_table_mutated', done))
+    it('bulk load releases the connection when the table lookup fails', done => TESTS['bulk load releases the connection when the table lookup fails']('bulk_table_lookup', done))
     it('bulk load into an existing table rejects an unsafe column name', done => TESTS['bulk load into an existing table rejects an unsafe column name']('bulk_table', done))
 
     after(done => sql.close(done))

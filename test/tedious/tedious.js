@@ -112,6 +112,7 @@ describe('tedious', () => {
     it('transaction uses default isolation level', done => TESTS['transaction uses default isolation level'](done))
     it('transaction with error (XACT_ABORT set to ON)', done => TESTS['transaction with error'](done))
     it('transaction with synchronous error', done => TESTS['transaction with synchronous error'](done))
+    it('transaction name is stored as given', done => TESTS['transaction name is stored as given'](config(), done))
     it('cancel request', done => TESTS['cancel request'](done, /Canceled./))
     it('allows repeat calls to connect', done => TESTS['repeat calls to connect resolve'](config(), done))
     it('calls to close during connection throw', done => TESTS['calls to close during connection throw'](config(), done))
@@ -151,6 +152,25 @@ describe('tedious', () => {
     after(done => sql.close(done))
   })
 
+  describe('TDS 7.1', () => {
+    const tds71 = () => {
+      const cfg = config()
+      cfg.options = Object.assign({}, cfg.options, { tdsVersion: '7_1' })
+      return cfg
+    }
+
+    before(function (done) {
+      // nothing to test against a server that refuses a TDS 7.1 login; the suite's own connection
+      // has already shown the server and credentials work, and the test checks 7.1 was agreed
+      const pool = new sql.ConnectionPool(tds71())
+      pool.connect().then(() => pool.close()).then(() => done(), () => {
+        this.skip()
+      }).catch(done)
+    })
+
+    it('transaction name is stored as given', done => TESTS['transaction name is stored as given'](tds71(), done))
+  })
+
   describe('bulk load', () => {
     before((done) => {
       sql.connect(config(), (err) => {
@@ -167,6 +187,7 @@ describe('tedious', () => {
     it('bulk converts dates', done => TESTS['bulk converts dates'](done))
     it('bulk load rejects unsafe column names without leaking a connection', done => TESTS['bulk load rejects unsafe column names without leaking a connection']('bulk_table_unsafe', done))
     it('bulk load releases the connection when a column name changes after the check', done => TESTS['bulk load releases the connection when a column name changes after the check']('bulk_table_mutated', done))
+    it('bulk load releases the connection when the table lookup fails', done => TESTS['bulk load releases the connection when the table lookup fails']('bulk_table_lookup', done))
     it('bulk load into an existing table rejects an unsafe column name', done => TESTS['bulk load into an existing table rejects an unsafe column name']('bulk_table', done))
     it('bulk insert with length option as undefined throws (table)', done => TESTS['bulk insert with length option as undefined throws']('bulk_table3', done))
     it('bulk insert with length option as string other than max throws (table)', done => TESTS['bulk insert with length option as string other than max throws']('bulk_table4', done))
