@@ -1627,7 +1627,10 @@ module.exports = (sql, driver) => {
       req.bulk(table).then(() => {
         assert.fail('bulk() should reject a value that is not a string')
       }).catch(err => {
-        assert.strictEqual(err.message, 'Invalid string.')
+        // tedious 20.4.1 and later report the column and row, and keep the validation error as
+        // the cause; earlier versions report the validation error itself
+        const validation = err.originalError && err.originalError.cause ? err.originalError.cause : err
+        assert.strictEqual(validation.message, 'Invalid string.', 'the error should be the string validation error, or have it as its cause')
         assert.strictEqual(err.code, 'EREQUEST')
         assert.strictEqual(err.name, 'RequestError')
         done()
@@ -2364,6 +2367,44 @@ module.exports = (sql, driver) => {
           if (pool) pool.close().catch(() => {})
           stopProxy().then(() => done(err))
         })
+      })
+    },
+
+    'transaction name is stored as given' (config, done) {
+      // Before TDS 7.2 tedious builds the name into `BEGIN TRAN <name>` as SQL text; from 7.2 it
+      // sends it as data. Either way the server should store the name it was given, and nothing
+      // in it should run.
+      const pool = new sql.ConnectionPool(config)
+      const names = ['x;create table tn_canary(a int)', 'commit', 'tx', 'my tx', 'a]b', '[x]']
+      const tdsVersion = config.options && config.options.tdsVersion
+
+      ;(async () => {
+        await pool.connect()
+        await pool.request().batch("if object_id('dbo.tn_canary') is not null drop table dbo.tn_canary")
+        for (const name of names) {
+          const tran = new sql.Transaction(pool)
+          tran.name = name
+          await tran.begin()
+          if (tdsVersion) {
+            // the version tedious records is the one the server agreed, which decides how the name is sent
+            assert.strictEqual(tran._acquiredConnection.config.options.tdsVersion, tdsVersion, `the connection should use TDS ${tdsVersion}`)
+          }
+          let result
+          try {
+            result = await tran.request().query(`select @@trancount as trancount, object_id('dbo.tn_canary') as canary,
+              (select t.name from sys.dm_tran_session_transactions s join sys.dm_tran_active_transactions t
+                on t.transaction_id = s.transaction_id where s.session_id = @@spid) as name`)
+          } finally {
+            await tran.rollback()
+          }
+          const row = result.recordset[0]
+          assert.strictEqual(row.canary, null, `nothing in ${JSON.stringify(name)} should have run`)
+          assert.strictEqual(row.trancount, 1, `${JSON.stringify(name)} should leave a transaction open`)
+          assert.strictEqual(row.name, name, `${JSON.stringify(name)} should be stored as given`)
+        }
+      })().then(() => pool.close().then(() => done(), done), err => {
+        pool.close().catch(() => {})
+        done(err)
       })
     },
 
