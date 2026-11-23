@@ -48,7 +48,7 @@
     "@semantic-release/npm": "^13.1.5",
     "@semantic-release/release-notes-generator": "^14.1.0",
     "mocha": "^11.0.1",
-    "semantic-release": "^25.0.3",
+    "semantic-release": "^26.0.1",
     "standard": "^17.0.0"
   },
   "engines": {
