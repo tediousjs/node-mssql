@@ -630,6 +630,48 @@ module.exports = (sql, driver) => {
       })
     },
 
+    // `mode` is 'execute', 'stream' or 'prepared statement'
+    'execute with multiple errors' (mode, done) {
+      // a procedure call that gets two errors from the server, which tedious 15+ calls the
+      // request back with as one AggregateError
+      const statement = 'raiserror(N\'first\', 16, 1); raiserror(N\'second\', 16, 1)'
+      const execute = request => request.input('stmt', sql.NVarChar(sql.MAX), statement).execute('sp_executesql')
+      const isLastOfTwo = err => {
+        assert.ok(err instanceof sql.RequestError, `the request should fail with a RequestError, got ${err}`)
+        assert.strictEqual(err.message, 'second', 'the error should be the last one from the server')
+        assert.strictEqual(err.number, 50000, 'the error should be the one from the server')
+        assert.deepStrictEqual(err.precedingErrors.map(e => e.message), ['first'], 'the error before it should precede it, once')
+        return true
+      }
+
+      let run
+      if (mode === 'stream') {
+        run = new Promise((resolve, reject) => {
+          const req = new sql.Request()
+          req.stream = true
+          const errors = []
+          req.on('error', err => errors.push(err.message))
+          req.on('done', () => {
+            try {
+              assert.deepStrictEqual(errors, ['first', 'second'], 'the stream should emit each error from the server once and in order')
+              resolve()
+            } catch (e) {
+              reject(e)
+            }
+          })
+          execute(req)
+        })
+      } else if (mode === 'prepared statement') {
+        const ps = new sql.PreparedStatement()
+        run = ps.prepare(statement)
+          .then(() => assert.rejects(ps.execute({}), isLastOfTwo))
+          .finally(() => ps.unprepare())
+      } else {
+        run = assert.rejects(execute(new sql.Request()), isLastOfTwo)
+      }
+      run.then(() => done(), done)
+    },
+
     'query with an error that does not end the batch' (done) {
       const req = new TestRequest()
       req.query('raiserror(N\'Something went wrong\', 16, 1); select 1 as a', err => {
