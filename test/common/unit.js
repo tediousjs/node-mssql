@@ -2050,6 +2050,37 @@ describe('connection string auth - tedious', () => {
     })
   })
 
+  describe('RequestError number', () => {
+    const tds = require('tedious')
+
+    for (const code of ['ETIMEOUT', 'ECANCEL', 'EPARAM', 'EINVALIDSTATE', 'ECONNRESET']) {
+      it(`should have no number for a tedious ${code} error`, () => {
+        const err = new sql.RequestError(new tds.RequestError('failed', code), 'EREQUEST')
+        assert.strictEqual(err.code, code, 'the error should keep the code of the tedious error')
+        assert.strictEqual(err.number, undefined, 'an error that did not come from SQL Server should have no error number')
+      })
+    }
+
+    it('should have no number for an error of this library', () => {
+      const cause = new sql.MSSQLError('Invalid parameter name.', 'EINJECT')
+      assert.strictEqual(new sql.RequestError(cause, 'EREQUEST').number, undefined, 'an error that did not come from SQL Server should have no error number')
+    })
+
+    it('should take the number of a SQL Server error from tedious', () => {
+      const cause = new Error("Invalid object name 'x'.")
+      cause.info = { number: 208, state: 1, class: 16, lineNumber: 1, serverName: 'server', procName: '' }
+      assert.strictEqual(new sql.RequestError(cause, 'EREQUEST').number, 208)
+    })
+
+    it('should take the number of a SQL Server error from msnodesqlv8', () => {
+      // msnodesqlv8 gives the native error number as `code`
+      const cause = Object.assign(new Error("Invalid object name 'x'."), { code: 208, sqlstate: '42S02', severity: 16, lineNumber: 1, serverName: 'server', procName: '' })
+      const err = new sql.RequestError(cause, 'EREQUEST')
+      assert.strictEqual(err.number, 208)
+      assert.strictEqual(err.state, '42S02')
+    })
+  })
+
   describe('Transaction EABORT originalError', () => {
     const BaseTransaction = require('../../lib/base/transaction')
 

@@ -2393,7 +2393,7 @@ With the `msnodesqlv8` driver, a `ConnectionError` from a failed connect has the
 
 SQL errors (`RequestError` with `err.code` equal to `EREQUEST`) contains additional details.
 
-- **err.number** - The error number.
+- **err.number** - The error number. A `RequestError` that did not come from SQL Server, for example one with the code `ETIMEOUT`, `ECANCEL` or `EPARAM`, has no error number.
 - **err.state** - The error state, used as a modifier to the number.
 - **err.class** - The class (severity) of the error. A class of less than 10 indicates an informational message. Detailed explanation can be found [here](https://msdn.microsoft.com/en-us/library/dd304156.aspx).
 - **err.lineNumber** - The line number in the SQL batch or stored procedure that caused the error. Line numbers begin at 1; therefore, if the line number is not applicable to the message, the value of LineNumber will be 0.

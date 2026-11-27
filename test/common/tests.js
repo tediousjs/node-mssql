@@ -1191,6 +1191,7 @@ module.exports = (sql, driver) => {
       }, err => {
         assert.ok(err instanceof sql.RequestError, `the rejection should be a RequestError, got ${err.constructor.name}: ${err.message}`)
         assert.strictEqual(err.code, 'EPARAM', `the rejection should carry the parameter error code, got ${err.code}`)
+        assert.strictEqual(err.number, undefined, 'an error that did not come from SQL Server should have no error number')
         assert.strictEqual(borrowed(), before, 'the pool should have every connection back')
       }).then(done, done)
     },
@@ -2482,6 +2483,7 @@ module.exports = (sql, driver) => {
       }, err => {
         assert.ok(cancels, `the request should not fail: ${err.message}`)
         assert.strictEqual(err.code, 'ECANCEL', 'the request should fail as cancelled')
+        assert.strictEqual(err.number, undefined, 'an error that did not come from SQL Server should have no error number')
       }).then(() => done(), done)
 
       // by then the query is running
