@@ -2512,7 +2512,7 @@ sql.UniqueIdentifier
 
 sql.Variant
 
-sql.Binary
+sql.Binary ([length])
 sql.VarBinary ([length])
 sql.Image
 
