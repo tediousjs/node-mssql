@@ -651,12 +651,12 @@ const config = {
 - **database** - Database to connect to (default: dependent on server configuration).
 - **connectionTimeout** - Connection timeout in ms (default: `15000`).
 - **requestTimeout** - Request timeout in ms (default: `15000`). NOTE: msnodesqlv8 driver doesn't support timeouts < 1 second. When passed via connection string, the key must be `request timeout`
-- **stream** - Stream recordsets/rows instead of returning them all at once as an argument of callback (default: `false`). You can also enable streaming for each request independently (`request.stream = true`). Always set to `true` if you plan to work with large amount of rows.
+- **stream** - Stream recordsets/rows instead of returning them all at once as an argument of callback (default: `false`). You can also enable streaming for each request independently (`request.stream = true`). Always set to `true` if you plan to work with large amount of rows. Prepared statements do not use this setting: set `ps.stream` instead.
 - **parseJSON** - Parse JSON recordsets to JS objects (default: `false`). For more information please see section [JSON support](#json-support).
 - **pool.max** - The maximum number of connections there can be in the pool (default: `10`).
 - **pool.min** - The minimum of connections there can be in the pool (default: `0`).
 - **pool.idleTimeoutMillis** - The Number of milliseconds before closing an unused connection (default: `30000`).
-- **arrayRowMode** - Return row results as a an array instead of a keyed object. Also adds `columns` array. (default: `false`) See [Handling Duplicate Column Names](#handling-duplicate-column-names)
+- **arrayRowMode** - Return row results as a an array instead of a keyed object. Also adds `columns` array. (default: `false`) Prepared statements do not use this setting: set `ps.arrayRowMode` instead. See [Handling Duplicate Column Names](#handling-duplicate-column-names)
 - **validateConnection** - Controls how connections are validated when acquired from the pool. See [Connection Validation](#connection-validation) for details. (default: `true`)
 
 Complete list of pool options can be found [here](https://github.com/vincit/tarn.js/#usage).
@@ -1495,6 +1495,8 @@ const ps = new sql.PreparedStatement(/* [pool], [options] */)
 If you omit the connection argument, the global connection is used instead.
 
 The optional `options` argument allows per-statement configuration overrides (e.g. `{ requestTimeout: 60000 }`). The timeout is applied to the `prepare`, `execute`, and `unprepare` operations.
+
+A prepared statement does not take the `stream` or `arrayRowMode` setting of the pool config. To stream its results or get its rows as arrays, set `ps.stream = true` or `ps.arrayRowMode = true` before you call `execute()`.
 
 __Example__
 

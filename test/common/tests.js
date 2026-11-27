@@ -1951,6 +1951,26 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'prepared statement uses its own stream and arrayRowMode settings' (done) {
+      // the README says that a prepared statement does not take these from the pool config
+      const config = readConfig()
+      config.stream = true
+      config.arrayRowMode = true
+      const pool = new sql.ConnectionPool(config)
+      const ps = new sql.PreparedStatement(pool)
+      pool.connect().then(() => ps.prepare('select 1 as a')).then(() => {
+        return ps.execute({})
+      }).then(result => {
+        assert.deepStrictEqual(result.recordset, [{ a: 1 }], 'the rows should be returned as objects, all at once')
+        ps.arrayRowMode = true
+        return ps.execute({})
+      }).then(result => {
+        assert.deepStrictEqual(result.recordset, [[1]], 'with ps.arrayRowMode set, the rows should be arrays')
+      }).finally(() => {
+        return ps.unprepare().catch(() => {}).then(() => pool.close())
+      }).then(() => done(), done)
+    },
+
     'unprepare gives the connection back when it fails' (config, failure, onTransaction, done) {
       const pool = new sql.ConnectionPool(config)
       const admin = new sql.ConnectionPool(config)
