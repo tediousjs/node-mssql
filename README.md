@@ -2362,6 +2362,7 @@ Name | Code | Message
 `ConnectionError` | ECONNCLOSED | Connection is closed.
 `ConnectionError` | ECLOSING | Cannot connect a pool while it is closing.
 `ConnectionError` | ECONNECTING | Cannot close a pool while it is connecting.
+`ConnectionError` | EFEDAUTH | Security token could not be authenticated or authorized (tedious, Microsoft Entra authentication). `err.originalError.errors` holds the reason.
 `TransactionError` | ENOTBEGUN | Transaction has not begun.
 `TransactionError` | EALREADYBEGUN | Transaction has already begun.
 `TransactionError` | EREQINPROG | Can't commit/rollback transaction, unprepare the statement or acquire connection for the request. There is a request in progress.

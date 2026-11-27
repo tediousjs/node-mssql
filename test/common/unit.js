@@ -2134,6 +2134,41 @@ describe('error codes', () => {
   it('should throw EARGS for the useColumnNames option', () => {
     assert.throws(() => new sql.ConnectionPool({ server: 'localhost', options: { useColumnNames: false } }), { name: 'MSSQLError', code: 'EARGS' })
   })
+
+  describe('a tedious login error in an AggregateError', () => {
+    const tds = require('tedious')
+    const { connect } = tds.Connection.prototype
+
+    // tedious connections whose connect() fails with the given error, without a server
+    const failConnectWith = loginError => {
+      tds.Connection.prototype.connect = function (callback) { setImmediate(callback, loginError) }
+    }
+
+    afterEach(() => {
+      tds.Connection.prototype.connect = connect
+    })
+
+    it('should take the code and message of its first error', async () => {
+      // what tedious fails a login with when a token credential cannot give a token
+      const reason = new Error('the credential has no token')
+      const loginError = new AggregateError([new tds.ConnectionError('Security token could not be authenticated or authorized.', 'EFEDAUTH'), reason])
+      failConnectWith(loginError)
+
+      await assert.rejects(new ConnectionPool({ server: 'localhost' })._poolCreate(), err => {
+        assert.strictEqual(err.name, 'ConnectionError')
+        assert.strictEqual(err.code, 'EFEDAUTH')
+        assert.strictEqual(err.message, 'Security token could not be authenticated or authorized.')
+        assert.strictEqual(err.originalError, loginError, 'the AggregateError should be the originalError, so that its other errors can be read')
+        return true
+      })
+    })
+
+    it('should keep the message of an AggregateError that has one', async () => {
+      failConnectWith(new AggregateError([new tds.ConnectionError('first', 'ESOCKET')], 'Could not connect'))
+
+      await assert.rejects(new ConnectionPool({ server: 'localhost' })._poolCreate(), { name: 'ConnectionError', code: 'ESOCKET', message: 'Could not connect' })
+    })
+  })
 })
 
 describe('operations with no connection', () => {
