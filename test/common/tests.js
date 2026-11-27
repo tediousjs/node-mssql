@@ -2331,6 +2331,46 @@ module.exports = (sql, driver) => {
       }).then(() => done(), done)
     },
 
+    'transaction rejects isolation levels that sql.ISOLATION_LEVEL does not have' (config, done) {
+      const pool = new sql.ConnectionPool(Object.assign({}, config, { pool: { min: 0, max: 1, acquireTimeoutMillis: 2000 } }))
+      const invalid = err => {
+        assert.ok(err instanceof sql.TransactionError, `the rejection should be a TransactionError, got ${err.name}: ${err.message}`)
+        assert.strictEqual(err.message, 'Invalid isolation level.', 'the rejection should be about the isolation level')
+        assert.strictEqual(err.code, 'EARGS', 'the rejection should have a code')
+        return true
+      }
+      const levelQuery = 'select transaction_isolation_level as level from sys.dm_exec_sessions where session_id = @@spid'
+      pool.connect().then(async () => {
+        // this transaction holds the only connection, so a begin that tried to borrow one would
+        // wait for it and fail with a timeout
+        const holder = new sql.Transaction(pool)
+        await holder.begin()
+
+        // 0 is not a level, though tedious reads it as "keep the level of the session"
+        for (const level of [0, NaN, '']) {
+          await assert.rejects(new sql.Transaction(pool).begin(level), invalid, `begin(${String(level)}) should be rejected`)
+        }
+        for (const level of [0, undefined, null, 99, '2', 2.5]) {
+          const tran = new sql.Transaction(pool)
+          tran.isolationLevel = level
+          await assert.rejects(tran.begin(), invalid, `an isolationLevel property of ${String(level)} should be rejected`)
+        }
+
+        await holder.commit()
+
+        // begin(null) gives no level, so the property is used
+        const tran = new sql.Transaction(pool)
+        tran.isolationLevel = sql.ISOLATION_LEVEL.SERIALIZABLE
+        await tran.begin(null)
+        const result = await tran.request().query(levelQuery)
+        await tran.commit()
+        assert.strictEqual(result.recordset[0].level, sql.ISOLATION_LEVEL.SERIALIZABLE, 'begin(null) should begin at the level of the isolationLevel property')
+      }).then(() => pool.close()).then(() => done(), err => {
+        pool.close().catch(() => {})
+        done(err)
+      })
+    },
+
     'transaction accepts good isolation levels' (done) {
       const promises = Object.keys(ISOLATION_LEVELS).map(level => {
         const tran = new TestTransaction()

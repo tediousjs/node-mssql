@@ -2530,6 +2530,31 @@ describe('error codes', () => {
     assert.throws(() => new sql.Transaction().begin(99, () => {}), { name: 'TransactionError', code: 'EARGS', message: 'Invalid isolation level.' })
   })
 
+  // 0 is not one of sql.ISOLATION_LEVEL, so it is not read as "no level"
+  for (const level of [0, NaN, false, '']) {
+    it(`should reject begin(${typeof level === 'string' ? "''" : level}) with EARGS`, async () => {
+      await assert.rejects(new sql.Transaction().begin(level), { name: 'TransactionError', code: 'EARGS', message: 'Invalid isolation level.' })
+      assert.throws(() => new sql.Transaction().begin(level, () => {}), { name: 'TransactionError', code: 'EARGS', message: 'Invalid isolation level.' })
+    })
+  }
+
+  for (const level of [0, undefined, null, 99, '2', 2.5]) {
+    it(`should give an isolationLevel property of ${typeof level === 'string' ? `'${level}'` : level} to the begin() callback as EARGS`, done => {
+      const tx = new sql.Transaction()
+      tx.isolationLevel = level
+      tx.begin(err => {
+        try {
+          assert.ok(err instanceof sql.TransactionError, `the callback should be given a TransactionError, got ${err && err.name}`)
+          assert.strictEqual(err.code, 'EARGS', 'the error should have a code')
+          assert.strictEqual(err.message, 'Invalid isolation level.', 'the error should be about the isolation level')
+          done()
+        } catch (err) {
+          done(err)
+        }
+      })
+    })
+  }
+
   it('should throw EARGS for the useColumnNames option', () => {
     assert.throws(() => new sql.ConnectionPool({ server: 'localhost', options: { useColumnNames: false } }), { name: 'MSSQLError', code: 'EARGS' })
   })
@@ -6634,6 +6659,34 @@ describe('transaction begin failures', () => {
 
       await tx.begin()
       assert.strictEqual(pool.lent, 2, 'the transaction should begin again on another connection')
+    })
+
+    it('should reject an invalid isolationLevel property with EARGS before it borrows a connection', async () => {
+      // tedious takes 0 to mean "keep the level of the session", and undefined to mean the level
+      // in its own options, but neither is one of sql.ISOLATION_LEVEL
+      for (const level of [0, undefined, null, 99, -1, 2.5, '2', NaN]) {
+        const pool = lend(state, connect(BEGINS))
+        const tx = new Transaction(pool)
+        tx.isolationLevel = level
+
+        await assert.rejects(tx.begin(), { name: 'TransactionError', code: 'EARGS', message: 'Invalid isolation level.' }, `an isolationLevel property of ${String(level)} should be rejected`)
+        assert.strictEqual(pool.lent, 0, `the transaction should not borrow a connection for an isolationLevel property of ${String(level)}`)
+      }
+    })
+
+    it('should begin at the level of the isolationLevel property when begin() is given no level', async () => {
+      for (const level of [undefined, null]) {
+        const levels = []
+        const pool = lend(state, connect((callback, name, isolationLevel) => {
+          levels.push(isolationLevel)
+          setImmediate(callback)
+        }))
+        const tx = new Transaction(pool)
+        tx.isolationLevel = sql.ISOLATION_LEVEL.SERIALIZABLE
+
+        await tx.begin(level)
+        assert.deepStrictEqual(levels, [sql.ISOLATION_LEVEL.SERIALIZABLE], `begin(${String(level)}) should begin at the level of the isolationLevel property`)
+      }
     })
 
     it('should close the connection before giving it back when the request to begin fails', async () => {

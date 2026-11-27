@@ -1415,7 +1415,7 @@ Begin a transaction.
 
 __Arguments__
 
-- **isolationLevel** - Controls the locking and row versioning behavior of TSQL statements issued by a connection. Optional. `READ_COMMITTED` by default. To change the default for new transactions, set `sql.Transaction.defaultIsolationLevel`. For possible values see `sql.ISOLATION_LEVEL`.
+- **isolationLevel** - Controls the locking and row versioning behavior of TSQL statements issued by a connection. Optional. If omitted (or `null`), the transaction's `isolationLevel` property is used, which is `READ_COMMITTED` by default. To change the default for new transactions, set `sql.Transaction.defaultIsolationLevel`. The level must be one of the values of `sql.ISOLATION_LEVEL`. Any other value, including `0`, is an error.
 - **callback(err)** - A callback which is called after transaction has began, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__
@@ -1432,7 +1432,7 @@ __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - EALREADYBEGUN (`TransactionError`) - Transaction has already begun.
-- EARGS (`TransactionError`) - Invalid isolation level. With a callback, `begin()` throws this error rather than passing it to the callback.
+- EARGS (`TransactionError`) - Invalid isolation level: the `isolationLevel` argument or the transaction's `isolationLevel` property is not one of `sql.ISOLATION_LEVEL`. With a callback, `begin()` throws this error for an invalid argument rather than passing it to the callback.
 - EINJECT (`TransactionError`) - Transaction name is not a string, or is longer than 32 characters (`tedious` driver). See [Transaction names](#transaction-names).
 
 If the transaction fails to begin once it has a connection, the error is a `TransactionError`, with the error it comes from as its `originalError`. The connection goes back to the pool, and the transaction can be begun again. A connection that may have sent the request to begin the transaction is closed rather than lent out again, as the server may have begun the transaction even though the request failed (for example, when it timed out).
