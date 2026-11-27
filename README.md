@@ -2391,7 +2391,7 @@ Name | Code | Message
 `PreparedStatementError` | ENOCONN | No connection is specified for that prepared statement.
 `MSSQLError` | EARGS | Invalid `useColumnNames` option in the pool config. Use `arrayRowMode` instead.
 
-With the `msnodesqlv8` driver, a `ConnectionError` from a failed connect has the ODBC native error number as its `code`. See [connect](#connect-callback).
+With the `msnodesqlv8` driver, a `ConnectionError` from a failed connect has the ODBC native error number as its `code`. See [connect](#connect-callback). A request timeout (`ETIMEOUT`) has the ODBC SQLSTATE `HYT00` as its `state`.
 
 ### Detailed SQL Errors
 

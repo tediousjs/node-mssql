@@ -4418,6 +4418,94 @@ describe('msnodesqlv8 query events', () => {
     }
   })
 
+  // the driver's query timeout ends the batch on an error with SQLSTATE HYT00 and the number 0,
+  // which is followed by 'free', not 'done'
+  describe('a request timeout', () => {
+    const TIMEOUT = () => odbcError('[Microsoft][ODBC Driver 17 for SQL Server]Query timeout expired', 0, 'HYT00')
+    const TIMES_OUT = notify => {
+      notify.fail(TIMEOUT(), false)
+      notify.emit('free')
+    }
+    const DELAY = 'waitfor delay \'00:00:05\''
+
+    const isTheTimeout = err => {
+      assert.ok(err instanceof RequestError, `the timeout should be a RequestError, got ${err.name}`)
+      assert.strictEqual(err.code, 'ETIMEOUT', 'the timeout should have the code that tedious gives it')
+      assert.strictEqual(err.number, undefined, 'the timeout should have no error number, as it does not come from SQL Server')
+      assert.strictEqual(err.state, 'HYT00', 'the timeout should keep its SQLSTATE as its state')
+      assert.strictEqual(err.message, 'Query timeout expired', 'the timeout should keep the message of the driver')
+      assert.strictEqual(err.originalError.sqlstate, 'HYT00', 'the error of the driver should be kept')
+      return true
+    }
+
+    for (const [method, run] of [
+      ['query', request => request.query(DELAY)],
+      ['execute', request => request.execute('p')],
+      ['batch', request => request.batch(DELAY)]
+    ]) {
+      it(`should reject ${method}() with ETIMEOUT`, async () => {
+        const { request, pool } = setup(TIMES_OUT)
+        await assert.rejects(run(request), isTheTimeout)
+        await tick()
+        assert.strictEqual(pool.released, 1, 'the connection should be released once')
+      })
+    }
+
+    // msnodesqlv8 >= 5.6
+    it('should reject with ETIMEOUT after an error that does not end the batch', async () => {
+      const { request } = setup(notify => {
+        notify.fail(odbcError('Something went wrong', 50000, '42000'), true)
+        TIMES_OUT(notify)
+      })
+      await assert.rejects(request.query(`raiserror(N'Something went wrong', 16, 1); ${DELAY}`), err => {
+        isTheTimeout(err)
+        assert.deepStrictEqual(err.precedingErrors.map(e => [e.code, e.number]), [['EREQUEST', 50000]], 'the error before the timeout should keep its code and number')
+        return true
+      })
+    })
+
+    it('should stream a timeout with ETIMEOUT, then complete', async () => {
+      const { request, pool } = setup(TIMES_OUT)
+      request.stream = true
+      const errors = []
+      request.on('error', err => errors.push(err))
+      const completed = new Promise(resolve => request.on('done', resolve))
+      request.query(DELAY)
+      await completed
+      assert.strictEqual(errors.length, 1, 'the timeout should be streamed once')
+      isTheTimeout(errors[0])
+      assert.strictEqual(pool.released, 1, 'the connection should be released once')
+    })
+
+    it('should reject a bulk load whose table is not created in time with ETIMEOUT', async () => {
+      const connection = {
+        useNumericString: true,
+        setUseNumericString (value) { this.useNumericString = value },
+        queryRaw (statement, callback) {
+          setImmediate(callback, TIMEOUT())
+          return new EventEmitter()
+        },
+        tableMgr: () => assert.fail('the table should not be looked up once its creation has timed out')
+      }
+      const pool = lend(connection)
+      await assert.rejects(new Request(pool).bulk(bulkTable(true)), isTheTimeout)
+      assert.strictEqual(pool.released, 1, 'the connection should be released once')
+    })
+
+    // tedious has no error like it
+    it('should leave a connection timeout (HYT01) as a request error', async () => {
+      const { request } = setup(notify => {
+        notify.fail(odbcError('Connection timeout expired', 0, 'HYT01'), false)
+        notify.emit('free')
+      })
+      await assert.rejects(request.query(DELAY), err => {
+        assert.strictEqual(err.code, 'EREQUEST', 'only a query timeout should have the code ETIMEOUT')
+        assert.strictEqual(err.number, 0, 'the error should keep the number of the driver')
+        return true
+      })
+    })
+  })
+
   describe('stream back pressure', () => {
     const { Writable, pipeline } = require('node:stream')
     const BATCH = 50
@@ -4849,7 +4937,7 @@ describe('msnodesqlv8 query events', () => {
       request.cancel()
       await completed
       assert.deepStrictEqual(calls, [], 'the driver should not be paused or cancelled part way through a fetch')
-      assert.deepStrictEqual(errors, ['EREQUEST', 'ECANCEL'], 'the timeout and then the cancel should be streamed')
+      assert.deepStrictEqual(errors, ['ETIMEOUT', 'ECANCEL'], 'the timeout and then the cancel should be streamed')
       assert.strictEqual(rows.length, 100, 'no row should be emitted after the stream was paused')
     })
 
@@ -5236,7 +5324,8 @@ describe('msnodesqlv8 query events', () => {
       notify.emit('free')
     })
     const events = await streamed(request, r => r.query('waitfor delay \'00:00:05\''))
-    assert.deepStrictEqual(events, [['error', 0], ['done']], 'the timeout should be streamed, then done once')
+    // a timeout has no error number
+    assert.deepStrictEqual(events, [['error', undefined], ['done']], 'the timeout should be streamed, then done once')
     assert.strictEqual(pool.released, 1, 'the connection should be released once')
   })
 
@@ -5907,7 +5996,7 @@ describe('msnodesqlv8 query events', () => {
     request.pause()
     await cancelled(request, r => r.query('waitfor delay \'00:00:05\'; select a from t'))
     assert.deepStrictEqual(calls, ['pause'], 'the cancel should not reach the query, which the timeout ended')
-    assert.deepStrictEqual(errors, ['EREQUEST', 'ECANCEL'], 'the timeout and then the cancel should be streamed')
+    assert.deepStrictEqual(errors, ['ETIMEOUT', 'ECANCEL'], 'the timeout and then the cancel should be streamed')
     assert.strictEqual(pool.released, 1, 'the connection should be released once')
   })
 
@@ -6763,6 +6852,7 @@ describe('transaction begin failures', () => {
         assert.ok(err instanceof TransactionError, `the rejection should be a TransactionError, got ${err.name}`)
         assert.ok(err.originalError instanceof RequestError, 'the rejection should carry the error the query failed with')
         assert.match(err.message, /Query timeout expired/, 'the rejection should say why the query failed')
+        assert.strictEqual(err.code, 'ETIMEOUT', 'the rejection should have the code of a timeout, as on tedious')
         return true
       })
       assert.deepStrictEqual(pool.returned, [{ hasError: true }], 'the connection should go back to the pool once, marked as failed')
