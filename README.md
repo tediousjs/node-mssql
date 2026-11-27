@@ -1409,7 +1409,7 @@ Begin a transaction.
 
 __Arguments__
 
-- **isolationLevel** - Controls the locking and row versioning behavior of TSQL statements issued by a connection. Optional. `READ_COMMITTED` by default. For possible values see `sql.ISOLATION_LEVEL`.
+- **isolationLevel** - Controls the locking and row versioning behavior of TSQL statements issued by a connection. Optional. `READ_COMMITTED` by default. To change the default for new transactions, set `sql.Transaction.defaultIsolationLevel`. For possible values see `sql.ISOLATION_LEVEL`.
 - **callback(err)** - A callback which is called after transaction has began, or an error has occurred. Optional. If omitted, returns [Promise](#promises).
 
 __Example__

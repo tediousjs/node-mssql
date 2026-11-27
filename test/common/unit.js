@@ -1970,6 +1970,32 @@ describe('connection string auth - tedious', () => {
     })
   })
 
+  describe('Transaction default isolation level', () => {
+    const BaseTransaction = require('../../lib/base/transaction')
+
+    afterEach(() => {
+      delete sql.Transaction.defaultIsolationLevel
+      BaseTransaction.defaultIsolationLevel = sql.ISOLATION_LEVEL.READ_COMMITTED
+    })
+
+    it('should use the default set on sql.Transaction', () => {
+      sql.Transaction.defaultIsolationLevel = sql.ISOLATION_LEVEL.SERIALIZABLE
+      assert.strictEqual(new sql.Transaction().isolationLevel, sql.ISOLATION_LEVEL.SERIALIZABLE, 'a new transaction should take the default set on sql.Transaction')
+    })
+
+    it('should use the default set on the base class', () => {
+      BaseTransaction.defaultIsolationLevel = sql.ISOLATION_LEVEL.SNAPSHOT
+      assert.strictEqual(new sql.Transaction().isolationLevel, sql.ISOLATION_LEVEL.SNAPSHOT, 'a new transaction should take the default set on the base class')
+    })
+
+    it('should use the default set on a subclass of sql.Transaction', () => {
+      class MyTransaction extends sql.Transaction {}
+      MyTransaction.defaultIsolationLevel = sql.ISOLATION_LEVEL.REPEATABLE_READ
+      assert.strictEqual(new MyTransaction().isolationLevel, sql.ISOLATION_LEVEL.REPEATABLE_READ, 'a new transaction should take the default set on its own class')
+      assert.strictEqual(new sql.Transaction().isolationLevel, sql.ISOLATION_LEVEL.READ_COMMITTED, 'the default set on a subclass should not change the default of sql.Transaction')
+    })
+  })
+
   describe('Transaction EABORT originalError', () => {
     const BaseTransaction = require('../../lib/base/transaction')
 

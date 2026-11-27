@@ -7,7 +7,6 @@ const { join } = require('node:path')
 const { readFileSync } = require('node:fs')
 const { format } = require('node:util')
 const ISOLATION_LEVELS = require('../../lib/isolationlevel')
-const BaseTransaction = require('../../lib/base/transaction')
 const versionHelper = require('./versionhelper')
 const { ConnectionPool } = require('../../lib/base')
 
@@ -2187,15 +2186,27 @@ module.exports = (sql, driver) => {
     },
 
     'transaction uses default isolation level' (done) {
-      const originalIsolationLevel = BaseTransaction.defaultIsolationLevel
-      assert.strictEqual(originalIsolationLevel, ISOLATION_LEVELS.READ_COMMITTED)
-      BaseTransaction.defaultIsolationLevel = ISOLATION_LEVELS.READ_UNCOMMITTED
-      const tran = new TestTransaction()
-      assert.strictEqual(tran.isolationLevel, ISOLATION_LEVELS.READ_UNCOMMITTED)
+      assert.strictEqual(sql.Transaction.defaultIsolationLevel, ISOLATION_LEVELS.READ_COMMITTED)
+      // sql.Transaction is the driver's subclass of the base class
+      sql.Transaction.defaultIsolationLevel = ISOLATION_LEVELS.SERIALIZABLE
+      let tran
+      try {
+        tran = new TestTransaction()
+      } finally {
+        delete sql.Transaction.defaultIsolationLevel
+      }
+      assert.strictEqual(tran.isolationLevel, ISOLATION_LEVELS.SERIALIZABLE, 'a new transaction should take the default set on sql.Transaction')
 
-      // Reset to originalIsolationLevel
-      BaseTransaction.defaultIsolationLevel = originalIsolationLevel
-      done()
+      tran.begin().then(() => {
+        return tran.request().query('select transaction_isolation_level as level from sys.dm_exec_sessions where session_id = @@spid')
+      }).then(result => {
+        // sys.dm_exec_sessions numbers the levels as sql.ISOLATION_LEVEL does
+        assert.strictEqual(result.recordset[0].level, ISOLATION_LEVELS.SERIALIZABLE, 'the transaction should run at the default isolation level')
+        return tran.commit()
+      }).then(() => done(), err => {
+        // give the connection back, so that the pool can still close
+        tran.rollback().catch(() => {}).then(() => done(err))
+      })
     },
 
     'transaction with error' (done) {
