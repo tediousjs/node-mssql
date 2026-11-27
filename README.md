@@ -601,6 +601,8 @@ sql.query('SELECT * FROM [example]').then((result) => {
 
 A handler is also called for a SQL `NULL` value, and it receives `null`. If your handler does not expect `null`, check for it, as in the example above. Without the check, `null + 1` would turn each `NULL` into `1`.
 
+If a handler throws, the request fails with a `RequestError` that has the code `EREQUEST`. Its `originalError` is what the handler threw, put into an `Error` first if it is not one. If what was thrown cannot be read, such as a revoked `Proxy`, `originalError` is an `Error` that has the thrown value as its `cause`. After a handler throws, the request calls no more handlers and gives no more rows. The query still runs to its end on the server, and the connection then goes back to the pool. In stream mode, the request emits the error as an `error` event, emits no more `row` events, and then emits `done`, as it does for other request errors.
+
 ### Connection Validation
 
 When a connection is acquired from the pool, it can be validated to ensure it is still usable. This is controlled by the `validateConnection` config option.

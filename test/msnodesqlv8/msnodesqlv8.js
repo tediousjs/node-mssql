@@ -65,6 +65,9 @@ describe('msnodesqlv8', function () {
     it('value handler', done => TESTS['value handler'](done))
     it('value handler for IntN types uses correct type', done => TESTS['value handler for IntN types uses correct type'](done))
     it('value handler is given null for a NULL value', done => TESTS['value handler is given null for a NULL value'](done))
+    for (const mode of ['promise', 'callback', 'arrayRowMode', 'execute', 'stream', 'readable']) {
+      it(`value handler that throws (${mode})`, done => TESTS['value handler that throws'](config(), mode, done))
+    }
     it('bigint inputs', done => TESTS['bigint inputs'](done))
     it('stored procedure (exec)', done => TESTS['stored procedure']('execute', done))
     it('stored procedure (batch)', done => TESTS['stored procedure']('batch', done))

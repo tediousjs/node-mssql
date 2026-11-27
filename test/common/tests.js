@@ -253,6 +253,72 @@ module.exports = (sql, driver) => {
         done()
       }).catch(done)
     },
+    'value handler that throws' (config, mode, done) {
+      const thrown = new Error('thrown by the value handler')
+      const given = []
+      // with one connection in the pool, nothing more can run unless the request gives it back
+      const pool = new sql.ConnectionPool(Object.assign({}, config, { pool: { min: 0, max: 1, acquireTimeoutMillis: 5000 } }))
+      const QUERY = 'SELECT n FROM (VALUES (1), (2), (3)) AS t (n) ORDER BY n; SELECT 4 AS m'
+
+      // each returns the error the request failed with, and the rows that it emitted
+      const run = {
+        promise: request => request.query(QUERY).then(() => ({ err: null }), err => ({ err })),
+        callback: request => new Promise(resolve => request.query(QUERY, err => resolve({ err }))),
+        arrayRowMode: request => {
+          request.arrayRowMode = true
+          return request.query(QUERY).then(() => ({ err: null }), err => ({ err }))
+        },
+        execute: request => {
+          request.input('stmt', sql.NVarChar, QUERY)
+          return request.execute('sp_executesql').then(() => ({ err: null }), err => ({ err }))
+        },
+        stream: request => new Promise(resolve => {
+          const rows = []
+          let err = null
+          request.stream = true
+          request.on('row', row => rows.push(row))
+          request.on('error', e => { err = err || e })
+          request.on('done', () => resolve({ err, rows }))
+          request.query(QUERY)
+        }),
+        readable: request => new Promise(resolve => {
+          const rows = []
+          const readable = request.toReadableStream()
+          readable.on('data', row => rows.push(row))
+          readable.on('error', err => resolve({ err, rows }))
+          readable.on('end', () => resolve({ err: null, rows }))
+          request.query(QUERY)
+        })
+      }[mode]
+
+      pool.connect().then(() => {
+        // marks the session, which a new connection would not have
+        return pool.request().batch('SET CONTEXT_INFO 0x2a')
+      }).then(() => {
+        sql.valueHandler.set(sql.TYPES.Int, (value) => {
+          given.push(value)
+          if (value === 2) throw thrown
+          return value * 10
+        })
+        return within(run(pool.request()), 'the request should fail')
+      }).then(({ err, rows }) => {
+        sql.valueHandler.clear()
+        assert.ok(err instanceof sql.RequestError, `the request should fail with a RequestError, got ${err}`)
+        assert.strictEqual(err.code, 'EREQUEST', 'the error should be a request error')
+        assert.strictEqual(err.originalError, thrown, 'the error should keep what the handler threw')
+        assert.deepStrictEqual(given, [1, 2], 'no handler should be called once one has thrown')
+        if (rows) assert.deepStrictEqual(rows, [{ n: 10 }], 'only the row before the failure should be emitted')
+        return within(pool.request().query('SELECT CONTEXT_INFO() AS c'), 'the pool should lend the connection out again')
+      }).then(result => {
+        assert.notStrictEqual(result.recordset[0].c, null, 'the request should give back the connection it was lent, not close it')
+        return pool.close()
+      }).then(() => done(), err => {
+        sql.valueHandler.clear()
+        // a pool that is missing a connection never finishes closing
+        pool.close().catch(() => {})
+        done(err)
+      })
+    },
     'bigint inputs' (done) {
       const req = new TestRequest()
       req.input('bigintparam', BigInt('4294967294'))
