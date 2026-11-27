@@ -752,6 +752,294 @@ describe('value handlers', () => {
   })
 })
 
+// what a value handler can throw that cannot be read: a revoked Proxy, whose prototype cannot be
+// looked up, and an Error whose message throws as it is read
+const UNREADABLE_THROWS = [
+  ['a revoked Proxy', () => {
+    const { proxy, revoke } = Proxy.revocable({}, {})
+    revoke()
+    return proxy
+  }],
+  ['an Error whose message cannot be read', () => Object.defineProperty(new Error(), 'message', {
+    get () { throw new Error('the message cannot be read') }
+  })]
+]
+
+describe('a value handler that throws (tedious)', () => {
+  const { EventEmitter } = require('node:events')
+  const tds = require('tedious')
+  const Request = require('../../lib/tedious/request')
+  const RequestError = require('../../lib/error/request-error')
+
+  const INT = { colName: 'n', type: tds.TYPES.Int, dataLength: 4, flags: 0 }
+  const JSON_COLUMN = { colName: 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B', type: tds.TYPES.NVarChar, dataLength: 4000, flags: 0 }
+
+  before(() => { sql.Promise = Promise })
+  afterEach(() => sql.valueHandler.clear())
+
+  // a handler for int columns that throws for the value 2, and notes each value it is given. It
+  // throws what it is given, which can be undefined, or else an Error
+  const failOnTwo = (...args) => {
+    const thrown = args.length ? args[0] : new Error('thrown by the handler')
+    const given = []
+    sql.valueHandler.set(sql.TYPES.Int, value => {
+      given.push(value)
+      if (value === 2) throw thrown
+      return value * 10
+    })
+    return { given, thrown }
+  }
+
+  // stands in for a tedious connection that answers each request with `play`, which emits on the
+  // request what tedious would. What the request's listeners throw is noted rather than let out,
+  // where tedious 19 would crash the process with it and tedious 20 would close the connection
+  const connect = play => {
+    const connection = Object.assign(new EventEmitter(), {
+      escaped: [],
+      cancel () {}
+    })
+    connection.execSql = connection.execSqlBatch = connection.callProcedure = request => {
+      const emit = (...args) => {
+        try {
+          request.emit(...args)
+        } catch (e) {
+          connection.escaped.push(e)
+        }
+      }
+      setImmediate(play, { request, connection, emit })
+    }
+    return connection
+  }
+
+  // a result set of an int column with a row for each value
+  const ints = (...values) => ({ emit }) => {
+    emit('columnMetadata', [INT])
+    for (const value of values) emit('row', [{ value, metadata: INT }])
+    emit('doneInProc', values.length, true)
+  }
+
+  // the request completes once each of `plays` has played
+  const complete = (...plays) => context => {
+    for (const play of plays) play(context)
+    context.request.callback(undefined, 0)
+  }
+
+  // a pool that lends `connection`, and counts the times it gets it back
+  const lend = connection => {
+    const pool = new BasePool({})
+    pool._connected = true
+    pool.released = 0
+    pool._acquire = () => Promise.resolve(connection)
+    pool.release = () => {
+      pool.released++
+      return pool
+    }
+    return pool
+  }
+
+  // the connection should go back to the pool once, with nothing thrown into tedious and none of
+  // the request's listeners left on it
+  const assertReleased = (pool, connection) => {
+    assert.strictEqual(pool.released, 1, 'the connection should be released once')
+    assert.deepStrictEqual(connection.escaped, [], 'nothing should be thrown into tedious')
+    for (const event of ['infoMessage', 'errorMessage', 'error']) {
+      assert.strictEqual(connection.listenerCount(event), 0, `the request should take its '${event}' listener off the connection`)
+    }
+  }
+
+  const isHandlerError = thrown => err => {
+    assert.ok(err instanceof RequestError, `the error should be a RequestError, got ${err.name}`)
+    assert.strictEqual(err.code, 'EREQUEST', 'the error should be a request error')
+    assert.strictEqual(err.originalError, thrown, 'the error should keep what the handler threw')
+    assert.strictEqual(err.message, thrown.message, 'the error should have the message of what the handler threw')
+    return true
+  }
+
+  it('should reject a query, give the connection back, and call no handler after it', async () => {
+    const { given, thrown } = failOnTwo()
+    const connection = connect(complete(ints(1, 2, 3), ints(4)))
+    const pool = lend(connection)
+
+    await assert.rejects(new Request(pool).query('select n from t'), isHandlerError(thrown))
+    assert.deepStrictEqual(given, [1, 2], 'no handler should be called once one has thrown')
+    assertReleased(pool, connection)
+  })
+
+  it('should reject a query in array row mode', async () => {
+    const { thrown } = failOnTwo()
+    const connection = connect(complete(ints(1, 2)))
+    const pool = lend(connection)
+    const request = new Request(pool)
+    request.arrayRowMode = true
+
+    await assert.rejects(request.query('select n from t'), isHandlerError(thrown))
+    assertReleased(pool, connection)
+  })
+
+  it('should call back with the error', async () => {
+    const { thrown } = failOnTwo()
+    const connection = connect(complete(ints(1, 2)))
+    const pool = lend(connection)
+
+    const [err, result] = await new Promise(resolve => new Request(pool).query('select n from t', (...args) => resolve(args)))
+    isHandlerError(thrown)(err)
+    assert.strictEqual(result, undefined, 'there should be no result')
+    assertReleased(pool, connection)
+  })
+
+  it('should reject an execute', async () => {
+    const { thrown } = failOnTwo()
+    const connection = connect(complete(ints(1, 2)))
+    const pool = lend(connection)
+
+    await assert.rejects(new Request(pool).execute('p'), isHandlerError(thrown))
+    assertReleased(pool, connection)
+  })
+
+  it('should reject a batch', async () => {
+    const { thrown } = failOnTwo()
+    const connection = connect(complete(ints(1, 2)))
+    const pool = lend(connection)
+
+    await assert.rejects(new Request(pool).batch('select n from t'), isHandlerError(thrown))
+    assertReleased(pool, connection)
+  })
+
+  for (const method of ['query', 'execute']) {
+    it(`should emit the error from a stream, then no more rows, then done (${method})`, async () => {
+      const { thrown } = failOnTwo()
+      const json = ({ emit }) => {
+        emit('columnMetadata', [JSON_COLUMN])
+        emit('row', [{ value: '[{"a":1}]', metadata: JSON_COLUMN }])
+        emit('doneInProc', 1, true)
+      }
+      const connection = connect(complete(ints(1, 2, 3), ints(4), json))
+      const pool = lend(connection)
+      const request = new Request(pool)
+      request.stream = true
+      const events = []
+      request.on('row', row => events.push(row))
+      request.on('error', err => events.push(err))
+      await new Promise(resolve => {
+        request.on('done', resolve)
+        request[method](method === 'execute' ? 'p' : 'select n from t')
+      })
+
+      assert.strictEqual(events.length, 2, 'the stream should emit the row before the failure and the error, and nothing else')
+      assert.deepStrictEqual(events[0], { n: 10 }, 'the row before the failure should be emitted')
+      isHandlerError(thrown)(events[1])
+      assertReleased(pool, connection)
+    })
+  }
+
+  it('should end a readable stream with the error', async () => {
+    const { thrown } = failOnTwo()
+    const connection = connect(complete(ints(1, 2, 3)))
+    const pool = lend(connection)
+    const request = new Request(pool)
+    const readable = request.toReadableStream()
+    const rows = []
+    readable.on('data', row => rows.push(row))
+    const failed = new Promise(resolve => readable.on('error', resolve))
+    const done = new Promise(resolve => request.on('done', resolve))
+    request.query('select n from t')
+
+    isHandlerError(thrown)(await within(failed, 'the readable stream should fail'))
+    await within(done, 'the request should run to its end')
+    assert.deepStrictEqual(rows, [{ n: 10 }], 'the readable stream should have only the row before the failure')
+    assertReleased(pool, connection)
+  })
+
+  for (const [what, value, message] of [
+    ['a string', 'not an error', 'not an error'],
+    ['a symbol', Symbol('not an error'), 'Symbol(not an error)'],
+    ['undefined', undefined, 'undefined']
+  ]) {
+    it(`should reject with an Error made from ${what} that is thrown`, async () => {
+      failOnTwo(value)
+      const connection = connect(complete(ints(1, 2)))
+      const pool = lend(connection)
+
+      await assert.rejects(new Request(pool).query('select n from t'), err => {
+        assert.ok(err instanceof RequestError, `the error should be a RequestError, got ${err.name}`)
+        assert.strictEqual(err.code, 'EREQUEST', 'the error should be a request error')
+        assert.ok(err.originalError instanceof Error, 'the error should keep an Error made from what was thrown')
+        assert.strictEqual(err.message, message, 'the error should have what was thrown as its message')
+        return true
+      })
+      assertReleased(pool, connection)
+    })
+  }
+
+  it('should reject with the code of a request error, whatever the code of what was thrown', async () => {
+    const { thrown } = failOnTwo(Object.assign(new TypeError('thrown with a code'), { code: 'ERR_INVALID_ARG_TYPE' }))
+    const connection = connect(complete(ints(1, 2)))
+    const pool = lend(connection)
+
+    await assert.rejects(new Request(pool).query('select n from t'), isHandlerError(thrown))
+  })
+
+  for (const [what, make] of UNREADABLE_THROWS) {
+    it(`should reject with an Error that has ${what} that is thrown as its cause`, async () => {
+      const { thrown } = failOnTwo(make())
+      const connection = connect(complete(ints(1, 2)))
+      const pool = lend(connection)
+
+      await assert.rejects(new Request(pool).query('select n from t'), err => {
+        assert.ok(err instanceof RequestError, `the error should be a RequestError, got ${err.name}`)
+        assert.strictEqual(err.code, 'EREQUEST', 'the error should be a request error')
+        assert.strictEqual(err.originalError.cause, thrown, 'the error should keep what was thrown as the cause of its original error')
+        assert.strictEqual(err.message, 'A value handler threw a value that cannot be read.', 'the error should say that what was thrown cannot be read')
+        return true
+      })
+      assertReleased(pool, connection)
+    })
+  }
+
+  for (const method of ['query', 'execute']) {
+    it(`should keep no part of a JSON result after the failure (${method})`, async () => {
+      const { thrown } = failOnTwo()
+      // a result in the column of FOR JSON output that is not JSON
+      const brokenJson = ({ emit }) => {
+        emit('columnMetadata', [JSON_COLUMN])
+        emit('row', [{ value: '[{"a":', metadata: JSON_COLUMN }])
+        emit('doneInProc', 1, true)
+      }
+      const connection = connect(complete(ints(1, 2), brokenJson))
+      const pool = lend(connection)
+      pool.config.parseJSON = true
+
+      await assert.rejects(new Request(pool)[method](method === 'execute' ? 'p' : 'select n from t'), err => {
+        isHandlerError(thrown)(err)
+        assert.deepStrictEqual(err.precedingErrors, [], 'the JSON result after the failure should not be parsed')
+        return true
+      })
+      assertReleased(pool, connection)
+    })
+  }
+
+  // tedious reports the errors of a request to its callback as well, which are matched up with
+  // the ones the connection emitted on the way
+  it('should keep the errors from the server in the order they came, around the error', async () => {
+    const { thrown } = failOnTwo()
+    const serverError = message => ({ message, number: 50000, state: 1, class: 16 })
+    const connection = connect(context => {
+      context.connection.emit('errorMessage', serverError('before'))
+      ints(1, 2)(context)
+      context.connection.emit('errorMessage', serverError('after'))
+      context.request.callback(new AggregateError([new Error('before'), new Error('after')]), 0)
+    })
+    const pool = lend(connection)
+
+    await assert.rejects(new Request(pool).query('select n from t'), err => {
+      assert.strictEqual(err.message, 'after', 'the error should be the last one')
+      assert.deepStrictEqual(err.precedingErrors.map(e => e.message), ['before', thrown.message], 'the errors before it should precede it, each once and in order')
+      return true
+    })
+    assertReleased(pool, connection)
+  })
+})
+
 describe('connection string parser', () => {
   it('parses named instance and port', () => {
     const config = BasePool.parseConnectionString('Data source=instance\\database,1234')
@@ -3724,6 +4012,209 @@ describe('msnodesqlv8 query events', () => {
       const { recordset } = await request.query('select v from t')
       assert.deepStrictEqual(given, [5], 'the handler should be given the number, as tedious gives it')
       assert.deepStrictEqual(recordset[0].v, { variant: 5 }, 'the value should be the one the handler returns')
+    })
+  })
+
+  describe('a value handler that throws', () => {
+    afterEach(() => sql.valueHandler.clear())
+
+    // a handler for int columns that throws for the value 2, and notes each value it is given. It
+    // throws what it is given, or else an Error
+    const failOnTwo = (...args) => {
+      const thrown = args.length ? args[0] : new Error('thrown by the handler')
+      const given = []
+      sql.valueHandler.set(sql.TYPES.Int, value => {
+        given.push(value)
+        if (value === 2) throw thrown
+        return value * 10
+      })
+      return { given, thrown }
+    }
+
+    // msnodesqlv8 emits each value from the promise chain that fetches the rows, or, when the query
+    // is resumed, from the resume. What the request's listener throws is noted rather than let
+    // out: the chain would end the query with it as the driver's error, and the resume would
+    // throw it to whatever resumed the stream
+    const escaped = []
+    afterEach(() => { escaped.length = 0 })
+    const column = (notify, ...args) => {
+      try {
+        notify.emit('column', ...args)
+      } catch (e) {
+        escaped.push(e)
+      }
+    }
+
+    // a result set of an int column with a row for each value
+    const ints = (...values) => notify => {
+      notify.emit('meta', [{ name: 'n', sqlType: 'int', size: 4, nullable: false }])
+      for (const value of values) {
+        notify.emit('row', 0)
+        column(notify, 0, value, false)
+      }
+      notify.emit('rowcount', values.length)
+    }
+
+    // the query completes once each of `plays` has played
+    const complete = (...plays) => notify => {
+      for (const play of plays) play(notify)
+      notify.emit('done')
+      notify.emit('free')
+    }
+
+    const isHandlerError = thrown => err => {
+      assert.ok(err instanceof RequestError, `the error should be a RequestError, got ${err.name}`)
+      assert.strictEqual(err.code, 'EREQUEST', 'the error should be a request error')
+      assert.strictEqual(err.originalError, thrown, 'the error should keep what the handler threw')
+      assert.strictEqual(err.message, thrown.message, 'the error should have the message of what the handler threw')
+      return true
+    }
+
+    const assertReleased = pool => {
+      assert.strictEqual(pool.released, 1, 'the connection should be released once')
+      assert.deepStrictEqual(escaped, [], 'nothing should be thrown into msnodesqlv8')
+    }
+
+    it('should reject a query, give the connection back, and call no handler after it', async () => {
+      const { given, thrown } = failOnTwo()
+      const { request, pool } = setup(complete(ints(1, 2, 3), ints(4)))
+
+      await assert.rejects(request.query('select n from t'), isHandlerError(thrown))
+      assert.deepStrictEqual(given, [1, 2], 'no handler should be called once one has thrown')
+      assertReleased(pool)
+    })
+
+    it('should reject a query in array row mode', async () => {
+      const { thrown } = failOnTwo()
+      const { request, pool } = setup(complete(ints(1, 2)))
+      request.arrayRowMode = true
+
+      await assert.rejects(request.query('select n from t'), isHandlerError(thrown))
+      assertReleased(pool)
+    })
+
+    it('should call back with the error', async () => {
+      const { thrown } = failOnTwo()
+      const { request, pool } = setup(complete(ints(1, 2)))
+
+      const [err, result] = await new Promise(resolve => request.query('select n from t', (...args) => resolve(args)))
+      isHandlerError(thrown)(err)
+      assert.strictEqual(result, undefined, 'there should be no result')
+      assertReleased(pool)
+    })
+
+    it('should reject an execute', async () => {
+      const { thrown } = failOnTwo()
+      const returnValue = notify => {
+        notify.emit('meta', [{ name: '___return___', sqlType: 'int', size: 4, nullable: false }])
+        notify.emit('row', 0)
+        column(notify, 0, 0, false)
+      }
+      const { request, pool } = setup(complete(ints(1, 2), returnValue))
+
+      await assert.rejects(request.execute('p'), isHandlerError(thrown))
+      assertReleased(pool)
+    })
+
+    it('should emit the error from a stream, then no more rows, then done', async () => {
+      const { thrown } = failOnTwo()
+      const json = notify => {
+        notify.emit('meta', [{ name: 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B', sqlType: 'nvarchar', size: 4000, nullable: true }])
+        notify.emit('row', 0)
+        column(notify, 0, '[{"a":1}]', false)
+      }
+      const { request, pool } = setup(complete(ints(1, 2, 3), ints(4), json))
+      request.stream = true
+      const events = []
+      request.on('row', row => events.push(row))
+      request.on('error', err => events.push(err))
+      await new Promise(resolve => {
+        request.on('done', resolve)
+        request.query('select n from t')
+      })
+
+      assert.strictEqual(events.length, 2, 'the stream should emit the row before the failure and the error, and nothing else')
+      assert.deepStrictEqual(events[0], { n: 10 }, 'the row before the failure should be emitted')
+      isHandlerError(thrown)(events[1])
+      assertReleased(pool)
+    })
+
+    it('should reject with an Error made from what is thrown that is not one', async () => {
+      failOnTwo(Symbol('not an error'))
+      const { request, pool } = setup(complete(ints(1, 2)))
+
+      await assert.rejects(request.query('select n from t'), err => {
+        assert.ok(err instanceof RequestError, `the error should be a RequestError, got ${err.name}`)
+        assert.strictEqual(err.code, 'EREQUEST', 'the error should be a request error')
+        assert.ok(err.originalError instanceof Error, 'the error should keep an Error made from what was thrown')
+        assert.strictEqual(err.message, 'Symbol(not an error)', 'the error should have what was thrown as its message')
+        return true
+      })
+      assertReleased(pool)
+    })
+
+    it('should reject with the code of a request error, whatever the code of what was thrown', async () => {
+      const { thrown } = failOnTwo(Object.assign(new TypeError('thrown with a code'), { code: 'ERR_INVALID_ARG_TYPE' }))
+      const { request } = setup(complete(ints(1, 2)))
+
+      await assert.rejects(request.query('select n from t'), isHandlerError(thrown))
+    })
+
+    for (const [what, make] of UNREADABLE_THROWS) {
+      it(`should reject with an Error that has ${what} that is thrown as its cause`, async () => {
+        const { thrown } = failOnTwo(make())
+        const { request, pool } = setup(complete(ints(1, 2)))
+
+        await assert.rejects(request.query('select n from t'), err => {
+          assert.ok(err instanceof RequestError, `the error should be a RequestError, got ${err.name}`)
+          assert.strictEqual(err.code, 'EREQUEST', 'the error should be a request error')
+          assert.strictEqual(err.originalError.cause, thrown, 'the error should keep what was thrown as the cause of its original error')
+          assert.strictEqual(err.message, 'A value handler threw a value that cannot be read.', 'the error should say that what was thrown cannot be read')
+          return true
+        })
+        assertReleased(pool)
+      })
+    }
+
+    // msnodesqlv8 reports an error from parsing JSON only to a stream; otherwise it logs it
+    it('should keep no part of a JSON result after the failure', async () => {
+      const { thrown } = failOnTwo()
+      // a result in the column of FOR JSON output that is not JSON
+      const brokenJson = notify => {
+        notify.emit('meta', [{ name: 'JSON_F52E2B61-18A1-11d1-B105-00805F49916B', sqlType: 'nvarchar', size: 4000, nullable: true }])
+        notify.emit('row', 0)
+        column(notify, 0, '[{"a":', false)
+      }
+      const { request, pool, connection } = setup(complete(ints(1, 2), brokenJson))
+      pool.acquire = (request, callback) => callback(null, connection, { requestTimeout: 15000, parseJSON: true })
+      request.stream = true
+      const events = []
+      request.on('row', row => events.push(row))
+      request.on('error', err => events.push(err))
+      await new Promise(resolve => {
+        request.on('done', resolve)
+        request.query('select n from t')
+      })
+
+      assert.strictEqual(events.length, 2, 'the stream should emit the row before the failure and the error, and nothing from the JSON result')
+      isHandlerError(thrown)(events[1])
+      assertReleased(pool)
+    })
+
+    it('should reject with an error that ends the batch after it, and keep it as a preceding error', async () => {
+      const { thrown } = failOnTwo()
+      const { request, pool } = setup(notify => {
+        ints(1, 2)(notify)
+        notify.fail(PRIMARY_KEY(), false)
+        notify.emit('free')
+      })
+
+      await assert.rejects(request.query('select n from t; insert into t values (1)'), err => {
+        assert.strictEqual(err.number, 2627, 'the error should be the one that ended the batch')
+        assert.deepStrictEqual(err.precedingErrors.map(e => e.message), [thrown.message], 'the handler\'s error should precede it')
+        return true
+      })
+      assertReleased(pool)
     })
   })
 
