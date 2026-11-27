@@ -182,6 +182,8 @@ describe('msnodesqlv8', function () {
     it('per-request timeout overrides pool default', done => TESTS['per-request timeout overrides pool default'](done))
     it('per-request timeout does not affect other requests', done => TESTS['per-request timeout does not affect other requests'](done))
     it('per-request timeout in transaction', done => TESTS['per-request timeout in transaction'](done))
+    it('transaction timeout on a request made with new Request(transaction)', done => TESTS['transaction timeout on what is made from the transaction']('request', done))
+    it('transaction timeout on a prepared statement made with new PreparedStatement(transaction)', done => TESTS['transaction timeout on what is made from the transaction']('prepared statement', done))
     it('per-request timeout on stored procedure', done => TESTS['per-request timeout on stored procedure'](done))
     it('per-request timeout on prepared statement', done => TESTS['per-request timeout on prepared statement'](done))
     it('dataLength type correction', done => TESTS['dataLength type correction'](done))

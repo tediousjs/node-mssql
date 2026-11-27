@@ -1323,7 +1323,7 @@ const transaction = new sql.Transaction(/* [pool], [options] */)
 
 If you omit connection argument, global connection is used instead.
 
-The optional `options` argument allows per-transaction configuration overrides (e.g. `{ requestTimeout: 60000 }`). These are inherited by any requests created from this transaction unless overridden at the request level. Note that the timeout applies to data requests only, not to the `begin`/`commit`/`rollback` operations themselves.
+The optional `options` argument allows per-transaction configuration overrides (e.g. `{ requestTimeout: 60000 }`). These are inherited by any requests and prepared statements created from this transaction (`transaction.request()`, `new sql.Request(transaction)` or `new sql.PreparedStatement(transaction)`) unless overridden at the request or prepared statement level. Note that the timeout applies to data requests only, not to the `begin`/`commit`/`rollback` operations themselves.
 
 __Example__
 
@@ -1494,7 +1494,7 @@ const ps = new sql.PreparedStatement(/* [pool], [options] */)
 
 If you omit the connection argument, the global connection is used instead.
 
-The optional `options` argument allows per-statement configuration overrides (e.g. `{ requestTimeout: 60000 }`). The timeout is applied to the `prepare`, `execute`, and `unprepare` operations.
+The optional `options` argument allows per-statement configuration overrides (e.g. `{ requestTimeout: 60000 }`). The timeout is applied to the `prepare`, `execute`, and `unprepare` operations. A prepared statement created from a transaction takes the transaction's overrides unless it gives its own.
 
 __Example__
 
