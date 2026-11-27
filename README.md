@@ -839,6 +839,8 @@ __Errors__
 - ESOCKET (`ConnectionError`) - Socket error.
 - ECLOSING (`ConnectionError`) - Cannot connect a pool while it is closing.
 
+With the `msnodesqlv8` driver, ELOGIN, ETIMEOUT, EINSTLOOKUP and ESOCKET are not used. When the driver fails to connect, the `code` of the `ConnectionError` is the ODBC native error number, for example `18456` when the login fails, and its message is the message of the last ODBC error.
+
 ---------------------------------------
 
 ### close()
@@ -2378,6 +2380,8 @@ Name | Code | Message
 `PreparedStatementError` | EALREADYPREPARED | Statement is already prepared.
 `PreparedStatementError` | ENOTPREPARED | Statement is not prepared.
 `PreparedStatementError` | ENOCONN | No connection is specified for that prepared statement.
+
+With the `msnodesqlv8` driver, a `ConnectionError` from a failed connect has the ODBC native error number as its `code`. See [connect](#connect-callback).
 
 ### Detailed SQL Errors
 
