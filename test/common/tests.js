@@ -197,16 +197,16 @@ module.exports = (sql, driver) => {
       Object.assign(config.options, {
         useColumnNames: false
       })
-      try {
-        // eslint-disable-next-line no-new
-        new ConnectionPool(config)
-      } catch (e) {
-        assert.strictEqual(e.message, 'Invalid options `useColumnNames`, use `arrayRowMode` instead')
-      }
+      assert.throws(() => new ConnectionPool(config), err => {
+        assert.strictEqual(err.message, 'Invalid options `useColumnNames`, use `arrayRowMode` instead')
+        assert.strictEqual(err.code, 'EARGS', 'the error should have a code')
+        return true
+      })
       // eslint-disable-next-line no-new
       new ConnectionPool(config, (err) => {
         try {
           assert.strictEqual(err.message, 'Invalid options `useColumnNames`, use `arrayRowMode` instead')
+          assert.strictEqual(err.code, 'EARGS', 'the error should have a code')
         } catch (e) {
           done(e)
           return
@@ -2161,13 +2161,12 @@ module.exports = (sql, driver) => {
     'transaction throws on bad isolation level' (done) {
       const tran = new TestTransaction()
       tran.begin('bad isolation level').then(() => {
-        assert.fail('promise should not have resolved')
-        done()
-      }).catch(err => {
-        assert.ok(err)
+        throw new Error('begin() should reject a bad isolation level')
+      }, err => {
+        assert.ok(err instanceof sql.TransactionError, `the rejection should be a TransactionError, got ${err.name}`)
         assert.strictEqual(err.message, 'Invalid isolation level.')
-        done()
-      })
+        assert.strictEqual(err.code, 'EARGS', 'the rejection should have a code')
+      }).then(() => done(), done)
     },
 
     'transaction accepts good isolation levels' (done) {

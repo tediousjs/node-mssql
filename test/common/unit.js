@@ -2122,6 +2122,20 @@ describe('connection string auth - tedious', () => {
   })
 })
 
+describe('error codes', () => {
+  it('should reject begin() with EARGS for an invalid isolation level', async () => {
+    await assert.rejects(new sql.Transaction().begin(99), { name: 'TransactionError', code: 'EARGS', message: 'Invalid isolation level.' })
+  })
+
+  it('should throw EARGS from begin() with a callback for an invalid isolation level', () => {
+    assert.throws(() => new sql.Transaction().begin(99, () => {}), { name: 'TransactionError', code: 'EARGS', message: 'Invalid isolation level.' })
+  })
+
+  it('should throw EARGS for the useColumnNames option', () => {
+    assert.throws(() => new sql.ConnectionPool({ server: 'localhost', options: { useColumnNames: false } }), { name: 'MSSQLError', code: 'EARGS' })
+  })
+})
+
 describe('operations with no connection', () => {
   // no global pool exists in this suite, so these objects have no parent at all
   const cases = [
@@ -5975,6 +5989,7 @@ describe('transaction begin failures', () => {
       await assert.rejects(tx.begin(), err => {
         assert.ok(err instanceof TransactionError, `the rejection should be a TransactionError, got ${err.name}`)
         assert.strictEqual(err.message, 'Invalid isolation level.', 'the rejection should be about the isolation level')
+        assert.strictEqual(err.code, 'EARGS', 'the rejection should have a code')
         return true
       })
       assert.strictEqual(pool.returned.length, pool.lent, 'the pool should have back every connection it lent')

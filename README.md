@@ -1426,6 +1426,7 @@ __Errors__
 - ENOTOPEN (`ConnectionError`) - Connection not yet open.
 - ECONNCLOSED (`ConnectionError`) - Connection is closed.
 - EALREADYBEGUN (`TransactionError`) - Transaction has already begun.
+- EARGS (`TransactionError`) - Invalid isolation level. With a callback, `begin()` throws this error rather than passing it to the callback.
 - EINJECT (`TransactionError`) - Transaction name is not a string, or is longer than 32 characters (`tedious` driver). See [Transaction names](#transaction-names).
 
 If the transaction fails to begin once it has a connection, the error is a `TransactionError`, with the error it comes from as its `originalError`. The connection goes back to the pool, and the transaction can be begun again. A connection that may have sent the request to begin the transaction is closed rather than lent out again, as the server may have begun the transaction even though the request failed (for example, when it timed out).
@@ -2367,6 +2368,7 @@ Name | Code | Message
 `TransactionError` | EABORT | Transaction has been aborted.
 `TransactionError` | ENOCONN | No connection is specified for that transaction.
 `TransactionError` | EINJECT | Transaction name is not a string, or is longer than 32 characters.
+`TransactionError` | EARGS | Invalid isolation level.
 `RequestError` | EREQUEST | Message from SQL Server. Error object contains additional details.
 `RequestError` | ECANCEL | Cancelled.
 `RequestError` | ETIMEOUT | Request timeout.
@@ -2378,6 +2380,7 @@ Name | Code | Message
 `PreparedStatementError` | EALREADYPREPARED | Statement is already prepared.
 `PreparedStatementError` | ENOTPREPARED | Statement is not prepared.
 `PreparedStatementError` | ENOCONN | No connection is specified for that prepared statement.
+`MSSQLError` | EARGS | Invalid `useColumnNames` option in the pool config. Use `arrayRowMode` instead.
 
 ### Detailed SQL Errors
 
