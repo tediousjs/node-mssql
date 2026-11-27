@@ -2251,6 +2251,95 @@ describe('error codes', () => {
   })
 })
 
+describe('errors from the server (tedious)', () => {
+  const { EventEmitter } = require('node:events')
+  const tds = require('tedious')
+  const Request = require('../../lib/tedious/request')
+
+  before(() => { sql.Promise = Promise })
+
+  // what the connection emits for an error from the server
+  const serverError = message => ({ message, number: 50000, state: 1, class: 16, lineNumber: 1 })
+
+  // what tedious 15+ calls a request back with when the server sent errors with `messages`
+  const reported = messages => {
+    const errors = messages.map(message => Object.assign(new tds.RequestError(message, 'EREQUEST'), { number: 50000 }))
+    return errors.length > 1 ? new AggregateError(errors) : errors[0]
+  }
+
+  // stands in for a tedious connection that answers each request with an error from the server
+  // for each of `messages`, and then calls the request back with `err`
+  const connect = (messages, err = reported(messages)) => {
+    const connection = Object.assign(new EventEmitter(), { cancel () {} })
+    connection.execSql = connection.execSqlBatch = connection.callProcedure = request => setImmediate(() => {
+      for (const message of messages) connection.emit('errorMessage', serverError(message))
+      request.callback(err, 0)
+    })
+    return connection
+  }
+
+  // a pool that lends `connection`
+  const lend = connection => {
+    const pool = new BasePool({})
+    pool._connected = true
+    pool._acquire = () => Promise.resolve(connection)
+    pool.release = () => pool
+    return pool
+  }
+
+  // a request on a connection that answers as `connect` says
+  const requestTo = (...answer) => new Request(lend(connect(...answer)))
+
+  // runs `method` on `request`
+  const run = (method, request) => request[method](method === 'execute' ? 'sp_test' : 'select 1')
+
+  // the error should be the last error from the server, after the ones before it, each once
+  const isLastOf = messages => err => {
+    assert.ok(err instanceof sql.RequestError, `the error should be a RequestError, got ${err.name}`)
+    assert.strictEqual(err.message, messages.at(-1), 'the error should be the last one from the server')
+    assert.strictEqual(err.number, 50000, 'the error should be the one that the connection emitted')
+    assert.deepStrictEqual(err.precedingErrors.map(e => e.message), messages.slice(0, -1), 'the errors before it should precede it, each once and in order')
+    return true
+  }
+
+  for (const method of ['query', 'execute']) {
+    it(`should reject with the last of two errors from the server (${method})`, async () => {
+      await assert.rejects(run(method, requestTo(['first', 'second'])), isLastOf(['first', 'second']))
+    })
+
+    it(`should keep each of two errors that have the same message (${method})`, async () => {
+      await assert.rejects(run(method, requestTo(['same', 'same'])), isLastOf(['same', 'same']))
+    })
+
+    it(`should reject with the one error from the server (${method})`, async () => {
+      await assert.rejects(run(method, requestTo(['only'])), isLastOf(['only']))
+    })
+
+    it(`should add an error that tedious makes after the errors from the server (${method})`, async () => {
+      const timeout = new tds.RequestError('Timeout: Request failed to complete in 15000ms', 'ETIMEOUT')
+
+      await assert.rejects(run(method, requestTo(['first', 'second'], timeout)), err => {
+        assert.strictEqual(err.code, 'ETIMEOUT', 'the error should be the one that tedious made')
+        assert.strictEqual(err.originalError, timeout, 'the error should be the one that tedious made')
+        assert.deepStrictEqual(err.precedingErrors.map(e => e.message), ['first', 'second'], 'the errors from the server should precede it')
+        return true
+      })
+    })
+
+    it(`should emit each of two errors from the server once from a stream, then done (${method})`, async () => {
+      const request = requestTo(['first', 'second'])
+      request.stream = true
+      const emitted = []
+      request.on('error', err => emitted.push(err.message))
+      const done = new Promise(resolve => request.once('done', resolve))
+
+      run(method, request)
+      await within(done, 'the stream should emit done')
+      assert.deepStrictEqual(emitted, ['first', 'second'], 'the stream should emit each error from the server once and in order')
+    })
+  }
+})
+
 describe('operations with no connection', () => {
   // no global pool exists in this suite, so these objects have no parent at all
   const cases = [
