@@ -244,6 +244,15 @@ module.exports = (sql, driver) => {
         done()
       }).catch(done)
     },
+    'value handler is given null for a NULL value' (done) {
+      const given = []
+      sql.valueHandler.set(sql.TYPES.Int, (value) => { given.push(value); return value === null ? 'was null' : value })
+      sql.query('SELECT CAST(NULL AS int) AS a, CAST(1 AS int) AS b').then((result) => {
+        assert.deepStrictEqual(given, [null, 1], 'the handler should be given null for the NULL value, and the value for the other')
+        assert.deepStrictEqual(result.recordset[0], { a: 'was null', b: 1 }, 'each value should be the one the handler returns')
+        done()
+      }).catch(done)
+    },
     'bigint inputs' (done) {
       const req = new TestRequest()
       req.input('bigintparam', BigInt('4294967294'))

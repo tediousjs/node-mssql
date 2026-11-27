@@ -592,12 +592,14 @@ In v8.0.0+ it is possible to register per-datatype handlers:
 const sql = require('mssql')
 
 // in this example all integer values will return 1 more than their actual value in the database
-sql.valueHandler.set(sql.TYPES.Int, (value) => value + 1)
+sql.valueHandler.set(sql.TYPES.Int, (value) => value === null ? null : value + 1)
 
 sql.query('SELECT * FROM [example]').then((result) => {
   // all `int` columns will return a manipulated value as per the callback above
 })
 ```
+
+A handler is also called for a SQL `NULL` value, and it receives `null`. If your handler does not expect `null`, check for it, as in the example above. Without the check, `null + 1` would turn each `NULL` into `1`.
 
 ### Connection Validation
 
