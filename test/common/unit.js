@@ -1524,6 +1524,18 @@ describe('connection string auth - tedious', () => {
     })
   })
 
+  describe('sql_variant declaration', () => {
+    it('should declare sql.Variant as sql_variant', () => {
+      assert.strictEqual(declare(sql.Variant), 'sql_variant')
+    })
+
+    it('should declare a sql.Variant column of a table as sql_variant', () => {
+      const table = new sql.Table('#t')
+      table.columns.add('v', sql.Variant, { nullable: true })
+      assert.strictEqual(table.declare(), 'create table [#t] ([v] sql_variant null)')
+    })
+  })
+
   describe('TVP sql_variant validation', () => {
     it('throws a clear error when a TVP column uses sql_variant', (done) => {
       const tvp = new sql.Table('dbo.GridFilter')
@@ -3445,6 +3457,36 @@ describe('msnodesqlv8 query events', () => {
       const { recordset } = await request.query('select n from t')
       assert.deepStrictEqual(given, [41], 'the handler should be given the number')
       assert.strictEqual(recordset[0].n, 42, 'the value should be the one the handler returns')
+    })
+  })
+
+  describe('sql_variant', () => {
+    afterEach(() => sql.valueHandler.clear())
+
+    // msnodesqlv8 reports the type of a column by its SQL Server name
+    const variant = value => notify => {
+      notify.emit('meta', [{ name: 'v', sqlType: 'sql_variant', size: 8016, nullable: true }])
+      notify.emit('row', 0)
+      notify.emit('column', 0, value, false)
+      notify.emit('done')
+    }
+
+    it('should give a sql_variant column the type sql.Variant', async () => {
+      const { request } = setup(variant('a'))
+      const { recordset } = await request.query('select v from t')
+      assert.strictEqual(recordset.columns.v.type, sql.TYPES.Variant)
+    })
+
+    it('should hand a sql_variant value to the value handler for sql.Variant', async () => {
+      const given = []
+      sql.valueHandler.set(sql.TYPES.Variant, value => {
+        given.push(value)
+        return { variant: value }
+      })
+      const { request } = setup(variant('5'))
+      const { recordset } = await request.query('select v from t')
+      assert.deepStrictEqual(given, [5], 'the handler should be given the number, as tedious gives it')
+      assert.deepStrictEqual(recordset[0].v, { variant: 5 }, 'the value should be the one the handler returns')
     })
   })
 

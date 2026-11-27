@@ -406,6 +406,31 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'variant column type and value handler' (done) {
+      const given = []
+      sql.valueHandler.set(sql.TYPES.Variant, value => {
+        given.push(value)
+        return { variant: value }
+      })
+      new TestRequest().query('select cast(5 as sql_variant) as v').then(result => {
+        assert.strictEqual(result.recordset.columns.v.type, sql.Variant, 'a sql_variant column should have the type sql.Variant')
+        assert.deepStrictEqual(given, [5], 'the value handler for sql.Variant should be given the value')
+        assert.deepStrictEqual(result.recordset[0].v, { variant: 5 }, 'the value should be the one the handler returns')
+      }).finally(() => {
+        sql.valueHandler.delete(sql.TYPES.Variant)
+      }).then(() => done(), done)
+    },
+
+    'table with a variant column' (done) {
+      const table = new sql.Table('#variant_column')
+      table.create = true
+      table.columns.add('v', sql.Variant, { nullable: true })
+      // one batch, so that the temporary table is there for the statements after it
+      new TestRequest().batch(`${table.declare()}; insert into #variant_column (v) values (cast(5 as sql_variant)); select v from #variant_column`).then(result => {
+        assert.deepStrictEqual(result.recordset, [{ v: 5 }], 'the table should be created and hold the value')
+      }).then(() => done(), done)
+    },
+
     'stored procedure with one empty recordset' (done) {
       const req = new TestRequest()
       req.execute('__test2').then(result => {

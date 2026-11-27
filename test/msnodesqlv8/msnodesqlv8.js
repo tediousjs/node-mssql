@@ -70,6 +70,8 @@ describe('msnodesqlv8', function () {
     it('user defined types', done => TESTS['user defined types'](done))
     it('binary data', done => TESTS['binary data'](done))
     it('variant data', done => TESTS['variant data'](done))
+    it('variant column type and value handler', done => TESTS['variant column type and value handler'](done))
+    it('table with a variant column', done => TESTS['table with a variant column'](done))
     it('stored procedure with one empty recordset', done => TESTS['stored procedure with one empty recordset'](done))
     it('stored procedure with duplicate output column names', done => TESTS['stored procedure with duplicate output column names'](done))
     it('stored procedure with input/output column', done => TESTS['stored procedure with input/output column'](done))
