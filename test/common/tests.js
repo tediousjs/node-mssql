@@ -2879,6 +2879,7 @@ module.exports = (sql, driver) => {
         const req = new TestRequest(conn)
         req.query('waitfor delay \'00:00:05\';select 1').catch(err => {
           assert.ok((message ? (message.exec(err.message) != null) : (err instanceof sql.RequestError)))
+          assert.strictEqual(err.code, 'ETIMEOUT', 'the timeout should have the code ETIMEOUT')
 
           conn.close()
           done()
@@ -2898,6 +2899,7 @@ module.exports = (sql, driver) => {
           done(new Error('Expected request to timeout'))
         }).catch(err => {
           assert.ok((message ? (message.exec(err.message) != null) : (err instanceof sql.RequestError)))
+          assert.strictEqual(err.code, 'ETIMEOUT', 'the timeout should have the code ETIMEOUT')
 
           conn.close()
           done()
@@ -2920,6 +2922,7 @@ module.exports = (sql, driver) => {
         ]).then(([fastResult, normalResult]) => {
           assert.strictEqual(fastResult.status, 'rejected')
           assert.ok((message ? (message.exec(fastResult.reason.message) != null) : (fastResult.reason instanceof sql.RequestError)))
+          assert.strictEqual(fastResult.reason.code, 'ETIMEOUT', 'the timeout should have the code ETIMEOUT')
           assert.strictEqual(normalResult.status, 'fulfilled')
 
           conn.close()
@@ -2944,6 +2947,7 @@ module.exports = (sql, driver) => {
             })
           }).catch(err => {
             assert.ok((message ? (message.exec(err.message) != null) : (err instanceof sql.RequestError)))
+            assert.strictEqual(err.code, 'ETIMEOUT', 'the timeout should have the code ETIMEOUT')
 
             tx.rollback().then(() => {
               conn.close()
@@ -2986,6 +2990,7 @@ module.exports = (sql, driver) => {
           try {
             await assert.rejects(run(tx), err => {
               assert.ok(message ? message.test(err.message) : err instanceof sql.RequestError, `the ${made} should time out after the transaction's request timeout, got: ${err.message}`)
+              assert.strictEqual(err.code, 'ETIMEOUT', `the timeout of the ${made} should have the code ETIMEOUT`)
               return true
             }, `the ${made} should time out after the transaction's request timeout`)
           } finally {
@@ -3009,6 +3014,7 @@ module.exports = (sql, driver) => {
           done(new Error('Expected request to timeout'))
         }).catch(err => {
           assert.ok((message ? (message.exec(err.message) != null) : (err instanceof sql.RequestError)))
+          assert.strictEqual(err.code, 'ETIMEOUT', 'the timeout should have the code ETIMEOUT')
 
           conn.close()
           done()
@@ -3031,6 +3037,7 @@ module.exports = (sql, driver) => {
             })
           }).catch(err => {
             assert.ok((message ? (message.exec(err.message) != null) : (err instanceof sql.RequestError)))
+            assert.strictEqual(err.code, 'ETIMEOUT', 'the timeout should have the code ETIMEOUT')
 
             ps.unprepare().then(() => {
               conn.close()
@@ -3830,6 +3837,7 @@ module.exports = (sql, driver) => {
               assert.strictEqual(errors.length, 1, 'the timeout should be streamed once')
               assert.ok(message ? message.test(errors[0].message) : errors[0] instanceof sql.RequestError,
                 `the error should be the timeout, got ${errors[0].constructor.name}: ${errors[0].message}`)
+              assert.strictEqual(errors[0].code, 'ETIMEOUT', 'the streamed timeout should have the code ETIMEOUT')
               assert.strictEqual(conn.pool.numUsed(), 0, 'the pool should have every connection back')
             } catch (e) {
               return conn.close().then(() => done(e), () => done(e))
