@@ -1738,6 +1738,39 @@ describe('connection string auth - tedious', () => {
         const req = tx.request({})
         assert.strictEqual(req.overrides.requestTimeout, 10000)
       })
+
+      it('per-request config that is not valid keeps transaction overrides', () => {
+        const pool = new ConnectionPool({ server: 'localhost' })
+        const tx = pool.transaction({ requestTimeout: 10000 })
+        const req = tx.request({ requestTimeout: -1 })
+        assert.strictEqual(req.overrides.requestTimeout, 10000)
+      })
+
+      it('cascades overrides to a request made with new Request(transaction)', () => {
+        const tx = new sql.Transaction(new ConnectionPool({ server: 'localhost' }), { requestTimeout: 10000 })
+        assert.strictEqual(new sql.Request(tx).overrides.requestTimeout, 10000)
+      })
+
+      it('per-request overrides of new Request(transaction) override transaction overrides', () => {
+        const tx = new sql.Transaction(new ConnectionPool({ server: 'localhost' }), { requestTimeout: 10000 })
+        assert.strictEqual(new sql.Request(tx, { requestTimeout: 3000 }).overrides.requestTimeout, 3000)
+      })
+
+      it('cascades overrides to a prepared statement made with new PreparedStatement(transaction)', () => {
+        const tx = new sql.Transaction(new ConnectionPool({ server: 'localhost' }), { requestTimeout: 10000 })
+        assert.strictEqual(new sql.PreparedStatement(tx).overrides.requestTimeout, 10000)
+      })
+
+      it('per-statement overrides of new PreparedStatement(transaction) override transaction overrides', () => {
+        const tx = new sql.Transaction(new ConnectionPool({ server: 'localhost' }), { requestTimeout: 10000 })
+        assert.strictEqual(new sql.PreparedStatement(tx, { requestTimeout: 3000 }).overrides.requestTimeout, 3000)
+      })
+
+      it('does not change transaction overrides through a request', () => {
+        const tx = new sql.Transaction(new ConnectionPool({ server: 'localhost' }), { requestTimeout: 10000 })
+        new sql.Request(tx, { requestTimeout: 3000 }).overrides.requestTimeout = 1
+        assert.deepStrictEqual(tx.overrides, { requestTimeout: 10000 }, 'a request should have a copy of the transaction overrides')
+      })
     })
 
     describe('PreparedStatement', () => {
@@ -1749,6 +1782,15 @@ describe('connection string auth - tedious', () => {
       it('ignores invalid overrides', () => {
         const ps = new BasePreparedStatement(null, { requestTimeout: -100 })
         assert.strictEqual(ps.overrides.requestTimeout, undefined)
+      })
+
+      it('has no overrides on a pool when none provided', () => {
+        assert.deepStrictEqual(new BasePreparedStatement(new ConnectionPool({ server: 'localhost' })).overrides, {})
+      })
+
+      it('cascades overrides to its requests', () => {
+        const ps = new BasePreparedStatement(new ConnectionPool({ server: 'localhost' }), { requestTimeout: 8000 })
+        assert.strictEqual(new sql.Request(ps).overrides.requestTimeout, 8000)
       })
     })
   })
@@ -6142,6 +6184,33 @@ describe('transaction begin failures', () => {
         })
       })
     }
+
+    it('should give requests the request timeout of the transaction, and keep the pool one for begin and commit', async () => {
+      const Request = require('../../lib/msnodesqlv8/request')
+      const timeouts = []
+      const connection = Object.assign(connect(BEGINS), {
+        queryRaw (options) {
+          timeouts.push([options.query_str, options.query_timeout])
+          return connect(BEGINS).queryRaw()
+        }
+      })
+      const pool = lend(state, connection)
+      pool.config.requestTimeout = 15000
+      const tx = new Transaction(pool, { requestTimeout: 2000 })
+
+      await tx.begin()
+      await new Request(tx).query('select 1')
+      await new Request(tx, { requestTimeout: 3000 }).query('select 2')
+      await tx.commit()
+
+      // msnodesqlv8 takes its timeouts in seconds
+      assert.deepStrictEqual(timeouts.map(([query, timeout]) => [query.slice(0, 12), timeout]), [
+        ['set transact', 15],
+        ['select 1', 2],
+        ['select 2', 3],
+        ['commit tran', 15]
+      ], 'only the requests made on the transaction should have its request timeout, unless they give their own')
+    })
   })
 })
 

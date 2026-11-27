@@ -2821,6 +2821,43 @@ module.exports = (sql, driver) => {
       }).catch(done)
     },
 
+    'transaction timeout on what is made from the transaction' (made, done, driver, message) {
+      const config = readConfig()
+      config.driver = driver
+      config.requestTimeout = 15000
+
+      const DELAY = 'waitfor delay \'00:00:05\';select 1'
+      const run = {
+        request: tx => new sql.Request(tx).query(DELAY),
+        'prepared statement': async tx => {
+          const ps = new sql.PreparedStatement(tx)
+          await ps.prepare(DELAY)
+          try {
+            return await ps.execute({})
+          } finally {
+            await ps.unprepare().catch(() => {})
+          }
+        }
+      }[made]
+
+      new sql.ConnectionPool(config).connect().then(async conn => {
+        try {
+          const tx = new sql.Transaction(conn, { requestTimeout: 1000 })
+          await tx.begin()
+          try {
+            await assert.rejects(run(tx), err => {
+              assert.ok(message ? message.test(err.message) : err instanceof sql.RequestError, `the ${made} should time out after the transaction's request timeout, got: ${err.message}`)
+              return true
+            }, `the ${made} should time out after the transaction's request timeout`)
+          } finally {
+            await tx.rollback().catch(() => {})
+          }
+        } finally {
+          await conn.close()
+        }
+      }).then(() => done(), done)
+    },
+
     'per-request timeout on stored procedure' (done, driver, message) {
       const config = readConfig()
       config.driver = driver
