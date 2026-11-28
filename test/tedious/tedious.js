@@ -149,6 +149,7 @@ describe('tedious', () => {
     it('abort reason when a prepared statement has the server roll the transaction back', done => TESTS['abort reason when a prepared statement has the server roll the transaction back'](config(), done))
     it('rollback while a request is in progress reports a rollback error', done => TESTS['rollback while a request is in progress reports a rollback error'](done))
     it('transaction throws on bad isolation level', done => TESTS['transaction throws on bad isolation level'](done))
+    it('transaction rejects isolation levels that sql.ISOLATION_LEVEL does not have', done => TESTS['transaction rejects isolation levels that sql.ISOLATION_LEVEL does not have'](config(), done))
     it('transaction accepts good isolation levels', done => TESTS['transaction accepts good isolation levels'](done))
     it('transaction uses default isolation level', done => TESTS['transaction uses default isolation level'](done))
     it('transaction with error (XACT_ABORT set to ON)', done => TESTS['transaction with error'](done))
